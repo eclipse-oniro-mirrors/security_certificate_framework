@@ -289,6 +289,7 @@ napi_value NapiX509Certificate::GetPublicKey(napi_env env, napi_callback_info in
 
     NapiPubKey *pubKeyClass = new (std::nothrow) NapiPubKey(returnPubKey);
     if (pubKeyClass == nullptr) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to create a pubkey class"));
         LOGE("create for x509 cert's public key obj failed");
         CfObjDestroy(returnPubKey);
         return nullptr;
@@ -935,7 +936,19 @@ void NapiX509Certificate::CreateX509CertComplete(napi_env env, napi_status statu
         return;
     }
     napi_value instance = CreateX509Cert(env);
-    NapiX509Certificate *x509CertClass = new NapiX509Certificate(context->cert, context->object);
+    NapiX509Certificate *x509CertClass = new (std::nothrow) NapiX509Certificate(context->cert, context->object);
+    if (x509CertClass == nullptr) {
+        context->errCode = CF_ERR_MALLOC;
+        context->errMsg = "Failed to create x509Cert class";
+        LOGE("Failed to create x509Cert class");
+        CfObjDestroy(context->cert);
+        if (context->object != nullptr) {
+            context->object->destroy(&(context->object));
+        }
+        ReturnResult(env, context, nullptr);
+        FreeCryptoFwkCtx(context);
+        return;
+    }
     napi_wrap(
         env, instance, x509CertClass,
         [](napi_env env, void *data, void *hint) {
