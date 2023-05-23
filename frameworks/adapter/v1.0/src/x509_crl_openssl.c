@@ -156,7 +156,6 @@ static CfResult Verify(HcfX509CrlSpi *self, HcfPubKey *key)
         LOGE("Invalid Paramas!");
         return CF_INVALID_PARAMS;
     }
-
     if (!IsClassMatch((CfObjectBase *)self, GetClass()) ||
         (!IsPubKeyClassMatch((HcfObjectBase *)key, OPENSSL_RSA_PUBKEY_CLASS))) {
         LOGE("Input wrong class type!");
@@ -167,7 +166,6 @@ static CfResult Verify(HcfX509CrlSpi *self, HcfPubKey *key)
         LOGE("rsaPubkey is null!");
         return CF_INVALID_PARAMS;
     }
-
     EVP_PKEY *pubKey = EVP_PKEY_new();
     if (pubKey == NULL) {
         LOGE("pubKey is null!");
@@ -177,7 +175,7 @@ static CfResult Verify(HcfX509CrlSpi *self, HcfPubKey *key)
 
     CfResult ret = CF_SUCCESS;
     do {
-        if (EVP_PKEY_assign_RSA(pubKey, rsaPubkey) <= 0) {
+        if (EVP_PKEY_set1_RSA(pubKey, rsaPubkey) <= 0) {
             LOGE("Do EVP_PKEY_assign_RSA fail!");
             CfPrintOpensslError();
             ret = CF_ERR_CRYPTO_OPERATION;
@@ -200,7 +198,6 @@ static CfResult Verify(HcfX509CrlSpi *self, HcfPubKey *key)
         }
     } while (0);
 
-    RSA_up_ref(rsaPubkey);
     EVP_PKEY_free(pubKey);
     return ret;
 }

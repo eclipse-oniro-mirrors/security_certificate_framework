@@ -114,7 +114,7 @@ static CfResult GetSerialNumber(HcfX509CrlEntry *self, CfBlob *out)
         LOGE("Failed to malloc serial num");
         return CF_ERR_MALLOC;
     }
-    out->size = serialNumLen - SERIAL_NUMBER_HEDER_SIZE;
+    out->size = (uint32_t)(serialNumLen - SERIAL_NUMBER_HEDER_SIZE);
     (void)memcpy_s(out->data, out->size, serialNumBytes + SERIAL_NUMBER_HEDER_SIZE, out->size);
     OPENSSL_free(serialNumBytes);
     return CF_SUCCESS;
