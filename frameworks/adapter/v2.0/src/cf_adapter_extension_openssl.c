@@ -433,7 +433,7 @@ static int32_t CheckBasicConstraints(const X509_EXTENSIONS *exts, int32_t *pathL
     do {
         if (!bs->ca) {
             CF_LOG_I("this cert not a CA");
-            /* CheckCA openration is success, but cert is not a CA, pathLen set -1 */
+            /* CheckCA operation is success, but cert is not a CA, pathLen set -1 */
             *pathLen = BASIC_CONSTRAINTS_NO_CA;
             ret = CF_SUCCESS;
             break;
@@ -441,14 +441,14 @@ static int32_t CheckBasicConstraints(const X509_EXTENSIONS *exts, int32_t *pathL
 
         if ((bs->pathlen == NULL) || (bs->pathlen->type == V_ASN1_NEG_INTEGER)) {
             CF_LOG_I("this cert pathlen no limit");
-            /* CheckCA openration is success and cert is a CA, but no limit to pathlen, pathLen set -2 */
+            /* CheckCA operation is success and cert is a CA, but no limit to pathlen, pathLen set -2 */
             *pathLen = BASIC_CONSTRAINTS_PATHLEN_NO_LIMIT;
             ret = CF_SUCCESS;
             break;
         }
 
         long len = ASN1_INTEGER_get(bs->pathlen);
-        if ((len < 0) || (len > INT_MAX)) { /* CheckCA openration is exceptional, pathlen is invalid */
+        if ((len < 0) || (len > INT_MAX)) { /* CheckCA operation is exceptional, pathlen is invalid */
             CF_LOG_E("this cert pathlen is invalid");
             ret = CF_ERR_CRYPTO_OPERATION;
             break;
@@ -480,7 +480,7 @@ int32_t CfOpensslCheckCA(const CfBase *object, int32_t *pathLen)
         CF_LOG_E("Failed to check keyUsage");
         return ret;
     }
-    if (*pathLen != 0) {
+    if (*pathLen != 0) { /* checkKeyUsage operation success, but cert has no signing purpose, pathLen set -1. */
         CF_LOG_I("Return: this cert not a CA");
         return ret;
     }

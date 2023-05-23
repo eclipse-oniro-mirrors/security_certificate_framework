@@ -145,6 +145,7 @@ void CfCertDestroy(CfBase **obj)
 
     CfCertObjStruct *tmp = (CfCertObjStruct *)*obj;
     if (tmp->base.type != CF_MAGIC(CF_MAGIC_TYPE_OBJ_RESOURCE, CF_OBJ_TYPE_CERT)) {
+        /* only cert objects can be destroyed */
         CF_LOG_E("invalid resource type");
         return;
     }

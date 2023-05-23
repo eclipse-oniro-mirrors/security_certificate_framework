@@ -225,6 +225,7 @@ void CfExtensionDestroy(CfBase **obj)
 
     CfExtensionObjStruct *tmp = (CfExtensionObjStruct *)*obj;
     if (tmp->base.type != CF_MAGIC(CF_MAGIC_TYPE_OBJ_RESOURCE, CF_OBJ_TYPE_EXTENSION)) {
+        /* only extension objects can be destroyed */
         CF_LOG_E("invalid resource type");
         return;
     }
