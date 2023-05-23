@@ -21,7 +21,7 @@ ohos_unittest("cf_adapter_test") {
   sources = [
     "../common/src/cf_test_common.cpp",
     "src/cf_ability_test.cpp",
-    "src/cf_adapater_cert_test.cpp",
+    "src/cf_adapter_cert_test.cpp",
     "src/cf_adapter_extension_test.cpp",
     "src/cf_common_test.cpp",
   ]
