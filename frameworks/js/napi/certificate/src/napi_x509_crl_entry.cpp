@@ -30,7 +30,7 @@ namespace CertFramework {
 thread_local napi_ref NapiX509CrlEntry::classRef_ = nullptr;
 
 struct CfCtx {
-    CertAsyncType asyncType = CERT_ASYNC_TYPE_CALLBACK;
+    AsyncType asyncType = ASYNC_TYPE_CALLBACK;
     napi_value promise = nullptr;
     napi_ref callback = nullptr;
     napi_deferred deferred = nullptr;
@@ -98,7 +98,7 @@ static void ReturnPromiseResult(napi_env env, CfCtx *context, napi_value result)
 
 static void ReturnResult(napi_env env, CfCtx *context, napi_value result)
 {
-    if (context->asyncType == CERT_ASYNC_TYPE_CALLBACK) {
+    if (context->asyncType == ASYNC_TYPE_CALLBACK) {
         ReturnCallbackResult(env, context, result);
     } else {
         ReturnPromiseResult(env, context, result);
@@ -108,10 +108,10 @@ static void ReturnResult(napi_env env, CfCtx *context, napi_value result)
 static bool CreateCallbackAndPromise(napi_env env, CfCtx *context, size_t argc,
     size_t maxCount, napi_value callbackValue)
 {
-    context->asyncType = (argc == maxCount) ? CERT_ASYNC_TYPE_CALLBACK : CERT_ASYNC_TYPE_PROMISE;
-    if (context->asyncType == CERT_ASYNC_TYPE_CALLBACK) {
+    context->asyncType = GetAsyncType(env, argc, maxCount, callbackValue);
+    if (context->asyncType == ASYNC_TYPE_CALLBACK) {
         if (!CertGetCallbackFromJSParams(env, callbackValue, &context->callback)) {
-            LOGE("get callback failed!");
+            LOGE("x509 crl entry: get callback failed!");
             return false;
         }
     } else {
@@ -193,7 +193,7 @@ napi_value NapiX509CrlEntry::GetEncoded(napi_env env, napi_callback_info info)
         &context->asyncWork);
 
     napi_queue_async_work(env, context->asyncWork);
-    if (context->asyncType == CERT_ASYNC_TYPE_PROMISE) {
+    if (context->asyncType == ASYNC_TYPE_PROMISE) {
         return context->promise;
     } else {
         return CertNapiGetNull(env);
