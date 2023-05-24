@@ -112,7 +112,7 @@ static napi_value ParseCreateExtsJSParams(napi_env env, napi_callback_info info,
         return nullptr;
     }
 
-    context->async->asyncType = (argc == ARGS_SIZE_TWO) ? ASYNC_TYPE_CALLBACK : ASYNC_TYPE_PROMISE;
+    context->async->asyncType = GetAsyncType(env, argc, ARGS_SIZE_TWO, argv[PARAM1]);
     if (!GetCallbackAndPromise(env, context->async, argv[PARAM1])) {
         return nullptr;
     }
@@ -148,7 +148,18 @@ static void CreateCertExtsComplete(napi_env env, napi_status status, void *data)
     }
 
     napi_value jsObject = CreateCertExtsJSInstance(env);
-    NapiCertExtension *napiObject = new NapiCertExtension(context->extsObj);
+    NapiCertExtension *napiObject = new (std::nothrow) NapiCertExtension(context->extsObj);
+    if (napiObject == nullptr) {
+        context->async->errCode = CF_ERR_MALLOC;
+        context->async->errMsg = "Failed to create napi extension class";
+        CF_LOG_E("Failed to create napi extension class");
+        if (context->extsObj != nullptr) {
+            context->extsObj->destroy(&(context->extsObj));
+        }
+        ReturnJSResult(env, context->async, nullptr);
+        DeleteExtsAsyncContext(env, context);
+        return;
+    }
     napi_wrap(
         env, jsObject, napiObject,
         [](napi_env env, void *data, void *hint) {

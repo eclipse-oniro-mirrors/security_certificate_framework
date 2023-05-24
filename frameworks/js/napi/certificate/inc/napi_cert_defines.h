@@ -54,9 +54,9 @@ enum ResultCode {
     JS_ERR_KEYUSAGE_NO_DIGITAL_SIGNATURE = 19030007
 };
 
-enum CertAsyncType {
-    CERT_ASYNC_TYPE_CALLBACK = 1,
-    CERT_ASYNC_TYPE_PROMISE = 2
+enum AsyncType {
+    ASYNC_TYPE_CALLBACK = 1,
+    ASYNC_TYPE_PROMISE = 2
 };
 } // namespace CertFramework
 } // namespace OHOS

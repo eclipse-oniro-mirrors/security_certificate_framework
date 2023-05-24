@@ -17,18 +17,13 @@
 #define NAPI_COMMON_H
 
 #include "cf_type.h"
-
+#include "napi_cert_defines.h"
 #include "napi/native_api.h"
 #include "napi/native_common.h"
 
 namespace OHOS {
 namespace CertFramework {
 constexpr int32_t CALLBACK_NUM = 2;
-
-enum AsyncType {
-    ASYNC_TYPE_CALLBACK = 1,
-    ASYNC_TYPE_PROMISE = 2
-};
 
 struct AsyncContext {
     AsyncType asyncType = ASYNC_TYPE_CALLBACK;

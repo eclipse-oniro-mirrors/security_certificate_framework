@@ -486,6 +486,23 @@ bool CertCheckArgsCount(napi_env env, size_t argc, size_t expectedCount, bool is
     return true;
 }
 
+AsyncType GetAsyncType(napi_env env, size_t argc, size_t maxCount, napi_value arg)
+{
+    if (argc == (maxCount - 1)) { /* inner caller func: maxCount is bigger than 1 */
+        return ASYNC_TYPE_PROMISE;
+    }
+
+    napi_valuetype valueType = napi_undefined;
+    napi_typeof(env, arg, &valueType);
+    /* If the input is undefined or null, the value is processed as promise type. */
+    if ((valueType == napi_undefined) || (valueType == napi_null)) {
+        CF_LOG_I("input value is undefined or null");
+        return ASYNC_TYPE_PROMISE;
+    }
+
+    return ASYNC_TYPE_CALLBACK;
+}
+
 napi_value CertGetResourceName(napi_env env, const char *name)
 {
     napi_value resourceName = nullptr;

@@ -22,6 +22,7 @@
 #include "napi/native_node_api.h"
 #include "cf_blob.h"
 #include "cert_chain_validator.h"
+#include "napi_cert_defines.h"
 
 namespace OHOS {
 namespace CertFramework {
@@ -41,6 +42,7 @@ bool CertGetCallbackFromJSParams(napi_env env, napi_value arg, napi_ref *returnC
 bool GetEncodingBlobFromValue(napi_env env, napi_value object, CfEncodingBlob **encodingBlob);
 bool GetCertChainFromValue(napi_env env, napi_value object, HcfCertChainData **certChainData);
 bool CertCheckArgsCount(napi_env env, size_t argc, size_t expectedCount, bool isSync);
+AsyncType GetAsyncType(napi_env env, size_t argc, size_t maxCount, napi_value arg);
 napi_value CertGetResourceName(napi_env env, const char *name);
 napi_value GenerateArrayBuffer(napi_env env, uint8_t *data, uint32_t size);
 napi_value CertNapiGetNull(napi_env env);

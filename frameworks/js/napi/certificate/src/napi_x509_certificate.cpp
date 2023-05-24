@@ -34,7 +34,7 @@ namespace CertFramework {
 thread_local napi_ref NapiX509Certificate::classRef_ = nullptr;
 
 struct CfCtx {
-    CertAsyncType asyncType = CERT_ASYNC_TYPE_CALLBACK;
+    AsyncType asyncType = ASYNC_TYPE_CALLBACK;
     napi_value promise = nullptr;
     napi_ref callback = nullptr;
     napi_deferred deferred = nullptr;
@@ -119,7 +119,7 @@ static void ReturnPromiseResult(napi_env env, CfCtx *context, napi_value result)
 
 static void ReturnResult(napi_env env, CfCtx *context, napi_value result)
 {
-    if (context->asyncType == CERT_ASYNC_TYPE_CALLBACK) {
+    if (context->asyncType == ASYNC_TYPE_CALLBACK) {
         ReturnCallbackResult(env, context, result);
     } else {
         ReturnPromiseResult(env, context, result);
@@ -129,10 +129,10 @@ static void ReturnResult(napi_env env, CfCtx *context, napi_value result)
 static bool CreateCallbackAndPromise(napi_env env, CfCtx *context, size_t argc,
     size_t maxCount, napi_value callbackValue)
 {
-    context->asyncType = (argc == maxCount) ? CERT_ASYNC_TYPE_CALLBACK : CERT_ASYNC_TYPE_PROMISE;
-    if (context->asyncType == CERT_ASYNC_TYPE_CALLBACK) {
+    context->asyncType = GetAsyncType(env, argc, maxCount, callbackValue);
+    if (context->asyncType == ASYNC_TYPE_CALLBACK) {
         if (!CertGetCallbackFromJSParams(env, callbackValue, &context->callback)) {
-            LOGE("get callback failed!");
+            LOGE("x509 certificate: get callback failed!");
             return false;
         }
     } else {
@@ -232,7 +232,7 @@ napi_value NapiX509Certificate::Verify(napi_env env, napi_callback_info info)
         &context->asyncWork);
 
     napi_queue_async_work(env, context->asyncWork);
-    if (context->asyncType == CERT_ASYNC_TYPE_PROMISE) {
+    if (context->asyncType == ASYNC_TYPE_PROMISE) {
         return context->promise;
     } else {
         return CertNapiGetNull(env);
@@ -269,7 +269,7 @@ napi_value NapiX509Certificate::GetEncoded(napi_env env, napi_callback_info info
         &context->asyncWork);
 
     napi_queue_async_work(env, context->asyncWork);
-    if (context->asyncType == CERT_ASYNC_TYPE_PROMISE) {
+    if (context->asyncType == ASYNC_TYPE_PROMISE) {
         return context->promise;
     } else {
         return CertNapiGetNull(env);
@@ -946,7 +946,7 @@ void NapiX509Certificate::CreateX509CertComplete(napi_env env, napi_status statu
             context->object->destroy(&(context->object));
         }
         ReturnResult(env, context, nullptr);
-        FreeCryptoFwkCtx(context);
+        FreeCryptoFwkCtx(env, context);
         return;
     }
     napi_wrap(
@@ -995,7 +995,7 @@ napi_value NapiX509Certificate::NapiCreateX509Cert(napi_env env, napi_callback_i
         &context->asyncWork);
 
     napi_queue_async_work(env, context->asyncWork);
-    if (context->asyncType == CERT_ASYNC_TYPE_PROMISE) {
+    if (context->asyncType == ASYNC_TYPE_PROMISE) {
         return context->promise;
     } else {
         return CertNapiGetNull(env);
