@@ -62,25 +62,25 @@ namespace OHOS {
     {
         size_t offset = 0;
 
-        if (size < (sizeof(CfParam) * PARAMS_NUM)) {
+        if (size < (sizeof(CfParam) * PARAMS_SIZE_THREE)) {
             return;
         }
 
-        CfParam params[PARAMS_NUM];
-        for (int i = 0; i < PARAMS_NUM; i++) {
+        CfParam params[PARAMS_SIZE_THREE];
+        for (int i = 0; i < PARAMS_SIZE_THREE; i++) {
             params[i].tag = *reinterpret_cast<uint32_t *>(data + offset);
             offset += sizeof(uint32_t);
             params[i].int32Param = *reinterpret_cast<int32_t *>(data + offset);
             offset += sizeof(int32_t);
         }
 
-        TestCommonfunc(object, PARAMS_NUM, params, CF_TAG_GET_TYPE);
-        TestCommonfunc(object, PARAMS_NUM, params, CF_TAG_CHECK_TYPE);
+        TestCommonfunc(object, PARAMS_SIZE_THREE, params, CF_TAG_GET_TYPE);
+        TestCommonfunc(object, PARAMS_SIZE_THREE, params, CF_TAG_CHECK_TYPE);
     }
 
     void TestObjectTypeFunc2(const CfObject *object, uint8_t* data, size_t size)
     {
-        if (size < (sizeof(CfParam) * PARAMS_NUM2)) {
+        if (size < (sizeof(CfParam) * PARAMS_SIZE_TWO)) {
             return;
         }
 
@@ -94,7 +94,7 @@ namespace OHOS {
 
     void TestObjectTypeFunc3(const CfObject *object, uint8_t* data, size_t size)
     {
-        if (size < (sizeof(CfParam) * PARAMS_NUM2)) {
+        if (size < (sizeof(CfParam) * PARAMS_SIZE_TWO)) {
             return;
         }
 
@@ -108,7 +108,7 @@ namespace OHOS {
 
     void TestObjectTypeFunc4(const CfObject *object, uint8_t* data, size_t size)
     {
-        if (size < (sizeof(CfParam) * PARAMS_NUM)) {
+        if (size < (sizeof(CfParam) * PARAMS_SIZE_THREE)) {
             return;
         }
 
@@ -125,7 +125,7 @@ namespace OHOS {
 
     void TestObjectTypeFunc5(const CfObject *object, uint8_t* data, size_t size)
     {
-        if (size < (sizeof(CfParam) * PARAMS_NUM2)) {
+        if (size < (sizeof(CfParam) * PARAMS_SIZE_TWO)) {
             return;
         }
 
