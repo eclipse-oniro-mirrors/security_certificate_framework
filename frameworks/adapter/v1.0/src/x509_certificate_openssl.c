@@ -103,13 +103,37 @@ static const char *GetPubKeyAlgorithm(HcfKey *self)
     return NULL;
 }
 
-
 static HcfResult GetPubKeyEncoded(HcfKey *self, HcfBlob *returnBlob)
 {
-    (void)self;
-    (void)returnBlob;
-    LOGD("Not supported!");
-    return HCF_NOT_SUPPORT;
+    if (self == NULL || returnBlob == NULL) {
+        LOGE("Input params is invalid.");
+        return HCF_INVALID_PARAMS;
+    }
+    if (!IsPubKeyClassMatch((HcfObjectBase *)self, GetX509CertPubKeyClass())) {
+        LOGE("Input wrong class type!");
+        return HCF_INVALID_PARAMS;
+    }
+    X509PubKeyOpensslImpl *impl = (X509PubKeyOpensslImpl *)self;
+
+    unsigned char *pkBytes = NULL;
+    int32_t pkLen = i2d_PUBKEY(impl->pubKey, &pkBytes);
+    if (pkLen <= 0) {
+        CfPrintOpensslError();
+        LOGE("Failed to convert internal pubkey to der format!");
+        return HCF_ERR_CRYPTO_OPERATION;
+    }
+
+    returnBlob->data = (uint8_t *)HcfMalloc(pkLen, 0);
+    if (returnBlob->data == NULL) {
+        LOGE("Failed to malloc for sig algorithm params!");
+        OPENSSL_free(pkBytes);
+        return HCF_ERR_MALLOC;
+    }
+    (void)memcpy_s(returnBlob->data, pkLen, pkBytes, pkLen);
+    returnBlob->len = (size_t)pkLen;
+
+    OPENSSL_free(pkBytes);
+    return HCF_SUCCESS;
 }
 
 static const char *GetPubKeyFormat(HcfKey *self)
