@@ -24,7 +24,6 @@
           "c_utils",
           "crypto_framework",
           "hiviewdfx_hilog_native",
-          "huks",
           "napi"
         ],
         "third_party": [
