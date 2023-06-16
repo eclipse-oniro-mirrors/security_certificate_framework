@@ -23,6 +23,7 @@ config("cert_framework_config") {
 
 ohos_shared_library("certificate_framework_core") {
   subsystem_name = "security"
+  innerapi_tags = [ "platformsdk" ]
   part_name = "certificate_framework"
   public_configs = [ ":cert_framework_config" ]
   configs = [ "../../config/build:coverage_flag" ]
