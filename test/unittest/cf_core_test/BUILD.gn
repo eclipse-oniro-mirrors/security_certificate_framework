@@ -47,6 +47,6 @@ ohos_unittest("cf_core_test") {
   external_deps = [
     "c_utils:utils",
     "certificate_framework:certificate_framework_core",
-    "hiviewdfx_hilog_native:libhilog",
+    "hilog:libhilog",
   ]
 }

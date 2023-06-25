@@ -46,7 +46,7 @@ ohos_fuzztest("X509CrlFuzzTest") {
     "c_utils:utils",
     "certificate_framework:certificate_framework_core",
     "crypto_framework:crypto_framework_lib",
-    "hiviewdfx_hilog_native:libhilog",
+    "hilog:libhilog",
   ]
 }
 

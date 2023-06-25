@@ -31,16 +31,16 @@ ohos_shared_library("cert") {
 
   sources = [
     "src/napi_cert_chain_validator.cpp",
+    "src/napi_cert_extension.cpp",
     "src/napi_cert_utils.cpp",
     "src/napi_certificate_init.cpp",
+    "src/napi_common.cpp",
     "src/napi_key.cpp",
     "src/napi_object.cpp",
     "src/napi_pub_key.cpp",
     "src/napi_x509_certificate.cpp",
     "src/napi_x509_crl.cpp",
     "src/napi_x509_crl_entry.cpp",
-    "src/napi_common.cpp",
-    "src/napi_cert_extension.cpp",
   ]
 
   deps = [ "../../../core:certificate_framework_core" ]
@@ -48,7 +48,7 @@ ohos_shared_library("cert") {
   external_deps = [
     "c_utils:utils",
     "crypto_framework:crypto_framework_lib",
-    "hiviewdfx_hilog_native:libhilog",
+    "hilog:libhilog",
     "napi:ace_napi",
   ]
 }
