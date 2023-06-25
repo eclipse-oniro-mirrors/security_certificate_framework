@@ -34,6 +34,6 @@ ohos_static_library("libcertificate_framework_common_static") {
   external_deps = [
     "c_utils:utils",
     "crypto_framework:crypto_framework_lib",
-    "hiviewdfx_hilog_native:libhilog",
+    "hilog:libhilog",
   ]
 }

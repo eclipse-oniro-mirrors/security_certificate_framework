@@ -48,7 +48,7 @@ ohos_unittest("cf_adapter_test") {
   external_deps = [
     "c_utils:utils",
     "crypto_framework:crypto_framework_lib",
-    "hiviewdfx_hilog_native:libhilog",
+    "hilog:libhilog",
   ]
   ldflags = [ "-Wl,--whole-archive" ]
 }

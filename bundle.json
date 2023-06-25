@@ -23,7 +23,7 @@
         "components": [
           "c_utils",
           "crypto_framework",
-          "hiviewdfx_hilog_native",
+          "hilog",
           "napi"
         ],
         "third_party": [
