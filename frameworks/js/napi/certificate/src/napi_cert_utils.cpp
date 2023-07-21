@@ -17,6 +17,7 @@
 
 #include "cf_log.h"
 #include "cf_memory.h"
+#include "config.h"
 #include "securec.h"
 #include "cipher.h"
 #include "napi_cert_defines.h"
@@ -586,6 +587,23 @@ napi_value ConvertBlobToBigIntWords(napi_env env, const CfBlob &blob)
     napi_value result = nullptr;
     napi_create_bigint_words(env, 0, wordsCount, words, &result);
     CfFree(words);
+    return result;
+}
+
+napi_value ConvertBlobToInt64(napi_env env, const CfBlob &blob)
+{
+    if (blob.data == nullptr || blob.size == 0 || blob.size > sizeof(int64_t)) {
+        LOGE("Invalid blob!");
+        return nullptr;
+    }
+
+    uint64_t serialNumber = 0;
+    for (uint32_t i = 0; i < blob.size; ++i) {
+        serialNumber = ((serialNumber << (BYTE_TO_BIT_CNT * i)) | static_cast<uint64_t>(blob.data[i]));
+    }
+
+    napi_value result = nullptr;
+    napi_create_int64(env, static_cast<long>(serialNumber), &result);
     return result;
 }
 }  // namespace CertFramework
