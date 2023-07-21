@@ -42,6 +42,7 @@ public:
     napi_value CheckValidityWithDate(napi_env env, napi_callback_info info);
     napi_value GetVersion(napi_env env, napi_callback_info info);
     napi_value GetSerialNumber(napi_env env, napi_callback_info info);
+    napi_value GetCertSerialNumber(napi_env env, napi_callback_info info);
     napi_value GetIssuerName(napi_env env, napi_callback_info info);
     napi_value GetSubjectName(napi_env env, napi_callback_info info);
     napi_value GetNotBeforeTime(napi_env env, napi_callback_info info);
