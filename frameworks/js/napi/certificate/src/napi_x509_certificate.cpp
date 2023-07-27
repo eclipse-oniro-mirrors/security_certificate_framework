@@ -350,6 +350,22 @@ napi_value NapiX509Certificate::GetSerialNumber(napi_env env, napi_callback_info
         return nullptr;
     }
 
+    napi_value result = ConvertBlobToInt64(env, blob);
+    CfBlobDataFree(&blob);
+    return result;
+}
+
+napi_value NapiX509Certificate::GetCertSerialNumber(napi_env env, napi_callback_info info)
+{
+    HcfX509Certificate *cert = GetX509Cert();
+    CfBlob blob = { 0, nullptr };
+    CfResult ret = cert->getSerialNumber(cert, &blob);
+    if (ret != CF_SUCCESS) {
+        napi_throw(env, CertGenerateBusinessError(env, ret, "cert get serial num failed"));
+        LOGE("cert get serial num failed!");
+        return nullptr;
+    }
+
     napi_value result = ConvertBlobToBigIntWords(env, blob);
     CfBlobDataFree(&blob);
     return result;
@@ -723,6 +739,19 @@ static napi_value NapiGetSerialNumber(napi_env env, napi_callback_info info)
     return x509Cert->GetSerialNumber(env, info);
 }
 
+static napi_value NapiGetCertSerialNumber(napi_env env, napi_callback_info info)
+{
+    napi_value thisVar = nullptr;
+    napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+    NapiX509Certificate *x509Cert = nullptr;
+    napi_unwrap(env, thisVar, reinterpret_cast<void **>(&x509Cert));
+    if (x509Cert == nullptr) {
+        LOGE("x509Cert is nullptr!");
+        return nullptr;
+    }
+    return x509Cert->GetCertSerialNumber(env, info);
+}
+
 static napi_value NapiGetIssuerName(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
@@ -1023,6 +1052,7 @@ void NapiX509Certificate::DefineX509CertJSClass(napi_env env, napi_value exports
         DECLARE_NAPI_FUNCTION("checkValidityWithDate", NapiCheckValidityWithDate),
         DECLARE_NAPI_FUNCTION("getVersion", NapiGetVersion),
         DECLARE_NAPI_FUNCTION("getSerialNumber", NapiGetSerialNumber),
+        DECLARE_NAPI_FUNCTION("getCertSerialNumber", NapiGetCertSerialNumber),
         DECLARE_NAPI_FUNCTION("getIssuerName", NapiGetIssuerName),
         DECLARE_NAPI_FUNCTION("getSubjectName", NapiGetSubjectName),
         DECLARE_NAPI_FUNCTION("getNotBeforeTime", NapiGetNotBeforeTime),
