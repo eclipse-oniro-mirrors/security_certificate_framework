@@ -28,7 +28,7 @@ constexpr size_t ARGS_SIZE_FOUR = 4;
 constexpr int32_t PARAM0 = 0;
 constexpr int32_t PARAM1 = 1;
 constexpr int32_t PARAM2 = 2;
-constexpr uint32_t MAX_SN_BYTE_CNT = 100;
+constexpr uint32_t BYTE_TO_BIT_CNT = 8;
 constexpr uint32_t QUAD_WORD_ALIGN_UP = 3;
 
 const std::string CERT_TAG_DATA = "data";

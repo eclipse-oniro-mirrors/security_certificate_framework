@@ -51,6 +51,7 @@ napi_value ConvertEncodingBlobToNapiValue(napi_env env, CfEncodingBlob *encoding
 napi_value CertGenerateBusinessError(napi_env env, int32_t errCode, const char *errMsg);
 napi_value ConvertBlobToNapiValue(napi_env env, const CfBlob *blob);
 napi_value ConvertBlobToBigIntWords(napi_env env, const CfBlob &blob);
+napi_value ConvertBlobToInt64(napi_env env, const CfBlob &blob);
 }  // namespace CertFramework
 }  // namespace OHOS
 #endif
