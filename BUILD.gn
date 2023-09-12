@@ -29,8 +29,10 @@ group("certificate_framework_fuzztest") {
   deps = []
   if (os_level == "standard") {
     deps += [
-      "test/fuzztest/cfgetandcheck_fuzzer:fuzztest",
       "test/fuzztest/cfcreate_fuzzer:fuzztest",
+      "test/fuzztest/cfgetandcheck_fuzzer:fuzztest",
+      "test/fuzztest/v1.0/x509certificate_fuzzer:fuzztest",
+      "test/fuzztest/v1.0/x509crl_fuzzer:fuzztest",
     ]
   }
 }
