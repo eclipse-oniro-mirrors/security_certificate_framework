@@ -1,0 +1,75 @@
+# Copyright (c) 2023 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/test.gni")
+
+module_output_path = "certificate_framework/certificate_framework_test"
+
+ohos_unittest("cf_version1_test") {
+  testonly = true
+  module_out_path = module_output_path
+  configs = [
+    "../../../config/build:coverage_flag",
+    "../../../config/build:coverage_flag_cc",
+  ]
+
+  include_dirs = [
+    "./include",
+    "../../../interfaces/innerkits/certificate",
+    "../../../interfaces/innerkits/common",
+    "../../../interfaces/innerkits/include",
+    "../../../frameworks/common/v1.0/inc",
+    "../../../frameworks/core/v1.0/spi",
+    "../../../frameworks/adapter/v1.0/inc",
+    "//third_party/openssl/include/",
+  ]
+
+  sources = [
+    "src/crypto_x509_cert_chain_validator_test.cpp",
+    "src/crypto_x509_certificate_test.cpp",
+    "src/crypto_x509_crl_test.cpp",
+  ]
+
+  sources += [
+    "../../../frameworks/core/v1.0/certificate/cert_chain_validator.c",
+    "../../../frameworks/core/v1.0/certificate/x509_certificate.c",
+    "../../../frameworks/core/v1.0/certificate/x509_crl.c",
+  ]
+  sources += [
+    "../../../frameworks/adapter/v1.0/src/certificate_openssl_common.c",
+    "../../../frameworks/adapter/v1.0/src/x509_cert_chain_validator_openssl.c",
+    "../../../frameworks/adapter/v1.0/src/x509_certificate_openssl.c",
+    "../../../frameworks/adapter/v1.0/src/x509_crl_entry_openssl.c",
+    "../../../frameworks/adapter/v1.0/src/x509_crl_openssl.c",
+  ]
+
+  sources += [
+    "../../../frameworks/common/v1.0/src/cf_blob.c",
+    "../../../frameworks/common/v1.0/src/cf_log.c",
+    "../../../frameworks/common/v1.0/src/cf_object_base.c",
+    "../../../frameworks/common/v1.0/src/utils.c",
+    "src/memory_mock.c",
+  ]
+  cflags = [ "-DHILOG_ENABLE" ]
+  if (target_cpu == "arm") {
+    cflags += [ "-DBINDER_IPC_32BIT" ]
+  }
+
+  deps = [ "//third_party/openssl:libcrypto_shared" ]
+
+  external_deps = [
+    "c_utils:utils",
+    "crypto_framework:crypto_framework_lib",
+    "hilog:libhilog",
+  ]
+}

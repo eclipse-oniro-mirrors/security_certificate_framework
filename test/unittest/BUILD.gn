@@ -17,5 +17,6 @@ group("cf_test") {
     "cf_adapter_test:cf_adapter_test",
     "cf_core_test:cf_core_test",
     "cf_sdk_test:cf_sdk_test",
+    "v1.0:cf_version1_test",
   ]
 }
