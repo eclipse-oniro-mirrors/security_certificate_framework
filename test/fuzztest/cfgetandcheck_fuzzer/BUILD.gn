@@ -14,7 +14,7 @@
 #####################hydra-fuzz###################
 import("//build/config/features.gni")
 import("//build/test.gni")
-module_output_path = "certificate_framework/certificate"
+module_output_path = "certificate_framework/certificate_framework"
 
 ##############################fuzztest##########################################
 ohos_fuzztest("CfGetAndCheckFuzzTest") {
@@ -27,8 +27,7 @@ ohos_fuzztest("CfGetAndCheckFuzzTest") {
     "../../../frameworks/common/v1.0/inc",
     "../../../test/unittest/common/include",
   ]
-  configs =
-      [ "../../../config/build:coverage_flag_cc" ]
+  configs = [ "../../../config/build:coverage_flag_cc" ]
   cflags = [
     "-g",
     "-O0",
@@ -36,15 +35,14 @@ ohos_fuzztest("CfGetAndCheckFuzzTest") {
     "-fno-omit-frame-pointer",
   ]
   sources = [
-    "cfgetandcheck_fuzzer.cpp",
     "../../../test/unittest/common/src/cf_test_sdk_common.cpp",
+    "cfgetandcheck_fuzzer.cpp",
   ]
-  deps = [
-  ]
+  deps = []
 
   external_deps = [
-    "certificate_framework:certificate_framework_core",
     "c_utils:utils",
+    "certificate_framework:certificate_framework_core",
   ]
 }
 

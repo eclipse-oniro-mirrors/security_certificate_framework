@@ -14,7 +14,7 @@
 #####################hydra-fuzz###################
 import("//build/config/features.gni")
 import("//build/test.gni")
-module_output_path = "certificate_framework/certificate"
+module_output_path = "certificate_framework/certificate_framework"
 
 ##############################fuzztest##########################################
 ohos_fuzztest("CfCreateFuzzTest") {
