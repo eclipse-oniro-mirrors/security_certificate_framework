@@ -17,7 +17,7 @@
 
 #include <stddef.h>
 
-void CfObjDestroy(void *obj)
+__attribute__((no_sanitize("cfi"))) void CfObjDestroy(void *obj)
 {
     if (obj != NULL) {
         ((CfObjectBase *)obj)->destroy((CfObjectBase *)obj);
