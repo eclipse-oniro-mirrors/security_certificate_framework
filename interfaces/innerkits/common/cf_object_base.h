@@ -27,7 +27,7 @@ struct CfObjectBase {
 extern "C" {
 #endif
 
-void CfObjDestroy(void *obj);
+__attribute__((no_sanitize("cfi"))) void CfObjDestroy(void *obj);
 
 #ifdef __cplusplus
 }

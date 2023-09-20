@@ -19,6 +19,15 @@ config("libcertificate_framework_common_static_config") {
 }
 
 ohos_static_library("libcertificate_framework_common_static") {
+  stack_protector_ret = true
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    boundary_sanitize = true
+    debug = false
+    integer_overflow = true
+    ubsan = true
+  }
   subsystem_name = "security"
   part_name = "certificate_framework"
   public_configs = [ ":libcertificate_framework_common_static_config" ]
