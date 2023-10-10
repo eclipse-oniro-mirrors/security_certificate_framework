@@ -341,7 +341,7 @@ napi_value NapiX509Crl::GetEncoded(napi_env env, napi_callback_info info)
     }
 }
 
-napi_value NapiX509Crl::Verify(napi_env env, napi_callback_info info)
+__attribute__((no_sanitize("cfi"))) napi_value NapiX509Crl::Verify(napi_env env, napi_callback_info info)
 {
     size_t argc = ARGS_SIZE_TWO;
     napi_value argv[ARGS_SIZE_TWO] = { nullptr };
