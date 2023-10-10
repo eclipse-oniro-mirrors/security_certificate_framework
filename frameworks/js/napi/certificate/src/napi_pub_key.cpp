@@ -30,7 +30,7 @@ NapiPubKey::NapiPubKey(HcfPubKey *pubKey) : NapiKey(reinterpret_cast<HcfKey *>(p
 
 NapiPubKey::~NapiPubKey() {}
 
-HcfPubKey *NapiPubKey::GetPubKey()
+__attribute__((no_sanitize("cfi"))) HcfPubKey *NapiPubKey::GetPubKey()
 {
     return reinterpret_cast<HcfPubKey *>(NapiKey::GetHcfKey());
 }
