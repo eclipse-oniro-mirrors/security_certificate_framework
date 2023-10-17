@@ -58,7 +58,7 @@ static const OpensslErrorToResult ERROR_TO_RESULT_MAP[] = {
 
 static CfResult ConvertOpensslErrorMsg(int32_t errCode)
 {
-    for (uint32_t i = 0; i < sizeof(ERROR_TO_RESULT_MAP); i++) {
+    for (uint32_t i = 0; i < sizeof(ERROR_TO_RESULT_MAP) / sizeof(OpensslErrorToResult); i++) {
         if (ERROR_TO_RESULT_MAP[i].errCode == errCode) {
             return ERROR_TO_RESULT_MAP[i].result;
         }
