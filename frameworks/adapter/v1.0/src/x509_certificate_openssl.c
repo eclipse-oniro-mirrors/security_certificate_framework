@@ -299,7 +299,7 @@ static long GetVersionX509Openssl(HcfX509CertificateSpi *self)
 
 static CfResult GetSerialNumberX509Openssl(HcfX509CertificateSpi *self, CfBlob *out)
 {
-    if (self == NULL) {
+    if ((self == NULL) || (out == NULL)) {
         LOGE("The input data is null!");
         return CF_INVALID_PARAMS;
     }
@@ -876,6 +876,173 @@ static CfResult GetIssuerAltNamesX509Openssl(HcfX509CertificateSpi *self, CfArra
     return res;
 }
 
+static CfResult DeepCopyURIs(ASN1_STRING *uri, uint32_t index, CfArray *outURI)
+{
+    if (index >= outURI->count) { /* exceed the maximum memory capacity. */
+        LOGE("exceed the maximum memory capacity, uriCount = %u, malloc count = %u", index, outURI->count);
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    const char *str = (const char *)ASN1_STRING_get0_data(uri);
+    if ((str == NULL) || (strlen(str) > HCF_MAX_STR_LEN)) {
+        LOGE("Failed to get CRL DP URI string in openssl!");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    uint32_t uriLen = strlen(str) + 1;
+    outURI->data[index].data = (uint8_t *)HcfMalloc(uriLen, 0);
+    if (outURI->data[index].data == NULL) {
+        LOGE("Failed to malloc for outURI[%u]!", index);
+        return CF_ERR_MALLOC;
+    }
+    (void)memcpy_s(outURI->data[index].data, uriLen, str, uriLen);
+    outURI->data[index].size = uriLen;
+    return CF_SUCCESS;
+}
+
+static CfResult GetDpURIFromGenName(GENERAL_NAME *genName, bool isFormatOutURI, uint32_t *uriCount, CfArray *outURI)
+{
+    int type = 0;
+    ASN1_STRING *uri = GENERAL_NAME_get0_value(genName, &type);
+    if (uri == NULL) {
+        LOGE("get uri asn1 string failed");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    if (type != GEN_URI) {
+        LOGI("not URI type, type is %d", type);
+        return CF_SUCCESS;
+    }
+
+    if (isFormatOutURI) {
+        CfResult ret = DeepCopyURIs(uri, *uriCount, outURI);
+        if (ret != CF_SUCCESS) {
+            LOGE("copy URI[%u] failed", *uriCount);
+            return ret;
+        }
+    }
+    *uriCount += 1;
+    return CF_SUCCESS;
+}
+
+static CfResult GetDpURIFromGenNames(GENERAL_NAMES *genNames, bool isFormatOutURI, uint32_t *uriCount,
+    CfArray *outURI)
+{
+    CfResult ret = CF_SUCCESS;
+    int genNameNum = sk_GENERAL_NAME_num(genNames);
+    for (int i = 0; i < genNameNum; ++i) {
+        GENERAL_NAME *genName = sk_GENERAL_NAME_value(genNames, i);
+        if (genName == NULL) {
+            LOGE("get gen name failed!");
+            ret = CF_ERR_CRYPTO_OPERATION;
+            break;
+        }
+
+        ret = GetDpURIFromGenName(genName, isFormatOutURI, uriCount, outURI);
+        if (ret != CF_SUCCESS) {
+            LOGE("get gen name failed!");
+            break;
+        }
+    }
+    return ret;
+}
+
+static CfResult GetDpURI(STACK_OF(DIST_POINT) *crlDp, int32_t dpNumber, bool isFormatOutURI,
+    uint32_t *uriCount, CfArray *outURI)
+{
+    CfResult ret = CF_SUCCESS;
+    for (int i = 0; i < dpNumber; ++i) {
+        DIST_POINT *dp = sk_DIST_POINT_value(crlDp, i);
+        if (dp == NULL) {
+            LOGE("get distribution point failed!");
+            ret = CF_ERR_CRYPTO_OPERATION;
+            break;
+        }
+
+        if (dp->distpoint == NULL || dp->distpoint->type != 0) {
+            LOGI("not fullnames, continue!");
+            continue;
+        }
+
+        ret = GetDpURIFromGenNames(dp->distpoint->name.fullname, isFormatOutURI, uriCount, outURI);
+        if (ret != CF_SUCCESS) {
+            LOGE("get dp uri from general names failed");
+            break;
+        }
+    }
+    if (ret == CF_SUCCESS && isFormatOutURI) {
+        outURI->count = *uriCount;
+    }
+    return ret;
+}
+
+static CfResult GetCRLDpURI(STACK_OF(DIST_POINT) *crlDp, CfArray *outURI)
+{
+    /* 1. get CRL distribution point URI count */
+    int32_t dpNumber = sk_DIST_POINT_num(crlDp);
+    uint32_t uriCount = 0;
+    CfResult ret = GetDpURI(crlDp, dpNumber, false, &uriCount, outURI);
+    if (ret != CF_SUCCESS) {
+        LOGE("get dp URI count failed, ret = %d", ret);
+        return ret;
+    }
+    if (uriCount == 0) {
+        LOGE("CRL DP URI not exist");
+        return CF_NOT_EXIST;
+    }
+    if (uriCount > CF_MAX_URI_COUNT) {
+        LOGE("uriCount[%u] exceed max count", uriCount);
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    LOGI("get uriCount success, uriCount = %u", uriCount);
+
+    /* 2. malloc outArray buffer */
+    int32_t blobSize = sizeof(CfBlob) * uriCount;
+    outURI->data = (CfBlob *)HcfMalloc(blobSize, 0);
+    if (outURI->data == NULL) {
+        LOGE("Failed to malloc for outURI array!");
+        return CF_ERR_MALLOC;
+    }
+    outURI->count = uriCount;
+
+    /* 2. copy CRL distribution point URIs */
+    uriCount = 0;
+    ret = GetDpURI(crlDp, dpNumber, true, &uriCount, outURI);
+    if (ret != CF_SUCCESS) {
+        LOGE("get dp URI format failed, ret = %d", ret);
+        CfArrayDataClearAndFree(outURI);
+        return ret;
+    }
+
+    LOGI("get CRL dp URI success, count = %u", outURI->count);
+    return ret;
+}
+
+static CfResult GetCRLDistributionPointsURIX509Openssl(HcfX509CertificateSpi *self, CfArray *outURI)
+{
+    if ((self == NULL) || (outURI == NULL)) {
+        LOGE("[GetCRLDistributionPointsURI openssl] The input data is null!");
+        return CF_INVALID_PARAMS;
+    }
+    if (!IsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
+        LOGE("[GetCRLDistributionPointsURI openssl] Input wrong class type!");
+        return CF_INVALID_PARAMS;
+    }
+
+    HcfOpensslX509Cert *realCert = (HcfOpensslX509Cert *)self;
+    X509 *x509 = realCert->x509;
+    STACK_OF(DIST_POINT) *crlDp = X509_get_ext_d2i(x509, NID_crl_distribution_points, NULL, NULL);
+    if (crlDp == NULL) {
+        LOGE("Failed to get crl distribution point in openssl!");
+        CfPrintOpensslError();
+        return CF_NOT_EXIST;
+    }
+
+    CfResult ret = GetCRLDpURI(crlDp, outURI);
+    sk_DIST_POINT_pop_free(crlDp, DIST_POINT_free);
+    return ret;
+}
+
 static X509 *CreateX509CertInner(const CfEncodingBlob *encodingBlob)
 {
     X509 *x509 = NULL;
@@ -932,6 +1099,8 @@ CfResult OpensslX509CertSpiCreate(const CfEncodingBlob *inStream, HcfX509Certifi
     realCert->base.engineGetBasicConstraints = GetBasicConstraintsX509Openssl;
     realCert->base.engineGetSubjectAltNames = GetSubjectAltNamesX509Openssl;
     realCert->base.engineGetIssuerAltNames = GetIssuerAltNamesX509Openssl;
+    realCert->base.engineGetCRLDistributionPointsURI = GetCRLDistributionPointsURIX509Openssl;
+
     *spi = (HcfX509CertificateSpi *)realCert;
     return CF_SUCCESS;
 }

@@ -240,6 +240,7 @@ static char g_testSelfSignedCaCert[] =
 constexpr int TEST_CERT_VERSION = 3;
 constexpr int TEST_CERT_CHAIN_LEN = 2;
 constexpr int TEST_CERT_SERIAL_NUMBER = 272;
+constexpr uint32_t HCF_MAX_BUFFER_LEN = 8192;
 
 static HcfX509Certificate *g_x509CertObj = nullptr;
 
@@ -817,6 +818,40 @@ HWTEST_F(CryptoX509CertificateTest, NullInput, TestSize.Level0)
     CfObjDestroy(keyOut);
 }
 
+HWTEST_F(CryptoX509CertificateTest, NullInput002, TestSize.Level0)
+{
+    CfEncodingBlob inStream = { nullptr, 0, CF_FORMAT_PEM };
+    HcfX509Certificate *x509Cert = nullptr;
+    (void)HcfX509CertificateCreate(&inStream, &x509Cert); /* inStream.data is nullptr */
+
+    inStream.data = reinterpret_cast<uint8_t *>(g_testSelfSignedCaCert);
+    inStream.len = HCF_MAX_BUFFER_LEN + 1;
+    (void)HcfX509CertificateCreate(&inStream, &x509Cert); /* inStream.len is bigger than HCF_MAX_BUFFER_LEN */
+
+    inStream.len = strlen(g_testSelfSignedCaCert) + 1;
+    (void)HcfX509CertificateCreate(&inStream, nullptr); /* inStream is valid */
+
+    CfResult ret = HcfX509CertificateCreate(&inStream, &x509Cert);
+    ASSERT_EQ(ret, CF_SUCCESS);
+
+    (void)x509Cert->base.getPublicKey(reinterpret_cast<HcfCertificate *>(x509Cert), nullptr);
+    (void)x509Cert->checkValidityWithDate(x509Cert, nullptr);
+    (void)x509Cert->getSerialNumber(x509Cert, nullptr);
+    (void)x509Cert->getIssuerName(x509Cert, nullptr);
+    (void)x509Cert->getSubjectName(x509Cert, nullptr);
+    (void)x509Cert->getNotBeforeTime(x509Cert, nullptr);
+    (void)x509Cert->getNotAfterTime(x509Cert, nullptr);
+    (void)x509Cert->getSignature(x509Cert, nullptr);
+    (void)x509Cert->getSignatureAlgName(x509Cert, nullptr);
+    (void)x509Cert->getSignatureAlgOid(x509Cert, nullptr);
+    (void)x509Cert->getSignatureAlgParams(x509Cert, nullptr);
+    (void)x509Cert->getKeyUsage(x509Cert, nullptr);
+    (void)x509Cert->getExtKeyUsage(x509Cert, nullptr);
+    (void)x509Cert->getSubjectAltNames(x509Cert, nullptr);
+    (void)x509Cert->getIssuerAltNames(x509Cert, nullptr);
+    CfObjDestroy(x509Cert);
+}
+
 HWTEST_F(CryptoX509CertificateTest, NullSpiInput, TestSize.Level0)
 {
     HcfX509CertificateSpi *spiObj = nullptr;
@@ -854,6 +889,39 @@ HWTEST_F(CryptoX509CertificateTest, NullSpiInput, TestSize.Level0)
     ret = spiObj->engineGetSubjectAltNames(nullptr, nullptr);
     EXPECT_NE(ret, CF_SUCCESS);
     ret = spiObj->engineGetIssuerAltNames(nullptr, nullptr);
+    EXPECT_NE(ret, CF_SUCCESS);
+    CfObjDestroy(spiObj);
+}
+
+HWTEST_F(CryptoX509CertificateTest, NullSpiInput002, TestSize.Level0)
+{
+    HcfX509CertificateSpi *spiObj = nullptr;
+    CfEncodingBlob inStream = { nullptr, 0, CF_FORMAT_PEM };
+    (void)OpensslX509CertSpiCreate(&inStream, &spiObj);
+
+    inStream.data = reinterpret_cast<uint8_t *>(g_testSelfSignedCaCert);
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testSelfSignedCaCert) + 1;
+    (void)OpensslX509CertSpiCreate(&inStream, nullptr);
+    CfResult ret = OpensslX509CertSpiCreate(&inStream, &spiObj);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ret = spiObj->engineVerify(spiObj, nullptr);
+    ret = spiObj->engineGetEncoded(spiObj, nullptr);
+    ret = spiObj->engineGetPublicKey(spiObj, nullptr);
+    ret = spiObj->engineCheckValidityWithDate(spiObj, nullptr);
+    ret = spiObj->engineGetSerialNumber(spiObj, nullptr);
+    ret = spiObj->engineGetIssuerName(spiObj, nullptr);
+    ret = spiObj->engineGetSubjectName(spiObj, nullptr);
+    ret = spiObj->engineGetNotBeforeTime(spiObj, nullptr);
+    ret = spiObj->engineGetNotAfterTime(spiObj, nullptr);
+    ret = spiObj->engineGetSignature(spiObj, nullptr);
+    ret = spiObj->engineGetSignatureAlgName(spiObj, nullptr);
+    ret = spiObj->engineGetSignatureAlgOid(spiObj, nullptr);
+    ret = spiObj->engineGetSignatureAlgParams(spiObj, nullptr);
+    ret = spiObj->engineGetKeyUsage(spiObj, nullptr);
+    ret = spiObj->engineGetExtKeyUsage(spiObj, nullptr);
+    ret = spiObj->engineGetSubjectAltNames(spiObj, nullptr);
+    ret = spiObj->engineGetIssuerAltNames(spiObj, nullptr);
     EXPECT_NE(ret, CF_SUCCESS);
     CfObjDestroy(spiObj);
 }

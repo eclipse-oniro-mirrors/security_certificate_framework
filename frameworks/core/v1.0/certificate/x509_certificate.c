@@ -340,6 +340,20 @@ static CfResult GetIssuerAltNames(HcfX509Certificate *self, CfArray *outName)
         ((HcfX509CertificateImpl *)self)->spiObj, outName);
 }
 
+static CfResult GetCRLDistributionPointsURI(HcfX509Certificate *self, CfArray *outURI)
+{
+    if ((self == NULL) || (outURI == NULL)) {
+        LOGE("crl dp invalid input parameter.");
+        return CF_INVALID_PARAMS;
+    }
+    if (!IsClassMatch((CfObjectBase *)self, GetX509CertificateClass())) {
+        LOGE("crl dp class is not match.");
+        return CF_INVALID_PARAMS;
+    }
+    return ((HcfX509CertificateImpl *)self)->spiObj->engineGetCRLDistributionPointsURI(
+        ((HcfX509CertificateImpl *)self)->spiObj, outURI);
+}
+
 CfResult HcfX509CertificateCreate(const CfEncodingBlob *inStream, HcfX509Certificate **returnObj)
 {
     CF_LOG_I("enter");
@@ -382,6 +396,7 @@ CfResult HcfX509CertificateCreate(const CfEncodingBlob *inStream, HcfX509Certifi
     x509CertImpl->base.getBasicConstraints = GetBasicConstraints;
     x509CertImpl->base.getSubjectAltNames = GetSubjectAltNames;
     x509CertImpl->base.getIssuerAltNames = GetIssuerAltNames;
+    x509CertImpl->base.getCRLDistributionPointsURI = GetCRLDistributionPointsURI;
 
     x509CertImpl->spiObj = spiObj;
     *returnObj = (HcfX509Certificate *)x509CertImpl;

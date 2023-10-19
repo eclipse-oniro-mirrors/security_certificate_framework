@@ -63,6 +63,8 @@ struct HcfX509CertificateSpi {
     CfResult (*engineGetSubjectAltNames)(HcfX509CertificateSpi *self, CfArray *outName);
 
     CfResult (*engineGetIssuerAltNames)(HcfX509CertificateSpi *self, CfArray *outName);
+
+    CfResult (*engineGetCRLDistributionPointsURI)(HcfX509CertificateSpi *self, CfArray *outURI);
 };
 
 #endif // CF_X509_CERTIFICATE_SPI_H

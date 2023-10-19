@@ -376,6 +376,13 @@ HWTEST_F(CryptoX509CertChainValidatorTest, GetAlgorithm002, TestSize.Level0)
     CfResult res = HcfCertChainValidatorCreate("invalidPKIX", &pathValidator);
     EXPECT_EQ(res, CF_NOT_SUPPORT);
     EXPECT_EQ(pathValidator, nullptr);
+
+    char inputAlg[1025] = {0}; /* 1025: size bigger than max */
+    for (uint32_t i = 0; i < sizeof(inputAlg); ++i) {
+        inputAlg[i] = 'c';
+    }
+    res = HcfCertChainValidatorCreate(inputAlg, &pathValidator);
+    EXPECT_NE(res, CF_SUCCESS);
 }
 
 /* valid cert chain. */
@@ -607,6 +614,8 @@ HWTEST_F(CryptoX509CertChainValidatorTest, NullInput, TestSize.Level0)
 {
     CfResult res = HcfCertChainValidatorCreate("PKIX", nullptr);
     EXPECT_NE(res, CF_SUCCESS);
+    res = g_validator->validate(nullptr, nullptr);
+    EXPECT_NE(res, CF_SUCCESS);
     res = g_validator->validate(g_validator, nullptr);
     EXPECT_NE(res, CF_SUCCESS);
     const char *algo = g_validator->getAlgorithm(nullptr);
@@ -635,19 +644,26 @@ HWTEST_F(CryptoX509CertChainValidatorTest, NullSpiInput, TestSize.Level0)
     EXPECT_EQ(res, CF_SUCCESS);
     res = spiObj->engineValidate(spiObj, nullptr);
     EXPECT_NE(res, CF_SUCCESS);
+    CfArray data = { 0 };
+    res = spiObj->engineValidate(nullptr, &data);
+    EXPECT_NE(res, CF_SUCCESS);
     (void)spiObj->base.destroy(nullptr);
+    CfObjDestroy(spiObj);
 }
 
 HWTEST_F(CryptoX509CertChainValidatorTest, InvalidSpiClass, TestSize.Level0)
 {
     HcfCertChainValidatorSpi *spiObj = nullptr;
     CfResult res = HcfCertChainValidatorSpiCreate(&spiObj);
+    EXPECT_EQ(res, CF_SUCCESS);
     HcfCertChainValidatorSpi invalidSpi;
     invalidSpi.base.getClass = GetInvalidValidatorClass;
     CfArray data = { 0 };
+    data.count = 2; /* 2: count is valid */
     res = spiObj->engineValidate(&invalidSpi, &data);
     EXPECT_NE(res, CF_SUCCESS);
     (void)spiObj->base.destroy(&(invalidSpi.base));
+    CfObjDestroy(spiObj);
 }
 
 HWTEST_F(CryptoX509CertChainValidatorTest, InvalidMalloc, TestSize.Level0)
@@ -661,5 +677,20 @@ HWTEST_F(CryptoX509CertChainValidatorTest, InvalidMalloc, TestSize.Level0)
     res = g_validator->validate(g_validator, &certsData);
     EXPECT_NE(res, CF_SUCCESS);
     SetMockFlag(false);
+}
+
+HWTEST_F(CryptoX509CertChainValidatorTest, InvalidSpiMalloc, TestSize.Level0)
+{
+    HcfCertChainValidatorSpi *spiObj = nullptr;
+    CfResult res = HcfCertChainValidatorSpiCreate(&spiObj);
+    EXPECT_EQ(res, CF_SUCCESS);
+
+    SetMockFlag(true);
+    CfArray data = { nullptr, CF_FORMAT_PEM, 2 }; /* 2: count is valid */
+    res = spiObj->engineValidate(spiObj, &data);
+    EXPECT_NE(res, CF_SUCCESS);
+    SetMockFlag(false);
+
+    CfObjDestroy(spiObj);
 }
 }
