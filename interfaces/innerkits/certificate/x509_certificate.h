@@ -83,6 +83,9 @@ struct HcfX509Certificate {
 
     /** Get issuer alternative name from certificate. */
     CfResult (*getIssuerAltNames)(HcfX509Certificate *self, CfArray *outName);
+
+    /** Get CRL distribution points URI from certificate. */
+    CfResult (*getCRLDistributionPointsURI)(HcfX509Certificate *self, CfArray *outURI);
 };
 
 #ifdef __cplusplus

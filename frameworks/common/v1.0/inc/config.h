@@ -24,5 +24,6 @@
 #define MAX_SN_BYTE_CNT 20 // the maximum number of bytes of the serial number
 #define INVALID_VERSION (-1)
 #define INVALID_CONSTRAINTS_LEN (-1)
+#define CF_MAX_URI_COUNT 100
 
 #endif

@@ -1343,9 +1343,15 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest204, TestSize.Level0)
 
 HWTEST_F(CryptoX509CrlTest, NullSpi, TestSize.Level0)
 {
-    (void)HcfCX509CrlSpiCreate(nullptr, nullptr);
-    (void)HcfCX509CRLEntryCreate(nullptr, nullptr, nullptr);
     HcfX509CrlSpi *spiObj = nullptr;
+    SetMockFlag(true);
+    (void)HcfCX509CrlSpiCreate(&g_crlDerInStream, &spiObj);
+    SetMockFlag(false);
+    (void)HcfCX509CrlSpiCreate(nullptr, &spiObj);
+    CfEncodingBlob blob = { nullptr, 0, CF_FORMAT_DER };
+    (void)HcfCX509CrlSpiCreate(&blob, &spiObj);
+    (void)HcfCX509CrlSpiCreate(&g_crlDerInStream, nullptr);
+
     CfResult ret = HcfCX509CrlSpiCreate(&g_crlDerInStream, &spiObj);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(spiObj, nullptr);
@@ -1521,5 +1527,30 @@ HWTEST_F(CryptoX509CrlTest, InvalidMalloc, TestSize.Level0)
     ret = g_x509Crl->getSignatureAlgParams(g_x509Crl, &out);
     EXPECT_NE(ret, CF_SUCCESS);
     SetMockFlag(false);
+}
+
+HWTEST_F(CryptoX509CrlTest, HcfCX509CRLEntryCreateInvalid, TestSize.Level0)
+{
+    SetMockFlag(true);
+    X509_REVOKED *rev = X509_REVOKED_new();
+    HcfX509CrlEntry *crlEntryOut = nullptr;
+    CfBlob certIssuer;
+    CfResult ret = HcfCX509CRLEntryCreate(rev, &crlEntryOut, &certIssuer);
+    EXPECT_NE(ret, CF_SUCCESS);
+    SetMockFlag(false);
+
+    ret = HcfCX509CRLEntryCreate(nullptr, &crlEntryOut, &certIssuer);
+    EXPECT_NE(ret, CF_SUCCESS);
+
+    ret = HcfCX509CRLEntryCreate(rev, nullptr, &certIssuer);
+    EXPECT_NE(ret, CF_SUCCESS);
+
+    ret = HcfCX509CRLEntryCreate(rev, &crlEntryOut, nullptr);
+    EXPECT_NE(ret, CF_SUCCESS);
+
+    ret = HcfCX509CRLEntryCreate(rev, &crlEntryOut, &certIssuer);
+    EXPECT_NE(ret, CF_SUCCESS);
+
+    X509_REVOKED_free(rev);
 }
 }
