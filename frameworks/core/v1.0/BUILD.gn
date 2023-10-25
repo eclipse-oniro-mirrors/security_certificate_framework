@@ -14,7 +14,7 @@
 import("//build/ohos.gni")
 
 ohos_static_library("libcertificate_framework_vesion1") {
-  stack_protector_ret = true
+  branch_protector_ret = "pac_ret"
   sanitize = {
     cfi = true
     cfi_cross_dso = true

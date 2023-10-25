@@ -18,7 +18,7 @@ config("libcertificate_framework_ability_config") {
 }
 
 ohos_static_library("libcertificate_framework_ability") {
-  stack_protector_ret = true
+  branch_protector_ret = "pac_ret"
   sanitize = {
     cfi = true
     cfi_cross_dso = true
