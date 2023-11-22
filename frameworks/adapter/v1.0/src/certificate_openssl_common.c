@@ -15,11 +15,15 @@
 
 #include "certificate_openssl_common.h"
 
+#include <securec.h>
 #include <string.h>
-#include <openssl/err.h>
-#include "config.h"
+
 #include "cf_log.h"
+#include "cf_memory.h"
 #include "cf_result.h"
+#include "config.h"
+
+#include <openssl/err.h>
 
 typedef struct {
     char *oid;
@@ -70,4 +74,42 @@ void CfPrintOpensslError(void)
     ERR_error_string_n(errCode, szErr, LOG_PRINT_MAX_LEN);
 
     LOGE("[Openssl]: engine fail, error code = %lu, error string = %s", errCode, szErr);
+}
+
+CfResult DeepCopyDataToBlob(const unsigned char *data, uint32_t len, CfBlob *outBlob)
+{
+    uint8_t *tmp = (uint8_t *)CfMalloc(len);
+    if (tmp == NULL) {
+        CF_LOG_E("Failed to malloc");
+        return CF_ERR_MALLOC;
+    }
+    (void)memcpy_s(tmp, len, data, len);
+
+    outBlob->data = tmp;
+    outBlob->size = len;
+    return CF_SUCCESS;
+}
+
+CfResult CopyExtensionsToBlob(const X509_EXTENSIONS *exts, CfBlob *outBlob)
+{
+    if (exts == NULL) { /* if not exist extension, return success */
+        LOGD("No extension!");
+        return CF_SUCCESS;
+    }
+
+    if (sk_X509_EXTENSION_num(exts) <= 0) {
+        LOGD("exts number is smaller than 0");
+        return CF_SUCCESS;
+    }
+
+    unsigned char *extbytes = NULL;
+    int32_t extLen = i2d_X509_EXTENSIONS(exts, &extbytes);
+    if (extLen <= 0 || extbytes == NULL) {
+        CF_LOG_E("get extLen failed!");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    CfResult ret = DeepCopyDataToBlob(extbytes, (uint32_t)extLen, outBlob);
+    OPENSSL_free(extbytes);
+    return ret;
 }

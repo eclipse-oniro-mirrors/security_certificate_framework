@@ -17,9 +17,9 @@
 
 #include "securec.h"
 
-#include "config.h"
 #include "cf_log.h"
 #include "cf_memory.h"
+#include "config.h"
 #include "utils.h"
 #include "x509_crl.h"
 #include "x509_crl_openssl.h"
@@ -196,9 +196,9 @@ static CfResult GetNextUpdate(HcfX509Crl *self, CfBlob *out)
         ((HcfX509CrlImpl *)self)->spiObj, out);
 }
 
-static CfResult GetRevokedCert(HcfX509Crl *self, long serialNumber, HcfX509CrlEntry **entryOut)
+static CfResult GetRevokedCert(HcfX509Crl *self, const CfBlob *serialNumber, HcfX509CrlEntry **entryOut)
 {
-    if (self == NULL || entryOut == NULL) {
+    if (self == NULL || serialNumber == NULL || entryOut == NULL) {
         LOGE("Invalid input parameter.");
         return CF_INVALID_PARAMS;
     }
@@ -308,6 +308,20 @@ static CfResult GetSignatureAlgParams(HcfX509Crl *self, CfBlob *sigAlgParamOut)
         ((HcfX509CrlImpl *)self)->spiObj, sigAlgParamOut);
 }
 
+static CfResult GetExtensions(HcfX509Crl *self, CfBlob *outBlob)
+{
+    if ((self == NULL) || (outBlob == NULL)) {
+        LOGE("Invalid input parameter.");
+        return CF_INVALID_PARAMS;
+    }
+    if (!IsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
+        LOGE("Class is not match.");
+        return CF_INVALID_PARAMS;
+    }
+    return ((HcfX509CrlImpl *)self)->spiObj->engineGetExtensions(
+        ((HcfX509CrlImpl *)self)->spiObj, outBlob);
+}
+
 CfResult HcfX509CrlCreate(const CfEncodingBlob *inStream, HcfX509Crl **returnObj)
 {
     CF_LOG_I("enter");
@@ -348,6 +362,7 @@ CfResult HcfX509CrlCreate(const CfEncodingBlob *inStream, HcfX509Crl **returnObj
     x509CertImpl->base.getSignatureAlgName = GetSignatureAlgName;
     x509CertImpl->base.getSignatureAlgOid = GetSignatureAlgOid;
     x509CertImpl->base.getSignatureAlgParams = GetSignatureAlgParams;
+    x509CertImpl->base.getExtensions = GetExtensions;
     x509CertImpl->spiObj = spiObj;
     *returnObj = (HcfX509Crl *)x509CertImpl;
     return CF_SUCCESS;

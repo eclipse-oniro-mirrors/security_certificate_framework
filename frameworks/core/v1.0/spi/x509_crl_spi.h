@@ -18,8 +18,8 @@
 
 #include "cf_blob.h"
 #include "cf_object_base.h"
-#include "pub_key.h"
 #include "cf_result.h"
+#include "pub_key.h"
 #include "x509_certificate.h"
 #include "x509_crl_entry.h"
 
@@ -44,7 +44,7 @@ struct HcfX509CrlSpi {
 
     CfResult (*engineGetNextUpdate)(HcfX509CrlSpi *self, CfBlob *out);
 
-    CfResult (*engineGetRevokedCert)(HcfX509CrlSpi *self, long serialNumber, HcfX509CrlEntry **entryOut);
+    CfResult (*engineGetRevokedCert)(HcfX509CrlSpi *self, const CfBlob *serialNumber, HcfX509CrlEntry **entryOut);
 
     CfResult (*engineGetRevokedCertWithCert)(HcfX509CrlSpi *self, HcfX509Certificate *cert,
         HcfX509CrlEntry **entryOut);
@@ -60,6 +60,8 @@ struct HcfX509CrlSpi {
     CfResult (*engineGetSignatureAlgOid)(HcfX509CrlSpi *self, CfBlob *out);
 
     CfResult (*engineGetSignatureAlgParams)(HcfX509CrlSpi *self, CfBlob *sigAlgParamOut);
+
+    CfResult (*engineGetExtensions)(HcfX509CrlSpi *self, CfBlob *out);
 };
 
 #endif // CF_X509_CRL_SPI_H

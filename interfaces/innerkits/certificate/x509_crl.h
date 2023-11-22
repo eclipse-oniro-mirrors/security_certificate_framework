@@ -47,7 +47,7 @@ struct HcfX509Crl {
     CfResult (*getNextUpdate)(HcfX509Crl *self, CfBlob *out);
 
     /** This method can be used to find CRL entries in indirect CRLs. */
-    CfResult (*getRevokedCert)(HcfX509Crl *self, long serialNumber, HcfX509CrlEntry **entryOut);
+    CfResult (*getRevokedCert)(HcfX509Crl *self, const CfBlob *serialNumber, HcfX509CrlEntry **entryOut);
 
     /** This method can be used to find CRL entries in indirect cert. */
     CfResult (*getRevokedCertWithCert)(HcfX509Crl *self, HcfX509Certificate *cert,
@@ -70,6 +70,9 @@ struct HcfX509Crl {
 
     /** Get the der encoded signature algorithm parameters from the CRL signature algorithm. */
     CfResult (*getSignatureAlgParams)(HcfX509Crl *self, CfBlob *sigAlgParamOut);
+
+    /** Get all the extensions in CRL. */
+    CfResult (*getExtensions)(HcfX509Crl *self, CfBlob *out);
 };
 
 #ifdef __cplusplus

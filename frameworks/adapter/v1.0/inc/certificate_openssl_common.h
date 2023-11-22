@@ -18,7 +18,12 @@
 
 #include <stdint.h>
 
-#define CF_OPENSSL_SUCCESS 1     /* openssl return 1: success */
+#include "cf_blob.h"
+#include "cf_result.h"
+
+#include <openssl/x509.h>
+
+#define CF_OPENSSL_SUCCESS 1 /* openssl return 1: success */
 
 #ifdef __cplusplus
 extern "C" {
@@ -26,7 +31,8 @@ extern "C" {
 
 const char *GetAlgorithmName(const char *oid);
 void CfPrintOpensslError(void);
-
+CfResult DeepCopyDataToBlob(const unsigned char *data, uint32_t len, CfBlob *outBlob);
+CfResult CopyExtensionsToBlob(const X509_EXTENSIONS *ext, CfBlob *outBlob);
 #ifdef __cplusplus
 }
 #endif

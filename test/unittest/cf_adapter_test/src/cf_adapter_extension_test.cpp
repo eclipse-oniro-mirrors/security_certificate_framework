@@ -1192,4 +1192,116 @@ HWTEST_F(CfAdapterExtensionTest, OpensslGetExtensionItemTest007, TestSize.Level0
 
     CfOpensslDestoryExtension(&obj007);
 }
+
+/**
+ * @tc.name: OpensslHasUnsupportedCriticalExtensionTest001
+ * @tc.desc: Test CertFramework adapter extension object has unsupported critical extension interface Abnormal function
+ * @tc.type: FUNC
+ * @tc.require: AR000HS2SC /SR000HS2SB
+ */
+HWTEST_F(CfAdapterExtensionTest, OpensslHasUnsupportedCriticalExtensionTest001, TestSize.Level0)
+{
+    CfBase *obj001 = nullptr;
+    int32_t ret = CfOpensslCreateExtension(&g_extension[1], &obj001);
+    bool bRet = false;
+    EXPECT_EQ(ret, CF_SUCCESS) << "Normal adapter create extension object test failed, retcode:" << ret;
+
+    ret = CfOpensslHasUnsupportedCriticalExtension(nullptr, &bRet);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS) <<
+        "Abnormal adapter extension object has unsupported critical extension test failed, recode:" << ret;
+
+    CfOpensslDestoryExtension(&obj001);
+}
+
+/**
+ * @tc.name: OpensslHasUnsupportedCriticalExtensionTest002
+ * @tc.desc: Test CertFramework adapter extension object has unsupported critical extension interface Abnormal function
+ * @tc.type: FUNC
+ * @tc.require: AR000HS2SC /SR000HS2SB
+ */
+HWTEST_F(CfAdapterExtensionTest, OpensslHasUnsupportedCriticalExtensionTest002, TestSize.Level0)
+{
+    CfBase *obj002 = nullptr;
+    int32_t ret = CfOpensslCreateExtension(&g_extension[2], &obj002);
+    bool bRet = false;
+    EXPECT_EQ(ret, CF_SUCCESS) << "Normal adapter create extension object test failed, rectode:" << ret;
+
+    CfOpensslExtensionObj *extsObj = (CfOpensslExtensionObj *)obj002;
+    X509_EXTENSIONS *exts = extsObj->exts;
+
+    uint8_t data[] = "test";
+    ASN1_BIT_STRING bitStr = { strlen(reinterpret_cast<char *>(data)), V_ASN1_BIT_STRING, data, 0 };
+    X509_EXTENSION *NetscapeCommentExt = X509V3_EXT_i2d(NID_netscape_comment, 1, reinterpret_cast<void *>(&bitStr));
+
+    (void)sk_X509_EXTENSION_push(exts, NetscapeCommentExt);
+
+    ret = CfOpensslHasUnsupportedCriticalExtension(obj002, &bRet);
+    EXPECT_EQ(ret, CF_SUCCESS) <<
+        "Abnormal adapter extension object has unsupported critical extension test failed, retcode:" << ret;
+    EXPECT_EQ(bRet, true);
+
+    (void)sk_X509_EXTENSION_pop(exts);
+    X509_EXTENSION_free(NetscapeCommentExt);
+    CfOpensslDestoryExtension(&obj002);
+}
+
+/**
+ * @tc.name: OpensslHasUnsupportedCriticalExtensionTest003
+ * @tc.desc: Test CertFramework adapter extension object has unsupported critical extension interface Abnormal function
+ * @tc.type: FUNC
+ * @tc.require: AR000HS2SC /SR000HS2SB
+ */
+HWTEST_F(CfAdapterExtensionTest, OpensslHasUnsupportedCriticalExtensionTest003, TestSize.Level0)
+{
+    CfBase *obj003 = nullptr;
+    int32_t ret = CfOpensslCreateExtension(&g_extension[1], &obj003);
+    bool bRet = false;
+    EXPECT_EQ(ret, CF_SUCCESS) << "Normal adapter create extension object test failed, retcode:" << ret;
+
+    CfOpensslExtensionObj *extsObj = (CfOpensslExtensionObj *)obj003;
+    X509_EXTENSIONS *exts = extsObj->exts;
+    extsObj->exts = nullptr; /* exts is null */
+
+    ret = CfOpensslHasUnsupportedCriticalExtension(obj003, &bRet);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS) <<
+        "Abnormal adapter extension object has unsupported critical extension test failed, retcode:" << ret;
+    EXPECT_EQ(bRet, false);
+
+    extsObj->exts = exts;
+    CfOpensslDestoryExtension(&obj003);
+}
+
+/**
+ * @tc.name: OpensslHasUnsupportedCriticalExtensionTest004
+ * @tc.desc: Test CertFramework adapter extension object has unsupported critical extension,
+ * While the extension number is more than MAX_COUNT_OID.
+ * @tc.type: FUNC
+ * @tc.require: AR000HS2SC /SR000HS2SB
+ */
+HWTEST_F(CfAdapterExtensionTest, OpensslHasUnsupportedCriticalExtensionTest004, TestSize.Level0)
+{
+    CfBase *obj004 = nullptr;
+    int32_t ret = CfOpensslCreateExtension(&g_extension[2], &obj004);
+    bool bRet = false;
+    EXPECT_EQ(ret, CF_SUCCESS) << "Normal adapter create extension object test failed, rectode:" << ret;
+
+    CfOpensslExtensionObj *extsObj = (CfOpensslExtensionObj *)obj004;
+    X509_EXTENSIONS *exts = extsObj->exts;
+
+    for (int index = 0; index < MAX_COUNT_OID + 1; index++) {
+        uint8_t data[8] = {0};
+        snprintf((char *)data, 5, "test%03d", index);
+        ASN1_BIT_STRING bitStr = { strlen(reinterpret_cast<char *>(data)), V_ASN1_BIT_STRING, data, 0 };
+        X509_EXTENSION *NetscapeCommentExt = X509V3_EXT_i2d(NID_netscape_comment, 1, reinterpret_cast<void *>(&bitStr));
+
+        (void)sk_X509_EXTENSION_push(exts, NetscapeCommentExt);
+    }
+
+    ret = CfOpensslHasUnsupportedCriticalExtension(obj004, &bRet);
+    EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION) <<
+        "Abnormal adapter extension object has unsupported critical extension test failed, retcode:" << ret;
+
+    (void)sk_X509_EXTENSION_pop(exts);
+    CfOpensslDestoryExtension(&obj004);
+}
 }

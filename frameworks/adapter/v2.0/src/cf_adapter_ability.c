@@ -38,6 +38,7 @@ static CfExtensionAdapterAbilityFunc g_extensionAdapterFunc = {
     .adapterGetEntry = CfOpensslGetEntry,
     .adapterGetItem = CfOpensslGetExtensionItem,
     .adapterCheckCA = CfOpensslCheckCA,
+    .adapterHasUnsupportedCriticalExtension = CfOpensslHasUnsupportedCriticalExtension,
 };
 
 __attribute__((constructor)) static void LoadAdapterAbility(void)

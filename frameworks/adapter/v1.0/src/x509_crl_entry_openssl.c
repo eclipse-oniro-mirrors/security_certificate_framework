@@ -13,17 +13,17 @@
  * limitations under the License.
  */
 
-#include"x509_crl_entry_openssl.h"
+#include "x509_crl_entry_openssl.h"
 
 #include "securec.h"
 
-#include <openssl/x509.h>
 #include <openssl/bio.h>
+#include <openssl/x509.h>
 
-#include "config.h"
+#include "certificate_openssl_common.h"
 #include "cf_log.h"
 #include "cf_memory.h"
-#include "certificate_openssl_common.h"
+#include "config.h"
 #include "utils.h"
 #include "x509_crl.h"
 #include "x509_crl_entry.h"
@@ -179,6 +179,50 @@ static CfResult GetRevocationDate(HcfX509CrlEntry *self, CfBlob *out)
     return CF_SUCCESS;
 }
 
+static CfResult GetExtensions(HcfX509CrlEntry *self, CfBlob *outBlob)
+{
+    if ((self == NULL) || (outBlob == NULL)) {
+        LOGE("Invalid Paramas!");
+        return CF_INVALID_PARAMS;
+    }
+
+    X509_REVOKED *rev = GetSelfRev(self);
+    if (rev == NULL) {
+        LOGE("Rev is null!");
+        return CF_INVALID_PARAMS;
+    }
+
+    X509_EXTENSIONS *exts = (X509_EXTENSIONS *)X509_REVOKED_get0_extensions(rev);
+    CfResult ret = CopyExtensionsToBlob(exts, outBlob);
+    if (ret != CF_SUCCESS) {
+        CfPrintOpensslError();
+    }
+    return ret;
+}
+
+static CfResult HasExtensions(HcfX509CrlEntry *self, bool *out)
+{
+    if (self == NULL || out == NULL) {
+        LOGE("Invalid Paramas!");
+        return CF_INVALID_PARAMS;
+    }
+
+    X509_REVOKED *rev = GetSelfRev(self);
+    if (rev == NULL) {
+        LOGE("Rev is null!");
+        return CF_INVALID_PARAMS;
+    }
+
+    X509_EXTENSIONS *exts = (X509_EXTENSIONS *)X509_REVOKED_get0_extensions(rev);
+    if (exts == NULL) {
+        *out = false;
+    } else {
+        *out = (sk_X509_EXTENSION_num(exts) > 0);
+    }
+
+    return CF_SUCCESS;
+}
+
 static CfResult DeepCopyCertIssuer(HcfX509CRLEntryOpensslImpl *returnCRLEntry, CfBlob *certIssuer)
 {
     returnCRLEntry->certIssuer = (CfBlob *)HcfMalloc(sizeof(CfBlob), 0);
@@ -248,6 +292,8 @@ CfResult HcfCX509CRLEntryCreate(X509_REVOKED *rev, HcfX509CrlEntry **crlEntryOut
     returnCRLEntry->base.getSerialNumber = GetSerialNumber;
     returnCRLEntry->base.getCertIssuer = GetCertIssuer;
     returnCRLEntry->base.getRevocationDate = GetRevocationDate;
+    returnCRLEntry->base.getExtensions = GetExtensions;
+    returnCRLEntry->base.hasExtensions = HasExtensions;
     if (DeepCopyCertIssuer(returnCRLEntry, certIssuer) != CF_SUCCESS) {
         LOGI("No cert issuer find or deep copy cert issuer fail!");
     }

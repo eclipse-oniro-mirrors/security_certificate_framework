@@ -33,6 +33,41 @@
 #define KEYUSAGE_SHIFT 8
 #define CRITICAL_SIZE  1
 
+typedef struct {
+    char *oid;
+    char *extensionName;
+} OidToExtensionName;
+
+static const OidToExtensionName OID_TO_EXT_NAME_MAP[] = {
+    { "2.5.29.9", "SubjectDirectoryAttributes" },
+    { "2.5.29.14", "SubjectKeyIdentifier" },
+    { "2.5.29.15", "KeyUsage" },
+    { "2.5.29.16", "PrivateKeyUsage" },
+    { "2.5.29.17", "SubjectAlternativeName" },
+    { "2.5.29.18", "IssuerAlternativeName" },
+    { "2.5.29.19", "BasicConstraints" },
+    { "2.5.29.20", "CRLNumber" },
+    { "2.5.29.21", "CRLReason" },
+    { "2.5.29.23", "HoldInstructionCode" },
+    { "2.5.29.24", "InvalidityDate" },
+    { "2.5.29.27", "DeltaCRLIndicator" },
+    { "2.5.29.28", "IssuingDistributionPoint" },
+    { "2.5.29.29", "CertificateIssuer" },
+    { "2.5.29.30", "NameConstraints" },
+    { "2.5.29.31", "CRLDistributionPoints" },
+    { "2.5.29.32", "CertificatePolicies" },
+    { "2.5.29.33", "PolicyMappings" },
+    { "2.5.29.35", "AuthorityKeyIdentifier" },
+    { "2.5.29.36", "PolicyConstraints" },
+    { "2.5.29.37", "ExtendedKeyUsage" },
+    { "2.5.29.46", "FreshestCRL" },
+    { "2.5.29.54", "InhibitAnyPolicy" },
+    { "1.3.6.1.5.5.7.1.1", "AuthInfoAccess" },
+    { "1.3.6.1.5.5.7.1.11", "SubjectInfoAccess" },
+    { "1.3.6.1.5.5.7.48.1.5", "OCSPNoCheck" },
+    { "2.16.840.1.113730.1.1", "NETSCAPECert" }
+};
+
 int32_t CfOpensslCreateExtension(const CfEncodingBlob *inData, CfBase **object)
 {
     if ((CfCheckEncodingBlob(inData, MAX_LEN_EXTENSIONS) != CF_SUCCESS) ||
@@ -239,6 +274,62 @@ int32_t CfOpensslGetOids(const CfBase *object, CfExtensionOidType type, CfBlobAr
         CF_LOG_E("Failed to copy oids to out");
         return ret;
     }
+    return CF_SUCCESS;
+}
+
+int32_t CfOpensslHasUnsupportedCriticalExtension(const CfBase *object, bool *out)
+{
+    if (object == NULL || out == NULL) {
+        CF_LOG_E("invalid input params");
+        return CF_INVALID_PARAMS;
+    }
+
+    X509_EXTENSIONS *exts = NULL;
+    int32_t ret = CheckObjectAndGetExts(object, &exts);
+    if (ret != CF_SUCCESS) {
+        CF_LOG_E("Failed to get extension");
+        return ret;
+    }
+
+    int32_t extNums = sk_X509_EXTENSION_num(exts);
+    if ((extNums <= 0) || (extNums > MAX_COUNT_OID)) {
+        CF_LOG_E("Failed to get extension numbers");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    for (uint32_t i = 0; i < (uint32_t)extNums; ++i) {
+        X509_EXTENSION *ex = sk_X509_EXTENSION_value(exts, i);
+        if (ex == NULL) {
+            CF_LOG_E("Failed to get exts [%u] value", i);
+            return CF_ERR_CRYPTO_OPERATION;
+        }
+
+        int crit = X509_EXTENSION_get_critical(ex);
+        if (crit != 1) { /* the extension entry is critical */
+            continue;
+        }
+
+        char oid[MAX_LEN_OID] = { 0 };
+        int32_t oidLen = OBJ_obj2txt(oid, MAX_LEN_OID, X509_EXTENSION_get_object(ex), 1);
+        if ((oidLen <= 0) || (oidLen >= MAX_LEN_OID)) {
+            CF_LOG_E("Failed to get ext oid");
+            return CF_ERR_CRYPTO_OPERATION;
+        }
+        uint32_t oidsCount = sizeof(OID_TO_EXT_NAME_MAP) / sizeof(OidToExtensionName);
+        bool match = false;
+        for (uint32_t oidInd = 0; oidInd < oidsCount; oidInd++) {
+            if (strcmp(OID_TO_EXT_NAME_MAP[oidInd].oid, oid) == 0) {
+                match = true;
+                break;
+            }
+        }
+        if (!match) {
+            CF_LOG_I("extension oid [%s] is not supported.", oid);
+            *out = true;
+            return CF_SUCCESS;
+        }
+    }
+    *out = false;
     return CF_SUCCESS;
 }
 

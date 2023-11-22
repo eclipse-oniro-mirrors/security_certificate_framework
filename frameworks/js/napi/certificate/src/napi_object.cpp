@@ -35,6 +35,7 @@ constexpr uint32_t NAPI_OUT_TYPE_BLOB = 1;
 constexpr uint32_t NAPI_OUT_TYPE_ARRAY = 2;
 constexpr uint32_t NAPI_OUT_TYPE_NUMBER = 3;
 constexpr uint32_t NAPI_OUT_TYPE_ENCODING_BLOB = 4;
+constexpr uint32_t NAPI_OUT_TYPE_BOOL = 5;
 
 constexpr size_t PARAM_INDEX_0 = 0;
 constexpr size_t PARAM_INDEX_1 = 1;
@@ -47,6 +48,7 @@ constexpr size_t PARAM_COUNT_EXT_GET_OIDS = 1;
 constexpr size_t PARAM_COUNT_EXT_GET_ENTRY = 2;
 constexpr size_t PARAM_COUNT_EXT_GET_ITEM = 0;
 constexpr size_t PARAM_COUNT_EXT_CHECK_CA = 0;
+constexpr size_t PARAM_COUNT_EXT_HAS_UN_SUPPORT = 0;
 
 struct CfInputParamsMap {
     int32_t opType;
@@ -74,6 +76,7 @@ const struct CfInputParamsMap INPUT_PARAMS_MAP[] = {
     { OPERATION_TYPE_GET, CF_GET_TYPE_EXT_ENTRY, PARAM_COUNT_EXT_GET_ENTRY, { napi_number, napi_object } },
     { OPERATION_TYPE_GET, CF_GET_TYPE_EXT_ITEM, PARAM_COUNT_EXT_GET_ITEM, { napi_undefined } },
     { OPERATION_TYPE_CHECK, CF_CHECK_TYPE_EXT_CA, PARAM_COUNT_EXT_CHECK_CA, { napi_undefined } },
+    { OPERATION_TYPE_CHECK, CF_CHECK_TYPE_EXT_HAS_UN_SUPPORT, PARAM_COUNT_EXT_HAS_UN_SUPPORT, { napi_undefined } },
 };
 
 const struct CfParamTagMap TAG_MAP[] = {
@@ -95,6 +98,7 @@ const struct CfResultMap RESULT_MAP[] = {
     { OPERATION_TYPE_GET, CF_GET_TYPE_EXT_ENTRY, CF_TAG_RESULT_BYTES, NAPI_OUT_TYPE_BLOB },
     { OPERATION_TYPE_GET, CF_GET_TYPE_EXT_ITEM, CF_TAG_RESULT_BYTES, NAPI_OUT_TYPE_ENCODING_BLOB },
     { OPERATION_TYPE_CHECK, CF_CHECK_TYPE_EXT_CA, CF_TAG_RESULT_INT, NAPI_OUT_TYPE_NUMBER },
+    { OPERATION_TYPE_CHECK, CF_CHECK_TYPE_EXT_HAS_UN_SUPPORT, CF_TAG_RESULT_BOOL, NAPI_OUT_TYPE_BOOL },
 };
 
 static void FreeParsedParams(vector<CfParam> &params)
@@ -376,6 +380,10 @@ static napi_value ConvertToNapiValue(napi_env env, int32_t opType, int32_t typeV
     } else if (outType == NAPI_OUT_TYPE_ENCODING_BLOB) {
         CfEncodingBlob encoded = { resultParam->blob.data, resultParam->blob.size, CF_FORMAT_DER };
         return ConvertEncodingBlobToNapiValue(env, &encoded);
+    } else if (outType == NAPI_OUT_TYPE_BOOL) {
+        napi_value result = nullptr;
+        napi_get_boolean(env, resultParam->boolParam, &result);
+        return result;
     }
 
     return nullptr;

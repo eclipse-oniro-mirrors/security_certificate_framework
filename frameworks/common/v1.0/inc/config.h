@@ -21,7 +21,7 @@
 #define LOG_PRINT_MAX_LEN 1024 // log max length limit
 #define HCF_MAX_BUFFER_LEN 8192
 #define SERIAL_NUMBER_HEDER_SIZE 2
-#define MAX_SN_BYTE_CNT 20 // the maximum number of bytes of the serial number
+#define MAX_SN_BYTE_CNT 24 // the maximum number of bytes of the serial number
 #define INVALID_VERSION (-1)
 #define INVALID_CONSTRAINTS_LEN (-1)
 #define CF_MAX_URI_COUNT 100

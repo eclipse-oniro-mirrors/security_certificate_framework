@@ -29,11 +29,15 @@ public:
     explicit NapiX509Crl(HcfX509Crl *x509Crl);
     ~NapiX509Crl();
 
-    static void DefineX509CrlJSClass(napi_env env, napi_value exports);
+    static void DefineX509CrlJSClass(napi_env env, napi_value exports, std::string className);
+    static void DefineX509CrlJS(napi_env env, napi_value exports, std::string className);
+    static void DefineX509CRLJS(napi_env env, napi_value exports, std::string className);
+    static napi_value NapiCreateX509CrlBase(napi_env env, napi_callback_info info, std::string createName);
     static napi_value NapiCreateX509Crl(napi_env env, napi_callback_info info);
+    static napi_value NapiCreateX509CRL(napi_env env, napi_callback_info info);
     static void CreateX509CrlExecute(napi_env env, void *data);
     static void CreateX509CrlComplete(napi_env env, napi_status status, void *data);
-    static napi_value CreateX509Crl(napi_env env);
+    static napi_value CreateX509Crl(napi_env env, std::string createName);
 
     napi_value IsRevoked(napi_env env, napi_callback_info info);
     napi_value GetType(napi_env env, napi_callback_info info);
@@ -43,21 +47,23 @@ public:
     napi_value GetIssuerDN(napi_env env, napi_callback_info info);
     napi_value GetThisUpdate(napi_env env, napi_callback_info info);
     napi_value GetNextUpdate(napi_env env, napi_callback_info info);
-    napi_value GetRevokedCertificate(napi_env env, napi_callback_info info);
-    napi_value GetRevokedCertificateWithCert(napi_env env, napi_callback_info info);
-    napi_value GetRevokedCertificates(napi_env env, napi_callback_info info);
+    napi_value GetRevokedCertificate(napi_env env, napi_callback_info info, std::string returnClassName);
+    napi_value GetRevokedCertificateWithCert(napi_env env, napi_callback_info info, std::string returnClassName);
+    napi_value GetRevokedCertificates(napi_env env, napi_callback_info info, std::string returnClassName);
     napi_value GetTBSCertList(napi_env env, napi_callback_info info);
     napi_value GetSignature(napi_env env, napi_callback_info info);
     napi_value GetSigAlgName(napi_env env, napi_callback_info info);
     napi_value GetSigAlgOID(napi_env env, napi_callback_info info);
     napi_value GetSigAlgParams(napi_env env, napi_callback_info info);
+    napi_value GetExtensions(napi_env env, napi_callback_info info);
 
     HcfX509Crl *GetX509Crl()
     {
         return x509Crl_;
     }
 
-    static thread_local napi_ref classRef_;
+    static thread_local napi_ref classCrlRef_;
+    static thread_local napi_ref classCRLRef_;
 
 private:
     HcfX509Crl *x509Crl_ = nullptr;
