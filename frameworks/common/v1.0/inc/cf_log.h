@@ -42,9 +42,9 @@ void CfLog(uint32_t logLevel, const char *funcName, uint32_t lineNo, const char 
 
 #ifdef _CF_LOG_ENABLE_
 #undef LOG_TAG
-#define LOG_TAG "CF"
+#define LOG_TAG "CertFramework"
 #undef LOG_DOMAIN
-#define LOG_DOMAIN 0xD002F00 /* Security subsystem's domain id */
+#define LOG_DOMAIN 0xD002F17 /* CertFramework's domain id */
 #endif
 
 #define CF_LOG_I(...) CfLog(CF_LOG_LEVEL_I, __func__, __LINE__, __VA_ARGS__)
