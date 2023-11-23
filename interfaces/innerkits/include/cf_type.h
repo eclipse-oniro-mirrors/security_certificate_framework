@@ -76,6 +76,7 @@ typedef enum {
 
 typedef enum {
     CF_CHECK_TYPE_EXT_CA,
+    CF_CHECK_TYPE_EXT_HAS_UN_SUPPORT,
 } CfCheckType;
 
 typedef enum {

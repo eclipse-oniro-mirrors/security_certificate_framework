@@ -258,6 +258,11 @@ static napi_value NapiExtensionCheckCA(napi_env env, napi_callback_info info)
     return NapiCommonOperation(env, info, OPERATION_TYPE_CHECK, CF_CHECK_TYPE_EXT_CA);
 }
 
+static napi_value NapiExtensionHasUnsupportCritical(napi_env env, napi_callback_info info)
+{
+    return NapiCommonOperation(env, info, OPERATION_TYPE_CHECK, CF_CHECK_TYPE_EXT_HAS_UN_SUPPORT);
+}
+
 static napi_value CertExtsConstructor(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
@@ -277,6 +282,7 @@ void NapiCertExtension::DefineCertExtensionJsClass(napi_env env, napi_value expo
         DECLARE_NAPI_FUNCTION("getOidList", NapiGetExtensionOidList),
         DECLARE_NAPI_FUNCTION("getEntry", NapiGetExtensionEntry),
         DECLARE_NAPI_FUNCTION("checkCA", NapiExtensionCheckCA),
+        DECLARE_NAPI_FUNCTION("hasUnsupportedCriticalExtension", NapiExtensionHasUnsupportCritical),
     };
 
     napi_value constructor = nullptr;

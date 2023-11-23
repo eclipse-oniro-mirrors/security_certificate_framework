@@ -14,14 +14,16 @@
  */
 
 #include "x509crl_fuzzer.h"
+
 #include <openssl/x509.h>
+
 #include "asy_key_generator.h"
+#include "certificate_openssl_class.h"
 #include "cf_blob.h"
+#include "cf_memory.h"
+#include "cf_result.h"
 #include "cipher.h"
 #include "key_pair.h"
-#include "cf_memory.h"
-#include "certificate_openssl_class.h"
-#include "cf_result.h"
 #include "securec.h"
 #include "x509_certificate.h"
 #include "x509_crl.h"
@@ -193,8 +195,9 @@ namespace OHOS {
     static void TestX509CrlEntry(HcfX509Crl *x509CrlDer, const uint8_t *data, size_t size)
     {
         long serialNumber = 1000;
+		CfBlob serialBlob = { sizeof(long), reinterpret_cast<uint8_t *>(&serialNumber) };
         HcfX509CrlEntry *entry = nullptr;
-        x509CrlDer->getRevokedCert(x509CrlDer, serialNumber, &entry);
+        x509CrlDer->getRevokedCert(x509CrlDer, &serialBlob, &entry);
         if (entry != nullptr) {
             CfEncodingBlob entryEncoded = { 0 };
             entry->getEncoded(entry, &entryEncoded);
@@ -220,8 +223,9 @@ namespace OHOS {
         }
         if (size >= sizeof(long)) {
             entry = nullptr;
-            const long *serialNumberPtr = reinterpret_cast<const long *>(data);
-            x509CrlDer->getRevokedCert(x509CrlDer, *serialNumberPtr, &entry);
+            serialBlob.size = sizeof(long);
+            serialBlob.data = const_cast<uint8_t *>(data);
+            x509CrlDer->getRevokedCert(x509CrlDer, &serialBlob, &entry);
             if (entry != nullptr) {
                 CfObjDestroy(entry);
             }
@@ -266,7 +270,7 @@ namespace OHOS {
         (void)x509CrlDer->verify(x509CrlDer, g_keyPair->pubKey);
     }
 
-    bool FuzzDoX509CrlTest(const uint8_t* data, size_t size)
+    bool FuzzDoX509CrlTest(const uint8_t *data, size_t size)
     {
         if ((data == nullptr) || (size < sizeof(long))) {
             return false;
@@ -316,7 +320,7 @@ namespace OHOS {
 }
 
 /* Fuzzer entry point */
-extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
+extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
     OHOS::FuzzDoX509CrlTest(data, size);

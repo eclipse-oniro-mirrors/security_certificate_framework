@@ -15,22 +15,25 @@
 
 #include "napi_x509_crl.h"
 
-#include "napi/native_node_api.h"
-#include "napi/native_api.h"
 #include "cf_log.h"
 #include "cf_memory.h"
-#include "utils.h"
 #include "cf_object_base.h"
 #include "cf_result.h"
+#include "config.h"
+#include "napi/native_api.h"
+#include "napi/native_node_api.h"
 #include "napi_cert_defines.h"
-#include "napi_pub_key.h"
 #include "napi_cert_utils.h"
+#include "napi_pub_key.h"
 #include "napi_x509_certificate.h"
 #include "napi_x509_crl_entry.h"
+#include "securec.h"
+#include "utils.h"
 
 namespace OHOS {
 namespace CertFramework {
-thread_local napi_ref NapiX509Crl::classRef_ = nullptr;
+thread_local napi_ref NapiX509Crl::classCrlRef_ = nullptr;
+thread_local napi_ref NapiX509Crl::classCRLRef_ = nullptr;
 
 struct CfCtx {
     AsyncType asyncType = ASYNC_TYPE_CALLBACK;
@@ -44,6 +47,8 @@ struct CfCtx {
     HcfX509Certificate *certificate = nullptr;
     HcfPubKey *pubKey = nullptr;
     int32_t serialNumber = 0;
+    std::string createX509CrlName;
+    std::string returnClassName;
 
     HcfX509CrlEntry *crlEntry = nullptr;
     int32_t errCode = 0;
@@ -112,8 +117,7 @@ static void ReturnPromiseResult(napi_env env, CfCtx *context, napi_value result)
     if (context->errCode == CF_SUCCESS) {
         napi_resolve_deferred(env, context->deferred, result);
     } else {
-        napi_reject_deferred(env, context->deferred,
-            CertGenerateBusinessError(env, context->errCode, context->errMsg));
+        napi_reject_deferred(env, context->deferred, CertGenerateBusinessError(env, context->errCode, context->errMsg));
     }
 }
 
@@ -126,8 +130,8 @@ static void ReturnResult(napi_env env, CfCtx *context, napi_value result)
     }
 }
 
-static bool CreateCallbackAndPromise(napi_env env, CfCtx *context, size_t argc,
-    size_t maxCount, napi_value callbackValue)
+static bool CreateCallbackAndPromise(
+    napi_env env, CfCtx *context, size_t argc, size_t maxCount, napi_value callbackValue)
 {
     context->asyncType = GetAsyncType(env, argc, maxCount, callbackValue);
     if (context->asyncType == ASYNC_TYPE_CALLBACK) {
@@ -220,7 +224,7 @@ void GetRevokedCertificatesExecute(napi_env env, void *data)
     context->array = array;
 }
 
-static napi_value GenerateCrlEntryArray(napi_env env, CfArray *array)
+static napi_value GenerateCrlEntryArray(napi_env env, CfArray *array, std::string returnClassName)
 {
     if (array == nullptr) {
         LOGE("crl entry array is null!");
@@ -235,7 +239,7 @@ static napi_value GenerateCrlEntryArray(napi_env env, CfArray *array)
     for (uint32_t i = 0; i < array->count; i++) {
         CfBlob *blob = reinterpret_cast<CfBlob *>(array->data + i);
         HcfX509CrlEntry *entry = reinterpret_cast<HcfX509CrlEntry *>(blob->data);
-        napi_value instance = NapiX509CrlEntry::CreateX509CrlEntry(env);
+        napi_value instance = NapiX509CrlEntry::CreateX509CrlEntry(env, returnClassName);
         NapiX509CrlEntry *x509CrlEntryClass = new (std::nothrow) NapiX509CrlEntry(entry);
         if (x509CrlEntryClass == nullptr) {
             napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to create a x509CrlEntry class"));
@@ -264,7 +268,7 @@ void GetRevokedCertificatesComplete(napi_env env, napi_status status, void *data
         FreeCryptoFwkCtx(env, context);
         return;
     }
-    napi_value returnArray = GenerateCrlEntryArray(env, context->array);
+    napi_value returnArray = GenerateCrlEntryArray(env, context->array, context->returnClassName);
     ReturnResult(env, context, returnArray);
     FreeCryptoFwkCtx(env, context);
 }
@@ -326,12 +330,8 @@ napi_value NapiX509Crl::GetEncoded(napi_env env, napi_callback_info info)
         return nullptr;
     }
 
-    napi_create_async_work(
-        env, nullptr, CertGetResourceName(env, "GetEncoded"),
-        GetEncodedExecute,
-        GetEncodedComplete,
-        static_cast<void *>(context),
-        &context->asyncWork);
+    napi_create_async_work(env, nullptr, CertGetResourceName(env, "GetEncoded"), GetEncodedExecute, GetEncodedComplete,
+        static_cast<void *>(context), &context->asyncWork);
 
     napi_queue_async_work(env, context->asyncWork);
     if (context->asyncType == ASYNC_TYPE_PROMISE) {
@@ -372,12 +372,8 @@ __attribute__((no_sanitize("cfi"))) napi_value NapiX509Crl::Verify(napi_env env,
         return nullptr;
     }
 
-    napi_create_async_work(
-        env, nullptr, CertGetResourceName(env, "Verify"),
-        VerifyExecute,
-        VerifyComplete,
-        static_cast<void *>(context),
-        &context->asyncWork);
+    napi_create_async_work(env, nullptr, CertGetResourceName(env, "Verify"), VerifyExecute, VerifyComplete,
+        static_cast<void *>(context), &context->asyncWork);
 
     napi_queue_async_work(env, context->asyncWork);
     if (context->asyncType == ASYNC_TYPE_PROMISE) {
@@ -467,7 +463,80 @@ napi_value NapiX509Crl::GetNextUpdate(napi_env env, napi_callback_info info)
     return result;
 }
 
-napi_value NapiX509Crl::GetRevokedCertificate(napi_env env, napi_callback_info info)
+static bool GetCrlSerialNumberFromNapiValue(napi_env env, napi_value arg, CfBlob &outBlob)
+{
+    napi_valuetype valueType;
+    napi_typeof(env, arg, &valueType);
+    if (valueType != napi_number) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "param type error"));
+        LOGE("wrong argument type. expect int type. [Type]: %d", valueType);
+        return false;
+    }
+    uint8_t serialBuf[MAX_SN_BYTE_CNT] = { 0 };
+    uint32_t serialLen = sizeof(int64_t);
+    int64_t tmpData = 0;
+    if (napi_get_value_int64(env, arg, &tmpData) != napi_ok || tmpData < 0) {
+        LOGE("can not get int64 value");
+        return false;
+    }
+    (void)memcpy_s(serialBuf, sizeof(int64_t), &tmpData, sizeof(int64_t));
+    outBlob.size = serialLen;
+    outBlob.data = static_cast<uint8_t *>(HcfMalloc(serialLen, 0));
+    if (outBlob.data == nullptr) {
+        LOGE("malloc blob data failed!");
+        return false;
+    }
+    // reverse data
+    for (uint32_t i = 0; i < serialLen; ++i) {
+        outBlob.data[i] = serialBuf[outBlob.size - 1 - i];
+    }
+
+    return true;
+}
+
+static bool GetCRLSerialNumberFromNapiValue(napi_env env, napi_value arg, CfBlob &outBlob)
+{
+    napi_valuetype valueType;
+    napi_typeof(env, arg, &valueType);
+    if (valueType != napi_bigint) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "param type error"));
+        LOGE("wrong argument type. expect int type. [Type]: %d", valueType);
+        return false;
+    }
+
+    size_t wordCount = 0;
+    if (napi_get_value_bigint_words(env, arg, nullptr, &wordCount, nullptr) != napi_ok) {
+        LOGE("can not get word count");
+        return false;
+    }
+    if (wordCount == 0 || wordCount > (MAX_SN_BYTE_CNT / sizeof(int64_t))) {
+        LOGE("can not get wordCount, wordCount = %u", wordCount);
+        return false;
+    }
+    uint8_t serialBuf[MAX_SN_BYTE_CNT] = { 0 };
+    uint32_t serialLen = sizeof(int64_t) * wordCount;
+
+    int sign = 0;
+    if (napi_get_value_bigint_words(env, arg, &sign, &wordCount, reinterpret_cast<uint64_t *>(serialBuf)) != napi_ok ||
+        sign > 0) {
+        LOGE("can not get bigint value, sign = %d", sign); // sign 0 : positive, sign 1 : negative
+        return false;
+    }
+    outBlob.size = serialLen;
+    outBlob.data = static_cast<uint8_t *>(HcfMalloc(serialLen, 0));
+    if (outBlob.data == nullptr) {
+        LOGE("malloc blob data failed!");
+        return false;
+    }
+    // reverse data
+    for (uint32_t i = 0; i < serialLen; ++i) {
+        outBlob.data[i] = serialBuf[outBlob.size - 1 - i];
+    }
+
+    return true;
+}
+
+napi_value NapiX509Crl::GetRevokedCertificate(napi_env env, napi_callback_info info, std::string returnClassName)
 {
     size_t argc = ARGS_SIZE_ONE;
     napi_value argv[ARGS_SIZE_ONE] = { nullptr };
@@ -476,27 +545,41 @@ napi_value NapiX509Crl::GetRevokedCertificate(napi_env env, napi_callback_info i
     if (!CertCheckArgsCount(env, argc, ARGS_SIZE_ONE, true)) {
         return nullptr;
     }
-    int32_t serialNumber = 0;
-    if (!CertGetInt32FromJSParams(env, argv[PARAM0], serialNumber)) {
-        LOGE("get serialNumber failed!");
-        return nullptr;
+    CfBlob serialNumber = { 0, nullptr };
+    if (returnClassName == std::string("X509CrlEntry")) {
+        if (!GetCrlSerialNumberFromNapiValue(env, argv[PARAM0], serialNumber)) {
+            LOGE("get serialNumber failed from X509CrlEntry!");
+            return nullptr;
+        }
+    } else {
+        if (!GetCRLSerialNumberFromNapiValue(env, argv[PARAM0], serialNumber)) {
+            LOGE("get serialNumber failed from X509CRLEntry!");
+            return nullptr;
+        }
     }
+
     HcfX509Crl *x509Crl = GetX509Crl();
     HcfX509CrlEntry *crlEntry = nullptr;
-    CfResult ret = x509Crl->getRevokedCert(x509Crl, serialNumber, &crlEntry);
+    CfResult ret = x509Crl->getRevokedCert(x509Crl, &serialNumber, &crlEntry);
     if (ret != CF_SUCCESS) {
         napi_throw(env, CertGenerateBusinessError(env, ret, "get revoked cert failed!"));
         LOGE("get revoked cert failed!");
+        CfFree(serialNumber.data);
+        serialNumber.data = nullptr;
         return nullptr;
     }
-    napi_value instance = NapiX509CrlEntry::CreateX509CrlEntry(env);
+
+    napi_value instance = NapiX509CrlEntry::CreateX509CrlEntry(env, returnClassName);
     NapiX509CrlEntry *x509CrlEntryClass = new (std::nothrow) NapiX509CrlEntry(crlEntry);
     if (x509CrlEntryClass == nullptr) {
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to create a x509CrlEntry class"));
         LOGE("Failed to create a x509CrlEntry class");
         CfObjDestroy(crlEntry);
+        CfFree(serialNumber.data);
+        serialNumber.data = nullptr;
         return nullptr;
     }
+
     napi_wrap(
         env, instance, x509CrlEntryClass,
         [](napi_env env, void *data, void *hint) {
@@ -505,10 +588,13 @@ napi_value NapiX509Crl::GetRevokedCertificate(napi_env env, napi_callback_info i
             return;
         },
         nullptr, nullptr);
+    CfFree(serialNumber.data);
+    serialNumber.data = nullptr;
     return instance;
 }
 
-napi_value NapiX509Crl::GetRevokedCertificateWithCert(napi_env env, napi_callback_info info)
+napi_value NapiX509Crl::GetRevokedCertificateWithCert(
+    napi_env env, napi_callback_info info, std::string returnClassName)
 {
     size_t argc = ARGS_SIZE_ONE;
     napi_value argv[ARGS_SIZE_ONE] = { nullptr };
@@ -536,7 +622,7 @@ napi_value NapiX509Crl::GetRevokedCertificateWithCert(napi_env env, napi_callbac
         return nullptr;
     }
 
-    napi_value instance = NapiX509CrlEntry::CreateX509CrlEntry(env);
+    napi_value instance = NapiX509CrlEntry::CreateX509CrlEntry(env, returnClassName);
     NapiX509CrlEntry *x509CrlEntryClass = new (std::nothrow) NapiX509CrlEntry(crlEntry);
     if (x509CrlEntryClass == nullptr) {
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to create a x509CrlEntry class"));
@@ -555,7 +641,7 @@ napi_value NapiX509Crl::GetRevokedCertificateWithCert(napi_env env, napi_callbac
     return instance;
 }
 
-napi_value NapiX509Crl::GetRevokedCertificates(napi_env env, napi_callback_info info)
+napi_value NapiX509Crl::GetRevokedCertificates(napi_env env, napi_callback_info info, std::string returnClassName)
 {
     size_t argc = ARGS_SIZE_ONE;
     napi_value argv[ARGS_SIZE_ONE] = { nullptr };
@@ -577,11 +663,10 @@ napi_value NapiX509Crl::GetRevokedCertificates(napi_env env, napi_callback_info 
         return nullptr;
     }
 
-    napi_create_async_work(
-        env, nullptr, CertGetResourceName(env, "GetRevokedCertificates"),
-        GetRevokedCertificatesExecute,
-        GetRevokedCertificatesComplete,
-        static_cast<void *>(context),
+    context->returnClassName = returnClassName;
+
+    napi_create_async_work(env, nullptr, CertGetResourceName(env, "GetRevokedCertificates"),
+        GetRevokedCertificatesExecute, GetRevokedCertificatesComplete, static_cast<void *>(context),
         &context->asyncWork);
 
     napi_queue_async_work(env, context->asyncWork);
@@ -600,7 +685,7 @@ napi_value NapiX509Crl::GetTBSCertList(napi_env env, napi_callback_info info)
         LOGE("malloc blob failed!");
         return nullptr;
     }
-    CfResult result = x509Crl->getSignature(x509Crl, blob);
+    CfResult result = x509Crl->getTbsInfo(x509Crl, blob);
     if (result != CF_SUCCESS) {
         napi_throw(env, CertGenerateBusinessError(env, result, "get tbs info failed"));
         LOGE("get tbs info failed!");
@@ -698,6 +783,29 @@ napi_value NapiX509Crl::GetSigAlgParams(napi_env env, napi_callback_info info)
     if (result != CF_SUCCESS) {
         napi_throw(env, CertGenerateBusinessError(env, result, "get signature alg params failed"));
         LOGE("getSigAlgParams failed!");
+        CfFree(blob);
+        blob = nullptr;
+        return nullptr;
+    }
+    napi_value returnBlob = CertConvertBlobToNapiValue(env, blob);
+    CfBlobDataFree(blob);
+    CfFree(blob);
+    blob = nullptr;
+    return returnBlob;
+}
+
+napi_value NapiX509Crl::GetExtensions(napi_env env, napi_callback_info info)
+{
+    HcfX509Crl *x509Crl = GetX509Crl();
+    CfBlob *blob = reinterpret_cast<CfBlob *>(HcfMalloc(sizeof(CfBlob), 0));
+    if (blob == nullptr) {
+        LOGE("malloc blob failed!");
+        return nullptr;
+    }
+    CfResult result = x509Crl->getExtensions(x509Crl, blob);
+    if (result != CF_SUCCESS) {
+        napi_throw(env, CertGenerateBusinessError(env, result, "get extensions failed"));
+        LOGE("getExtensions failed!");
         CfFree(blob);
         blob = nullptr;
         return nullptr;
@@ -815,7 +923,7 @@ static napi_value NapiGetNextUpdate(napi_env env, napi_callback_info info)
     return x509Crl->GetNextUpdate(env, info);
 }
 
-static napi_value NapiGetRevokedCertificate(napi_env env, napi_callback_info info)
+static napi_value NapiCrlGetRevokedCertificate(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
     napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
@@ -825,10 +933,10 @@ static napi_value NapiGetRevokedCertificate(napi_env env, napi_callback_info inf
         LOGE("x509Crl is nullptr!");
         return nullptr;
     }
-    return x509Crl->GetRevokedCertificate(env, info);
+    return x509Crl->GetRevokedCertificate(env, info, std::string("X509CrlEntry"));
 }
 
-static napi_value NapiGetRevokedCertificateWithCert(napi_env env, napi_callback_info info)
+static napi_value NapiCrlGetRevokedCertificateWithCert(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
     napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
@@ -838,10 +946,10 @@ static napi_value NapiGetRevokedCertificateWithCert(napi_env env, napi_callback_
         LOGE("x509Crl is nullptr!");
         return nullptr;
     }
-    return x509Crl->GetRevokedCertificateWithCert(env, info);
+    return x509Crl->GetRevokedCertificateWithCert(env, info, std::string("X509CrlEntry"));
 }
 
-static napi_value NapiGetRevokedCertificates(napi_env env, napi_callback_info info)
+static napi_value NapiCrlGetRevokedCertificates(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
     napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
@@ -851,10 +959,62 @@ static napi_value NapiGetRevokedCertificates(napi_env env, napi_callback_info in
         LOGE("x509Crl is nullptr!");
         return nullptr;
     }
-    return x509Crl->GetRevokedCertificates(env, info);
+    return x509Crl->GetRevokedCertificates(env, info, std::string("X509CrlEntry"));
 }
 
-static napi_value NapiGetTBSCertList(napi_env env, napi_callback_info info)
+static napi_value NapiCRLGetRevokedCertificate(napi_env env, napi_callback_info info)
+{
+    napi_value thisVar = nullptr;
+    napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+    NapiX509Crl *x509Crl = nullptr;
+    napi_unwrap(env, thisVar, reinterpret_cast<void **>(&x509Crl));
+    if (x509Crl == nullptr) {
+        LOGE("x509Crl is nullptr!");
+        return nullptr;
+    }
+    return x509Crl->GetRevokedCertificate(env, info, std::string("X509CRLEntry"));
+}
+
+static napi_value NapiCRLGetRevokedCertificateWithCert(napi_env env, napi_callback_info info)
+{
+    napi_value thisVar = nullptr;
+    napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+    NapiX509Crl *x509Crl = nullptr;
+    napi_unwrap(env, thisVar, reinterpret_cast<void **>(&x509Crl));
+    if (x509Crl == nullptr) {
+        LOGE("x509Crl is nullptr!");
+        return nullptr;
+    }
+    return x509Crl->GetRevokedCertificateWithCert(env, info, std::string("X509CRLEntry"));
+}
+
+static napi_value NapiCRLGetRevokedCertificates(napi_env env, napi_callback_info info)
+{
+    napi_value thisVar = nullptr;
+    napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+    NapiX509Crl *x509Crl = nullptr;
+    napi_unwrap(env, thisVar, reinterpret_cast<void **>(&x509Crl));
+    if (x509Crl == nullptr) {
+        LOGE("x509Crl is nullptr!");
+        return nullptr;
+    }
+    return x509Crl->GetRevokedCertificates(env, info, std::string("X509CRLEntry"));
+}
+
+static napi_value NapiCrlGetTBSCertList(napi_env env, napi_callback_info info)
+{
+    napi_value thisVar = nullptr;
+    napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+    NapiX509Crl *x509Crl = nullptr;
+    napi_unwrap(env, thisVar, reinterpret_cast<void **>(&x509Crl));
+    if (x509Crl == nullptr) {
+        LOGE("x509Crl is nullptr!");
+        return nullptr;
+    }
+    return x509Crl->GetTBSCertList(env, info);
+}
+
+static napi_value NapiCRLGetTBSCertList(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
     napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
@@ -919,6 +1079,19 @@ static napi_value NapiGetSigAlgParams(napi_env env, napi_callback_info info)
     return x509Crl->GetSigAlgParams(env, info);
 }
 
+static napi_value NapiGetExtensions(napi_env env, napi_callback_info info)
+{
+    napi_value thisVar = nullptr;
+    napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+    NapiX509Crl *x509Crl = nullptr;
+    napi_unwrap(env, thisVar, reinterpret_cast<void **>(&x509Crl));
+    if (x509Crl == nullptr) {
+        LOGE("x509Crl is nullptr!");
+        return nullptr;
+    }
+    return x509Crl->GetExtensions(env, info);
+}
+
 void NapiX509Crl::CreateX509CrlExecute(napi_env env, void *data)
 {
     CfCtx *context = static_cast<CfCtx *>(data);
@@ -937,7 +1110,7 @@ void NapiX509Crl::CreateX509CrlComplete(napi_env env, napi_status status, void *
         FreeCryptoFwkCtx(env, context);
         return;
     }
-    napi_value instance = CreateX509Crl(env);
+    napi_value instance = CreateX509Crl(env, context->createX509CrlName);
     NapiX509Crl *x509CrlClass = new (std::nothrow) NapiX509Crl(context->crl);
     if (x509CrlClass == nullptr) {
         context->errCode = CF_ERR_MALLOC;
@@ -960,7 +1133,7 @@ void NapiX509Crl::CreateX509CrlComplete(napi_env env, napi_status status, void *
     FreeCryptoFwkCtx(env, context);
 }
 
-napi_value NapiX509Crl::NapiCreateX509Crl(napi_env env, napi_callback_info info)
+napi_value NapiX509Crl::NapiCreateX509CrlBase(napi_env env, napi_callback_info info, std::string createName)
 {
     size_t argc = ARGS_SIZE_TWO;
     napi_value argv[ARGS_SIZE_TWO] = { nullptr };
@@ -986,12 +1159,10 @@ napi_value NapiX509Crl::NapiCreateX509Crl(napi_env env, napi_callback_info info)
         return nullptr;
     }
 
-    napi_create_async_work(
-        env, nullptr, CertGetResourceName(env, "createX509Crl"),
-        CreateX509CrlExecute,
-        CreateX509CrlComplete,
-        static_cast<void *>(context),
-        &context->asyncWork);
+    context->createX509CrlName = createName;
+
+    napi_create_async_work(env, nullptr, CertGetResourceName(env, createName.c_str()), CreateX509CrlExecute,
+        CreateX509CrlComplete, static_cast<void *>(context), &context->asyncWork);
 
     napi_queue_async_work(env, context->asyncWork);
     if (context->asyncType == ASYNC_TYPE_PROMISE) {
@@ -1001,6 +1172,16 @@ napi_value NapiX509Crl::NapiCreateX509Crl(napi_env env, napi_callback_info info)
     }
 }
 
+napi_value NapiX509Crl::NapiCreateX509Crl(napi_env env, napi_callback_info info)
+{
+    return NapiCreateX509CrlBase(env, info, std::string("createX509Crl"));
+}
+
+napi_value NapiX509Crl::NapiCreateX509CRL(napi_env env, napi_callback_info info)
+{
+    return NapiCreateX509CrlBase(env, info, std::string("createX509CRL"));
+}
+
 static napi_value X509CrlConstructor(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
@@ -1008,10 +1189,10 @@ static napi_value X509CrlConstructor(napi_env env, napi_callback_info info)
     return thisVar;
 }
 
-void NapiX509Crl::DefineX509CrlJSClass(napi_env env, napi_value exports)
+void NapiX509Crl::DefineX509CrlJS(napi_env env, napi_value exports, std::string className)
 {
     napi_property_descriptor desc[] = {
-        DECLARE_NAPI_FUNCTION("createX509Crl", NapiCreateX509Crl),
+        DECLARE_NAPI_FUNCTION(className.c_str(), NapiCreateX509Crl),
     };
     napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
 
@@ -1024,26 +1205,76 @@ void NapiX509Crl::DefineX509CrlJSClass(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("getIssuerName", NapiGetIssuerDN),
         DECLARE_NAPI_FUNCTION("getLastUpdate", NapiGetThisUpdate),
         DECLARE_NAPI_FUNCTION("getNextUpdate", NapiGetNextUpdate),
-        DECLARE_NAPI_FUNCTION("getRevokedCert", NapiGetRevokedCertificate),
-        DECLARE_NAPI_FUNCTION("getRevokedCertWithCert", NapiGetRevokedCertificateWithCert),
-        DECLARE_NAPI_FUNCTION("getRevokedCerts", NapiGetRevokedCertificates),
-        DECLARE_NAPI_FUNCTION("getTbsInfo", NapiGetTBSCertList),
         DECLARE_NAPI_FUNCTION("getSignature", NapiGetSignature),
         DECLARE_NAPI_FUNCTION("getSignatureAlgName", NapiGetSigAlgName),
         DECLARE_NAPI_FUNCTION("getSignatureAlgOid", NapiGetSigAlgOID),
         DECLARE_NAPI_FUNCTION("getSignatureAlgParams", NapiGetSigAlgParams),
+        DECLARE_NAPI_FUNCTION("getRevokedCert", NapiCrlGetRevokedCertificate),
+        DECLARE_NAPI_FUNCTION("getRevokedCerts", NapiCrlGetRevokedCertificates),
+        DECLARE_NAPI_FUNCTION("getRevokedCertWithCert", NapiCrlGetRevokedCertificateWithCert),
+        DECLARE_NAPI_FUNCTION("getTbsInfo", NapiCrlGetTBSCertList),
     };
     napi_value constructor = nullptr;
-    napi_define_class(env, "X509Crl", NAPI_AUTO_LENGTH, X509CrlConstructor, nullptr,
+    napi_define_class(env, className.c_str(), NAPI_AUTO_LENGTH, X509CrlConstructor, nullptr,
         sizeof(x509CrlDesc) / sizeof(x509CrlDesc[0]), x509CrlDesc, &constructor);
-    napi_create_reference(env, constructor, 1, &classRef_);
+
+    napi_create_reference(env, constructor, 1, &classCrlRef_);
 }
 
-napi_value NapiX509Crl::CreateX509Crl(napi_env env)
+void NapiX509Crl::DefineX509CRLJS(napi_env env, napi_value exports, std::string className)
+{
+    napi_property_descriptor desc[] = {
+        DECLARE_NAPI_FUNCTION(className.c_str(), NapiCreateX509CRL),
+    };
+    napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
+
+    napi_property_descriptor x509CrlDesc[] = {
+        DECLARE_NAPI_FUNCTION("isRevoked", NapiIsRevoked),
+        DECLARE_NAPI_FUNCTION("getType", NapiGetType),
+        DECLARE_NAPI_FUNCTION("getEncoded", NapiGetEncoded),
+        DECLARE_NAPI_FUNCTION("verify", NapiVerify),
+        DECLARE_NAPI_FUNCTION("getVersion", NapiGetVersion),
+        DECLARE_NAPI_FUNCTION("getIssuerName", NapiGetIssuerDN),
+        DECLARE_NAPI_FUNCTION("getLastUpdate", NapiGetThisUpdate),
+        DECLARE_NAPI_FUNCTION("getNextUpdate", NapiGetNextUpdate),
+        DECLARE_NAPI_FUNCTION("getSignature", NapiGetSignature),
+        DECLARE_NAPI_FUNCTION("getSignatureAlgName", NapiGetSigAlgName),
+        DECLARE_NAPI_FUNCTION("getSignatureAlgOid", NapiGetSigAlgOID),
+        DECLARE_NAPI_FUNCTION("getSignatureAlgParams", NapiGetSigAlgParams),
+        DECLARE_NAPI_FUNCTION("getExtensions", NapiGetExtensions),
+        DECLARE_NAPI_FUNCTION("getRevokedCert", NapiCRLGetRevokedCertificate),
+        DECLARE_NAPI_FUNCTION("getRevokedCerts", NapiCRLGetRevokedCertificates),
+        DECLARE_NAPI_FUNCTION("getRevokedCertWithCert", NapiCRLGetRevokedCertificateWithCert),
+        DECLARE_NAPI_FUNCTION("getTBSInfo", NapiCRLGetTBSCertList),
+    };
+    napi_value constructor = nullptr;
+    napi_define_class(env, className.c_str(), NAPI_AUTO_LENGTH, X509CrlConstructor, nullptr,
+        sizeof(x509CrlDesc) / sizeof(x509CrlDesc[0]), x509CrlDesc, &constructor);
+
+    napi_create_reference(env, constructor, 1, &classCRLRef_);
+}
+
+void NapiX509Crl::DefineX509CrlJSClass(napi_env env, napi_value exports, std::string className)
+{
+    std::string createName;
+    if (className == std::string("X509Crl")) {
+        createName = "createX509Crl";
+        DefineX509CrlJS(env, exports, createName);
+    } else {
+        createName = "createX509CRL";
+        DefineX509CRLJS(env, exports, createName);
+    }
+}
+
+napi_value NapiX509Crl::CreateX509Crl(napi_env env, std::string createName)
 {
     napi_value constructor = nullptr;
     napi_value instance = nullptr;
-    napi_get_reference_value(env, classRef_, &constructor);
+    if (createName == std::string("createX509Crl")) {
+        napi_get_reference_value(env, classCrlRef_, &constructor);
+    } else {
+        napi_get_reference_value(env, classCRLRef_, &constructor);
+    }
     napi_new_instance(env, constructor, 0, nullptr, &instance);
     return instance;
 }

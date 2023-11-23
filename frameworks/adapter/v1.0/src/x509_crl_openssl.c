@@ -15,8 +15,6 @@
 
 #include "x509_crl_openssl.h"
 
-#include "securec.h"
-
 #include <openssl/bio.h>
 #include <openssl/evp.h>
 #include <openssl/pem.h>
@@ -24,12 +22,13 @@
 #include <openssl/rsa.h>
 #include <openssl/x509.h>
 
-#include "config.h"
-#include "fwk_class.h"
-#include "cf_log.h"
-#include "cf_memory.h"
 #include "certificate_openssl_class.h"
 #include "certificate_openssl_common.h"
+#include "cf_log.h"
+#include "cf_memory.h"
+#include "config.h"
+#include "fwk_class.h"
+#include "securec.h"
 #include "utils.h"
 #include "x509_crl.h"
 #include "x509_crl_entry_openssl.h"
@@ -335,9 +334,10 @@ static CfResult GetNextUpdate(HcfX509CrlSpi *self, CfBlob *out)
     return CF_SUCCESS;
 }
 
-static CfResult GetRevokedCert(HcfX509CrlSpi *self, long serialNumber, HcfX509CrlEntry **entryOut)
+static CfResult GetRevokedCert(HcfX509CrlSpi *self, const CfBlob *serialNumber, HcfX509CrlEntry **entryOut)
 {
-    if ((self == NULL) || (entryOut == NULL)) {
+    if ((self == NULL) || (serialNumber == NULL) || (serialNumber->data == NULL) || (serialNumber->size == 0) ||
+        (serialNumber->size > MAX_SN_BYTE_CNT) || (entryOut == NULL)) {
         LOGE("Invalid Paramas!");
         return CF_INVALID_PARAMS;
     }
@@ -346,20 +346,24 @@ static CfResult GetRevokedCert(HcfX509CrlSpi *self, long serialNumber, HcfX509Cr
         LOGE("crl is null!");
         return CF_INVALID_PARAMS;
     }
-    ASN1_INTEGER *serial = ASN1_INTEGER_new();
+
+    BIGNUM *bigNum = BN_bin2bn(serialNumber->data, serialNumber->size, NULL);
+    if (bigNum == NULL) {
+        LOGE("bin to big number fail!");
+        return CF_INVALID_PARAMS;
+    }
+    ASN1_INTEGER *serial = BN_to_ASN1_INTEGER(bigNum, NULL);
+
     if (serial == NULL) {
         LOGE("Serial init fail!");
         CfPrintOpensslError();
+        BN_free(bigNum);
         return CF_ERR_CRYPTO_OPERATION;
     }
-    if (!ASN1_INTEGER_set(serial, serialNumber)) {
-        LOGE("Set serial number fail!");
-        CfPrintOpensslError();
-        ASN1_INTEGER_free(serial);
-        return CF_ERR_CRYPTO_OPERATION;
-    }
+
     X509_REVOKED *rev = NULL;
     int32_t opensslRes = X509_CRL_get0_by_serial(crl, &rev, serial);
+    BN_free(bigNum);
     ASN1_INTEGER_free(serial);
     if (opensslRes != CF_OPENSSL_SUCCESS) {
         LOGE("Get revoked certificate fail, res : %d!", opensslRes);
@@ -631,7 +635,7 @@ static CfResult GetSignatureAlgName(HcfX509CrlSpi *self, CfBlob *algNameOut)
         CfFree(oidOut);
         return res;
     }
-    const char *algName = GetAlgorithmName((const char*)(oidOut->data));
+    const char *algName = GetAlgorithmName((const char *)(oidOut->data));
     CfFree(oidOut->data);
     CfFree(oidOut);
     if (algName == NULL) {
@@ -705,6 +709,27 @@ static CfResult GetSignatureAlgParams(HcfX509CrlSpi *self, CfBlob *sigAlgParamOu
         return CF_INVALID_PARAMS;
     }
     return GetSignatureAlgParamsInner(crl, sigAlgParamOut);
+}
+
+static CfResult GetExtensions(HcfX509CrlSpi *self, CfBlob *outBlob)
+{
+    if ((self == NULL) || (outBlob == NULL)) {
+        LOGE("Invalid Paramas!");
+        return CF_INVALID_PARAMS;
+    }
+
+    X509_CRL *crl = GetCrl(self);
+    if (crl == NULL) {
+        LOGE("crl is null!");
+        return CF_INVALID_PARAMS;
+    }
+
+    X509_EXTENSIONS *exts = (X509_EXTENSIONS *)X509_CRL_get0_extensions(crl);
+    CfResult ret = CopyExtensionsToBlob(exts, outBlob);
+    if (ret != CF_SUCCESS) {
+        CfPrintOpensslError();
+    }
+    return ret;
 }
 
 static void Destroy(CfObjectBase *self)
@@ -798,6 +823,7 @@ CfResult HcfCX509CrlSpiCreate(const CfEncodingBlob *inStream, HcfX509CrlSpi **sp
     returnCRL->base.engineGetSignatureAlgName = GetSignatureAlgName;
     returnCRL->base.engineGetSignatureAlgOid = GetSignatureAlgOid;
     returnCRL->base.engineGetSignatureAlgParams = GetSignatureAlgParams;
+    returnCRL->base.engineGetExtensions = GetExtensions;
     if (SetCertIssuer((HcfX509CrlSpi *)returnCRL) != CF_SUCCESS) {
         LOGI("No cert issuer find or set cert issuer fail!");
     }

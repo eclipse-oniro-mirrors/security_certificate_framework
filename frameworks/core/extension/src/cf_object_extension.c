@@ -211,6 +211,18 @@ int32_t CfExtensionCheck(const CfBase *obj, const CfParamSet *in, CfParamSet **o
             { .tag = CF_TAG_RESULT_INT, .int32Param = pathLen },
         };
         return CfConstructParamSetOut(params, sizeof(params) / sizeof(CfParam), out);
+    } else if (tmpParam->int32Param == CF_CHECK_TYPE_EXT_HAS_UN_SUPPORT) {
+        bool flag = false;
+        ret = tmp->func.adapterHasUnsupportedCriticalExtension(tmp->adapterRes, &flag);
+        if (ret != CF_SUCCESS) {
+            CF_LOG_E("adapter has unsupported critical extension failed");
+            return ret;
+        }
+        CfParam params[] = {
+            { .tag = CF_TAG_RESULT_TYPE, .int32Param = CF_TAG_TYPE_BOOL },
+            { .tag = CF_TAG_RESULT_BOOL, .boolParam = flag },
+        };
+        return CfConstructParamSetOut(params, sizeof(params) / sizeof(CfParam), out);
     }
 
     CF_LOG_E("extension check type invalid, type = %d", tmpParam->int32Param);

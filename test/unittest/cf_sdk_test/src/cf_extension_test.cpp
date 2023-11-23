@@ -188,6 +188,23 @@ static void ExtensionTest(int32_t type, int32_t typeValue, const CfParam *params
         case CF_GET_TYPE_EXT_ENTRY:
             EXPECT_EQ(CompareEntryResult(typeValue, outParamSet), true);
             break;
+        default:
+            break;
+    }
+    CfFreeParamSet(&outParamSet);
+}
+
+static void ExtensionCheckTest(int32_t type, int32_t typeValue, const CfParam *params, uint32_t cnt)
+{
+    CfParamSet *outParamSet = nullptr;
+    int32_t ret = CommonTest(CF_OBJ_TYPE_EXTENSION, &g_extensionBlob[0], params, cnt, &outParamSet);
+    EXPECT_EQ(ret, CF_SUCCESS);
+
+#ifdef TEST_PRINT_DATA
+    (void)GetOutValue(outParamSet);
+#endif
+
+    switch (type) {
         case CF_CHECK_TYPE_EXT_CA:
             EXPECT_EQ(CompareCheckResult(outParamSet), true);
             break;
@@ -325,7 +342,7 @@ HWTEST_F(CfExtensionTest, CfExtensionTest008, TestSize.Level0)
     CfParam params[] = {
         { .tag = CF_TAG_CHECK_TYPE, .int32Param = CF_CHECK_TYPE_EXT_CA },
     };
-    ExtensionTest(CF_CHECK_TYPE_EXT_CA, 0, params, sizeof(params) / sizeof(CfParam));
+    ExtensionCheckTest(CF_CHECK_TYPE_EXT_CA, 0, params, sizeof(params) / sizeof(CfParam));
 }
 
 /**
@@ -614,5 +631,18 @@ HWTEST_F(CfExtensionTest, CfExtensionTest025, TestSize.Level0)
     int32_t ret = AbnormalTest(CF_OBJ_TYPE_EXTENSION, &g_extensionBlob[0],
         params, sizeof(params) / sizeof(CfParam), OP_TYPE_GET);
     EXPECT_EQ(ret, CF_SUCCESS);
+}
+/**
+ * @tc.name: CfExtensionTest026
+ * @tc.desc: check unsupport critical
+ * @tc.type: FUNC
+ * @tc.require: AR000HS2SC /SR000HS2SB
+ */
+HWTEST_F(CfExtensionTest, CfExtensionTest026, TestSize.Level0)
+{
+    CfParam params[] = {
+        { .tag = CF_TAG_CHECK_TYPE, .int32Param = CF_CHECK_TYPE_EXT_HAS_UN_SUPPORT },
+    };
+    ExtensionCheckTest(CF_CHECK_TYPE_EXT_HAS_UN_SUPPORT, 0, params, sizeof(params) / sizeof(CfParam));
 }
 }

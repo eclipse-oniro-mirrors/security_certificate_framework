@@ -26,6 +26,7 @@ typedef struct {
     int32_t (*adapterGetEntry)(const CfBase *object, CfExtensionEntryType type, const CfBlob *oid, CfBlob *out);
     int32_t (*adapterGetItem)(const CfBase *object, CfItemId id, CfBlob *out);
     int32_t (*adapterCheckCA)(const CfBase *object, int32_t *pathLen);
+    int32_t (*adapterHasUnsupportedCriticalExtension)(const CfBase *object, bool *out);
 } CfExtensionAdapterAbilityFunc;
 
 #endif /* CF_EXTENSION_ADAPTER_ABILITY_DEFINE_H */

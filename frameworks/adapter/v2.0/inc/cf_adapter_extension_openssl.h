@@ -41,6 +41,8 @@ int32_t CfOpensslCheckCA(const CfBase *object, int32_t *pathLen);
 
 int32_t CfOpensslGetExtensionItem(const CfBase *object, CfItemId id, CfBlob *out);
 
+int32_t CfOpensslHasUnsupportedCriticalExtension(const CfBase *object, bool *out);
+
 #ifdef __cplusplus
 }
 #endif
