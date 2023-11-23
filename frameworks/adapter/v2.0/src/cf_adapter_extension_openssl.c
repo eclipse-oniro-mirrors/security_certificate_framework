@@ -293,7 +293,7 @@ int32_t CfOpensslHasUnsupportedCriticalExtension(const CfBase *object, bool *out
 
     int32_t extNums = sk_X509_EXTENSION_num(exts);
     if ((extNums <= 0) || (extNums > MAX_COUNT_OID)) {
-        CF_LOG_E("Failed to get extension numbers");
+        CF_LOG_E("Failed to get extension numbers, extNums = %d", extNums);
         return CF_ERR_CRYPTO_OPERATION;
     }
 

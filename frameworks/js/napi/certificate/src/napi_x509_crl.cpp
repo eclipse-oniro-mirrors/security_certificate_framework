@@ -472,21 +472,30 @@ static bool GetCrlSerialNumberFromNapiValue(napi_env env, napi_value arg, CfBlob
         LOGE("wrong argument type. expect int type. [Type]: %d", valueType);
         return false;
     }
+
     uint8_t serialBuf[MAX_SN_BYTE_CNT] = { 0 };
     uint32_t serialLen = sizeof(int64_t);
     int64_t tmpData = 0;
     if (napi_get_value_int64(env, arg, &tmpData) != napi_ok || tmpData < 0) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get serialNum failed"));
         LOGE("can not get int64 value");
         return false;
     }
-    (void)memcpy_s(serialBuf, sizeof(int64_t), &tmpData, sizeof(int64_t));
+
+    if (memcpy_s(serialBuf, sizeof(serialBuf), &tmpData, sizeof(int64_t)) != EOK) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_COPY, "copy serialNum failed"));
+        LOGE("copy serialNum failed");
+        return false;
+    }
+
     outBlob.size = serialLen;
     outBlob.data = static_cast<uint8_t *>(HcfMalloc(serialLen, 0));
     if (outBlob.data == nullptr) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc serialNum failed"));
         LOGE("malloc blob data failed!");
         return false;
     }
-    // reverse data
+    // reverse data: because BN_bin2bn() converts the positive integer in big-endian form of length len into a BIGNUM
     for (uint32_t i = 0; i < serialLen; ++i) {
         outBlob.data[i] = serialBuf[outBlob.size - 1 - i];
     }
@@ -506,29 +515,35 @@ static bool GetCRLSerialNumberFromNapiValue(napi_env env, napi_value arg, CfBlob
 
     size_t wordCount = 0;
     if (napi_get_value_bigint_words(env, arg, nullptr, &wordCount, nullptr) != napi_ok) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get serialNum failed"));
         LOGE("can not get word count");
         return false;
     }
     if (wordCount == 0 || wordCount > (MAX_SN_BYTE_CNT / sizeof(int64_t))) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get serialNum len failed"));
         LOGE("can not get wordCount, wordCount = %u", wordCount);
         return false;
     }
+
     uint8_t serialBuf[MAX_SN_BYTE_CNT] = { 0 };
     uint32_t serialLen = sizeof(int64_t) * wordCount;
 
     int sign = 0;
     if (napi_get_value_bigint_words(env, arg, &sign, &wordCount, reinterpret_cast<uint64_t *>(serialBuf)) != napi_ok ||
         sign > 0) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get serialNum len failed"));
         LOGE("can not get bigint value, sign = %d", sign); // sign 0 : positive, sign 1 : negative
         return false;
     }
+
     outBlob.size = serialLen;
     outBlob.data = static_cast<uint8_t *>(HcfMalloc(serialLen, 0));
     if (outBlob.data == nullptr) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc serialNum failed"));
         LOGE("malloc blob data failed!");
         return false;
     }
-    // reverse data
+    // reverse data: because BN_bin2bn() converts the positive integer in big-endian form of length len into a BIGNUM
     for (uint32_t i = 0; i < serialLen; ++i) {
         outBlob.data[i] = serialBuf[outBlob.size - 1 - i];
     }
@@ -545,27 +560,26 @@ napi_value NapiX509Crl::GetRevokedCertificate(napi_env env, napi_callback_info i
     if (!CertCheckArgsCount(env, argc, ARGS_SIZE_ONE, true)) {
         return nullptr;
     }
+
     CfBlob serialNumber = { 0, nullptr };
+    bool getSnRet = false;
     if (returnClassName == std::string("X509CrlEntry")) {
-        if (!GetCrlSerialNumberFromNapiValue(env, argv[PARAM0], serialNumber)) {
-            LOGE("get serialNumber failed from X509CrlEntry!");
-            return nullptr;
-        }
+        getSnRet = GetCrlSerialNumberFromNapiValue(env, argv[PARAM0], serialNumber);
     } else {
-        if (!GetCRLSerialNumberFromNapiValue(env, argv[PARAM0], serialNumber)) {
-            LOGE("get serialNumber failed from X509CRLEntry!");
-            return nullptr;
-        }
+        getSnRet = GetCRLSerialNumberFromNapiValue(env, argv[PARAM0], serialNumber);
+    }
+    if (!getSnRet) {
+        LOGE("get serialNumber failed");
+        return nullptr;
     }
 
     HcfX509Crl *x509Crl = GetX509Crl();
     HcfX509CrlEntry *crlEntry = nullptr;
     CfResult ret = x509Crl->getRevokedCert(x509Crl, &serialNumber, &crlEntry);
+    CF_FREE_PTR(serialNumber.data);
     if (ret != CF_SUCCESS) {
         napi_throw(env, CertGenerateBusinessError(env, ret, "get revoked cert failed!"));
         LOGE("get revoked cert failed!");
-        CfFree(serialNumber.data);
-        serialNumber.data = nullptr;
         return nullptr;
     }
 
@@ -575,8 +589,6 @@ napi_value NapiX509Crl::GetRevokedCertificate(napi_env env, napi_callback_info i
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to create a x509CrlEntry class"));
         LOGE("Failed to create a x509CrlEntry class");
         CfObjDestroy(crlEntry);
-        CfFree(serialNumber.data);
-        serialNumber.data = nullptr;
         return nullptr;
     }
 
@@ -588,8 +600,6 @@ napi_value NapiX509Crl::GetRevokedCertificate(napi_env env, napi_callback_info i
             return;
         },
         nullptr, nullptr);
-    CfFree(serialNumber.data);
-    serialNumber.data = nullptr;
     return instance;
 }
 

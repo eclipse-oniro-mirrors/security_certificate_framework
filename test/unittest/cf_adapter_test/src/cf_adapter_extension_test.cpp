@@ -1289,9 +1289,9 @@ HWTEST_F(CfAdapterExtensionTest, OpensslHasUnsupportedCriticalExtensionTest004, 
     X509_EXTENSIONS *exts = extsObj->exts;
 
     for (int index = 0; index < MAX_COUNT_OID + 1; index++) {
-        uint8_t data[8] = {0};
-        snprintf((char *)data, 5, "test%03d", index);
-        ASN1_BIT_STRING bitStr = { strlen(reinterpret_cast<char *>(data)), V_ASN1_BIT_STRING, data, 0 };
+        string data = "test" + std::to_string(index);
+        ASN1_BIT_STRING bitStr = { data.length(), V_ASN1_BIT_STRING,
+            const_cast<unsigned char *>(reinterpret_cast<const unsigned char *>(data.c_str())), 0 };
         X509_EXTENSION *NetscapeCommentExt = X509V3_EXT_i2d(NID_netscape_comment, 1, reinterpret_cast<void *>(&bitStr));
 
         (void)sk_X509_EXTENSION_push(exts, NetscapeCommentExt);
@@ -1301,7 +1301,8 @@ HWTEST_F(CfAdapterExtensionTest, OpensslHasUnsupportedCriticalExtensionTest004, 
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION) <<
         "Abnormal adapter extension object has unsupported critical extension test failed, retcode:" << ret;
 
-    (void)sk_X509_EXTENSION_pop(exts);
+    (void)sk_X509_EXTENSION_pop_free(exts, X509_EXTENSION_free);
+    extsObj->exts = nullptr;
     CfOpensslDestoryExtension(&obj004);
 }
 }
