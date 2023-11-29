@@ -32,7 +32,7 @@ using namespace testing::ext;
 
 namespace {
 HcfX509Crl *g_x509Crl = nullptr;
-uint8_t TEST_SN[] = { 0x03, 0xe8 };
+uint8_t g_testSn[] = { 0x03, 0xe8 };
 // constexpr long long TEST_LONGLONG_SN = 0x1234567890;
 
 class CryptoX509CrlTest : public testing::Test {
@@ -708,7 +708,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest091, TestSize.Level0)
 {
     ASSERT_NE(g_x509Crl, nullptr);
     HcfX509CrlEntry *crlEntry = nullptr;
-    CfBlob testSnBlob = { 2, TEST_SN };
+    CfBlob testSnBlob = { 2, g_testSn };
     CfResult ret = g_x509Crl->getRevokedCert(g_x509Crl, &testSnBlob, &crlEntry);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(crlEntry, nullptr);
@@ -730,7 +730,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest092, TestSize.Level0)
 HWTEST_F(CryptoX509CrlTest, X509CrlTest093, TestSize.Level0)
 {
     ASSERT_NE(g_x509Crl, nullptr);
-    CfBlob testSnBlob = { 2, TEST_SN };
+    CfBlob testSnBlob = { 2, g_testSn };
     CfResult ret = g_x509Crl->getRevokedCert(g_x509Crl, &testSnBlob, nullptr);
     EXPECT_NE(ret, CF_SUCCESS);
 }
@@ -740,7 +740,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest094, TestSize.Level0)
 {
     ASSERT_NE(g_x509Crl, nullptr);
     HcfX509CrlEntry *crlEntry = nullptr;
-    CfBlob testSnBlob = { 2, TEST_SN };
+    CfBlob testSnBlob = { 2, g_testSn };
     CfResult ret = g_x509Crl->getRevokedCert(nullptr, &testSnBlob, &crlEntry);
     EXPECT_NE(ret, CF_SUCCESS);
 }
@@ -749,7 +749,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest094, TestSize.Level0)
 HWTEST_F(CryptoX509CrlTest, X509CrlTest095, TestSize.Level0)
 {
     ASSERT_NE(g_x509Crl, nullptr);
-    CfBlob testSnBlob = { 2, TEST_SN };
+    CfBlob testSnBlob = { 2, g_testSn };
     CfResult ret = g_x509Crl->getRevokedCert(nullptr, &testSnBlob, nullptr);
     EXPECT_NE(ret, CF_SUCCESS);
 }
@@ -759,7 +759,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest101, TestSize.Level0)
 {
     ASSERT_NE(g_x509Crl, nullptr);
     HcfX509CrlEntry *crlEntry = nullptr;
-    CfBlob testSnBlob = { 2, TEST_SN };
+    CfBlob testSnBlob = { 2, g_testSn };
     CfResult ret = g_x509Crl->getRevokedCert(g_x509Crl, &testSnBlob, &crlEntry);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(crlEntry, nullptr);
@@ -767,8 +767,8 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest101, TestSize.Level0)
     ret = crlEntry->getSerialNumber(crlEntry, &out);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_EQ(out.size, 2); /* out size: 2 bytes */
-    EXPECT_EQ(out.data[0], TEST_SN[0]);
-    EXPECT_EQ(out.data[1], TEST_SN[1]);
+    EXPECT_EQ(out.data[0], g_testSn[0]);
+    EXPECT_EQ(out.data[1], g_testSn[1]);
     CfFree(out.data);
     CfObjDestroy(crlEntry);
 }
@@ -778,7 +778,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest102, TestSize.Level0)
 {
     ASSERT_NE(g_x509Crl, nullptr);
     HcfX509CrlEntry *crlEntry = nullptr;
-    CfBlob testSnBlob = { 2, TEST_SN };
+    CfBlob testSnBlob = { 2, g_testSn };
     CfResult ret = g_x509Crl->getRevokedCert(g_x509Crl, &testSnBlob, &crlEntry);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(crlEntry, nullptr);
@@ -792,7 +792,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest103, TestSize.Level0)
 {
     ASSERT_NE(g_x509Crl, nullptr);
     HcfX509CrlEntry *crlEntry = nullptr;
-    CfBlob testSnBlob = { 2, TEST_SN };
+    CfBlob testSnBlob = { 2, g_testSn };
     CfResult ret = g_x509Crl->getRevokedCert(g_x509Crl, &testSnBlob, &crlEntry);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(crlEntry, nullptr);
@@ -806,7 +806,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest111, TestSize.Level0)
 {
     ASSERT_NE(g_x509Crl, nullptr);
     HcfX509CrlEntry *crlEntry = nullptr;
-    CfBlob testSnBlob = { 2, TEST_SN };
+    CfBlob testSnBlob = { 2, g_testSn };
     CfResult ret = g_x509Crl->getRevokedCert(g_x509Crl, &testSnBlob, &crlEntry);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(crlEntry, nullptr);
@@ -824,7 +824,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest112, TestSize.Level0)
 {
     ASSERT_NE(g_x509Crl, nullptr);
     HcfX509CrlEntry *crlEntry = nullptr;
-    CfBlob testSnBlob = { 2, TEST_SN };
+    CfBlob testSnBlob = { 2, g_testSn };
     CfResult ret = g_x509Crl->getRevokedCert(g_x509Crl, &testSnBlob, &crlEntry);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(crlEntry, nullptr);
@@ -841,7 +841,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest113, TestSize.Level0)
 {
     ASSERT_NE(g_x509Crl, nullptr);
     HcfX509CrlEntry *crlEntry = nullptr;
-    CfBlob testSnBlob = { 2, TEST_SN };
+    CfBlob testSnBlob = { 2, g_testSn };
     CfResult ret = g_x509Crl->getRevokedCert(g_x509Crl, &testSnBlob, &crlEntry);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(crlEntry, nullptr);
@@ -856,7 +856,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest114, TestSize.Level0)
 {
     ASSERT_NE(g_x509Crl, nullptr);
     HcfX509CrlEntry *crlEntry = nullptr;
-    CfBlob testSnBlob = { 2, TEST_SN };
+    CfBlob testSnBlob = { 2, g_testSn };
     CfResult ret = g_x509Crl->getRevokedCert(g_x509Crl, &testSnBlob, &crlEntry);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(crlEntry, nullptr);
@@ -871,7 +871,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest121, TestSize.Level0)
 {
     ASSERT_NE(g_x509Crl, nullptr);
     HcfX509CrlEntry *crlEntry = nullptr;
-    CfBlob testSnBlob = { 2, TEST_SN };
+    CfBlob testSnBlob = { 2, g_testSn };
     CfResult ret = g_x509Crl->getRevokedCert(g_x509Crl, &testSnBlob, &crlEntry);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(crlEntry, nullptr);
@@ -890,7 +890,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest122, TestSize.Level0)
 {
     ASSERT_NE(g_x509Crl, nullptr);
     HcfX509CrlEntry *crlEntry = nullptr;
-    CfBlob testSnBlob = { 2, TEST_SN };
+    CfBlob testSnBlob = { 2, g_testSn };
     CfResult ret = g_x509Crl->getRevokedCert(g_x509Crl, &testSnBlob, &crlEntry);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(crlEntry, nullptr);
@@ -907,7 +907,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest123, TestSize.Level0)
 {
     ASSERT_NE(g_x509Crl, nullptr);
     HcfX509CrlEntry *crlEntry = nullptr;
-    CfBlob testSnBlob = { 2, TEST_SN };
+    CfBlob testSnBlob = { 2, g_testSn };
     CfResult ret = g_x509Crl->getRevokedCert(g_x509Crl, &testSnBlob, &crlEntry);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(crlEntry, nullptr);
@@ -922,7 +922,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest131, TestSize.Level0)
 {
     ASSERT_NE(g_x509Crl, nullptr);
     HcfX509CrlEntry *crlEntry = nullptr;
-    CfBlob testSnBlob = { 2, TEST_SN };
+    CfBlob testSnBlob = { 2, g_testSn };
     CfResult ret = g_x509Crl->getRevokedCert(g_x509Crl, &testSnBlob, &crlEntry);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(crlEntry, nullptr);
@@ -941,7 +941,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest132, TestSize.Level0)
 {
     ASSERT_NE(g_x509Crl, nullptr);
     HcfX509CrlEntry *crlEntry = nullptr;
-    CfBlob testSnBlob = { 2, TEST_SN };
+    CfBlob testSnBlob = { 2, g_testSn };
     CfResult ret = g_x509Crl->getRevokedCert(g_x509Crl, &testSnBlob, &crlEntry);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(crlEntry, nullptr);
@@ -958,7 +958,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest133, TestSize.Level0)
 {
     ASSERT_NE(g_x509Crl, nullptr);
     HcfX509CrlEntry *crlEntry = nullptr;
-    CfBlob testSnBlob = { 2, TEST_SN };
+    CfBlob testSnBlob = { 2, g_testSn };
     CfResult ret = g_x509Crl->getRevokedCert(g_x509Crl, &testSnBlob, &crlEntry);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(crlEntry, nullptr);
@@ -1436,7 +1436,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest209, TestSize.Level0)
 {
     ASSERT_NE(g_x509Crl, nullptr);
     HcfX509CrlEntry *crlEntry = nullptr;
-    CfBlob testSnBlob = { 2, TEST_SN };
+    CfBlob testSnBlob = { 2, g_testSn };
     CfResult ret = g_x509Crl->getRevokedCert(g_x509Crl, &testSnBlob, &crlEntry);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(crlEntry, nullptr);
@@ -1453,7 +1453,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest210, TestSize.Level0)
 {
     ASSERT_NE(g_x509Crl, nullptr);
     HcfX509CrlEntry *crlEntry = nullptr;
-    CfBlob testSnBlob = { 2, TEST_SN };
+    CfBlob testSnBlob = { 2, g_testSn };
     CfResult ret = g_x509Crl->getRevokedCert(g_x509Crl, &testSnBlob, &crlEntry);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(crlEntry, nullptr);
@@ -1493,7 +1493,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest212, TestSize.Level0)
 {
     ASSERT_NE(g_x509Crl, nullptr);
     HcfX509CrlEntry *crlEntry = nullptr;
-    CfBlob testSnBlob = { 2, TEST_SN };
+    CfBlob testSnBlob = { 2, g_testSn };
     CfResult ret = g_x509Crl->getRevokedCert(g_x509Crl, &testSnBlob, &crlEntry);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(crlEntry, nullptr);
@@ -1511,7 +1511,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest213, TestSize.Level0)
 {
     ASSERT_NE(g_x509Crl, nullptr);
     HcfX509CrlEntry *crlEntry = nullptr;
-    CfBlob testSnBlob = { 2, TEST_SN };
+    CfBlob testSnBlob = { 2, g_testSn };
     CfResult ret = g_x509Crl->getRevokedCert(g_x509Crl, &testSnBlob, &crlEntry);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(crlEntry, nullptr);
@@ -1527,7 +1527,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest214, TestSize.Level0)
 {
     ASSERT_NE(g_x509Crl, nullptr);
     HcfX509CrlEntry *crlEntry = nullptr;
-    CfBlob testSnBlob = { 2, TEST_SN };
+    CfBlob testSnBlob = { 2, g_testSn };
     CfResult ret = g_x509Crl->getRevokedCert(g_x509Crl, &testSnBlob, &crlEntry);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(crlEntry, nullptr);
@@ -1569,7 +1569,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest216, TestSize.Level0)
 {
     ASSERT_NE(g_x509Crl, nullptr);
     HcfX509CrlEntry *crlEntry = nullptr;
-    CfBlob testSnBlob = { 2, TEST_SN };
+    CfBlob testSnBlob = { 2, g_testSn };
     CfResult ret = g_x509Crl->getRevokedCert(g_x509Crl, &testSnBlob, &crlEntry);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(crlEntry, nullptr);
@@ -1607,7 +1607,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest218, TestSize.Level0)
 {
     ASSERT_NE(g_x509Crl, nullptr);
     HcfX509CrlEntry *crlEntry = nullptr;
-    CfBlob testSnBlob = { 2, TEST_SN };
+    CfBlob testSnBlob = { 2, g_testSn };
     CfResult ret = g_x509Crl->getRevokedCert(g_x509Crl, &testSnBlob, &crlEntry);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(crlEntry, nullptr);
@@ -1625,7 +1625,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest219, TestSize.Level0)
 {
     ASSERT_NE(g_x509Crl, nullptr);
     HcfX509CrlEntry *crlEntry = nullptr;
-    CfBlob testSnBlob = { 2, TEST_SN };
+    CfBlob testSnBlob = { 2, g_testSn };
     CfResult ret = g_x509Crl->getRevokedCert(g_x509Crl, &testSnBlob, &crlEntry);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(crlEntry, nullptr);
