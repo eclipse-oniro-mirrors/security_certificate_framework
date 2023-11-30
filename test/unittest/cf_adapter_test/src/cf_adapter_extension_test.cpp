@@ -1231,9 +1231,9 @@ HWTEST_F(CfAdapterExtensionTest, OpensslHasUnsupportedCriticalExtensionTest002, 
 
     uint8_t data[] = "test";
     ASN1_BIT_STRING bitStr = { strlen(reinterpret_cast<char *>(data)), V_ASN1_BIT_STRING, data, 0 };
-    X509_EXTENSION *NetscapeCommentExt = X509V3_EXT_i2d(NID_netscape_comment, 1, reinterpret_cast<void *>(&bitStr));
+    X509_EXTENSION *netscapeCommentExt = X509V3_EXT_i2d(NID_netscape_comment, 1, reinterpret_cast<void *>(&bitStr));
 
-    (void)sk_X509_EXTENSION_push(exts, NetscapeCommentExt);
+    (void)sk_X509_EXTENSION_push(exts, netscapeCommentExt);
 
     ret = CfOpensslHasUnsupportedCriticalExtension(obj002, &bRet);
     EXPECT_EQ(ret, CF_SUCCESS) <<
@@ -1241,7 +1241,7 @@ HWTEST_F(CfAdapterExtensionTest, OpensslHasUnsupportedCriticalExtensionTest002, 
     EXPECT_EQ(bRet, true);
 
     (void)sk_X509_EXTENSION_pop(exts);
-    X509_EXTENSION_free(NetscapeCommentExt);
+    X509_EXTENSION_free(netscapeCommentExt);
     CfOpensslDestoryExtension(&obj002);
 }
 
@@ -1292,9 +1292,9 @@ HWTEST_F(CfAdapterExtensionTest, OpensslHasUnsupportedCriticalExtensionTest004, 
         string data = "test" + std::to_string(index);
         ASN1_BIT_STRING bitStr = { data.length(), V_ASN1_BIT_STRING,
             const_cast<unsigned char *>(reinterpret_cast<const unsigned char *>(data.c_str())), 0 };
-        X509_EXTENSION *NetscapeCommentExt = X509V3_EXT_i2d(NID_netscape_comment, 1, reinterpret_cast<void *>(&bitStr));
+        X509_EXTENSION *netscapeCommentExt = X509V3_EXT_i2d(NID_netscape_comment, 1, reinterpret_cast<void *>(&bitStr));
 
-        (void)sk_X509_EXTENSION_push(exts, NetscapeCommentExt);
+        (void)sk_X509_EXTENSION_push(exts, netscapeCommentExt);
     }
 
     ret = CfOpensslHasUnsupportedCriticalExtension(obj004, &bRet);
