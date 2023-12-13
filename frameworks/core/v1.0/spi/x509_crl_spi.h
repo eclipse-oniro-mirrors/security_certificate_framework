@@ -22,6 +22,7 @@
 #include "pub_key.h"
 #include "x509_certificate.h"
 #include "x509_crl_entry.h"
+#include "x509_crl_match_parameters.h"
 
 typedef struct HcfX509CrlSpi HcfX509CrlSpi;
 
@@ -62,6 +63,8 @@ struct HcfX509CrlSpi {
     CfResult (*engineGetSignatureAlgParams)(HcfX509CrlSpi *self, CfBlob *sigAlgParamOut);
 
     CfResult (*engineGetExtensions)(HcfX509CrlSpi *self, CfBlob *out);
+
+    CfResult (*engineMatch)(HcfX509CrlSpi *self, const HcfX509CrlMatchParams *matchParams, bool *out);
 };
 
 #endif // CF_X509_CRL_SPI_H

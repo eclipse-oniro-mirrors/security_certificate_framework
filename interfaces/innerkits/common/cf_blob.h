@@ -18,6 +18,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 typedef struct CfBlob CfBlob;
 struct CfBlob {
@@ -51,11 +52,13 @@ typedef struct {
 extern "C" {
 #endif
 
+void CfBlobFree(CfBlob **blob);
 void CfBlobDataFree(CfBlob *blob);
 void CfBlobDataClearAndFree(CfBlob *blob);
 void CfEncodingBlobDataFree(CfEncodingBlob *encodingBlob);
 void CfArrayDataClearAndFree(CfArray *array);
 void FreeCfBlobArray(CfBlob *array, uint32_t arrayLen);
+bool CfBlobIsStr(const CfBlob *blob);
 
 #ifdef __cplusplus
 }

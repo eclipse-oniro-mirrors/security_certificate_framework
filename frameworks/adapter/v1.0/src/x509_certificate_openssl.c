@@ -42,6 +42,18 @@ typedef struct {
     EVP_PKEY *pubKey;
 } X509PubKeyOpensslImpl;
 
+typedef enum {
+    NAME_TYPE_SUBECT,
+    NAME_TYPE_ISSUER,
+} X509NameType;
+
+static CfResult GetSubjectDNX509Openssl(HcfX509CertificateSpi *self, CfBlob *out);
+static CfResult GetIssuerDNX509Openssl(HcfX509CertificateSpi *self, CfBlob *out);
+static CfResult GetKeyUsageX509Openssl(HcfX509CertificateSpi *self, CfBlob *boolArr);
+static CfResult GetSerialNumberX509Openssl(HcfX509CertificateSpi *self, CfBlob *out);
+static CfResult GetSigAlgOidX509Openssl(HcfX509CertificateSpi *self, CfBlob *out);
+static CfResult GetSubjectPubKeyAlgOidX509Openssl(HcfX509CertificateSpi *self, CfBlob *out);
+
 static CfResult DeepCopyDataToOut(const char *data, uint32_t len, CfBlob *out)
 {
     out->data = (uint8_t *)HcfMalloc(len, 0);
@@ -254,6 +266,71 @@ static CfResult CompareDateWithCertTime(const X509 *x509, const ASN1_TIME *input
     return res;
 }
 
+static CfResult CompareCertBlobX509Openssl(HcfX509CertificateSpi *self, HcfCertificate *x509Cert, bool *out)
+{
+    CfResult res = CF_SUCCESS;
+    CfEncodingBlob encodedBlobSelf = { NULL, 0, CF_FORMAT_DER };
+    CfEncodingBlob encodedBlobParam = { NULL, 0, CF_FORMAT_DER };
+    if (x509Cert != NULL) {
+        res = x509Cert->getEncoded(x509Cert, &encodedBlobParam);
+        if (res != CF_SUCCESS) {
+            LOGE("x509Cert getEncoded failed!");
+            return res;
+        }
+        res = GetEncodedX509Openssl(self, &encodedBlobSelf);
+        if (res != CF_SUCCESS) {
+            LOGE("x509Cert GetEncodedX509Openssl failed!");
+            CfFree(encodedBlobParam.data);
+            return res;
+        }
+        if ((encodedBlobSelf.len != encodedBlobParam.len) ||
+            (memcmp(encodedBlobSelf.data, encodedBlobParam.data, encodedBlobSelf.len) != 0)) {
+            *out = false;
+        }
+
+        CfFree(encodedBlobParam.data);
+        CfFree(encodedBlobSelf.data);
+    }
+
+    return res;
+}
+
+static CfResult CompareNameObjectX509Openssl(
+    HcfX509CertificateSpi *self, const CfBlob *blobObj, X509NameType nameType, bool *out)
+{
+    CfResult res = CF_SUCCESS;
+    CfBlob cfBlobDataSelf = { 0 };
+    CfBlob cfBlobDataParam = { 0 };
+
+    if (blobObj != NULL) {
+        res = ConvertNameDerDataToString(blobObj->data, blobObj->size, &cfBlobDataParam);
+        if (res != CF_SUCCESS) {
+            LOGE("x509Cert ConvertNameDerDataToString failed!");
+            return res;
+        }
+
+        if (nameType == NAME_TYPE_SUBECT) {
+            res = GetSubjectDNX509Openssl(self, &cfBlobDataSelf);
+        } else if (nameType == NAME_TYPE_ISSUER) {
+            res = GetIssuerDNX509Openssl(self, &cfBlobDataSelf);
+        }
+        if (res != CF_SUCCESS) {
+            LOGE("x509Cert get param object failed!");
+            CfFree(cfBlobDataParam.data);
+            return res;
+        }
+
+        if (cfBlobDataSelf.size != cfBlobDataParam.size ||
+            strncmp((const char *)cfBlobDataSelf.data, (const char *)cfBlobDataParam.data, cfBlobDataSelf.size) != 0) {
+            *out = false;
+        }
+        CfFree(cfBlobDataSelf.data);
+        CfFree(cfBlobDataParam.data);
+    }
+
+    return res;
+}
+
 static CfResult CheckValidityWithDateX509Openssl(HcfX509CertificateSpi *self, const char *date)
 {
     if ((self == NULL) || (date == NULL)) {
@@ -279,6 +356,174 @@ static CfResult CheckValidityWithDateX509Openssl(HcfX509CertificateSpi *self, co
     }
     CfResult res = CompareDateWithCertTime(x509, asn1InputDate);
     ASN1_TIME_free(asn1InputDate);
+    return res;
+}
+
+static CfResult CompareKeyUsageX509Openssl(HcfX509CertificateSpi *self, const CfBlob *keyUsage, bool *out)
+{
+    if (keyUsage == NULL) {
+        return CF_SUCCESS;
+    }
+    if (keyUsage->size == 0 || keyUsage->data == NULL) {
+        LOGE("invalid param!");
+        return CF_INVALID_PARAMS;
+    }
+    CfBlob cfBlobDataSelf = { 0 };
+    CfResult res = GetKeyUsageX509Openssl(self, &cfBlobDataSelf);
+    if ((res != CF_SUCCESS) && (res != CF_ERR_CRYPTO_OPERATION)) {
+        LOGE("x509Cert GetKeyUsageX509Openssl failed!");
+        return res;
+    }
+    /*
+     * Check If the position of the true value in both arrays is the same.
+     * When two array is in different length, it is considered as match success if the values of the over size part are
+     * false.
+     */
+    uint32_t index = 0;
+    for (; index < keyUsage->size && index < cfBlobDataSelf.size; ++index) {
+        if ((keyUsage->data[index] & 0x01) != (cfBlobDataSelf.data[index] & 0x01)) {
+            *out = false;
+            break;
+        }
+    }
+    if (!(*out)) {
+        CfFree(cfBlobDataSelf.data);
+        return CF_SUCCESS;
+    }
+    for (; index < cfBlobDataSelf.size; ++index) {
+        if (cfBlobDataSelf.data[index] != 0) {
+            *out = false;
+            break;
+        }
+    }
+    for (; index < keyUsage->size; ++index) {
+        if (keyUsage->data[index] != 0) {
+            *out = false;
+            break;
+        }
+    }
+    CfFree(cfBlobDataSelf.data);
+    return CF_SUCCESS;
+}
+
+static CfResult CompareSerialNumberX509Openssl(HcfX509CertificateSpi *self, const CfBlob *serialNumber, bool *out)
+{
+    CfResult res = CF_SUCCESS;
+    CfBlob cfBlobDataSelf = { 0 };
+
+    if (serialNumber != NULL) {
+        if (serialNumber->size == 0 || serialNumber->data == NULL) {
+            LOGE("invalid param!");
+            return CF_INVALID_PARAMS;
+        }
+
+        res = GetSerialNumberX509Openssl(self, &cfBlobDataSelf);
+        if (res != CF_SUCCESS) {
+            LOGE("x509Cert GetSerialNumberX509Openssl failed!");
+            return res;
+        }
+        do {
+            if (cfBlobDataSelf.size != serialNumber->size) {
+                *out = false;
+                break;
+            }
+            int ret = 0;
+            res = CompareBigNum(&cfBlobDataSelf, serialNumber, &ret);
+            if (res != CF_SUCCESS) {
+                LOGE("x509Cert CompareBigNum failed!");
+                break;
+            }
+            if (ret != 0) {
+                *out = false;
+                break;
+            }
+        } while (0);
+
+        CfFree(cfBlobDataSelf.data);
+    }
+
+    return res;
+}
+
+static CfResult GetCertPubKey(HcfX509CertificateSpi *self, CfBlob *outBlob)
+{
+    HcfOpensslX509Cert *realCert = (HcfOpensslX509Cert *)self;
+    X509 *x509 = realCert->x509;
+    EVP_PKEY *pubKey = X509_get_pubkey(x509);
+    if (pubKey == NULL) {
+        CfPrintOpensslError();
+        LOGE("the x509 cert data is error!");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    unsigned char *pubKeyBytes = NULL;
+    int32_t pubKeyLen = i2d_PUBKEY(pubKey, &pubKeyBytes);
+    if (pubKeyLen <= 0) {
+        EVP_PKEY_free(pubKey);
+        CfPrintOpensslError();
+        LOGE("Failed to convert internal pubkey to der format!");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    int32_t ret = DeepCopyDataToBlob(pubKeyBytes, (uint32_t)pubKeyLen, outBlob);
+    EVP_PKEY_free(pubKey);
+    OPENSSL_free(pubKeyBytes);
+    return ret;
+}
+
+static CfResult ComparePublicKeyX509Openssl(HcfX509CertificateSpi *self, const CfBlob *pubKey, bool *out)
+{
+    CfResult res = CF_SUCCESS;
+    CfBlob cfBlobDataSelf = { 0, NULL };
+
+    if (pubKey != NULL) {
+        if (pubKey->size == 0 || pubKey->data == NULL) {
+            LOGE("invalid param!");
+            return CF_INVALID_PARAMS;
+        }
+        res = GetCertPubKey(self, &cfBlobDataSelf);
+        if (res != CF_SUCCESS) {
+            LOGE("x509Cert GetCertPubKey failed!");
+            return CF_ERR_CRYPTO_OPERATION;
+        }
+
+        if (cfBlobDataSelf.size != pubKey->size) {
+            *out = false;
+            CfBlobDataFree(&cfBlobDataSelf);
+            return res;
+        }
+        if (memcmp(cfBlobDataSelf.data, pubKey->data, cfBlobDataSelf.size) != 0) {
+            *out = false;
+        }
+        CfBlobDataFree(&cfBlobDataSelf);
+    }
+
+    return res;
+}
+
+static CfResult ComparePublicKeyAlgOidX509Openssl(HcfX509CertificateSpi *self, const CfBlob *publicKeyAlgOid, bool *out)
+{
+    CfResult res = CF_SUCCESS;
+    CfBlob cfBlobDataSelf = { 0 };
+
+    if (publicKeyAlgOid != NULL) {
+        if (!CfBlobIsStr(publicKeyAlgOid)) {
+            LOGE("publicKeyAlgOid is not string!");
+            return CF_INVALID_PARAMS;
+        }
+        res = GetSubjectPubKeyAlgOidX509Openssl(self, &cfBlobDataSelf);
+        if (res != CF_SUCCESS) {
+            LOGE("x509Cert ComparePublicKeyAlgOidX509Openssl failed!");
+            return res;
+        }
+
+        if (cfBlobDataSelf.size != publicKeyAlgOid->size ||
+            strncmp((const char *)cfBlobDataSelf.data, (const char *)publicKeyAlgOid->data, cfBlobDataSelf.size) != 0) {
+            *out = false;
+        }
+        CfFree(cfBlobDataSelf.data);
+    }
+
     return res;
 }
 
@@ -876,6 +1121,108 @@ static CfResult GetIssuerAltNamesX509Openssl(HcfX509CertificateSpi *self, CfArra
     return res;
 }
 
+static CfResult MatchPart1(HcfX509CertificateSpi *self, const HcfX509CertMatchParams *matchParams, bool *out)
+{
+    CfResult res = CF_SUCCESS;
+    *out = true;
+
+    // x509Cert
+    res = CompareCertBlobX509Openssl(self, matchParams->x509Cert, out);
+    if (res != CF_SUCCESS || (*out == false)) {
+        LOGE("Failed to CompareCertBlob!");
+        return res;
+    }
+    // subject
+    res = CompareNameObjectX509Openssl(self, matchParams->subject, NAME_TYPE_SUBECT, out);
+    if (res != CF_SUCCESS || (*out == false)) {
+        LOGE("Failed to CompareSubject!");
+        return res;
+    }
+    // validDate
+    if (matchParams->validDate != NULL) {
+        if (!CfBlobIsStr(matchParams->validDate)) {
+            LOGE("Invalid param!");
+            return CF_INVALID_PARAMS;
+        }
+        res = CheckValidityWithDateX509Openssl(self, (const char *)matchParams->validDate->data);
+        if ((res == CF_ERR_CERT_NOT_YET_VALID) || (res == CF_ERR_CERT_HAS_EXPIRED)) {
+            *out = false;
+            return CF_SUCCESS;
+        }
+        if (res != CF_SUCCESS) {
+            LOGE("Failed to CheckValidityWithDate!");
+            return res;
+        }
+    }
+    // issuer
+    res = CompareNameObjectX509Openssl(self, matchParams->issuer, NAME_TYPE_ISSUER, out);
+    if (res != CF_SUCCESS || (*out == false)) {
+        LOGE("Failed to CompareIssuer!");
+        return res;
+    }
+    return res;
+}
+
+static CfResult MatchPart2(HcfX509CertificateSpi *self, const HcfX509CertMatchParams *matchParams, bool *out)
+{
+    CfResult res = CF_SUCCESS;
+    *out = true;
+
+    // keyUsage
+    res = CompareKeyUsageX509Openssl(self, matchParams->keyUsage, out);
+    if (res != CF_SUCCESS || (*out == false)) {
+        LOGE("Failed to CompareKeyUsage!");
+        return res;
+    }
+    // serialNumber
+    res = CompareSerialNumberX509Openssl(self, matchParams->serialNumber, out);
+    if (res != CF_SUCCESS || (*out == false)) {
+        LOGE("Failed to CompareSerialNumber!");
+        return res;
+    }
+    // publicKey
+    res = ComparePublicKeyX509Openssl(self, matchParams->publicKey, out);
+    if (res != CF_SUCCESS || (*out == false)) {
+        LOGE("Failed to ComparePublicKey!");
+        return res;
+    }
+    // publicKeyAlgID
+    res = ComparePublicKeyAlgOidX509Openssl(self, matchParams->publicKeyAlgID, out);
+    if (res != CF_SUCCESS || (*out == false)) {
+        LOGE("Failed to ComparePublicKeyAlgOid!");
+        return res;
+    }
+
+    return CF_SUCCESS;
+}
+
+static CfResult MatchX509Openssl(HcfX509CertificateSpi *self, const HcfX509CertMatchParams *matchParams, bool *out)
+{
+    LOGI("enter MatchX509Openssl!");
+    if ((self == NULL) || (matchParams == NULL) || (out == NULL)) {
+        LOGE("[GetIssuerAltNames openssl] The input data is null!");
+        return CF_INVALID_PARAMS;
+    }
+    if (!IsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
+        LOGE("Input wrong class type!");
+        return CF_INVALID_PARAMS;
+    }
+    CfResult res = CF_SUCCESS;
+    *out = true;
+    res = MatchPart1(self, matchParams, out);
+    if (res != CF_SUCCESS || (*out == false)) {
+        LOGE("Failed to Match Part1!");
+        return res;
+    }
+
+    res = MatchPart2(self, matchParams, out);
+    if (res != CF_SUCCESS || (*out == false)) {
+        LOGE("Failed to Match Part2!");
+        return res;
+    }
+    return CF_SUCCESS;
+}
+
 static CfResult DeepCopyURIs(ASN1_STRING *uri, uint32_t index, CfArray *outURI)
 {
     if (index >= outURI->count) { /* exceed the maximum memory capacity. */
@@ -1043,6 +1390,42 @@ static CfResult GetCRLDistributionPointsURIX509Openssl(HcfX509CertificateSpi *se
     return ret;
 }
 
+static CfResult GetSubjectPubKeyAlgOidX509Openssl(HcfX509CertificateSpi *self, CfBlob *out)
+{
+    CfResult res = CF_SUCCESS;
+    HcfOpensslX509Cert *realCert = (HcfOpensslX509Cert *)self;
+    X509 *x509 = realCert->x509;
+    EVP_PKEY *pubkey = X509_get_pubkey(x509);
+    if (NULL == pubkey) {
+        LOGE("Failed to get public key from x509 cert.");
+        CfPrintOpensslError();
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    int nId = EVP_PKEY_get_base_id(pubkey);
+    ASN1_OBJECT *obj = OBJ_nid2obj(nId);
+    if (NULL == obj) {
+        LOGE("Failed to get algObj from pubkey.");
+        CfPrintOpensslError();
+        EVP_PKEY_free(pubkey);
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    char algOid[OID_STR_MAX_LEN] = { 0 };
+    int32_t resLen = OBJ_obj2txt(algOid, OID_STR_MAX_LEN, obj, 1);
+    if ((resLen < 0) || (resLen >= OID_STR_MAX_LEN)) {
+        LOGE("Failed to convert x509 object to text!");
+        CfPrintOpensslError();
+        EVP_PKEY_free(pubkey);
+        ASN1_OBJECT_free(obj);
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    uint32_t len = strlen(algOid) + 1;
+    res = DeepCopyDataToOut(algOid, len, out);
+    EVP_PKEY_free(pubkey);
+    ASN1_OBJECT_free(obj);
+    return res;
+}
+
 static X509 *CreateX509CertInner(const CfEncodingBlob *encodingBlob)
 {
     X509 *x509 = NULL;
@@ -1100,6 +1483,7 @@ CfResult OpensslX509CertSpiCreate(const CfEncodingBlob *inStream, HcfX509Certifi
     realCert->base.engineGetSubjectAltNames = GetSubjectAltNamesX509Openssl;
     realCert->base.engineGetIssuerAltNames = GetIssuerAltNamesX509Openssl;
     realCert->base.engineGetCRLDistributionPointsURI = GetCRLDistributionPointsURIX509Openssl;
+    realCert->base.engineMatch = MatchX509Openssl;
 
     *spi = (HcfX509CertificateSpi *)realCert;
     return CF_SUCCESS;

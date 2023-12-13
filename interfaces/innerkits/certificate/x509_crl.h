@@ -21,6 +21,7 @@
 #include "pub_key.h"
 #include "x509_certificate.h"
 #include "x509_crl_entry.h"
+#include "x509_crl_match_parameters.h"
 
 typedef struct HcfX509Crl HcfX509Crl;
 
@@ -73,6 +74,15 @@ struct HcfX509Crl {
 
     /** Get all the extensions in CRL. */
     CfResult (*getExtensions)(HcfX509Crl *self, CfBlob *out);
+
+    /** Match the crl with X509CrlMatchParameters. */
+    CfResult (*match)(HcfX509Crl *self, const HcfX509CrlMatchParams *matchParams, bool *out);
+};
+
+typedef struct HcfX509CrlArray HcfX509CrlArray;
+struct HcfX509CrlArray {
+    HcfX509Crl **data;
+    uint32_t count;
 };
 
 #ifdef __cplusplus
