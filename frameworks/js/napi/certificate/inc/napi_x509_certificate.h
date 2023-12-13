@@ -22,6 +22,7 @@
 #include "napi/native_common.h"
 #include "x509_certificate.h"
 #include "cf_api.h"
+#include "x509_cert_match_parameters.h"
 
 namespace OHOS {
 namespace CertFramework {
@@ -58,6 +59,9 @@ public:
     napi_value GetBasicConstraints(napi_env env, napi_callback_info info);
     napi_value GetSubjectAlternativeNames(napi_env env, napi_callback_info info);
     napi_value GetIssuerAlternativeNames(napi_env env, napi_callback_info info);
+    napi_value Match(napi_env env, napi_callback_info info);
+
+    CfResult MatchProc(HcfX509CertMatchParams *param, bool &boolFlag);
 
     HcfX509Certificate *GetX509Cert()
     {

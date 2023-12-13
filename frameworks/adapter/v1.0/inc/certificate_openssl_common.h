@@ -33,6 +33,8 @@ const char *GetAlgorithmName(const char *oid);
 void CfPrintOpensslError(void);
 CfResult DeepCopyDataToBlob(const unsigned char *data, uint32_t len, CfBlob *outBlob);
 CfResult CopyExtensionsToBlob(const X509_EXTENSIONS *ext, CfBlob *outBlob);
+CfResult ConvertNameDerDataToString(const unsigned char *data, uint32_t derLen, CfBlob *out);
+CfResult CompareBigNum(const CfBlob *lhs, const CfBlob *rhs, int *out);
 #ifdef __cplusplus
 }
 #endif

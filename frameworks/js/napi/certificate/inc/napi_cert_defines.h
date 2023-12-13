@@ -58,6 +58,33 @@ enum AsyncType {
     ASYNC_TYPE_CALLBACK = 1,
     ASYNC_TYPE_PROMISE = 2
 };
+// X509 CERT MATCH PARAMETERS
+const std::string CERT_MATCH_TAG_SUBJECT_ALT_NAMES_TYPE = "type";
+const std::string CERT_MATCH_TAG_SUBJECT_ALT_NAMES_DATA = "name";
+const std::string CERT_MATCH_TAG_SUBJECT_ALT_NAMES = "subjectAlternativeNames";
+const std::string CERT_MATCH_TAG_MATCH_ALL_SUBJECT = "matchAllSubjectAltNames";
+const std::string CERT_MATCH_TAG_AUTH_KEY_ID = "authorityKeyIdentifier";
+const std::string CERT_MATCH_TAG_MIN_PATH_LEN = "minPathLenConstraint";
+const std::string CERT_MATCH_TAG_X509CERT = "x509Cert";
+const std::string CERT_MATCH_TAG_VALID_DATE = "validDate";
+const std::string CERT_MATCH_TAG_ISSUER = "issuer";
+const std::string CERT_MATCH_TAG_EXTENDED_KEY_USAGE = "extendedKeyUsage";
+const std::string CERT_MATCH_TAG_KEY_USAGE = "keyUsage";
+const std::string CERT_MATCH_TAG_NAME_CONSTRAINT = "nameConstraint";
+const std::string CERT_MATCH_TAG_CERT_POLICY = "certPolicy";
+const std::string CERT_MATCH_TAG_PRIVATE_KEY_VALID = "privateKeyValid";
+const std::string CERT_MATCH_TAG_SERIAL_NUMBER = "serialNumber";
+const std::string CERT_MATCH_TAG_SUBJECT = "subject";
+const std::string CERT_MATCH_TAG_SUBJECT_KEY_IDENTIFIER = "subjectKeyIdentifier";
+const std::string CERT_MATCH_TAG_PUBLIC_KEY = "publicKey";
+const std::string CERT_MATCH_TAG_PUBLIC_KEY_ALGID = "publicKeyAlgID";
+
+// X509 CRL MATCH PARAMETERS
+const std::string CRL_MATCH_TAG_PRIVATE_KEY_VALID = "issuer";
+const std::string CRL_MATCH_TAG_X509CERT = "x509Cert";
+const std::string CRL_MATCH_TAG_UPDATE_DATE_TIME = "updateDateTime";
+const std::string CRL_MATCH_TAG_MAXCRL = "maxCRL";
+const std::string CRL_MATCH_TAG_MINCRL = "minCRL";
 } // namespace CertFramework
 } // namespace OHOS
 

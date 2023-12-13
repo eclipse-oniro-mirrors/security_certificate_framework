@@ -23,6 +23,7 @@
 #include "cf_log.h"
 #include "cf_memory.h"
 #include "utils.h"
+#include "x509_cert_match_parameters.h"
 
 typedef CfResult (*HcfX509CertificateSpiCreateFunc)(const CfEncodingBlob *, HcfX509CertificateSpi **);
 
@@ -354,6 +355,20 @@ static CfResult GetCRLDistributionPointsURI(HcfX509Certificate *self, CfArray *o
         ((HcfX509CertificateImpl *)self)->spiObj, outURI);
 }
 
+static CfResult Match(HcfX509Certificate *self, const HcfX509CertMatchParams *matchParams, bool *out)
+{
+    if ((self == NULL) || (out == NULL) || (matchParams == NULL)) {
+        LOGE("Invalid input parameter.");
+        return CF_INVALID_PARAMS;
+    }
+    if (!IsClassMatch((CfObjectBase *)self, GetX509CertificateClass())) {
+        LOGE("Class is not match.");
+        return CF_INVALID_PARAMS;
+    }
+    return ((HcfX509CertificateImpl *)self)->spiObj->engineMatch(
+        ((HcfX509CertificateImpl *)self)->spiObj, matchParams, out);
+}
+
 CfResult HcfX509CertificateCreate(const CfEncodingBlob *inStream, HcfX509Certificate **returnObj)
 {
     CF_LOG_I("enter");
@@ -397,7 +412,7 @@ CfResult HcfX509CertificateCreate(const CfEncodingBlob *inStream, HcfX509Certifi
     x509CertImpl->base.getSubjectAltNames = GetSubjectAltNames;
     x509CertImpl->base.getIssuerAltNames = GetIssuerAltNames;
     x509CertImpl->base.getCRLDistributionPointsURI = GetCRLDistributionPointsURI;
-
+    x509CertImpl->base.match = Match;
     x509CertImpl->spiObj = spiObj;
     *returnObj = (HcfX509Certificate *)x509CertImpl;
     return CF_SUCCESS;

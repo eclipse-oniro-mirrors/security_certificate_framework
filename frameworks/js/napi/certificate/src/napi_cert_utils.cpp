@@ -220,44 +220,7 @@ CfBlob *CertGetBlobFromNapiValue(napi_env env, napi_value arg)
         LOGE("failed to get valid data property!");
         return nullptr;
     }
-
-    size_t length = 0;
-    size_t offset = 0;
-    void *rawData = nullptr;
-    napi_value arrayBuffer = nullptr;
-    napi_typedarray_type arrayType;
-    // Warning: Do not release the rawData returned by this interface because the rawData is managed by VM.
-    status = napi_get_typedarray_info(env, data, &arrayType, &length,
-        reinterpret_cast<void **>(&rawData), &arrayBuffer, &offset);
-    if ((status != napi_ok) || (length == 0) || (rawData == nullptr)) {
-        LOGE("failed to get valid rawData.");
-        return nullptr;
-    }
-    if (arrayType != napi_uint8_array) {
-        LOGE("input data is not uint8 array.");
-        return nullptr;
-    }
-
-    CfBlob *newBlob = reinterpret_cast<CfBlob *>(HcfMalloc(sizeof(CfBlob), 0));
-    if (newBlob == nullptr) {
-        LOGE("Failed to allocate newBlob memory!");
-        return nullptr;
-    }
-    newBlob->size = length;
-    newBlob->data = static_cast<uint8_t *>(HcfMalloc(length, 0));
-    if (newBlob->data == nullptr) {
-        LOGE("malloc blob data failed!");
-        CfFree(newBlob);
-        return nullptr;
-    }
-    if (memcpy_s(newBlob->data, length, rawData, length) != EOK) {
-        LOGE("memcpy_s blob data failed!");
-        CfFree(newBlob->data);
-        CfFree(newBlob);
-        return nullptr;
-    }
-
-    return newBlob;
+    return CertGetBlobFromUint8ArrJSParams(env, data);
 }
 
 napi_value CertConvertBlobToNapiValue(napi_env env, CfBlob *blob)
@@ -384,6 +347,285 @@ bool GetCertChainFromValue(napi_env env, napi_value obj, HcfCertChainData **cert
         return false;
     }
     napi_get_value_uint32(env, format, reinterpret_cast<uint32_t *>(&(*certChainData)->format));
+    return true;
+}
+
+CfBlob *CertGetBlobFromUint8ArrJSParams(napi_env env, napi_value arg)
+{
+    size_t length = 0;
+    size_t offset = 0;
+    void *rawData = nullptr;
+    napi_value arrayBuffer = nullptr;
+    napi_typedarray_type arrayType;
+    // Warning: Do not release the rawData returned by this interface because the rawData is managed by VM.
+    napi_status status = napi_get_typedarray_info(
+        env, arg, &arrayType, &length, reinterpret_cast<void **>(&rawData), &arrayBuffer, &offset);
+    if (status != napi_ok) {
+        LOGE("failed to get valid rawData.");
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "failed to get valid rawData!"));
+        return nullptr;
+    }
+    if (arrayType != napi_uint8_array) {
+        LOGE("input data is not uint8 array.");
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "input data is not uint8 array!"));
+        return nullptr;
+    }
+
+    if (length == 0 || rawData == nullptr) {
+        LOGI("array length is 0!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "array length is 0!"));
+        return nullptr;
+    }
+
+    CfBlob *newBlob = static_cast<CfBlob *>(HcfMalloc(sizeof(CfBlob), 0));
+    if (newBlob == nullptr) {
+        LOGE("Failed to allocate newBlob memory!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed!"));
+        return nullptr;
+    }
+
+    newBlob->size = length;
+    newBlob->data = static_cast<uint8_t *>(HcfMalloc(length, 0));
+    if (newBlob->data == nullptr) {
+        LOGE("malloc blob data failed!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed!"));
+        CfFree(newBlob);
+        return nullptr;
+    }
+    if (memcpy_s(newBlob->data, length, rawData, length) != EOK) {
+        LOGE("memcpy_s blob data failed!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_COPY, "copy memory failed!"));
+        CfFree(newBlob->data);
+        CfFree(newBlob);
+        return nullptr;
+    }
+
+    return newBlob;
+}
+
+CfBlob *CertGetBlobFromStringJSParams(napi_env env, napi_value arg)
+{
+    napi_valuetype valueType;
+    napi_typeof(env, arg, &valueType);
+    if (valueType != napi_string) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "param type is not string"));
+        LOGE("wrong argument type. expect string type. [Type]: %d", valueType);
+        return nullptr;
+    }
+
+    size_t length = 0;
+    if (napi_get_value_string_utf8(env, arg, nullptr, 0, &length) != napi_ok) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "can not get string length!"));
+        LOGE("can not get string length");
+        return nullptr;
+    }
+
+    if (length == 0) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "string length is 0!"));
+        LOGE("string length is 0");
+        return nullptr;
+    }
+
+    CfBlob *newBlob = static_cast<CfBlob *>(HcfMalloc(sizeof(CfBlob), 0));
+    if (newBlob == nullptr) {
+        LOGE("Failed to allocate newBlob memory!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed!"));
+        return nullptr;
+    }
+
+    newBlob->size = length + 1;
+    newBlob->data = static_cast<uint8_t *>(HcfMalloc(newBlob->size, 0));
+    if (newBlob->data == nullptr) {
+        LOGE("malloc blob data failed!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed"));
+        CfFree(newBlob);
+        return nullptr;
+    }
+
+    if (napi_get_value_string_utf8(env, arg, (char *)newBlob->data, newBlob->size, &length) != napi_ok) {
+        LOGE("can not get string value");
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get string failed"));
+        CfFree(newBlob->data);
+        CfFree(newBlob);
+        return nullptr;
+    }
+
+    return newBlob;
+}
+
+napi_value GetProp(napi_env env, napi_value arg, const char *name)
+{
+    bool result = false;
+    napi_has_named_property(env, arg, name, &result);
+    if (!result) {
+        LOGI("%s do not exist!", name);
+        return nullptr;
+    }
+    napi_value obj = nullptr;
+    napi_status status = napi_get_named_property(env, arg, name, &obj);
+    if (status != napi_ok || obj == nullptr) {
+        LOGI("get property %s failed!", name);
+        return nullptr;
+    }
+    napi_valuetype valueType;
+    napi_typeof(env, obj, &valueType);
+    if (valueType == napi_undefined) {
+        LOGI("%s valueType is null or undefined.", name);
+        return nullptr;
+    }
+
+    LOGI("%s is not null!", name);
+    return obj;
+}
+
+CfBlobArray *CertGetBlobArrFromArrUarrJSParams(napi_env env, napi_value arg)
+{
+    bool flag = false;
+    napi_status status = napi_is_array(env, arg, &flag);
+    if (status != napi_ok || !flag) {
+        LOGE("not array!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "not array!"));
+        return nullptr;
+    }
+    uint32_t length = 0;
+    status = napi_get_array_length(env, arg, &length);
+    if (status != napi_ok || length == 0 || length > MAX_NAPI_ARRAY_OF_U8ARR) {
+        LOGI("length is invalid!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "length is invalid!"));
+        return nullptr;
+    }
+
+    CfBlobArray *newBlobArr = static_cast<CfBlobArray *>(HcfMalloc(sizeof(CfBlobArray), 0));
+    if (newBlobArr == nullptr) {
+        LOGE("Failed to allocate newBlobArr memory!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed"));
+        return nullptr;
+    }
+
+    newBlobArr->count = length;
+    newBlobArr->data = static_cast<CfBlob *>(HcfMalloc(length * sizeof(CfBlob), 0));
+    if (newBlobArr->data == nullptr) {
+        LOGE("Failed to allocate data memory!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed"));
+        CfFree(newBlobArr);
+        return nullptr;
+    }
+    for (uint32_t i = 0; i < length; i++) {
+        napi_value element;
+        if (napi_get_element(env, arg, i, &element) == napi_ok) {
+            CfBlob *blob = CertGetBlobFromUint8ArrJSParams(env, element);
+            if (blob != nullptr) {
+                newBlobArr->data[i] = *blob;
+                CfFree(blob); // release blob object, not release blob data
+            }
+        }
+    }
+    return newBlobArr;
+}
+
+CfBlob *CertGetBlobFromArrBoolJSParams(napi_env env, napi_value arg)
+{
+    bool flag = false;
+    napi_status status = napi_is_array(env, arg, &flag);
+    if (status != napi_ok || !flag) {
+        LOGE("not array!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "not array!"));
+        return nullptr;
+    }
+
+    uint32_t length = 0;
+    status = napi_get_array_length(env, arg, &length);
+    if (status != napi_ok || length == 0) {
+        LOGI("array length = 0!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "array length = 0!"));
+        return nullptr;
+    }
+
+    CfBlob *newBlob = static_cast<CfBlob *>(HcfMalloc(sizeof(CfBlob), 0));
+    if (newBlob == nullptr) {
+        LOGE("Failed to allocate newBlob memory!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed"));
+        return nullptr;
+    }
+
+    newBlob->size = length;
+    newBlob->data = static_cast<uint8_t *>(HcfMalloc(length, 0));
+    if (newBlob->data == nullptr) {
+        LOGE("Failed to allocate data memory!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed"));
+        CfFree(newBlob);
+        return nullptr;
+    }
+    for (uint32_t i = 0; i < length; i++) {
+        napi_value element;
+        status = napi_get_element(env, arg, i, &element);
+        if (status != napi_ok) {
+            LOGE("Failed to get element!");
+            break;
+        }
+        bool elemResult = false;
+        status = napi_get_value_bool(env, element, &elemResult);
+        if (status != napi_ok) {
+            LOGE("Failed to get value bool!");
+            break;
+        }
+        newBlob->data[i] = (elemResult ? 1 : 0);
+    }
+
+    if (status != napi_ok) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "invalid params!"));
+        CfFree(newBlob->data);
+        CfFree(newBlob);
+        return nullptr;
+    }
+
+    return newBlob;
+}
+
+bool CertGetSerialNumberFromBigIntJSParams(napi_env env, napi_value arg, CfBlob &outBlob)
+{
+    napi_valuetype valueType;
+    napi_typeof(env, arg, &valueType);
+    if (valueType != napi_bigint) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "param type error"));
+        LOGE("wrong argument type. expect int type. [Type]: %d", valueType);
+        return false;
+    }
+
+    size_t wordCount = 0;
+    if (napi_get_value_bigint_words(env, arg, nullptr, &wordCount, nullptr) != napi_ok) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get serialNum failed"));
+        LOGE("can not get word count");
+        return false;
+    }
+    if (wordCount == 0 || wordCount > (MAX_SN_BYTE_CNT / sizeof(int64_t))) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get serialNum len failed"));
+        LOGE("can not get wordCount, wordCount = %u", wordCount);
+        return false;
+    }
+
+    uint8_t serialBuf[MAX_SN_BYTE_CNT] = { 0 };
+    uint32_t serialLen = sizeof(int64_t) * wordCount;
+
+    int sign = 0;
+    if (napi_get_value_bigint_words(env, arg, &sign, &wordCount, reinterpret_cast<uint64_t *>(serialBuf)) != napi_ok ||
+        sign > 0) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get serialNum len failed"));
+        LOGE("can not get bigint value, sign = %d", sign); // sign 0 : positive, sign 1 : negative
+        return false;
+    }
+    outBlob.data = static_cast<uint8_t *>(HcfMalloc(serialLen, 0));
+    if (outBlob.data == nullptr) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc serialNum failed"));
+        LOGE("malloc blob data failed!");
+        return false;
+    }
+    outBlob.size = serialLen;
+    // reverse data: because BN_bin2bn() converts the positive integer in big-endian form of length len into a BIGNUM
+    for (uint32_t i = 0; i < serialLen; ++i) {
+        outBlob.data[i] = serialBuf[outBlob.size - 1 - i];
+    }
+
     return true;
 }
 
