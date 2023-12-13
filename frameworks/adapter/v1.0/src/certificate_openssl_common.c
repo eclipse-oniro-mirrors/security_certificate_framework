@@ -104,12 +104,64 @@ CfResult CopyExtensionsToBlob(const X509_EXTENSIONS *exts, CfBlob *outBlob)
 
     unsigned char *extbytes = NULL;
     int32_t extLen = i2d_X509_EXTENSIONS(exts, &extbytes);
-    if (extLen <= 0 || extbytes == NULL) {
+    if (extLen <= 0) {
         CF_LOG_E("get extLen failed!");
+        CfPrintOpensslError();
         return CF_ERR_CRYPTO_OPERATION;
     }
 
     CfResult ret = DeepCopyDataToBlob(extbytes, (uint32_t)extLen, outBlob);
     OPENSSL_free(extbytes);
     return ret;
+}
+
+CfResult ConvertNameDerDataToString(const unsigned char *data, uint32_t derLen, CfBlob *out)
+{
+    if (data == NULL || derLen == 0 || out == NULL) {
+        LOGE("input params valid!");
+        return CF_INVALID_PARAMS;
+    }
+    X509_NAME *x509Name = d2i_X509_NAME(NULL, &data, derLen);
+    if (x509Name == NULL) {
+        LOGE("x509Name is null!");
+        CfPrintOpensslError();
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    char *name = X509_NAME_oneline(x509Name, NULL, 0);
+    if (name == NULL || strlen(name) > HCF_MAX_STR_LEN) {
+        LOGE("name is null!");
+        CfPrintOpensslError();
+        X509_NAME_free(x509Name);
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    CfResult res = DeepCopyDataToBlob((const unsigned char *)name, strlen(name) + 1, out);
+    OPENSSL_free(name);
+    X509_NAME_free(x509Name);
+    return res;
+}
+
+CfResult CompareBigNum(const CfBlob *lhs, const CfBlob *rhs, int *out)
+{
+    if ((lhs->data == NULL) || (lhs->size == 0) || (rhs->data == NULL) || (rhs->size == 0)) {
+        LOGE("Invalid Paramas!");
+        return CF_INVALID_PARAMS;
+    }
+
+    BIGNUM *lhsBigNum = BN_bin2bn(lhs->data, lhs->size, NULL);
+    if (lhsBigNum == NULL) {
+        LOGE("bin to big number fail!");
+        CfPrintOpensslError();
+        return CF_INVALID_PARAMS;
+    }
+    BIGNUM *rhsBigNum = BN_bin2bn(rhs->data, rhs->size, NULL);
+    if (rhsBigNum == NULL) {
+        LOGE("bin to big number fail!");
+        CfPrintOpensslError();
+        BN_free(lhsBigNum);
+        return CF_INVALID_PARAMS;
+    }
+    *out = BN_cmp(lhsBigNum, rhsBigNum);
+    BN_free(lhsBigNum);
+    BN_free(rhsBigNum);
+    return CF_SUCCESS;
 }

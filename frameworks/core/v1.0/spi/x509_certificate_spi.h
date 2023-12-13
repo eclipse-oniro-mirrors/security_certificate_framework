@@ -20,6 +20,7 @@
 #include "cf_object_base.h"
 #include "pub_key.h"
 #include "cf_result.h"
+#include "x509_cert_match_parameters.h"
 
 typedef struct HcfX509CertificateSpi HcfX509CertificateSpi;
 
@@ -63,6 +64,8 @@ struct HcfX509CertificateSpi {
     CfResult (*engineGetSubjectAltNames)(HcfX509CertificateSpi *self, CfArray *outName);
 
     CfResult (*engineGetIssuerAltNames)(HcfX509CertificateSpi *self, CfArray *outName);
+
+    CfResult (*engineMatch)(HcfX509CertificateSpi *self, const HcfX509CertMatchParams *matchParams, bool *out);
 
     CfResult (*engineGetCRLDistributionPointsURI)(HcfX509CertificateSpi *self, CfArray *outURI);
 };

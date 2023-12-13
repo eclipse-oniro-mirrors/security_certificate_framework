@@ -19,6 +19,7 @@
 #include "certificate.h"
 #include "cf_blob.h"
 #include "cf_result.h"
+#include "x509_cert_match_parameters.h"
 
 typedef struct HcfX509Certificate HcfX509Certificate;
 
@@ -84,8 +85,17 @@ struct HcfX509Certificate {
     /** Get issuer alternative name from certificate. */
     CfResult (*getIssuerAltNames)(HcfX509Certificate *self, CfArray *outName);
 
+    /** Match the ceritificate with X509CertMatchParameters. */
+    CfResult (*match)(HcfX509Certificate *self, const HcfX509CertMatchParams *matchParams, bool *out);
+
     /** Get CRL distribution points URI from certificate. */
     CfResult (*getCRLDistributionPointsURI)(HcfX509Certificate *self, CfArray *outURI);
+};
+
+typedef struct HcfX509CertificateArray HcfX509CertificateArray;
+struct HcfX509CertificateArray {
+    HcfX509Certificate **data;
+    uint32_t count;
 };
 
 #ifdef __cplusplus

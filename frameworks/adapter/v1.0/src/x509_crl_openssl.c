@@ -732,6 +732,91 @@ static CfResult GetExtensions(HcfX509CrlSpi *self, CfBlob *outBlob)
     return ret;
 }
 
+static CfResult Comparex509CertX509Openssl(HcfX509CrlSpi *self, const HcfCertificate *x509Cert, bool *out)
+{
+    bool bRet = IsRevoked(self, x509Cert);
+    if (!bRet) {
+        *out = false;
+    }
+    LOGI("x509Crl match x509Cert %d!", *out);
+    return CF_SUCCESS;
+}
+
+static CfResult CompareIssuerX509Openssl(HcfX509CrlSpi *self, const CfBlobArray *issuer, bool *out)
+{
+    if (issuer == NULL || issuer->data == NULL || issuer->count == 0) {
+        LOGE("The input data is null!");
+        return CF_INVALID_PARAMS;
+    }
+    CfBlob outTmpSelf = { 0 };
+    CfBlob cfBlobDataParam = { 0 };
+    CfResult ret = GetIssuerName(self, &outTmpSelf);
+    if (ret != CF_SUCCESS) {
+        *out = false;
+        LOGE("x509Crl GetIssuerName failed!");
+        return ret;
+    }
+
+    *out = false;
+    for (uint32_t i = 0; i < issuer->count; ++i) {
+        ret = ConvertNameDerDataToString(issuer->data[i].data, issuer->data[i].size, &cfBlobDataParam);
+        if (ret != CF_SUCCESS) {
+            LOGE("ConvertNameDerDataToString failed!");
+            CfFree(outTmpSelf.data);
+            return ret;
+        }
+        if (outTmpSelf.size != cfBlobDataParam.size) {
+            CfFree(cfBlobDataParam.data);
+            continue;
+        }
+        if (strncmp((const char *)outTmpSelf.data, (const char *)cfBlobDataParam.data, outTmpSelf.size) == 0) {
+            LOGI("x509Crl match issuer success!");
+            *out = true;
+            CfFree(cfBlobDataParam.data);
+            break;
+        }
+        CfFree(cfBlobDataParam.data);
+    }
+    CfFree(outTmpSelf.data);
+    return CF_SUCCESS;
+}
+
+static CfResult MatchX509CRLOpenssl(HcfX509CrlSpi *self, const HcfX509CrlMatchParams *matchParams, bool *out)
+{
+    LOGI("enter MatchX509CRLOpenssl!");
+    if ((self == NULL) || (matchParams == NULL) || (out == NULL)) {
+        LOGE("The input data is null!");
+        return CF_INVALID_PARAMS;
+    }
+    if (!IsClassMatch((CfObjectBase *)self, GetClass())) {
+        LOGE("Input wrong class type!");
+        return CF_INVALID_PARAMS;
+    }
+
+    CfResult res = CF_SUCCESS;
+    *out = true;
+
+    // x509Cert
+    if (matchParams->x509Cert != NULL) {
+        res = Comparex509CertX509Openssl(self, matchParams->x509Cert, out);
+        if (res != CF_SUCCESS || (*out == false)) {
+            LOGE("x509Crl matchParams->x509Cert failed!");
+            return res;
+        }
+    }
+
+    // issuer
+    if (matchParams->issuer != NULL) {
+        res = CompareIssuerX509Openssl(self, matchParams->issuer, out);
+        if (res != CF_SUCCESS || (*out == false)) {
+            LOGE("x509Crl matchParams->issuer failed!");
+            return res;
+        }
+    }
+
+    return CF_SUCCESS;
+}
+
 static void Destroy(CfObjectBase *self)
 {
     if (self == NULL) {
@@ -824,6 +909,7 @@ CfResult HcfCX509CrlSpiCreate(const CfEncodingBlob *inStream, HcfX509CrlSpi **sp
     returnCRL->base.engineGetSignatureAlgOid = GetSignatureAlgOid;
     returnCRL->base.engineGetSignatureAlgParams = GetSignatureAlgParams;
     returnCRL->base.engineGetExtensions = GetExtensions;
+    returnCRL->base.engineMatch = MatchX509CRLOpenssl;
     if (SetCertIssuer((HcfX509CrlSpi *)returnCRL) != CF_SUCCESS) {
         LOGI("No cert issuer find or set cert issuer fail!");
     }
