@@ -20,6 +20,7 @@
 #include "certificate_openssl_class.h"
 #include "cf_memory.h"
 #include "cipher.h"
+#include "crypto_x509_test_common.h"
 #include "key_pair.h"
 #include "memory_mock.h"
 #include "securec.h"
@@ -33,7 +34,6 @@ using namespace testing::ext;
 namespace {
 HcfX509Crl *g_x509Crl = nullptr;
 uint8_t g_testSn[] = { 0x03, 0xe8 };
-// constexpr long long TEST_LONGLONG_SN = 0x1234567890;
 
 class CryptoX509CrlTest : public testing::Test {
 public:
@@ -42,156 +42,6 @@ public:
     void SetUp();
     void TearDown();
 };
-
-static char g_testErrorCert[] =
-    "-----BEGIN CERTIFICATE-----\r\n"
-    "MIIBLzCB1QIUO/QDVJwZLIpeJyPjyTvE43xvE5cwCgYIKoZIzj0EAwIwGjEYMBYG\r\n"
-    "A1UEAwwPRXhhbXBsZSBSb290IENBMB4XDTIzMDkwNDExMjAxOVoXDTI2MDUzMDEx\r\n"
-    "MjAxOVowGjEYMBYGA1UEAwwPRXhhbXBsZSBSb290IENBMFkwEwYHKoZIzj0CAQYI\r\n"
-    "KoZIzj0DAQcDQgAEHjG74yMIueO7z3T+dyuEIrhxTg2fqgeNB3SGfsIXlsiUfLTa\r\n"
-    "tUsU0i/sePnrKglj2H8Abbx9PK0tsW/VgqwDIDAKBggqhkjOPQQDAgNJADBGAiEA\r\n"
-    "0ce/fvA4tckNZeB865aOApKXKlBjiRlaiuq5mEEqvNACIQDPD9WyC21MXqPBuRUf\r\n"
-    "BetUokslUfjT6+s/X4ByaxycAA==\r\n"
-    "-----END CERTIFICATE-----";
-
-static char g_testCert[] =
-    "-----BEGIN CERTIFICATE-----\r\n"
-    "MIIDTzCCAjegAwIBAgICA+gwDQYJKoZIhvcNAQELBQAwLDELMAkGA1UEBhMCQ04x\r\n"
-    "DTALBgNVBAoMBHRlc3QxDjAMBgNVBAMMBXN1YmNhMB4XDTIzMDkxMjA2NDc0OVoX\r\n"
-    "DTMzMDkwOTA2NDc0OVowLDELMAkGA1UEBhMCQ04xDTALBgNVBAoMBHRlc3QxDjAM\r\n"
-    "BgNVBAMMBWxvY2FsMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuEcw\r\n"
-    "tv/K2MnMB+AX2oL2KsTMjKteaQncpr6BPfe/LvSXQImnETvzSSIX2Iy19ZEbEDxn\r\n"
-    "osFXGvmrE8iT1P8lP+LYC8WIjzArbQeBvM6n8gq7QW2jAlfAmVy2/SBeBhRFT1Eq\r\n"
-    "rwqld6qqGa0WTnRTnax7v52FddvpG9XBAexE2gQ6UyScWikAKuDgnSQsivz6SMTQ\r\n"
-    "vbax3ffiy2p2RjxH9ZrQTxpUFDRHqMxJvq57wBDLkAtG4TlhQMDIB86cbOQfHHam\r\n"
-    "VHPVSvyZgmr3V4kb9UlDwB9bjrjSMlRsnNqocGEepZQ57IKgLf5SCWRec5Oww+OO\r\n"
-    "3WJOa7ja10sZ0LDdxwIDAQABo3sweTAJBgNVHRMEAjAAMCwGCWCGSAGG+EIBDQQf\r\n"
-    "Fh1PcGVuU1NMIEdlbmVyYXRlZCBDZXJ0aWZpY2F0ZTAdBgNVHQ4EFgQURsHdrG4w\r\n"
-    "i4GQKaFbmEpdNyNkvB4wHwYDVR0jBBgwFoAUIisY3oTZME72Pd/X9ALtRCKEIOgw\r\n"
-    "DQYJKoZIhvcNAQELBQADggEBAKVdgTE4Q8Nl5nQUQVL/uZMVCmDRcpXdJHq3cyAH\r\n"
-    "4BtbFW/K3MbVcZl2j1tPl6bgI5pn9Tk4kkc+SfxGUKAPR7FQ01zfgEJipSlsmAxS\r\n"
-    "wOZL+PGUbYUL1jzU8207PZOIZcyD67Sj8LeOV4BCNLiBIo++MjpD++x77GnP3veg\r\n"
-    "bDKHfDSVILdH/qnqyGSAGJ4YGJld00tehnTAqBWzmkXVIgWk0bnPTNE0dn5Tj7ZY\r\n"
-    "7zh6YU5JILHnrkjRGdNGmpz8SXJ+bh7u8ffHc4R9FO1q4c9/1YSsOXQj0KazyDIP\r\n"
-    "IArlydFj8wK8sHvYC9WhPs+hiirrRb9Y2ApFzcYX5aYn46Y=\r\n"
-    "-----END CERTIFICATE-----\r\n";
-
-static char g_testCrl[] =
-    "-----BEGIN X509 CRL-----\r\n"
-    "MIIB4zCBzAIBATANBgkqhkiG9w0BAQsFADAsMQswCQYDVQQGEwJDTjENMAsGA1UE\r\n"
-    "CgwEdGVzdDEOMAwGA1UEAwwFc3ViY2EXDTIzMDkxMjA2NDc1MFoXDTIzMTAxMjA2\r\n"
-    "NDc1MFowOzATAgID6BcNMjMwOTEyMDY0NzQ5WjAkAhMXXWqf7KkJ1xKySFKmPkj2\r\n"
-    "EpOpFw0yMzA5MTIwNjQyNTRaoC8wLTAfBgNVHSMEGDAWgBQiKxjehNkwTvY939f0\r\n"
-    "Au1EIoQg6DAKBgNVHRQEAwIBAjANBgkqhkiG9w0BAQsFAAOCAQEAQKGCXs5aXY56\r\n"
-    "06A/0HynLmq+frJ7p5Uj9cD2vwbZV4xaP2E5jXogBz7YCjmxp0PB995XC9oi3QKQ\r\n"
-    "gLVKY4Nz21WQRecmmZm1cDweDDPwGJ8/I0d2CwMTJfP7rEgsuhgIBq+JUjFcNNaW\r\n"
-    "dia2Gu/aAuIjlaJ5A4W7vvhGVUx9CDUdN8YF5knA3BoQ1uFc1z7gNckkIpTTccQL\r\n"
-    "zoELFDG8/z+bOnAuSg1lZCyv9fOz9lVafC+qaHo+NW9rdChxV1oC5S6jHTu879CO\r\n"
-    "MQnLr3jEBCszNzDjFI64l6f3JVnLZepp6NU1gdunjQL4gtWQXZFlFV75xR8aahd8\r\n"
-    "seB5oDTPQg==\r\n"
-    "-----END X509 CRL-----\r\n";
-
-static char g_testCrlWithoutExts[] =
-    "-----BEGIN X509 CRL-----\r\n"
-    "MIHzMF4CAQMwDQYJKoZIhvcNAQEEBQAwFTETMBEGA1UEAxMKQ1JMIGlzc3VlchcN\r\n"
-    "MTcwODA3MTExOTU1WhcNMzIxMjE0MDA1MzIwWjAVMBMCAgPoFw0zMjEyMTQwMDUz\r\n"
-    "MjBaMA0GCSqGSIb3DQEBBAUAA4GBACEPHhlaCTWA42ykeaOyR0SGQIHIOUR3gcDH\r\n"
-    "J1LaNwiL+gDxI9rMQmlhsUGJmPIPdRs9uYyI+f854lsWYisD2PUEpn3DbEvzwYeQ\r\n"
-    "5SqQoPDoM+YfZZa23hoTLsu52toXobP74sf/9K501p/+8hm4ROMLBoRT86GQKY6g\r\n"
-    "eavsH0Q3\r\n"
-    "-----END X509 CRL-----\r\n";
-
-static char g_testCrlWithBignumSerial[] =
-    "-----BEGIN X509 CRL-----\r\n"
-    "MIICEzCB/AIBATANBgkqhkiG9w0BAQsFADB0MQswCQYDVQQGEwJDTjEQMA4GA1UE\r\n"
-    "CAwHSmlhbmdTdTEQMA4GA1UEBwwHTmFuSmluZzEKMAgGA1UECgwBdDEKMAgGA1UE\r\n"
-    "CwwBdDEMMAoGA1UEAwwDemhiMRswGQYJKoZIhvcNAQkBFgx0ZXN0QDEyMy5jb20X\r\n"
-    "DTIzMTEwNzAyNTIwN1oXDTIzMTIwNzAyNTIwN1owLDAqAhkA/wH/Af8B/wH/////\r\n"
-    "//////////////8BFw0yMzExMDcwMjUxMDNaoCYwJDAiBgNVHRQEGwIZAP8B/wH/\r\n"
-    "Af8B////////////////////ATANBgkqhkiG9w0BAQsFAAOCAQEAcB23lkrRYo48\r\n"
-    "YT5RiTxIyjSK1kTT+Zxc3oJ6gXcPoS1j7/Td+fDmFfjLOUeKWYrrx/T7NyfjFxjn\r\n"
-    "On37RKmQCHlVJtqAxIstnXCwoSzq68kqK9uczZCaYzWr+aPz/obQRxFWRs0aJy2x\r\n"
-    "KvXp6iBObXlAQVSHXkI5ikjkxR5Xpfi+VH0ojTi5NjpPssLJMN4b7qCZ/334qkZ7\r\n"
-    "eH6O355R2z0XM4vxQJDAJBoF5X9EFYFJc/uwdZPITnSKaG5IBMt1k5ei5jOLsMDa\r\n"
-    "tQSBrPschBRBmg2kBAz8Zq6jgW2j5UaQZ6e0/oKOiiXB/uAPwkpBLAGewinkeZKJ\r\n"
-    "VBgXORYAFg==\r\n"
-    "-----END X509 CRL-----\r\n";
-
-static char g_testCrlWhichEntryWithExt[] =
-    "-----BEGIN X509 CRL-----\r\n"
-    "MIIBDjB5AgEDMA0GCSqGSIb3DQEBBAUAMBUxEzARBgNVBAMTCkNSTCBpc3N1ZXIX\r\n"
-    "DTIzMTExMzExMTYxM1oXDTIzMTExMzExNDkzM1owMDAuAgMAq80XDTIzMTExMzEx\r\n"
-    "NDkzM1owGDAWBglghkgBhvhCAQ0BAf8EBhYEdGVzdDANBgkqhkiG9w0BAQQFAAOB\r\n"
-    "gQAJlecMe4ImV/IKP2LvT+vO1Os8Z2/tUERk9aleJB9mRpWXfk6hYbUr8RAw3nSu\r\n"
-    "4aYnlhdRxS8tkthv2FFxp4Ms/Oto+biyby8zFyzgbjWocPlOx/kL65+itylJGXzN\r\n"
-    "28Vgfm9pJFiUQWI34lohYeHyyvT0IlOkhUc8/fdzCZdATA==\r\n"
-    "-----END X509 CRL-----\r\n";
-
-static char g_testIssuerCert[] =
-    "-----BEGIN CERTIFICATE-----\r\n"
-    "MIIDKDCCAhCgAwIBAgICA+gwDQYJKoZIhvcNAQELBQAwLTELMAkGA1UEBhMCQ04x\r\n"
-    "DTALBgNVBAoMBHRlc3QxDzANBgNVBAMMBnJvb3RjYTAeFw0yMzA5MTIwNjQ3NDla\r\n"
-    "Fw0zMzA5MDkwNjQ3NDlaMCwxCzAJBgNVBAYTAkNOMQ0wCwYDVQQKDAR0ZXN0MQ4w\r\n"
-    "DAYDVQQDDAVzdWJjYTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALpr\r\n"
-    "uLwlJjJ9uowa0N6aEmIIdf6YxR5+q6yDYg4it2cLJmkU/0P1Lt2Yl/MiBvW0t3DW\r\n"
-    "I6cKFv8rZ+GdwRIfIrTmINJhKjPwvrUqXJctFEkxEgtux4/+C8n06vZJypy5p6Vy\r\n"
-    "LFWbLIM1FGkPuBtwjnIQdyUxo+R+oBSVXyvA5w9CX0Ak08jRvsBWc1Oh2Avcm6nF\r\n"
-    "0T+ac4Kf0NzVkkMjKoYwUdoPMppjpYGDX0jdRzJhdFUFjGMLR3YQJtlqLeUqVGnO\r\n"
-    "mws5K7picMM/Z7tO3tIT6BBPljGzsLheu2tM5yuXBRt4A6D7j9qW+ufNnL7Lklvu\r\n"
-    "X6TWn5BKoA/h7cIgc5UCAwEAAaNTMFEwHQYDVR0OBBYEFCIrGN6E2TBO9j3f1/QC\r\n"
-    "7UQihCDoMB8GA1UdIwQYMBaAFP+lNpyMpRzNOeVYvU7ecYdvfIhSMA8GA1UdEwEB\r\n"
-    "/wQFMAMBAf8wDQYJKoZIhvcNAQELBQADggEBALKHwCrQWu3fHRrCO2usfxNdI2S7\r\n"
-    "SkkYDKHiuf4P5VMypSwCewCrEDZwkzLcMlFZ+RMnz1a14viBUvqb3CMbR9Hg52EF\r\n"
-    "aFjOeZOGEuJF6hCVi0gJ9AddS8hGaUAzo82BlNCGsM8SGHCP5GsOSyKbvRrWc3jR\r\n"
-    "0qDOnHzAbesV6lw2g3MoeXCXIw/HBtv7k9SlJZyAREtmMAkYRm0X4tekqFq/6Mwk\r\n"
-    "g9WNnnzPNI1tBp1Nvv3JD3jVHLVXQUp9iOej7KX/OC0NETjn8sXLsjc0ZS1Ub2Nw\r\n"
-    "wWFdrSrSmjNbibrOHqQaoP/cpcqNP2EA5lFWSYVjJVkpv2YojGjLhjwqxP0=\r\n"
-    "-----END CERTIFICATE-----\r\n";
-
-static uint8_t g_crlDerData[] = { 0x30, 0x82, 0x01, 0xE3, 0x30, 0x81, 0xCC, 0x02, 0x01, 0x01, 0x30, 0x0D, 0x06, 0x09,
-    0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x0B, 0x05, 0x00, 0x30, 0x2C, 0x31, 0x0B, 0x30, 0x09, 0x06, 0x03,
-    0x55, 0x04, 0x06, 0x13, 0x02, 0x43, 0x4E, 0x31, 0x0D, 0x30, 0x0B, 0x06, 0x03, 0x55, 0x04, 0x0A, 0x0C, 0x04, 0x74,
-    0x65, 0x73, 0x74, 0x31, 0x0E, 0x30, 0x0C, 0x06, 0x03, 0x55, 0x04, 0x03, 0x0C, 0x05, 0x73, 0x75, 0x62, 0x63, 0x61,
-    0x17, 0x0D, 0x32, 0x33, 0x30, 0x39, 0x31, 0x32, 0x30, 0x36, 0x34, 0x37, 0x35, 0x30, 0x5A, 0x17, 0x0D, 0x32, 0x33,
-    0x31, 0x30, 0x31, 0x32, 0x30, 0x36, 0x34, 0x37, 0x35, 0x30, 0x5A, 0x30, 0x3B, 0x30, 0x13, 0x02, 0x02, 0x03, 0xE8,
-    0x17, 0x0D, 0x32, 0x33, 0x30, 0x39, 0x31, 0x32, 0x30, 0x36, 0x34, 0x37, 0x34, 0x39, 0x5A, 0x30, 0x24, 0x02, 0x13,
-    0x17, 0x5D, 0x6A, 0x9F, 0xEC, 0xA9, 0x09, 0xD7, 0x12, 0xB2, 0x48, 0x52, 0xA6, 0x3E, 0x48, 0xF6, 0x12, 0x93, 0xA9,
-    0x17, 0x0D, 0x32, 0x33, 0x30, 0x39, 0x31, 0x32, 0x30, 0x36, 0x34, 0x32, 0x35, 0x34, 0x5A, 0xA0, 0x2F, 0x30, 0x2D,
-    0x30, 0x1F, 0x06, 0x03, 0x55, 0x1D, 0x23, 0x04, 0x18, 0x30, 0x16, 0x80, 0x14, 0x22, 0x2B, 0x18, 0xDE, 0x84, 0xD9,
-    0x30, 0x4E, 0xF6, 0x3D, 0xDF, 0xD7, 0xF4, 0x02, 0xED, 0x44, 0x22, 0x84, 0x20, 0xE8, 0x30, 0x0A, 0x06, 0x03, 0x55,
-    0x1D, 0x14, 0x04, 0x03, 0x02, 0x01, 0x02, 0x30, 0x0D, 0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01,
-    0x0B, 0x05, 0x00, 0x03, 0x82, 0x01, 0x01, 0x00, 0x40, 0xA1, 0x82, 0x5E, 0xCE, 0x5A, 0x5D, 0x8E, 0x7A, 0xD3, 0xA0,
-    0x3F, 0xD0, 0x7C, 0xA7, 0x2E, 0x6A, 0xBE, 0x7E, 0xB2, 0x7B, 0xA7, 0x95, 0x23, 0xF5, 0xC0, 0xF6, 0xBF, 0x06, 0xD9,
-    0x57, 0x8C, 0x5A, 0x3F, 0x61, 0x39, 0x8D, 0x7A, 0x20, 0x07, 0x3E, 0xD8, 0x0A, 0x39, 0xB1, 0xA7, 0x43, 0xC1, 0xF7,
-    0xDE, 0x57, 0x0B, 0xDA, 0x22, 0xDD, 0x02, 0x90, 0x80, 0xB5, 0x4A, 0x63, 0x83, 0x73, 0xDB, 0x55, 0x90, 0x45, 0xE7,
-    0x26, 0x99, 0x99, 0xB5, 0x70, 0x3C, 0x1E, 0x0C, 0x33, 0xF0, 0x18, 0x9F, 0x3F, 0x23, 0x47, 0x76, 0x0B, 0x03, 0x13,
-    0x25, 0xF3, 0xFB, 0xAC, 0x48, 0x2C, 0xBA, 0x18, 0x08, 0x06, 0xAF, 0x89, 0x52, 0x31, 0x5C, 0x34, 0xD6, 0x96, 0x76,
-    0x26, 0xB6, 0x1A, 0xEF, 0xDA, 0x02, 0xE2, 0x23, 0x95, 0xA2, 0x79, 0x03, 0x85, 0xBB, 0xBE, 0xF8, 0x46, 0x55, 0x4C,
-    0x7D, 0x08, 0x35, 0x1D, 0x37, 0xC6, 0x05, 0xE6, 0x49, 0xC0, 0xDC, 0x1A, 0x10, 0xD6, 0xE1, 0x5C, 0xD7, 0x3E, 0xE0,
-    0x35, 0xC9, 0x24, 0x22, 0x94, 0xD3, 0x71, 0xC4, 0x0B, 0xCE, 0x81, 0x0B, 0x14, 0x31, 0xBC, 0xFF, 0x3F, 0x9B, 0x3A,
-    0x70, 0x2E, 0x4A, 0x0D, 0x65, 0x64, 0x2C, 0xAF, 0xF5, 0xF3, 0xB3, 0xF6, 0x55, 0x5A, 0x7C, 0x2F, 0xAA, 0x68, 0x7A,
-    0x3E, 0x35, 0x6F, 0x6B, 0x74, 0x28, 0x71, 0x57, 0x5A, 0x02, 0xE5, 0x2E, 0xA3, 0x1D, 0x3B, 0xBC, 0xEF, 0xD0, 0x8E,
-    0x31, 0x09, 0xCB, 0xAF, 0x78, 0xC4, 0x04, 0x2B, 0x33, 0x37, 0x30, 0xE3, 0x14, 0x8E, 0xB8, 0x97, 0xA7, 0xF7, 0x25,
-    0x59, 0xCB, 0x65, 0xEA, 0x69, 0xE8, 0xD5, 0x35, 0x81, 0xDB, 0xA7, 0x8D, 0x02, 0xF8, 0x82, 0xD5, 0x90, 0x5D, 0x91,
-    0x65, 0x15, 0x5E, 0xF9, 0xC5, 0x1F, 0x1A, 0x6A, 0x17, 0x7C, 0xB1, 0xE0, 0x79, 0xA0, 0x34, 0xCF, 0x42 };
-
-const CfEncodingBlob g_crlDerInStream = { g_crlDerData, sizeof(g_crlDerData), CF_FORMAT_DER };
-
-const CfEncodingBlob g_inStreamCrl = { reinterpret_cast<uint8_t *>(g_testCrl), sizeof(g_testCrl), CF_FORMAT_PEM };
-
-const CfEncodingBlob g_crlWithoutExtPemInStream = { reinterpret_cast<uint8_t *>(g_testCrlWithoutExts),
-    sizeof(g_testCrlWithoutExts), CF_FORMAT_PEM };
-
-const CfEncodingBlob g_crlWithBignumSerialInStream = { reinterpret_cast<uint8_t *>(g_testCrlWithBignumSerial),
-    sizeof(g_testCrlWithBignumSerial), CF_FORMAT_PEM };
-
-const CfEncodingBlob g_CrlWhichEntryWithExtInStream = { reinterpret_cast<uint8_t *>(g_testCrlWhichEntryWithExt),
-    sizeof(g_testCrlWhichEntryWithExt), CF_FORMAT_PEM };
-
-const CfEncodingBlob g_inStreamCert = { reinterpret_cast<uint8_t *>(g_testCert), sizeof(g_testCert), CF_FORMAT_PEM };
-
-const CfEncodingBlob g_inStreamIssuerCert = { reinterpret_cast<uint8_t *>(g_testIssuerCert), sizeof(g_testIssuerCert),
-    CF_FORMAT_PEM };
 
 void CryptoX509CrlTest::SetUpTestCase()
 {
@@ -211,11 +61,6 @@ void CryptoX509CrlTest::TearDownTestCase()
 }
 void CryptoX509CrlTest::SetUp() {}
 void CryptoX509CrlTest::TearDown() {}
-
-static const char *GetInvalidCrlClass(void)
-{
-    return "INVALID_CRL_CLASS";
-}
 
 // Begin test crl create, test crl create PEM true
 HWTEST_F(CryptoX509CrlTest, X509CrlTest001, TestSize.Level0)
@@ -242,7 +87,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest003, TestSize.Level0)
 {
     HcfX509Crl *x509Crl = nullptr;
     CfEncodingBlob inStreamCrl = { nullptr, 0, CF_FORMAT_PEM };
-    inStreamCrl.data = reinterpret_cast<uint8_t *>(g_testCrl);
+    inStreamCrl.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testCrl));
     inStreamCrl.encodingFormat = CF_FORMAT_DER;
     inStreamCrl.len = strlen(g_testCrl) + 1;
     CfResult ret = HcfX509CrlCreate(&inStreamCrl, &x509Crl);
@@ -268,7 +113,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest005, TestSize.Level0)
 {
     HcfX509Crl *x509Crl = nullptr;
     CfEncodingBlob inStreamCrl = { nullptr, 0, CF_FORMAT_PEM };
-    inStreamCrl.data = reinterpret_cast<uint8_t *>(g_testCrl);
+    inStreamCrl.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testCrl));
     inStreamCrl.encodingFormat = CF_FORMAT_PEM;
     inStreamCrl.len = 0;
     CfResult ret = HcfX509CrlCreate(&inStreamCrl, &x509Crl);
@@ -365,7 +210,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest015, TestSize.Level0)
     // Get cert
     HcfX509Certificate *x509Cert = nullptr;
     CfEncodingBlob inStreamCert = { nullptr, 0, CF_FORMAT_PEM };
-    inStreamCert.data = reinterpret_cast<uint8_t *>(g_testErrorCert);
+    inStreamCert.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testErrorCert));
     inStreamCert.encodingFormat = CF_FORMAT_PEM;
     inStreamCert.len = strlen(g_testErrorCert) + 1;
     CfResult ret = HcfX509CertificateCreate(&inStreamCert, &x509Cert);
@@ -1687,8 +1532,23 @@ HWTEST_F(CryptoX509CrlTest, NullSpi, TestSize.Level0)
     EXPECT_NE(ret, CF_SUCCESS);
     ret = spiObj->engineGetSignatureAlgParams(nullptr, nullptr);
     EXPECT_NE(ret, CF_SUCCESS);
+    ret = spiObj->engineMatch(nullptr, nullptr, nullptr);
+    EXPECT_NE(ret, CF_SUCCESS);
 
     CfObjDestroy(spiObj);
+}
+
+HWTEST_F(CryptoX509CrlTest, NullSpi2, TestSize.Level0)
+{
+    HcfX509CrlSpi *spiObj = nullptr;
+    CfBlob out = { 0, nullptr };
+
+    CfResult ret = HcfCX509CrlSpiCreate(&g_crlDerInStream, &spiObj);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    EXPECT_NE(spiObj, nullptr);
+
+    ret = spiObj->engineGetExtensions(nullptr, &out);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
 }
 
 HWTEST_F(CryptoX509CrlTest, InvalidCrlSpiClass, TestSize.Level0)
@@ -1722,6 +1582,7 @@ HWTEST_F(CryptoX509CrlTest, InvalidCrlSpiClass, TestSize.Level0)
     EXPECT_NE(ret, CF_SUCCESS);
     ret = spiObj->engineGetRevokedCert(&invalidSpi, &serialBlob, &entry);
     EXPECT_NE(ret, CF_SUCCESS);
+
     HcfX509Certificate x509Cert;
     ret = spiObj->engineGetRevokedCertWithCert(&invalidSpi, &x509Cert, &entry);
     EXPECT_NE(ret, CF_SUCCESS);
@@ -1737,6 +1598,25 @@ HWTEST_F(CryptoX509CrlTest, InvalidCrlSpiClass, TestSize.Level0)
     ret = spiObj->engineGetSignatureAlgOid(&invalidSpi, &invalidOut);
     EXPECT_NE(ret, CF_SUCCESS);
     ret = spiObj->engineGetSignatureAlgParams(&invalidSpi, &invalidOut);
+    EXPECT_NE(ret, CF_SUCCESS);
+    CfObjDestroy(spiObj);
+}
+
+HWTEST_F(CryptoX509CrlTest, InvalidCrlSpiClass2, TestSize.Level0)
+{
+    HcfX509CrlSpi invalidSpi = { { 0 } };
+    invalidSpi.base.getClass = GetInvalidCrlClass;
+    HcfX509CrlEntry *entry = nullptr;
+    HcfX509CrlSpi *spiObj = nullptr;
+    CfResult ret = HcfCX509CrlSpiCreate(&g_crlDerInStream, &spiObj);
+
+    CfBlob testSnBlob = { 2, g_testSn };
+    ret = spiObj->engineGetRevokedCert(&invalidSpi, &testSnBlob, &entry);
+    EXPECT_NE(ret, CF_SUCCESS);
+
+    HcfX509CrlMatchParams matchParams;
+    bool bOut = true;
+    ret = spiObj->engineMatch(&invalidSpi, &matchParams, &bOut);
     EXPECT_NE(ret, CF_SUCCESS);
     CfObjDestroy(spiObj);
 }
@@ -1788,6 +1668,16 @@ HWTEST_F(CryptoX509CrlTest, InvalidCrlClass, TestSize.Level0)
     ret = g_x509Crl->getSignatureAlgOid(&invalidCrl, &invalidOut);
     EXPECT_NE(ret, CF_SUCCESS);
     ret = g_x509Crl->getSignatureAlgParams(&invalidCrl, &invalidOut);
+    EXPECT_NE(ret, CF_SUCCESS);
+}
+
+HWTEST_F(CryptoX509CrlTest, InvalidCrlClass2, TestSize.Level0)
+{
+    HcfX509CrlMatchParams matchParams;
+    HcfX509Crl invalidCrl;
+    invalidCrl.base.base.getClass = GetInvalidCrlClass;
+    bool bOut = true;
+    CfResult ret = g_x509Crl->match(&invalidCrl, &matchParams, &bOut);
     EXPECT_NE(ret, CF_SUCCESS);
 }
 
