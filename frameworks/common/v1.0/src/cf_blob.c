@@ -20,6 +20,16 @@
 #include "cf_log.h"
 #include "cf_result.h"
 
+void CfBlobFree(CfBlob **blob)
+{
+    if (blob == NULL) {
+        return;
+    }
+    CfBlobDataFree(*blob);
+    CfFree(*blob);
+    *blob = NULL;
+}
+
 void CfBlobDataFree(CfBlob *blob)
 {
     if ((blob == NULL) || (blob->data == NULL)) {
@@ -81,4 +91,15 @@ void FreeCfBlobArray(CfBlob *array, uint32_t arrayLen)
     }
 
     CfFree(array);
+}
+
+bool CfBlobIsStr(const CfBlob *blob)
+{
+    if (blob == NULL || blob->data == NULL || blob->size == 0) {
+        return false;
+    }
+    if (blob->data[blob->size - 1] == 0) {
+        return true;
+    }
+    return false;
 }
