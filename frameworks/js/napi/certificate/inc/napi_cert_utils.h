@@ -26,6 +26,9 @@
 
 namespace OHOS {
 namespace CertFramework {
+
+constexpr size_t MAX_NAPI_ARRAY_OF_U8ARR = 1024;
+
 inline void CertAddUint32Property(napi_env env, napi_value object, const char *name, uint32_t value)
 {
     napi_value property = nullptr;
@@ -36,6 +39,12 @@ inline void CertAddUint32Property(napi_env env, napi_value object, const char *n
 CfBlob *CertGetBlobFromNapiValue(napi_env env, napi_value arg);
 napi_value CertConvertBlobToNapiValue(napi_env env, CfBlob *blob);
 
+napi_value GetProp(napi_env env, napi_value arg, const char *name);
+CfBlob *CertGetBlobFromUint8ArrJSParams(napi_env env, napi_value arg);
+CfBlob *CertGetBlobFromStringJSParams(napi_env env, napi_value arg);
+CfBlob *CertGetBlobFromArrBoolJSParams(napi_env env, napi_value arg);
+bool CertGetSerialNumberFromBigIntJSParams(napi_env env, napi_value arg, CfBlob &outBlob);
+CfBlobArray *CertGetBlobArrFromArrUarrJSParams(napi_env env, napi_value arg);
 bool CertGetStringFromJSParams(napi_env env, napi_value arg, std::string &returnStr);
 bool CertGetInt32FromJSParams(napi_env env, napi_value arg, int32_t &returnInt);
 bool CertGetCallbackFromJSParams(napi_env env, napi_value arg, napi_ref *returnCb);

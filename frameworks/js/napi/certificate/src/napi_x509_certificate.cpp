@@ -28,6 +28,7 @@
 
 #include "cf_type.h"
 #include "napi_object.h"
+#include "napi_x509_cert_match_parameters.h"
 
 namespace OHOS {
 namespace CertFramework {
@@ -661,6 +662,51 @@ napi_value NapiX509Certificate::GetIssuerAlternativeNames(napi_env env, napi_cal
     return returnValue;
 }
 
+napi_value NapiX509Certificate::Match(napi_env env, napi_callback_info info)
+{
+    LOGI("enter NapiX509Certificate::match");
+    size_t argc = ARGS_SIZE_ONE;
+    napi_value argv[ARGS_SIZE_ONE] = { nullptr };
+    napi_value thisVar = nullptr;
+    napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr);
+    if (!CertCheckArgsCount(env, argc, ARGS_SIZE_ONE, false)) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "CertCheckArgsCount failed"));
+        LOGE("CertCheckArgsCount failed!");
+        return nullptr;
+    }
+
+    HcfX509CertMatchParams *param = static_cast<HcfX509CertMatchParams *>(HcfMalloc(sizeof(HcfX509CertMatchParams), 0));
+    if (param == nullptr) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc param failed"));
+        LOGE("malloc matchParams failed!");
+        return nullptr;
+    }
+    if (!BuildX509CertMatchParams(env, argv[PARAM0], param)) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "BuildX509CertMatchParams failed"));
+        LOGE("BuildX509CertMatchParams failed!");
+        FreeX509CertMatchParams(param);
+        return nullptr;
+    }
+    bool boolFlag = false;
+    CfResult result = MatchProc(param, boolFlag);
+    if (result != CF_SUCCESS) {
+        napi_throw(env, CertGenerateBusinessError(env, result, "match failed"));
+        LOGE("call match failed!");
+        FreeX509CertMatchParams(param);
+        return nullptr;
+    }
+    FreeX509CertMatchParams(param);
+    napi_value ret = nullptr;
+    napi_get_boolean(env, boolFlag, &ret);
+    return ret;
+}
+
+CfResult NapiX509Certificate::MatchProc(HcfX509CertMatchParams *param, bool &boolFlag)
+{
+    HcfX509Certificate *cert = GetX509Cert();
+    return cert->match(cert, param, &boolFlag);
+}
+
 static napi_value NapiVerify(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
@@ -940,6 +986,19 @@ static napi_value NapiGetItem(napi_env env, napi_callback_info info)
     return CommonOperation(env, info, obj, OPERATION_TYPE_GET, CF_GET_TYPE_CERT_ITEM);
 }
 
+static napi_value NapiMatch(napi_env env, napi_callback_info info)
+{
+    napi_value thisVar = nullptr;
+    napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+    NapiX509Certificate *x509Cert = nullptr;
+    napi_unwrap(env, thisVar, reinterpret_cast<void **>(&x509Cert));
+    if (x509Cert == nullptr) {
+        LOGE("x509Cert is nullptr!");
+        return nullptr;
+    }
+    return x509Cert->Match(env, info);
+}
+
 void NapiX509Certificate::CreateX509CertExecute(napi_env env, void *data)
 {
     CfCtx *context = static_cast<CfCtx *>(data);
@@ -1067,6 +1126,7 @@ void NapiX509Certificate::DefineX509CertJSClass(napi_env env, napi_value exports
         DECLARE_NAPI_FUNCTION("getSubjectAltNames", NapiGetSubjectAlternativeNames),
         DECLARE_NAPI_FUNCTION("getIssuerAltNames", NapiGetIssuerAlternativeNames),
         DECLARE_NAPI_FUNCTION("getItem", NapiGetItem),
+        DECLARE_NAPI_FUNCTION("match", NapiMatch),
     };
     napi_value constructor = nullptr;
     napi_define_class(env, "X509Cert", NAPI_AUTO_LENGTH, X509CertConstructor, nullptr,

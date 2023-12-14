@@ -28,6 +28,7 @@
 #include "napi_x509_certificate.h"
 #include "napi_x509_crl_entry.h"
 #include "securec.h"
+#include "napi_x509_crl_match_parameters.h"
 #include "utils.h"
 
 namespace OHOS {
@@ -503,54 +504,6 @@ static bool GetCrlSerialNumberFromNapiValue(napi_env env, napi_value arg, CfBlob
     return true;
 }
 
-static bool GetCRLSerialNumberFromNapiValue(napi_env env, napi_value arg, CfBlob &outBlob)
-{
-    napi_valuetype valueType;
-    napi_typeof(env, arg, &valueType);
-    if (valueType != napi_bigint) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "param type error"));
-        LOGE("wrong argument type. expect int type. [Type]: %d", valueType);
-        return false;
-    }
-
-    size_t wordCount = 0;
-    if (napi_get_value_bigint_words(env, arg, nullptr, &wordCount, nullptr) != napi_ok) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get serialNum failed"));
-        LOGE("can not get word count");
-        return false;
-    }
-    if (wordCount == 0 || wordCount > (MAX_SN_BYTE_CNT / sizeof(int64_t))) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get serialNum len failed"));
-        LOGE("can not get wordCount, wordCount = %u", wordCount);
-        return false;
-    }
-
-    uint8_t serialBuf[MAX_SN_BYTE_CNT] = { 0 };
-    uint32_t serialLen = sizeof(int64_t) * wordCount;
-
-    int sign = 0;
-    if (napi_get_value_bigint_words(env, arg, &sign, &wordCount, reinterpret_cast<uint64_t *>(serialBuf)) != napi_ok ||
-        sign > 0) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get serialNum len failed"));
-        LOGE("can not get bigint value, sign = %d", sign); // sign 0 : positive, sign 1 : negative
-        return false;
-    }
-
-    outBlob.size = serialLen;
-    outBlob.data = static_cast<uint8_t *>(HcfMalloc(serialLen, 0));
-    if (outBlob.data == nullptr) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc serialNum failed"));
-        LOGE("malloc blob data failed!");
-        return false;
-    }
-    // reverse data: because BN_bin2bn() converts the positive integer in big-endian form of length len into a BIGNUM
-    for (uint32_t i = 0; i < serialLen; ++i) {
-        outBlob.data[i] = serialBuf[outBlob.size - 1 - i];
-    }
-
-    return true;
-}
-
 napi_value NapiX509Crl::GetRevokedCertificate(napi_env env, napi_callback_info info, std::string returnClassName)
 {
     size_t argc = ARGS_SIZE_ONE;
@@ -566,7 +519,7 @@ napi_value NapiX509Crl::GetRevokedCertificate(napi_env env, napi_callback_info i
     if (returnClassName == std::string("X509CrlEntry")) {
         getSnRet = GetCrlSerialNumberFromNapiValue(env, argv[PARAM0], serialNumber);
     } else {
-        getSnRet = GetCRLSerialNumberFromNapiValue(env, argv[PARAM0], serialNumber);
+        getSnRet = CertGetSerialNumberFromBigIntJSParams(env, argv[PARAM0], serialNumber);
     }
     if (!getSnRet) {
         LOGE("get serialNumber failed");
@@ -825,6 +778,52 @@ napi_value NapiX509Crl::GetExtensions(napi_env env, napi_callback_info info)
     CfFree(blob);
     blob = nullptr;
     return returnBlob;
+}
+
+napi_value NapiX509Crl::Match(napi_env env, napi_callback_info info)
+{
+    LOGI("enter NapiX509Crl::match");
+    size_t argc = ARGS_SIZE_ONE;
+    napi_value argv[ARGS_SIZE_ONE] = { nullptr };
+    napi_value thisVar = nullptr;
+    napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr);
+    if (!CertCheckArgsCount(env, argc, ARGS_SIZE_ONE, false)) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "CertCheckArgsCount failed"));
+        LOGE("CertCheckArgsCount failed!");
+        return nullptr;
+    }
+
+    HcfX509CrlMatchParams *param = static_cast<HcfX509CrlMatchParams *>(HcfMalloc(sizeof(HcfX509CrlMatchParams), 0));
+    if (param == nullptr) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc matchParams failed"));
+        LOGE("malloc matchParams failed!");
+        return nullptr;
+    }
+    if (!BuildX509CrlMatchParams(env, argv[PARAM0], param)) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "BuildX509CrlMatchParams failed"));
+        LOGE("BuildX509CrlMatchParams failed!");
+        FreeX509CrlMatchParams(param);
+        return nullptr;
+    }
+
+    bool boolFlag = false;
+    CfResult result = MatchProc(param, boolFlag);
+    if (result != CF_SUCCESS) {
+        napi_throw(env, CertGenerateBusinessError(env, result, "match failed"));
+        LOGE("call match failed!");
+        FreeX509CrlMatchParams(param);
+        return nullptr;
+    }
+    FreeX509CrlMatchParams(param);
+    napi_value ret = nullptr;
+    napi_get_boolean(env, boolFlag, &ret);
+    return ret;
+}
+
+CfResult NapiX509Crl::MatchProc(HcfX509CrlMatchParams *param, bool &boolFlag)
+{
+    HcfX509Crl *x509Crl = GetX509Crl();
+    return x509Crl->match(x509Crl, param, &boolFlag);
 }
 
 static napi_value NapiIsRevoked(napi_env env, napi_callback_info info)
@@ -1102,6 +1101,19 @@ static napi_value NapiGetExtensions(napi_env env, napi_callback_info info)
     return x509Crl->GetExtensions(env, info);
 }
 
+static napi_value NapiMatch(napi_env env, napi_callback_info info)
+{
+    napi_value thisVar = nullptr;
+    napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+    NapiX509Crl *x509Crl = nullptr;
+    napi_unwrap(env, thisVar, reinterpret_cast<void **>(&x509Crl));
+    if (x509Crl == nullptr) {
+        LOGE("x509Crl is nullptr!");
+        return nullptr;
+    }
+    return x509Crl->Match(env, info);
+}
+
 void NapiX509Crl::CreateX509CrlExecute(napi_env env, void *data)
 {
     CfCtx *context = static_cast<CfCtx *>(data);
@@ -1256,6 +1268,7 @@ void NapiX509Crl::DefineX509CRLJS(napi_env env, napi_value exports, std::string 
         DECLARE_NAPI_FUNCTION("getRevokedCerts", NapiCRLGetRevokedCertificates),
         DECLARE_NAPI_FUNCTION("getRevokedCertWithCert", NapiCRLGetRevokedCertificateWithCert),
         DECLARE_NAPI_FUNCTION("getTBSInfo", NapiCRLGetTBSCertList),
+        DECLARE_NAPI_FUNCTION("match", NapiMatch),
     };
     napi_value constructor = nullptr;
     napi_define_class(env, className.c_str(), NAPI_AUTO_LENGTH, X509CrlConstructor, nullptr,

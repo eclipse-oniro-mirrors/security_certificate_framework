@@ -24,7 +24,7 @@
 #include "napi_x509_crl.h"
 #include "napi_cert_defines.h"
 #include "napi_cert_extension.h"
-
+#include "napi_cert_crl_collection.h"
 #include "cf_type.h"
 
 namespace OHOS {
@@ -161,6 +161,7 @@ static napi_value CertModuleExport(napi_env env, napi_value exports)
     NapiX509Crl::DefineX509CrlJSClass(env, exports, std::string("X509Crl"));
     NapiX509Crl::DefineX509CrlJSClass(env, exports, std::string("X509CRL"));
     NapiCertExtension::DefineCertExtensionJsClass(env, exports);
+    NapiCertCRLCollection::DefineCertCRLCollectionJSClass(env, exports);
     LOGI("module init end.");
     return exports;
 }
