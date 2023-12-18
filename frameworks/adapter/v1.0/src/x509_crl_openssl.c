@@ -236,7 +236,7 @@ static CfResult GetIssuerName(HcfX509CrlSpi *self, CfBlob *out)
         CfPrintOpensslError();
         return CF_ERR_CRYPTO_OPERATION;
     }
-    const char *issuer = X509_NAME_oneline(x509Name, NULL, 0);
+    char *issuer = X509_NAME_oneline(x509Name, NULL, 0);
     if ((issuer == NULL) || (strlen(issuer) > HCF_MAX_STR_LEN)) {
         LOGE("X509Name convert char fail or issuer name is too long!");
         CfPrintOpensslError();
@@ -246,10 +246,12 @@ static CfResult GetIssuerName(HcfX509CrlSpi *self, CfBlob *out)
     out->data = (uint8_t *)HcfMalloc(length, 0);
     if (out->data == NULL) {
         LOGE("Failed to malloc for crl issuer data!");
+        OPENSSL_free(issuer);
         return CF_ERR_MALLOC;
     }
     (void)memcpy_s(out->data, length, issuer, length);
     out->size = length;
+    OPENSSL_free(issuer);
     return CF_SUCCESS;
 }
 

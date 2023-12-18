@@ -322,13 +322,13 @@ CfResult HcfCertCrlCollectionCreate(
     ret->base.selectCRLs = SelectCRLs;
 
     CfResult res = CloneCertArray(inCerts, &(ret->certs));
-    if (CF_SUCCESS != res) {
+    if (res != CF_SUCCESS) {
         LOGE("Failed to clone cert array!");
         CfFree(ret);
         return res;
     }
     res = CloneCrlArray(inCrls, &(ret->crls));
-    if (CF_SUCCESS != res) {
+    if (res != CF_SUCCESS) {
         LOGE("Failed to clone crl array!");
         FreeCertArrayData(&ret->certs);
         CfFree(ret);

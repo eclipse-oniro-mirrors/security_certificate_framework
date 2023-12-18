@@ -846,7 +846,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest018, TestSize.Level0)
     CfResult ret = g_x509CertObj->getKeyUsage(g_x509CertObj, &cfBlobDataSelf);
     EXPECT_EQ(ret, CF_SUCCESS);
 
-    uint8_t *data = new uint8_t[cfBlobDataSelf.size - 1];
+    uint8_t *data = (uint8_t *)HcfMalloc(cfBlobDataSelf.size - 1, 0);
     for (int index = 0; index < cfBlobDataSelf.size - 1; index++) {
         data[index] = cfBlobDataSelf.data[index];
     }
@@ -858,7 +858,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest018, TestSize.Level0)
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_EQ(bResult, false);
 
-    delete[] data;
+    CfFree(data);
     CfBlobDataClearAndFree(&cfBlobDataSelf);
 }
 
@@ -872,7 +872,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest019, TestSize.Level0)
     CfResult ret = g_x509CertObj->getKeyUsage(g_x509CertObj, &cfBlobDataSelf);
     EXPECT_EQ(ret, CF_SUCCESS);
 
-    uint8_t *data = new uint8_t[cfBlobDataSelf.size + 1];
+    uint8_t *data = (uint8_t *)HcfMalloc(cfBlobDataSelf.size + 1, 0);
     int index = 0;
     for (index = 0; index < cfBlobDataSelf.size; index++) {
         data[index] = cfBlobDataSelf.data[index];
@@ -887,7 +887,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest019, TestSize.Level0)
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_EQ(bResult, false);
 
-    delete[] data;
+    CfFree(data);
     CfBlobDataClearAndFree(&cfBlobDataSelf);
 }
 
@@ -901,7 +901,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest020, TestSize.Level0)
     CfResult ret = g_x509CertObj->getKeyUsage(g_x509CertObj, &cfBlobDataSelf);
     EXPECT_EQ(ret, CF_SUCCESS);
 
-    uint8_t *data = new uint8_t[cfBlobDataSelf.size + 1];
+    uint8_t *data = (uint8_t *)HcfMalloc(cfBlobDataSelf.size + 1, 0);
     int index = 0;
     for (index = 0; index < cfBlobDataSelf.size; index++) {
         data[index] = cfBlobDataSelf.data[index];
@@ -916,7 +916,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest020, TestSize.Level0)
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_EQ(bResult, true);
 
-    delete[] data;
+    CfFree(data);
     CfBlobDataClearAndFree(&cfBlobDataSelf);
 }
 
@@ -930,7 +930,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest021, TestSize.Level0)
     CfResult ret = g_x509CertObj->getKeyUsage(g_x509CertObj, &cfBlobDataSelf);
     EXPECT_EQ(ret, CF_SUCCESS);
 
-    uint8_t *data = new uint8_t[cfBlobDataSelf.size];
+    uint8_t *data = (uint8_t *)HcfMalloc(cfBlobDataSelf.size, 0);
     for (int index = 0; index < cfBlobDataSelf.size; index++) {
         data[index] = (cfBlobDataSelf.data[index]) ? 0 : 1;
     }
@@ -942,7 +942,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest021, TestSize.Level0)
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_EQ(bResult, false);
 
-    delete[] data;
+    CfFree(data);
     CfBlobDataClearAndFree(&cfBlobDataSelf);
 }
 
@@ -1113,6 +1113,8 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest030, TestSize.Level0)
     ret = g_x509CertObj->match(g_x509CertObj, &matchParams, &bResult);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_EQ(bResult, true);
+
+    CfFree(cfDataKeyUsage.data);
 }
 
 /* ConvertNameDerDataToString : data is nullptr */
@@ -1447,6 +1449,7 @@ HWTEST_F(CryptoX509CertificateTest, NullSpiInput003, TestSize.Level0)
     EXPECT_NE(spiObj, nullptr);
 
     HcfOpensslX509Cert *realCert = (HcfOpensslX509Cert *)spiObj;
+    X509 *bk = realCert->x509;
     realCert->x509 = nullptr;
 
     CfBlob cfBlobDataParam = { 0 };
@@ -1457,6 +1460,9 @@ HWTEST_F(CryptoX509CertificateTest, NullSpiInput003, TestSize.Level0)
     bool bResult = false;
     ret = spiObj->engineMatch(spiObj, &matchParams, &bResult);
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
+
+    realCert->x509 = bk;
+    CfObjDestroy(spiObj);
 }
 
 HWTEST_F(CryptoX509CertificateTest, InvalidSpiClass, TestSize.Level0)

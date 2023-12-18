@@ -517,8 +517,14 @@ CfBlobArray *CertGetBlobArrFromArrUarrJSParams(napi_env env, napi_value arg)
             if (blob != nullptr) {
                 newBlobArr->data[i] = *blob;
                 CfFree(blob); // release blob object, not release blob data
+                continue;
             }
         }
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "input arr is invalid"));
+        FreeCfBlobArray(newBlobArr->data, newBlobArr->count);
+        CfFree(newBlobArr);
+        LOGE("Failed to allocate data memory!");
+        return nullptr;
     }
     return newBlobArr;
 }

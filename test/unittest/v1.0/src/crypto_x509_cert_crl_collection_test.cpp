@@ -49,60 +49,43 @@ public:
 
 void CryptoX509CertCrlCollectionTest::SetUpTestCase(void)
 {
-    HcfCertCrlCollection *x509CertCrlCollection = nullptr;
-    HcfX509CertificateArray *certArray = (HcfX509CertificateArray *)HcfMalloc(sizeof(HcfX509CertificateArray), 0);
-    ASSERT_NE(certArray, nullptr);
-
-    HcfX509CrlArray *crlArray = (HcfX509CrlArray *)HcfMalloc(sizeof(HcfX509CrlArray), 0);
-    ASSERT_NE(crlArray, nullptr);
-
     CfEncodingBlob inStream = { 0 };
     inStream.data = (uint8_t *)g_testSelfSignedCaCert;
     inStream.encodingFormat = CF_FORMAT_PEM;
     inStream.len = strlen(g_testSelfSignedCaCert) + 1;
-    (void)HcfX509CertificateCreate(&inStream, &g_x509CertObj);
-
-    HcfX509Crl *x509Crl = nullptr;
-    CfResult ret = HcfX509CrlCreate(&g_crlDerInStream, &x509Crl);
+    CfResult ret = HcfX509CertificateCreate(&inStream, &g_x509CertObj);
     ASSERT_EQ(ret, CF_SUCCESS);
-    ASSERT_NE(x509Crl, nullptr);
-    g_x509Crl = x509Crl;
+    ASSERT_NE(g_x509CertObj, nullptr);
 
-    certArray->data = (HcfX509Certificate **)HcfMalloc(1 * sizeof(HcfX509Certificate *), 0);
-    ASSERT_NE(certArray->data, nullptr);
-    certArray->data[0] = g_x509CertObj;
-    certArray->count = 1;
-
-    crlArray->data = (HcfX509Crl **)HcfMalloc(1 * sizeof(HcfX509Crl *), 0);
-    ASSERT_NE(crlArray->data, nullptr);
-    crlArray->data[0] = g_x509Crl;
-    crlArray->count = 1;
-
-    ret = HcfCertCrlCollectionCreate(certArray, crlArray, &x509CertCrlCollection);
+    ret = HcfX509CrlCreate(&g_crlDerInStream, &g_x509Crl);
     ASSERT_EQ(ret, CF_SUCCESS);
-    ASSERT_NE(x509CertCrlCollection, nullptr);
-    g_x509CertCrlCollection = x509CertCrlCollection;
+    ASSERT_NE(g_x509Crl, nullptr);
 
-    CfFree(certArray->data);
-    CfFree(crlArray->data);
-    CfFree(certArray);
-    CfFree(crlArray);
+    HcfX509CertificateArray certArray = { 0 };
+    HcfX509CrlArray crlArray = { 0 };
+
+    certArray.data = (HcfX509Certificate **)HcfMalloc(1 * sizeof(HcfX509Certificate *), 0);
+    ASSERT_NE(certArray.data, nullptr);
+    certArray.data[0] = g_x509CertObj;
+    certArray.count = 1;
+
+    crlArray.data = (HcfX509Crl **)HcfMalloc(1 * sizeof(HcfX509Crl *), 0);
+    ASSERT_NE(crlArray.data, nullptr);
+    crlArray.data[0] = g_x509Crl;
+    crlArray.count = 1;
+
+    ret = HcfCertCrlCollectionCreate(&certArray, &crlArray, &g_x509CertCrlCollection);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ASSERT_NE(g_x509CertCrlCollection, nullptr);
+
+    CfFree(certArray.data);
+    CfFree(crlArray.data);
 }
 
 void CryptoX509CertCrlCollectionTest::TearDownTestCase(void)
 {
-    if (g_x509CertObj != nullptr) {
-        CfObjDestroy(g_x509CertObj);
-    }
-
-    if (g_x509Crl != nullptr) {
-        CfObjDestroy(g_x509Crl);
-        g_x509Crl = nullptr;
-    }
-
-    ASSERT_NE(g_x509CertCrlCollection, nullptr);
-    g_x509CertCrlCollection->base.destroy(nullptr);
-
+    CfObjDestroy(g_x509CertObj);
+    CfObjDestroy(g_x509Crl);
     CfObjDestroy(g_x509CertCrlCollection);
 }
 
@@ -113,6 +96,32 @@ void CryptoX509CertCrlCollectionTest::TearDown() {}
 static const char *GetInvalidCertCrlCollectionClass(void)
 {
     return "INVALID_CERT_CRL_COLLECTION_CLASS";
+}
+
+static void FreeCertArrayData(HcfX509CertificateArray *certs)
+{
+    if (certs == NULL) {
+        return;
+    }
+    for (uint32_t i = 0; i < certs->count; ++i) {
+        CfObjDestroy(certs->data[i]);
+    }
+    CfFree(certs->data);
+    certs->data = NULL;
+    certs->count = 0;
+}
+
+static void FreeCrlArrayData(HcfX509CrlArray *crls)
+{
+    if (crls == NULL) {
+        return;
+    }
+    for (uint32_t i = 0; i < crls->count; ++i) {
+        CfObjDestroy(crls->data[i]);
+    }
+    CfFree(crls->data);
+    crls->data = NULL;
+    crls->count = 0;
 }
 
 HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCertsTest001, TestSize.Level0)
@@ -158,6 +167,8 @@ HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCertsTest002, TestSize.Level0)
 
     CfFree(certArray);
     CfFree(crlArray);
+    FreeCertArrayData(&retCerts);
+    FreeCrlArrayData(&retCrls);
 }
 
 HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCertsTest003, TestSize.Level0)
@@ -189,6 +200,7 @@ HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCertsTest004, TestSize.Level0)
     CfFree(certArray);
     CfFree(crlArray);
     CfObjDestroy(x509CertCrlCollection);
+    FreeCertArrayData(&retCerts);
 }
 
 HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCertsTest005, TestSize.Level0)
@@ -219,6 +231,7 @@ HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCertsTest006, TestSize.Level0)
     EXPECT_EQ(ret, CF_SUCCESS);
 
     CfObjDestroy(x509Cert);
+    FreeCertArrayData(&retCerts);
 }
 
 HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCertsTest007, TestSize.Level0)
@@ -241,6 +254,7 @@ HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCertsTest007, TestSize.Level0)
     EXPECT_EQ(ret, CF_SUCCESS);
 
     CfObjDestroy(x509Cert);
+    FreeCertArrayData(&retCerts);
 }
 
 HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCertsTest008, TestSize.Level0)
@@ -387,6 +401,7 @@ HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCRLsTest006, TestSize.Level0)
     EXPECT_EQ(retCrls.count > 0, true);
     EXPECT_NE(retCrls.data, nullptr);
     CfObjDestroy(x509Cert);
+    FreeCrlArrayData(&retCrls);
 }
 
 HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCRLsTest007, TestSize.Level0)
