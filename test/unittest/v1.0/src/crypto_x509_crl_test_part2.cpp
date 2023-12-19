@@ -181,9 +181,6 @@ HWTEST_F(CryptoX509CrlTestPart2, MatchX509CRLTest009, TestSize.Level0)
     // get issuer name
     ASSERT_NE(g_x509Crl, nullptr);
     CfBlob out1 = { 0, nullptr };
-    CfResult ret = g_x509Crl->getIssuerName(g_x509Crl, &out1);
-    EXPECT_EQ(ret, CF_SUCCESS);
-    CfFree(out1.data);
     out1.data = (uint8_t *)(&g_testCrlSubAndIssNameDerData[0]);
     out1.size = g_testCrlSubAndIssNameDerDataSize;
 
@@ -195,7 +192,7 @@ HWTEST_F(CryptoX509CrlTestPart2, MatchX509CRLTest009, TestSize.Level0)
     HcfX509CrlMatchParams matchParams;
     matchParams.issuer = &cfBlobArr;
     bool bResult = true;
-    ret = g_x509Crl->match(g_x509Crl, &matchParams, &bResult);
+    CfResult ret = g_x509Crl->match(g_x509Crl, &matchParams, &bResult);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_EQ(bResult, true);
 }
@@ -208,7 +205,8 @@ HWTEST_F(CryptoX509CrlTestPart2, MatchX509CRLTest010, TestSize.Level0)
     CfBlob out1 = { 0, nullptr };
     CfResult ret = g_x509Crl->getIssuerName(g_x509Crl, &out1);
     EXPECT_EQ(ret, CF_SUCCESS);
-    CfFree(out1.data);
+    EXPECT_EQ((out1.size >= 2), true);
+    out1.data[1] = out1.data[1] + 1; // modify to a different value.
 
     CfBlobArray cfBlobArr;
     CfBlob cfb[2] = { out1, out1 };
@@ -226,6 +224,9 @@ HWTEST_F(CryptoX509CrlTestPart2, MatchX509CRLTest010, TestSize.Level0)
     bool bResult = true;
     ret = x509Crl->match(x509Crl, &matchParams, &bResult);
     EXPECT_NE(ret, CF_SUCCESS);
+
+    CfFree(out1.data);
+    CfObjDestroy(x509Crl);
 }
 
 /* issuer->count is 0 and outTmpSelf.size is not 0 */
@@ -234,9 +235,6 @@ HWTEST_F(CryptoX509CrlTestPart2, MatchX509CRLTest011, TestSize.Level0)
     // get issuer name
     ASSERT_NE(g_x509Crl, nullptr);
     CfBlob out1 = { 0, nullptr };
-    CfResult ret = g_x509Crl->getIssuerName(g_x509Crl, &out1);
-    EXPECT_EQ(ret, CF_SUCCESS);
-    CfFree(out1.data);
     out1.data = (uint8_t *)(&g_testCrlSubAndIssNameDerData[0]);
     out1.size = g_testCrlSubAndIssNameDerDataSize;
 
@@ -248,7 +246,7 @@ HWTEST_F(CryptoX509CrlTestPart2, MatchX509CRLTest011, TestSize.Level0)
     HcfX509CrlMatchParams matchParams;
     matchParams.issuer = &cfBlobArr;
     bool bResult = true;
-    ret = g_x509Crl->match(g_x509Crl, &matchParams, &bResult);
+    CfResult ret = g_x509Crl->match(g_x509Crl, &matchParams, &bResult);
     EXPECT_EQ(ret, CF_INVALID_PARAMS);
 }
 
@@ -259,12 +257,6 @@ HWTEST_F(CryptoX509CrlTestPart2, MatchX509CRLTest012, TestSize.Level0)
     ASSERT_NE(g_x509Crl, nullptr);
     CfBlob out1 = { 0, nullptr };
     CfBlob out2 = { 0, nullptr };
-    CfResult ret = g_x509Crl->getIssuerName(g_x509Crl, &out1);
-    EXPECT_EQ(ret, CF_SUCCESS);
-    CfFree(out1.data);
-    ret = g_x509Crl->getIssuerName(g_x509Crl, &out2);
-    EXPECT_EQ(ret, CF_SUCCESS);
-    CfFree(out2.data);
     out1.data = nullptr;
     out1.size = g_testCrlSubAndIssNameDerDataSize;
     out2.data = (uint8_t *)(&g_testCrlSubAndIssNameDerData[0]);
@@ -278,7 +270,7 @@ HWTEST_F(CryptoX509CrlTestPart2, MatchX509CRLTest012, TestSize.Level0)
     HcfX509CrlMatchParams matchParams;
     matchParams.issuer = &cfBlobArr;
     bool bResult = true;
-    ret = g_x509Crl->match(g_x509Crl, &matchParams, &bResult);
+    CfResult ret = g_x509Crl->match(g_x509Crl, &matchParams, &bResult);
     EXPECT_EQ(ret, CF_INVALID_PARAMS);
 }
 
@@ -288,9 +280,6 @@ HWTEST_F(CryptoX509CrlTestPart2, MatchX509CRLTest013, TestSize.Level0)
     // get issuer name
     ASSERT_NE(g_x509Crl, nullptr);
     CfBlob out1 = { 0, nullptr };
-    CfResult ret = g_x509Crl->getIssuerName(g_x509Crl, &out1);
-    EXPECT_EQ(ret, CF_SUCCESS);
-    CfFree(out1.data);
     out1.data = (uint8_t *)(&g_testCrlSubAndIssNameDerData[0]);
     out1.size = g_testCrlSubAndIssNameDerDataSize;
 
@@ -301,7 +290,7 @@ HWTEST_F(CryptoX509CrlTestPart2, MatchX509CRLTest013, TestSize.Level0)
 
     // Get crl
     HcfX509Crl *x509Crl = nullptr;
-    ret = HcfX509CrlCreate(&g_crlWithoutExtPemInStream, &x509Crl);
+    CfResult ret = HcfX509CrlCreate(&g_crlWithoutExtPemInStream, &x509Crl);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(x509Crl, nullptr);
 
@@ -311,6 +300,8 @@ HWTEST_F(CryptoX509CrlTestPart2, MatchX509CRLTest013, TestSize.Level0)
     ret = x509Crl->match(x509Crl, &matchParams, &bResult);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_EQ(bResult, false);
+
+    CfObjDestroy(x509Crl);
 }
 
 /* match all params */
@@ -325,9 +316,6 @@ HWTEST_F(CryptoX509CrlTestPart2, MatchX509CRLTest014, TestSize.Level0)
     // get issuer name
     ASSERT_NE(g_x509Crl, nullptr);
     CfBlob out1 = { 0, nullptr };
-    ret = g_x509Crl->getIssuerName(g_x509Crl, &out1);
-    EXPECT_EQ(ret, CF_SUCCESS);
-    CfFree(out1.data);
     out1.data = (uint8_t *)(&g_testCrlSubAndIssNameDerData[0]);
     out1.size = g_testCrlSubAndIssNameDerDataSize;
 

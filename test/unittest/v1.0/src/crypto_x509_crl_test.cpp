@@ -355,6 +355,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest041, TestSize.Level0)
     free(blob.data);
     HcfObjDestroy(dupKeyPair);
     HcfObjDestroy(keyOut);
+    HcfObjDestroy(generator);
     CfObjDestroy(x509CertObj);
 }
 
@@ -374,8 +375,8 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest042, TestSize.Level0)
 
     CfResult ret1 = g_x509Crl->verify(g_x509Crl, keyPair->pubKey);
     EXPECT_NE(ret1, CF_SUCCESS);
-    CfObjDestroy(keyPair);
-    CfObjDestroy(generator);
+    HcfObjDestroy(keyPair);
+    HcfObjDestroy(generator);
 }
 
 // Test crl verify false
@@ -394,6 +395,8 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest043, TestSize.Level0)
 
     CfResult ret1 = g_x509Crl->verify(nullptr, keyPair->pubKey);
     EXPECT_NE(ret1, CF_SUCCESS);
+    HcfObjDestroy(keyPair);
+    HcfObjDestroy(generator);
 }
 
 // Test crl verify false
@@ -1009,6 +1012,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest151, TestSize.Level0)
     CfResult ret = g_x509Crl->getRevokedCerts(g_x509Crl, &entrysOut);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(entrysOut.data, nullptr);
+    EXPECT_EQ(entrysOut.count, 2);
 
     HcfX509CrlEntry *crlEntry = reinterpret_cast<HcfX509CrlEntry *>(entrysOut.data[0].data);
     CfBlob out = { 0, nullptr };
@@ -1018,7 +1022,9 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest151, TestSize.Level0)
     EXPECT_STREQ("230912064749Z", reinterpret_cast<char *>(out.data));
 
     CfFree(out.data);
-    CfObjDestroy(crlEntry);
+    CfObjDestroy(entrysOut.data[0].data);
+    CfObjDestroy(entrysOut.data[1].data);
+    CfFree(entrysOut.data);
 }
 
 // Test crl entry getRevokedCerts false
@@ -1262,8 +1268,9 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest207, TestSize.Level0)
     CfBlob blobOut = { 0, nullptr };
     CfResult cfRet = x509Crl->getExtensions(x509Crl, &blobOut);
     EXPECT_EQ(cfRet, CF_SUCCESS);
-    // todo:check blob
     EXPECT_EQ(blobOut.data, nullptr);
+    CfFree(blobOut.data);
+    CfObjDestroy(x509Crl);
 }
 
 // Test crl getExtensions while there are extensions in the crl, return CF_SUCCESS
@@ -1274,6 +1281,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest208, TestSize.Level0)
     CfResult ret = g_x509Crl->getExtensions(g_x509Crl, &blobOut);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(blobOut.data, nullptr);
+    CfFree(blobOut.data);
 }
 
 // Test crlEntry hasExtensions return false
@@ -1331,6 +1339,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest211, TestSize.Level0)
     EXPECT_EQ(boolResult, true);
 
     CfObjDestroy(crlEntry);
+    CfObjDestroy(x509Crl);
 }
 
 // Test crlEntry getExtensions,return CF_INVALID_PARAMS
@@ -1407,6 +1416,8 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest215, TestSize.Level0)
     EXPECT_NE(blob.data, nullptr);
 
     CfObjDestroy(crlEntry);
+    CfFree(blob.data);
+    CfObjDestroy(x509Crl);
 }
 
 // Test crlEntry getExtensions while there are more than one extensions in crlEntry,return CF_SUCCESS
@@ -1424,6 +1435,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest216, TestSize.Level0)
     EXPECT_EQ(ret, CF_SUCCESS);
 
     CfObjDestroy(crlEntry);
+    CfFree(blob.data);
 }
 
 // Test crlEntry getRevokedCert while there is a big num serialNumber,return CF_SUCCESS
@@ -1549,6 +1561,7 @@ HWTEST_F(CryptoX509CrlTest, NullSpi2, TestSize.Level0)
 
     ret = spiObj->engineGetExtensions(nullptr, &out);
     EXPECT_EQ(ret, CF_INVALID_PARAMS);
+    CfObjDestroy(spiObj);
 }
 
 HWTEST_F(CryptoX509CrlTest, InvalidCrlSpiClass, TestSize.Level0)

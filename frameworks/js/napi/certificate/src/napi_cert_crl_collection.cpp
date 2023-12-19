@@ -260,7 +260,7 @@ static napi_value NapiSelectCerts(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
     if (thisVar == nullptr) {
-        CF_LOG_E("thisVar is nullptr");
+        LOGE("thisVar is nullptr");
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "thisVar is nullptr."));
         return nullptr;
     }
@@ -334,7 +334,7 @@ static napi_value NapiSelectCRLs(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
     if (thisVar == nullptr) {
-        CF_LOG_E("thisVar is nullptr");
+        LOGE("thisVar is nullptr");
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "thisVar is nullptr."));
         return nullptr;
     }
@@ -463,14 +463,14 @@ static bool GetArrayCertFromValue(napi_env env, napi_value object, HcfX509Certif
         napi_value element;
         status = napi_get_element(env, object, i, &element);
         if (status != napi_ok) {
-            CF_LOG_E("get element failed!");
+            LOGE("get element failed!");
             CF_FREE_PTR(certs->data);
             return false;
         }
         NapiX509Certificate *napiCertObj = nullptr;
         napi_unwrap(env, element, reinterpret_cast<void **>(&napiCertObj));
         if (napiCertObj == nullptr) {
-            CF_LOG_E("napi cert objtect is nullptr!");
+            LOGE("napi cert objtect is nullptr!");
             CF_FREE_PTR(certs->data);
             return false;
         }
@@ -513,14 +513,14 @@ static bool GetArrayCRLFromValue(napi_env env, napi_value object, HcfX509CrlArra
         napi_value element;
         status = napi_get_element(env, object, i, &element);
         if (status != napi_ok) {
-            CF_LOG_E("get element failed!");
+            LOGE("get element failed!");
             CF_FREE_PTR(crls->data);
             return false;
         }
         NapiX509Crl *napiCrlObj = nullptr;
         napi_unwrap(env, element, reinterpret_cast<void **>(&napiCrlObj));
         if (napiCrlObj == nullptr) {
-            CF_LOG_E("napi cert objtect is nullptr!");
+            LOGE("napi cert objtect is nullptr!");
             CF_FREE_PTR(crls->data);
             return false;
         }
@@ -536,12 +536,12 @@ static CfResult ParseCreateCertCRLColJSParams(napi_env env, napi_callback_info i
     napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
     HcfX509CertificateArray certs = { nullptr, 0 };
     if (argv[PARAM0] != nullptr && !GetArrayCertFromValue(env, argv[PARAM0], &certs)) {
-        CF_LOG_E("get array cert from data failed!");
+        LOGE("get array cert from data failed!");
         return CF_INVALID_PARAMS;
     }
     HcfX509CrlArray crls = { nullptr, 0 };
     if (argv[PARAM1] != nullptr && !GetArrayCRLFromValue(env, argv[PARAM1], &crls)) {
-        CF_LOG_E("get array crl from data failed!");
+        LOGE("get array crl from data failed!");
         CF_FREE_PTR(certs.data);
         return CF_INVALID_PARAMS;
     }
@@ -549,7 +549,7 @@ static CfResult ParseCreateCertCRLColJSParams(napi_env env, napi_callback_info i
     HcfCertCrlCollection *collection = nullptr;
     CfResult res = HcfCertCrlCollectionCreate(&certs, &crls, &collection);
     if (res != CF_SUCCESS) {
-        CF_LOG_E("get array crl from data failed!");
+        LOGE("get array crl from data failed!");
         CF_FREE_PTR(certs.data);
         CF_FREE_PTR(crls.data);
         return res;
@@ -566,13 +566,13 @@ static napi_value NapiCreateCertCRLCollection(napi_env env, napi_callback_info i
     HcfCertCrlCollection *collection = nullptr;
     CfResult res = ParseCreateCertCRLColJSParams(env, info, collection);
     if (res != CF_SUCCESS) {
-        CF_LOG_E("Failed to parse JS params for create certcrlcollection object");
+        LOGE("Failed to parse JS params for create certcrlcollection object");
         napi_throw(env, CertGenerateBusinessError(env, res, "parse param failed."));
         return nullptr;
     }
     NapiCertCRLCollection *napiObject = new (std::nothrow) NapiCertCRLCollection(collection);
     if (napiObject == nullptr) {
-        CF_LOG_E("Failed to create napi certcrlcolletion class");
+        LOGE("Failed to create napi certcrlcolletion class");
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc napiObject failed."));
         return nullptr;
     }

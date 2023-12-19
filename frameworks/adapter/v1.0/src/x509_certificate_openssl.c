@@ -984,18 +984,22 @@ static int32_t GetBasicConstraintsX509Openssl(HcfX509CertificateSpi *self)
     }
     /* Path len is only valid for CA cert. */
     if (!constraints->ca) {
+        BASIC_CONSTRAINTS_free(constraints);
         LOGI("The cert in not a CA!");
         return INVALID_CONSTRAINTS_LEN;
     }
     if ((constraints->pathlen == NULL) || (constraints->pathlen->type == V_ASN1_NEG_INTEGER)) {
+        BASIC_CONSTRAINTS_free(constraints);
         LOGE("The cert path len is negative in openssl!");
         return INVALID_CONSTRAINTS_LEN;
     }
     long pathLen = ASN1_INTEGER_get(constraints->pathlen);
     if ((pathLen < 0) || (pathLen > INT_MAX)) {
+        BASIC_CONSTRAINTS_free(constraints);
         LOGE("Get the overflow path length in openssl!");
         return INVALID_CONSTRAINTS_LEN;
     }
+    BASIC_CONSTRAINTS_free(constraints);
     return (int32_t)pathLen;
 }
 
