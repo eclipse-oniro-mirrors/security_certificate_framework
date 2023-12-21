@@ -28,6 +28,9 @@
 #include "memory_mock.h"
 #include "securec.h"
 #include "x509_crl.h"
+#include "crypto_x509_cert_chain_data_der.h"
+#include "crypto_x509_cert_chain_data_p7b.h"
+#include "crypto_x509_cert_chain_data_pem.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -324,8 +327,14 @@ static const char g_testIssuerCert[] =
     "wWFdrSrSmjNbibrOHqQaoP/cpcqNP2EA5lFWSYVjJVkpv2YojGjLhjwqxP0=\r\n"
     "-----END CERTIFICATE-----\r\n";
 extern const int g_testIssuerCertSize;
+extern const int g_testChainDataP7bSize;
+extern const int g_testChainDataDerSize;
+extern const int g_testCertChainPemSize;
+extern const int g_testCertChainPemMidSize;
+extern const int g_testCertChainPemRootSize;
+extern const int g_testCertChainPemMidCRLSize;
+extern const int g_testCertChainPemNoRootSize;
 
-extern const CfEncodingBlob g_crlDerInStream;
 static const uint8_t g_crlDerData[] = {
     0x30, 0x82, 0x01, 0xE3, 0x30, 0x81, 0xCC, 0x02, 0x01, 0x01, 0x30, 0x0D, 0x06,
     0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x0B, 0x05, 0x00, 0x30,
@@ -367,12 +376,107 @@ static const uint8_t g_crlDerData[] = {
     0xE0, 0x79, 0xA0, 0x34, 0xCF, 0x42
 };
 extern const int g_crlDerDataSize;
+extern const int g_testChainPubkeyPemRootDataSize;
+extern const int g_testChainSubjectPemRootDataSize;
+
+extern const int g_testChainSubjectPemOtherSubjectDataSize;
+
+extern const int g_testChainPubkeyPemRootHasPubKeySize;
+
+static const char g_testCertChainPemMid[] =
+    "-----BEGIN CERTIFICATE-----\r\n"
+    "MIIC0zCCAoWgAwIBAgIIXpLoPpQVWnkwBQYDK2VwMFoxCzAJBgNVBAYTAkVOMRAw\r\n"
+    "DgYDVQQIEwdFbmdsYW5kMQ8wDQYDVQQHEwZMb25kb24xDDAKBgNVBAoTA3RzMTEM\r\n"
+    "MAoGA1UECxMDdHMxMQwwCgYDVQQDEwN0czEwHhcNMjMxMjA1MDczNzAwWhcNMjQw\r\n"
+    "OTAxMjM1OTAwWjBaMQswCQYDVQQGEwJFTjEQMA4GA1UECBMHRW5nbGFuZDEPMA0G\r\n"
+    "A1UEBxMGTG9uZG9uMQwwCgYDVQQKEwN0czIxDDAKBgNVBAsTA3RzMjEMMAoGA1UE\r\n"
+    "AxMDdHMyMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtt+2QxUevbol\r\n"
+    "YLp51QGcUpageI4fwGLIqv4fj4aoVnHFOOBqVOVpfCLRp26LFV/F8ebwPyo8YEBK\r\n"
+    "SwXzMD1573rMSbaH9BalscH5lZYAbetXoio6YRvzlcmcrVvLBNMeVnxY86xHpo0M\r\n"
+    "TNyP7W024rZsxWO98xFQVdoiaBC+7+midlisx2Y+7u0jzT9GjeUP6JLdLFUZJKUP\r\n"
+    "STK3jVzw9v1eZQZKYoNfU6vFMd6ndtwW6qEnwpzmmX/UT+p5ThAMH593zszlz330\r\n"
+    "nTSXBjIsGkyvOz9gSB0Z0LAuJj06XUNhGL5xKJYKbdI38MFQFJKvRHfgTAvVsvAv\r\n"
+    "pBUM2DuBKwIDAQABo28wbTAMBgNVHRMEBTADAQH/MB0GA1UdDgQWBBQ37B0zGcKA\r\n"
+    "OnmgxZQVMg6ZGvrGLTALBgNVHQ8EBAMCAQYwEQYJYIZIAYb4QgEBBAQDAgAHMB4G\r\n"
+    "CWCGSAGG+EIBDQQRFg94Y2EgY2VydGlmaWNhdGUwBQYDK2VwA0EAuasLBe55YgvF\r\n"
+    "b4wmHeohylc9r8cFGS1LNQ5UcSn3sGqMYf6ehnef16NLuCW6upHCs8Sui4iAMvsP\r\n"
+    "uKPWR9dKBA==\r\n"
+    "-----END CERTIFICATE-----\r\n";
+
+static const char g_testCertChainPemMidCRL[] =
+    "-----BEGIN X509 CRL-----\r\n"
+    "MIICDTCB9gIBATANBgkqhkiG9w0BAQsFADBaMQswCQYDVQQGEwJFTjEQMA4GA1UE\r\n"
+    "CBMHRW5nbGFuZDEPMA0GA1UEBxMGTG9uZG9uMQwwCgYDVQQKEwN0czIxDDAKBgNV\r\n"
+    "BAsTA3RzMjEMMAoGA1UEAxMDdHMyFw0yMzEyMTUwMjMyMDBaFw0yNDAxMTQwMjMy\r\n"
+    "MDBaMDcwNQIIIM2q/TmRoLcXDTIzMTIxNTAyMzA1M1owGjAYBgNVHRgEERgPMjAy\r\n"
+    "MzEyMTQwMjMwMDBaoC8wLTAfBgNVHSMEGDAWgBQ37B0zGcKAOnmgxZQVMg6ZGvrG\r\n"
+    "LTAKBgNVHRQEAwIBATANBgkqhkiG9w0BAQsFAAOCAQEAomTBBa9igM3xigouO6uh\r\n"
+    "A2P4ws3xr53KYVmpM9nBsuzzzlVBbKh4SbJXboLxFA7NL+FK00lm4is6gQylyPf1\r\n"
+    "rcjgKJx8Ol9n2BfrfH9Jlig4EYD7U/NDFB1S7fTbCbYqztZr0oVEfCwKRfCTTPiT\r\n"
+    "v2a0S4LZylcAdIKzcDUi9bET5d4/NQBVLz1P3gtEQMZAQlh+VNlk80lcSGdCgejz\r\n"
+    "YYbmQ6Lh+AE9QbZMAnCvYD5lT2oU4hUwZcY2ZGhktFnoyFTw80ZjOP/dOwqdkuYi\r\n"
+    "SQhs90WaiBhEGmnau0BcJa6FFShTU0CrxFlx5Q0OvqCDtQuxvoYLLosf021Aw5kp\r\n"
+    "hg==\r\n"
+    "-----END X509 CRL-----\r\n";
+
+static const char g_testCertChainPemRoot[] =
+    "-----BEGIN CERTIFICATE-----\r\n"
+    "MIIB3zCCAZGgAwIBAgIIWQvOEDl+ya4wBQYDK2VwMFoxCzAJBgNVBAYTAkVOMRAw\r\n"
+    "DgYDVQQIEwdFbmdsYW5kMQ8wDQYDVQQHEwZMb25kb24xDDAKBgNVBAoTA3RzMTEM\r\n"
+    "MAoGA1UECxMDdHMxMQwwCgYDVQQDEwN0czEwHhcNMjMxMjA1MDAwMDAwWhcNMjQx\r\n"
+    "MjA0MjM1OTU5WjBaMQswCQYDVQQGEwJFTjEQMA4GA1UECBMHRW5nbGFuZDEPMA0G\r\n"
+    "A1UEBxMGTG9uZG9uMQwwCgYDVQQKEwN0czExDDAKBgNVBAsTA3RzMTEMMAoGA1UE\r\n"
+    "AxMDdHMxMCowBQYDK2VwAyEAuxadj1ww0LqPN24zr28jcSOlSWAe0QdLyRF+ZgG6\r\n"
+    "klKjdTBzMBIGA1UdEwEB/wQIMAYBAf8CARQwHQYDVR0OBBYEFNSgpoQvfxR8A1Y4\r\n"
+    "St8NjOHkRpm4MAsGA1UdDwQEAwIBBjARBglghkgBhvhCAQEEBAMCAAcwHgYJYIZI\r\n"
+    "AYb4QgENBBEWD3hjYSBjZXJ0aWZpY2F0ZTAFBgMrZXADQQAblBgoa72X/K13WOvc\r\n"
+    "KW0fqBgFKvLy85hWD6Ufi61k4ProQiZzMK+0+y9jReKelPx/zRdCCgSbQroAR2mV\r\n"
+    "xjoE\r\n"
+    "-----END CERTIFICATE-----\r\n";
+
+static const unsigned char g_testChainPubkeyPemRootData[] = { 0x30, 0x2A, 0x30, 0x05, 0x06, 0x03, 0x2B, 0x65, 0x70,
+    0x03, 0x21, 0x00, 0xBB, 0x16, 0x9D, 0x8F, 0x5C, 0x30, 0xD0, 0xBA, 0x8F, 0x37, 0x6E, 0x33, 0xAF, 0x6F, 0x23, 0x71,
+    0x23, 0xA5, 0x49, 0x60, 0x1E, 0xD1, 0x07, 0x4B, 0xC9, 0x11, 0x7E, 0x66, 0x01, 0xBA, 0x92, 0x52 };
+
+static const unsigned char g_testChainPubkeyPemRootHasPubKey[] = { 0x30, 0x59, 0x30, 0x13, 0x06, 0x07, 0x2A, 0x86, 0x48,
+    0xCE, 0x3D, 0x02, 0x01, 0x06, 0x08, 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x03, 0x01, 0x07, 0x03, 0x42, 0x00, 0x04, 0xC9,
+    0xC1, 0x89, 0x06, 0x0E, 0x5A, 0xDC, 0x3D, 0xE2, 0x04, 0xBE, 0x53, 0x5C, 0xA0, 0xD8, 0xC1, 0x36, 0x43, 0x19, 0x7B,
+    0xAC, 0xDF, 0xB6, 0x86, 0x8C, 0x0B, 0x0C, 0x60, 0x13, 0xD4, 0xAC, 0x14, 0xAB, 0x4E, 0xC8, 0xEC, 0x16, 0x1F, 0x0E,
+    0xAE, 0x43, 0x5A, 0x7B, 0xA0, 0x9E, 0x80, 0x18, 0x24, 0x73, 0x4C, 0x0F, 0x7F, 0xDE, 0x85, 0xBA, 0x8B, 0x3D, 0x69,
+    0xC9, 0x53, 0x42, 0x24, 0x03, 0xE1 };
+
+static const unsigned char g_testChainSubjectPemRootData[] = { 0x30, 0x5a, 0x31, 0x0b, 0x30, 0x09, 0x06, 0x03, 0x55,
+    0x04, 0x06, 0x13, 0x02, 0x45, 0x4e, 0x31, 0x10, 0x30, 0x0e, 0x06, 0x03, 0x55, 0x04, 0x08, 0x13, 0x07, 0x45, 0x6e,
+    0x67, 0x6c, 0x61, 0x6e, 0x64, 0x31, 0x0f, 0x30, 0x0d, 0x06, 0x03, 0x55, 0x04, 0x07, 0x13, 0x06, 0x4c, 0x6f, 0x6e,
+    0x64, 0x6f, 0x6e, 0x31, 0x0c, 0x30, 0x0a, 0x06, 0x03, 0x55, 0x04, 0x0a, 0x13, 0x03, 0x74, 0x73, 0x31, 0x31, 0x0c,
+    0x30, 0x0a, 0x06, 0x03, 0x55, 0x04, 0x0b, 0x13, 0x03, 0x74, 0x73, 0x31, 0x31, 0x0c, 0x30, 0x0a, 0x06, 0x03, 0x55,
+    0x04, 0x03, 0x13, 0x03, 0x74, 0x73, 0x31 };
+
+static const unsigned char g_testChainSubjectPemOtherSubjectData[] = { 0x30, 0x6e, 0x31, 0x0b, 0x30, 0x09, 0x06, 0x03,
+    0x55, 0x04, 0x06, 0x13, 0x02, 0x43, 0x4e, 0x31, 0x12, 0x30, 0x10, 0x06, 0x03, 0x55, 0x04, 0x08, 0x13, 0x09, 0x67,
+    0x75, 0x61, 0x6e, 0x67, 0x64, 0x6f, 0x6e, 0x67, 0x31, 0x12, 0x30, 0x10, 0x06, 0x03, 0x55, 0x04, 0x07, 0x13, 0x09,
+    0x73, 0x68, 0x65, 0x6e, 0x7a, 0x68, 0x65, 0x6e, 0x67, 0x31, 0x11, 0x30, 0x0f, 0x06, 0x03, 0x55, 0x04, 0x0a, 0x13,
+    0x08, 0x74, 0x65, 0x73, 0x74, 0x72, 0x6f, 0x6f, 0x74, 0x31, 0x11, 0x30, 0x0f, 0x06, 0x03, 0x55, 0x04, 0x0b, 0x13,
+    0x08, 0x74, 0x65, 0x73, 0x74, 0x72, 0x6f, 0x6f, 0x74, 0x31, 0x11, 0x30, 0x0f, 0x06, 0x03, 0x55, 0x04, 0x03, 0x13,
+    0x08, 0x74, 0x65, 0x73, 0x74, 0x72, 0x6f, 0x6f, 0x74 };
+
+extern const CfEncodingBlob g_crlDerInStream;
 extern const CfEncodingBlob g_inStreamCrl;
+extern const CfEncodingBlob g_inStreamSelfSignedCaCert;
 extern const CfEncodingBlob g_crlWithoutExtPemInStream;
 extern const CfEncodingBlob g_crlWithBignumSerialInStream;
 extern const CfEncodingBlob g_CrlWhichEntryWithExtInStream;
 extern const CfEncodingBlob g_inStreamCert;
 extern const CfEncodingBlob g_inStreamIssuerCert;
+extern const CfEncodingBlob g_inStreamChainDataP7b;
+extern const CfEncodingBlob g_inStreamChainDataDer;
+extern const CfEncodingBlob g_inStreamChainDataPem;
+extern const CfEncodingBlob g_inStreamChainDataPemMid;
+extern const CfEncodingBlob g_inStreamChainDataPemRoot;
+extern const CfEncodingBlob g_inStreamChainDataPemNoRoot;
+extern const CfEncodingBlob g_inStreamChainDataPemMidCRL;
+extern const CfEncodingBlob g_inStreamChainPemNoRootHasPubKey;
+extern const CfEncodingBlob g_inStreamChainPem2;
 
 const char *GetInvalidCertClass(void);
 const char *GetInvalidCrlClass(void);

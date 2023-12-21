@@ -191,6 +191,7 @@ CfResult HcfCertChainValidatorCreate(const char *algorithm, HcfCertChainValidato
     CertChainValidatorImpl *returnValidator = (CertChainValidatorImpl *)HcfMalloc(sizeof(CertChainValidatorImpl), 0);
     if (returnValidator == NULL) {
         LOGE("Failed to allocate returnValidator memory!");
+        CfObjDestroy(spiObj);
         return CF_ERR_MALLOC;
     }
     returnValidator->base.validate = Validate;

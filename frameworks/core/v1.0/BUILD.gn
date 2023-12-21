@@ -29,12 +29,12 @@ ohos_static_library("libcertificate_framework_vesion1") {
   include_dirs = [
     "../../adapter/v1.0/inc",
     "spi",
-    "inc",
   ]
   sources = [
     "certificate/cert_chain_validator.c",
     "certificate/cert_crl_collection.c",
     "certificate/cert_crl_common.c",
+    "certificate/x509_cert_chain.c",
     "certificate/x509_certificate.c",
     "certificate/x509_crl.c",
   ]

@@ -67,7 +67,7 @@ const char *GetAlgorithmName(const char *oid)
 
 void CfPrintOpensslError(void)
 {
-    char szErr[LOG_PRINT_MAX_LEN] = {0};
+    char szErr[LOG_PRINT_MAX_LEN] = { 0 };
     unsigned long errCode;
 
     errCode = ERR_get_error();
@@ -87,6 +87,27 @@ CfResult DeepCopyDataToBlob(const unsigned char *data, uint32_t len, CfBlob *out
 
     outBlob->data = tmp;
     outBlob->size = len;
+    return CF_SUCCESS;
+}
+
+CfResult DeepCopyBlobToBlob(const CfBlob *inBlob, CfBlob **outBlob)
+{
+    if (inBlob == NULL || outBlob == NULL) {
+        return CF_SUCCESS;
+    }
+
+    CfBlob *tmp = (CfBlob *)HcfMalloc(sizeof(CfBlob), 0);
+    if (tmp == NULL) {
+        LOGE("malloc failed");
+        return CF_ERR_MALLOC;
+    }
+    CfResult res = DeepCopyDataToBlob((const unsigned char *)inBlob->data, inBlob->size, tmp);
+    if (res != CF_SUCCESS) {
+        LOGE("DeepCopyDataToBlob failed");
+        CfFree(tmp);
+        return res;
+    }
+    *outBlob = tmp;
     return CF_SUCCESS;
 }
 
@@ -164,4 +185,31 @@ CfResult CompareBigNum(const CfBlob *lhs, const CfBlob *rhs, int *out)
     BN_free(lhsBigNum);
     BN_free(rhsBigNum);
     return CF_SUCCESS;
+}
+
+uint8_t *GetX509EncodedDataStream(const X509 *certificate, int *dataLength)
+{
+    if (certificate == NULL) {
+        LOGE("Failed to convert internal x509 to der format!");
+        return NULL;
+    }
+
+    unsigned char *der = NULL;
+    int32_t length = i2d_X509(certificate, &der);
+    if (length <= 0) {
+        LOGE("Failed to convert internal x509 to der format!");
+        CfPrintOpensslError();
+        return NULL;
+    }
+    uint8_t *data = (uint8_t *)HcfMalloc(length, 0);
+    if (data == NULL) {
+        LOGE("Failed to malloc for x509 der data!");
+        OPENSSL_free(der);
+        return NULL;
+    }
+    (void)memcpy_s(data, length, der, length);
+    OPENSSL_free(der);
+    *dataLength = length;
+
+    return data;
 }

@@ -14,6 +14,8 @@
  */
 
 #include <gtest/gtest.h>
+#include <openssl/pem.h>
+
 #include "securec.h"
 
 #include "x509_certificate.h"
@@ -1117,6 +1119,42 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest030, TestSize.Level0)
     CfFree(cfDataKeyUsage.data);
 }
 
+HWTEST_F(CryptoX509CertificateTest, DeepCopyDataToBlobTest001, TestSize.Level0)
+{
+    SetMockFlag(true);
+    CfResult ret = DeepCopyDataToBlob(nullptr, 0, nullptr);
+    EXPECT_EQ(ret, CF_ERR_MALLOC);
+    SetMockFlag(false);
+}
+
+HWTEST_F(CryptoX509CertificateTest, DeepCopyBlobToBlobTest001, TestSize.Level0)
+{
+    CfResult ret = DeepCopyBlobToBlob(nullptr, nullptr);
+    EXPECT_EQ(ret, CF_SUCCESS);
+}
+
+HWTEST_F(CryptoX509CertificateTest, DeepCopyBlobToBlobTest002, TestSize.Level0)
+{
+    CfBlob inBlob = { 0 };
+    CfBlob *outBlob = nullptr;
+    SetMockFlag(true);
+    CfResult ret = DeepCopyBlobToBlob(&inBlob, &outBlob);
+    EXPECT_EQ(ret, CF_ERR_MALLOC);
+    SetMockFlag(false);
+}
+
+HWTEST_F(CryptoX509CertificateTest, CopyExtensionsToBlobTest001, TestSize.Level0)
+{
+    CfBlob outBlob = { 0 };
+
+    X509_EXTENSIONS *exts = sk_X509_EXTENSION_new_null();
+
+    CfResult ret = CopyExtensionsToBlob(exts, &outBlob);
+    EXPECT_EQ(ret, CF_SUCCESS);
+
+    sk_X509_EXTENSION_pop_free(exts, X509_EXTENSION_free);
+}
+
 /* ConvertNameDerDataToString : data is nullptr */
 HWTEST_F(CryptoX509CertificateTest, ConvertNameDerDataToStringTest001, TestSize.Level0)
 {
@@ -1197,6 +1235,15 @@ HWTEST_F(CryptoX509CertificateTest, ConvertNameDerDataToStringTest007, TestSize.
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
 }
 
+HWTEST_F(CryptoX509CertificateTest, ConvertNameDerDataToStringTest008, TestSize.Level0)
+{
+    const unsigned char data[] = "error data";
+    uint32_t derLen = sizeof(data);
+    CfBlob out = { 0, nullptr };
+    CfResult ret = ConvertNameDerDataToString(data, derLen, &out);
+    EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
+}
+
 /* CompareBigNum : CfBlob lhs and CfBlob rhs is NULL */
 HWTEST_F(CryptoX509CertificateTest, CompareBigNumTest001, TestSize.Level0)
 {
@@ -1208,8 +1255,8 @@ HWTEST_F(CryptoX509CertificateTest, CompareBigNumTest001, TestSize.Level0)
     rhs.size = 10;
     int out;
 
-    lhs.data = NULL;
-    rhs.data = NULL;
+    lhs.data = nullptr;
+    rhs.data = nullptr;
     CfResult ret = CompareBigNum(&lhs, &rhs, &out);
     EXPECT_EQ(ret, CF_INVALID_PARAMS);
 }
@@ -1280,6 +1327,80 @@ HWTEST_F(CryptoX509CertificateTest, CompareBigNumTest005, TestSize.Level0)
 
     CfResult ret = CompareBigNum(&lhs, &lhs, &out);
     EXPECT_EQ(ret, CF_INVALID_PARAMS);
+}
+
+/* CompareBigNum : CfBlob lhs and CfBlob rhs parameters are valid but conversion to large number failed */
+HWTEST_F(CryptoX509CertificateTest, CompareBigNumTest006, TestSize.Level0)
+{
+    CfBlob lhs = { 0 };
+    CfBlob rhs = { 0 };
+    lhs.data = (unsigned char *)"1234567890";
+    lhs.size = 0;
+    rhs.data = (unsigned char *)"4567890123";
+    rhs.size = 10;
+    int out;
+
+    lhs.data = nullptr;
+    CfResult ret = CompareBigNum(&lhs, &rhs, &out);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+}
+
+/* CompareBigNum : CfBlob lhs and CfBlob rhs parameters are valid but conversion to large number failed */
+HWTEST_F(CryptoX509CertificateTest, CompareBigNumTest007, TestSize.Level0)
+{
+    CfBlob lhs = { 0 };
+    CfBlob rhs = { 0 };
+    lhs.data = (unsigned char *)"1234567890";
+    lhs.size = 10;
+    rhs.data = (unsigned char *)"4567890123";
+    rhs.size = 0;
+    int out;
+
+    rhs.data = nullptr;
+    CfResult ret = CompareBigNum(&lhs, &rhs, &out);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+}
+
+HWTEST_F(CryptoX509CertificateTest, CompareBigNumTest008, TestSize.Level0)
+{
+    CfBlob lhs = { 0 };
+    CfBlob rhs = { 0 };
+    uint8_t testBigNum1[] = { 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01 };
+    uint8_t testBigNum2[] = { 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x02 };
+    lhs.data = (uint8_t *)testBigNum1;
+    lhs.size = sizeof(testBigNum1) / sizeof(testBigNum1[0]);
+    rhs.data = (uint8_t *)testBigNum2;
+    rhs.size = ~0;
+    int out;
+
+    CfResult ret = CompareBigNum(&lhs, &rhs, &out);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+}
+
+/* GetX509EncodedDataStream : certificate is NULL */
+HWTEST_F(CryptoX509CertificateTest, GetX509EncodedDataStreamTest001, TestSize.Level0)
+{
+    int dataLength;
+
+    uint8_t *ret = GetX509EncodedDataStream(nullptr, &dataLength);
+    EXPECT_EQ(ret, nullptr);
+}
+
+HWTEST_F(CryptoX509CertificateTest, GetX509EncodedDataStreamTest002, TestSize.Level0)
+{
+    int dataLength;
+    X509 *certificate = nullptr;
+    BIO *bio = BIO_new_mem_buf((const void *)g_testCertChainPemMid, sizeof(g_testCertChainPemMid));
+    EXPECT_NE(bio, nullptr);
+    certificate = PEM_read_bio_X509(bio, nullptr, nullptr, nullptr);
+    BIO_free(bio);
+
+    SetMockFlag(true);
+    uint8_t *ret = GetX509EncodedDataStream(certificate, &dataLength);
+    EXPECT_EQ(ret, nullptr);
+    SetMockFlag(false);
 }
 
 HWTEST_F(CryptoX509CertificateTest, NullInput, TestSize.Level0)

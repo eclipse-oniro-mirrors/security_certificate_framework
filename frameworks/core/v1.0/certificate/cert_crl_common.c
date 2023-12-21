@@ -56,3 +56,27 @@ CfResult CloneCrlObj(HcfX509Crl *in, HcfX509Crl **out)
     CfFree(encodingBlob.data);
     return CF_SUCCESS;
 }
+
+void FreeCertArrayData(HcfX509CertificateArray *certs)
+{
+    if (certs == NULL) {
+        return;
+    }
+    for (uint32_t i = 0; i < certs->count; ++i) {
+        CfObjDestroy(certs->data[i]);
+    }
+    CF_FREE_PTR(certs->data);
+    certs->count = 0;
+}
+
+void FreeCrlArrayData(HcfX509CrlArray *crls)
+{
+    if (crls == NULL) {
+        return;
+    }
+    for (uint32_t i = 0; i < crls->count; ++i) {
+        CfObjDestroy(crls->data[i]);
+    }
+    CF_FREE_PTR(crls->data);
+    crls->count = 0;
+}

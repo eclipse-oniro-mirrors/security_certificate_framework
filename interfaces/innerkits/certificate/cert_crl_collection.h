@@ -40,6 +40,15 @@ struct HcfCertCrlCollection {
     /** Get CRLs list which match HcfX509CrlMatchParams. */
     CfResult (*selectCRLs)(
         HcfCertCrlCollection *self, const HcfX509CrlMatchParams *matchParams, HcfX509CrlArray *retCrls);
+
+    /** Get CRLs list (without clone) in cert crl collection. */
+    CfResult (*getCRLs)(HcfCertCrlCollection *self, HcfX509CrlArray **retCrls);
+};
+
+typedef struct HcfCertCRLCollectionArray HcfCertCRLCollectionArray;
+struct HcfCertCRLCollectionArray {
+    HcfCertCrlCollection **data;
+    uint32_t count;
 };
 
 #ifdef __cplusplus

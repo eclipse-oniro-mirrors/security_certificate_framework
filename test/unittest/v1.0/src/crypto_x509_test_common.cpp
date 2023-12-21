@@ -125,6 +125,36 @@ const int g_testCrlWithBignumSerialSize = sizeof(g_testCrlWithBignumSerial);
 
 const int g_testCrlWhichEntryWithExtSize = sizeof(g_testCrlWhichEntryWithExt);
 
+const int g_testCertChainPemSize = sizeof(g_testCertChainPem) / sizeof(char);
+
+const int g_testCertChainPemMidSize = sizeof(g_testCertChainPemMid) / sizeof(char);
+
+const int g_testCertChainPemMidCRLSize = sizeof(g_testCertChainPemMidCRL) / sizeof(char);
+
+const int g_testCertChainPemRootSize = sizeof(g_testCertChainPemRoot) / sizeof(char);
+
+const int g_testCertChainPemNoRootSize = sizeof(g_testCertChainPemNoRoot) / sizeof(char);
+
+const int g_testCertChainPemNoRootHasPubKeySize = sizeof(g_testCertChainPemNoRootHasPubKey) / sizeof(char);
+
+const int g_testCertChainPem2Size = sizeof(g_testCertChainPem2) / sizeof(char);
+
+const int g_testChainDataP7bSize = sizeof(g_testChainDataP7b) / sizeof(g_testChainDataP7b[0]);
+
+const int g_testChainDataDerSize = sizeof(g_testChainDataDer) / sizeof(g_testChainDataDer[0]);
+
+const int g_testChainPubkeyPemRootDataSize =
+    sizeof(g_testChainPubkeyPemRootData) / sizeof(g_testChainPubkeyPemRootData[0]);
+
+const int g_testChainPubkeyPemRootHasPubKeySize =
+    sizeof(g_testChainPubkeyPemRootHasPubKey) / sizeof(g_testChainPubkeyPemRootHasPubKey[0]);
+
+const int g_testChainSubjectPemRootDataSize =
+    sizeof(g_testChainSubjectPemRootData) / sizeof(g_testChainSubjectPemRootData[0]);
+
+const int g_testChainSubjectPemOtherSubjectDataSize =
+    sizeof(g_testChainSubjectPemOtherSubjectData) / sizeof(g_testChainSubjectPemOtherSubjectData[0]);
+
 const int g_testIssuerCertSize = sizeof(g_testIssuerCert);
 const CfEncodingBlob g_crlDerInStream = { const_cast<uint8_t *>(g_crlDerData), sizeof(g_crlDerData), CF_FORMAT_DER };
 
@@ -146,8 +176,45 @@ const CfEncodingBlob g_CrlWhichEntryWithExtInStream = { reinterpret_cast<uint8_t
 const CfEncodingBlob g_inStreamCert = { reinterpret_cast<uint8_t *>(const_cast<char *>(g_testCert)), sizeof(g_testCert),
     CF_FORMAT_PEM };
 
+const CfEncodingBlob g_inStreamSelfSignedCaCert = {
+    reinterpret_cast<uint8_t *>(const_cast<char *>(g_testSelfSignedCaCert)), g_testSelfSignedCaCertSize, CF_FORMAT_PEM
+};
+
 const CfEncodingBlob g_inStreamIssuerCert = { reinterpret_cast<uint8_t *>(const_cast<char *>(g_testIssuerCert)),
     sizeof(g_testIssuerCert), CF_FORMAT_PEM };
+
+const CfEncodingBlob g_inStreamChainDataP7b = { const_cast<uint8_t *>(g_testChainDataP7b), g_testChainDataP7bSize,
+    CF_FORMAT_PKCS7 };
+
+const CfEncodingBlob g_inStreamChainDataDer = { const_cast<uint8_t *>(g_testChainDataDer), g_testChainDataDerSize,
+    CF_FORMAT_DER };
+
+const CfEncodingBlob g_inStreamChainDataPem = { reinterpret_cast<uint8_t *>(const_cast<char *>(g_testCertChainPem)),
+    g_testCertChainPemSize, CF_FORMAT_PEM };
+
+const CfEncodingBlob g_inStreamChainDataPemMid = {
+    reinterpret_cast<uint8_t *>(const_cast<char *>(g_testCertChainPemMid)), g_testCertChainPemMidSize, CF_FORMAT_PEM
+};
+
+const CfEncodingBlob g_inStreamChainDataPemRoot = {
+    reinterpret_cast<uint8_t *>(const_cast<char *>(g_testCertChainPemRoot)), g_testCertChainPemRootSize, CF_FORMAT_PEM
+};
+
+const CfEncodingBlob g_inStreamChainDataPemNoRoot = { reinterpret_cast<uint8_t *>(
+                                                          const_cast<char *>(g_testCertChainPemNoRoot)),
+    g_testCertChainPemNoRootSize, CF_FORMAT_PEM };
+
+const CfEncodingBlob g_inStreamChainDataPemMidCRL = { reinterpret_cast<uint8_t *>(
+                                                          const_cast<char *>(g_testCertChainPemMidCRL)),
+    g_testCertChainPemMidCRLSize, CF_FORMAT_PEM };
+
+const CfEncodingBlob g_inStreamChainPemNoRootHasPubKey = { reinterpret_cast<uint8_t *>(
+                                                               const_cast<char *>(g_testCertChainPemNoRootHasPubKey)),
+    g_testCertChainPemNoRootHasPubKeySize, CF_FORMAT_PEM };
+
+/* Cert chain Pem without Root and Last Cert Has PubKey */
+const CfEncodingBlob g_inStreamChainPem2 = { reinterpret_cast<uint8_t *>(const_cast<char *>(g_testCertChainPem2)),
+    g_testCertChainPem2Size, CF_FORMAT_PEM };
 
 const char *GetInvalidCertClass(void)
 {
