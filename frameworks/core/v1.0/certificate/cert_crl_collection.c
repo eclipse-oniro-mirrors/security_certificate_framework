@@ -39,32 +39,6 @@ static const char *GetCertCrlCollectionClass(void)
     return "HcfCertCrlCollection";
 }
 
-static void FreeCertArrayData(HcfX509CertificateArray *certs)
-{
-    if (certs == NULL) {
-        return;
-    }
-    for (uint32_t i = 0; i < certs->count; ++i) {
-        CfObjDestroy(certs->data[i]);
-    }
-    CfFree(certs->data);
-    certs->data = NULL;
-    certs->count = 0;
-}
-
-static void FreeCrlArrayData(HcfX509CrlArray *crls)
-{
-    if (crls == NULL) {
-        return;
-    }
-    for (uint32_t i = 0; i < crls->count; ++i) {
-        CfObjDestroy(crls->data[i]);
-    }
-    CfFree(crls->data);
-    crls->data = NULL;
-    crls->count = 0;
-}
-
 static void DestroyCertCrlCollection(CfObjectBase *self)
 {
     if (self == NULL) {
@@ -234,6 +208,22 @@ static CfResult SelectCRLs(
     return CF_SUCCESS;
 }
 
+static CfResult GetCRLs(HcfCertCrlCollection *self, HcfX509CrlArray **retCrls)
+{
+    if (self == NULL || retCrls == NULL) {
+        LOGE("Invalid input parameter.");
+        return CF_INVALID_PARAMS;
+    }
+    if (!IsClassMatch((CfObjectBase *)self, GetCertCrlCollectionClass())) {
+        LOGE("Class is not match.");
+        return CF_INVALID_PARAMS;
+    }
+    CertCrlCollectionImpl *collectionImpl = (CertCrlCollectionImpl *)self;
+    *retCrls = &(collectionImpl->crls);
+
+    return CF_SUCCESS;
+}
+
 static CfResult CloneCertArray(const HcfX509CertificateArray *inCerts, HcfX509CertificateArray *certs)
 {
     if (inCerts == NULL || inCerts->count == 0) {
@@ -320,6 +310,7 @@ CfResult HcfCertCrlCollectionCreate(
     ret->base.base.getClass = GetCertCrlCollectionClass;
     ret->base.selectCerts = SelectCerts;
     ret->base.selectCRLs = SelectCRLs;
+    ret->base.getCRLs = GetCRLs;
 
     CfResult res = CloneCertArray(inCerts, &(ret->certs));
     if (res != CF_SUCCESS) {

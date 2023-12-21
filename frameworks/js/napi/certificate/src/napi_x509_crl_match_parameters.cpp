@@ -91,13 +91,11 @@ void FreeX509CrlMatchParams(HcfX509CrlMatchParams *&matchParams)
 
     if (matchParams->issuer != nullptr) {
         FreeCfBlobArray(matchParams->issuer->data, matchParams->issuer->count);
-        CfFree(matchParams->issuer);
-        matchParams->issuer = nullptr;
+        CF_FREE_PTR(matchParams->issuer);
     }
     matchParams->x509Cert = nullptr;
 
-    CfFree(matchParams);
-    matchParams = nullptr;
+    CF_FREE_PTR(matchParams);
 }
 
 } // namespace CertFramework

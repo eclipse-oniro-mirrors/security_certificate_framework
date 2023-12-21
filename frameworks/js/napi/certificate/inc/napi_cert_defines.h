@@ -30,6 +30,7 @@ constexpr int32_t PARAM1 = 1;
 constexpr int32_t PARAM2 = 2;
 constexpr uint32_t BYTE_TO_BIT_CNT = 8;
 constexpr uint32_t QUAD_WORD_ALIGN_UP = 3;
+constexpr uint32_t MAX_LEN_OF_ARRAY = 1024;
 
 const std::string CERT_TAG_DATA = "data";
 const std::string CERT_TAG_ERR_CODE = "code";
@@ -85,6 +86,21 @@ const std::string CRL_MATCH_TAG_X509CERT = "x509Cert";
 const std::string CRL_MATCH_TAG_UPDATE_DATE_TIME = "updateDateTime";
 const std::string CRL_MATCH_TAG_MAXCRL = "maxCRL";
 const std::string CRL_MATCH_TAG_MINCRL = "minCRL";
+
+// X509 CERT CHAIN VALIDATE
+// X509TrustAnchor
+const std::string CERT_CHAIN_TRUSTANCHOR_TAG_CACERT = "CACert";
+const std::string CERT_CHAIN_TRUSTANCHOR_TAG_CAPUBKEY = "CAPubKey";
+// const std::string CERT_CHAIN_TRUSTANCHOR_TAG_NAMECSTRAINTS = "nameConstraints";
+const std::string CERT_CHAIN_TRUSTANCHOR_TAG_CASUBJECT = "CASubject";
+// CertChainValidateParameters
+const std::string CERT_CHAIN_VALIDATE_TAG_DATE = "date";
+const std::string CERT_CHAIN_VALIDATE_TAG_TRUSTANCHORS = "trustAnchors";
+const std::string CERT_CHAIN_VALIDATE_TAG_CERTCRLS = "certCRLs";
+// CertChainValidateResult
+const std::string CERT_CHAIN_VALIDATE_RESULLT_TAG_TRUSTANCHOR = "trustAnchor";
+const std::string CERT_CHAIN_VALIDATE_RESULLT_TAG_X509CERT = "entityCert";
+
 } // namespace CertFramework
 } // namespace OHOS
 

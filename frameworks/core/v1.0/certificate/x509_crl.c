@@ -357,6 +357,7 @@ CfResult HcfX509CrlCreate(const CfEncodingBlob *inStream, HcfX509Crl **returnObj
     HcfX509CrlImpl *x509CertImpl = (HcfX509CrlImpl *)HcfMalloc(sizeof(HcfX509CrlImpl), 0);
     if (x509CertImpl == NULL) {
         LOGE("Failed to allocate x509CertImpl memory!");
+        CfObjDestroy(spiObj);
         return CF_ERR_MALLOC;
     }
     x509CertImpl->base.base.base.getClass = GetX509CrlClass;
