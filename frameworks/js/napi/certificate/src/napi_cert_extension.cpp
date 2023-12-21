@@ -78,18 +78,7 @@ static void DeleteExtsAsyncContext(napi_env env, ExtsAsyncContext &context)
         return;
     }
 
-    if (context->async != nullptr) {
-        if (context->async->asyncWork != nullptr) {
-            napi_delete_async_work(env, context->async->asyncWork);
-            context->async->asyncWork = nullptr;
-        }
-
-        if (context->async->callback != nullptr) {
-            napi_delete_reference(env, context->async->callback);
-            context->async->callback = nullptr;
-        }
-    }
-    CfFree(context->async);
+    FreeAsyncContext(env, context->async);
 
     CfEncodingBlobDataFree(context->encodingBlob);
     CfFree(context->encodingBlob);

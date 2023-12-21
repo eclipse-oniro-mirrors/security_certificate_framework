@@ -211,8 +211,7 @@ void FreeX509CertMatchParams(HcfX509CertMatchParams *&matchParams)
     CfBlobFree(&matchParams->publicKey);
     CfBlobFree(&matchParams->publicKeyAlgID);
 
-    CfFree(matchParams);
-    matchParams = nullptr;
+    CF_FREE_PTR(matchParams);
 }
 
 } // namespace CertFramework

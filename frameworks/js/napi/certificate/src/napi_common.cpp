@@ -117,7 +117,7 @@ int32_t CheckOutParamType(const CfParamSet *paramSet, CfTagType targetType)
     return CF_SUCCESS;
 }
 
-static int32_t GetBlobArrayFromParamSet(const CfParamSet *paramSet, CfArray *outArray)
+int32_t GetBlobArrayFromParamSet(const CfParamSet *paramSet, CfArray *outArray)
 {
     if (paramSet->paramsCnt <= 1) {
         CF_LOG_E("invalid paramSet for blobArray");
@@ -168,5 +168,24 @@ napi_value ConvertBlobArrayToNapiValue(napi_env env,  const CfParamSet *paramSet
     CfArrayDataClearAndFree(&outArray);
     return returnValue;
 }
+
+void FreeAsyncContext(napi_env env, AsyncCtx &async)
+{
+    if (async == nullptr) {
+        return;
+    }
+    if (async->asyncWork != nullptr) {
+        napi_delete_async_work(env, async->asyncWork);
+        async->asyncWork = nullptr;
+    }
+
+    if (async->callback != nullptr) {
+        napi_delete_reference(env, async->callback);
+        async->callback = nullptr;
+    }
+    CfFree(async);
+    async = nullptr;
+}
+
 } // namespace CertFramework
 } // namespace OHOS

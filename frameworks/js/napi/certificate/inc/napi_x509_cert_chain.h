@@ -13,45 +13,38 @@
  * limitations under the License.
  */
 
-#ifndef NAPI_CERT_CRL_COLLECTION_H
-#define NAPI_CERT_CRL_COLLECTION_H
+#ifndef NAPI_X509_CERT_CHAIN_H
+#define NAPI_X509_CERT_CHAIN_H
 
 #include <string>
-#include <vector>
+
+#include "cf_api.h"
 #include "napi/native_api.h"
 #include "napi/native_common.h"
 #include "napi_x509_certificate.h"
-#include "napi_x509_crl.h"
-#include "cert_crl_collection.h"
-#include "cf_result.h"
+#include "x509_cert_chain.h"
 
 namespace OHOS {
 namespace CertFramework {
-
-class NapiCertCRLCollection {
+class NapiX509CertChain {
 public:
-    explicit NapiCertCRLCollection(HcfCertCrlCollection *collection);
-    ~NapiCertCRLCollection();
+    explicit NapiX509CertChain(HcfCertChain *certChain);
+    ~NapiX509CertChain();
 
-    static void DefineCertCRLCollectionJSClass(napi_env env, napi_value exports);
-    static napi_value CreateCertCRLCollection(napi_env env);
+    static void DefineX509CertChainJsClass(napi_env env, napi_value exports);
+    napi_value Validate(napi_env env, napi_callback_info info);
 
-    napi_value SelectCerts(napi_env env, napi_callback_info info);
-    napi_value SelectCRLs(napi_env env, napi_callback_info info);
-    napi_value SelectCRLsRet(napi_env env, const HcfX509CrlArray *certs);
-
-    HcfCertCrlCollection *GetCertCrlCollection()
+    HcfCertChain *GetCertChain()
     {
-        return certCrlCollection_;
+        return certChain_;
     }
 
     static thread_local napi_ref classRef_;
 
 private:
-    HcfCertCrlCollection *certCrlCollection_;
+    HcfCertChain *certChain_ = nullptr;
 };
-
 } // namespace CertFramework
 } // namespace OHOS
 
-#endif // NAPI_CERT_CRL_COLLECTION_H
+#endif // NAPI_X509_CERT_CHAIN_H

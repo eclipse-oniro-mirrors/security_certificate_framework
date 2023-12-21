@@ -13,19 +13,19 @@
  * limitations under the License.
  */
 
-#include "securec.h"
 #include "cf_log.h"
-
-#include "napi_x509_certificate.h"
+#include "cf_type.h"
 #include "napi_cert_chain_validator.h"
-#include "napi_pub_key.h"
-#include "napi_cert_utils.h"
-#include "napi_x509_crl_entry.h"
-#include "napi_x509_crl.h"
 #include "napi_cert_defines.h"
 #include "napi_cert_extension.h"
+#include "napi_cert_utils.h"
+#include "napi_pub_key.h"
+#include "napi_x509_cert_chain.h"
+#include "napi_x509_certificate.h"
+#include "napi_x509_crl.h"
+#include "napi_x509_crl_entry.h"
 #include "napi_cert_crl_collection.h"
-#include "cf_type.h"
+#include "securec.h"
 
 namespace OHOS {
 namespace CertFramework {
@@ -36,6 +36,7 @@ static napi_value CreateEncodingFormat(napi_env env)
 
     CertAddUint32Property(env, encodingFormat, "FORMAT_DER", CF_FORMAT_DER);
     CertAddUint32Property(env, encodingFormat, "FORMAT_PEM", CF_FORMAT_PEM);
+    CertAddUint32Property(env, encodingFormat, "FORMAT_PKCS7", CF_FORMAT_PKCS7);
 
     return encodingFormat;
 }
@@ -161,6 +162,7 @@ static napi_value CertModuleExport(napi_env env, napi_value exports)
     NapiX509Crl::DefineX509CrlJSClass(env, exports, std::string("X509Crl"));
     NapiX509Crl::DefineX509CrlJSClass(env, exports, std::string("X509CRL"));
     NapiCertExtension::DefineCertExtensionJsClass(env, exports);
+    NapiX509CertChain::DefineX509CertChainJsClass(env, exports);
     NapiCertCRLCollection::DefineCertCRLCollectionJSClass(env, exports);
     LOGI("module init end.");
     return exports;

@@ -30,6 +30,7 @@
 #include "napi_x509_crl.h"
 #include "napi_x509_cert_match_parameters.h"
 #include "napi_x509_crl_match_parameters.h"
+#include "napi_cert_crl_common.h"
 #include "securec.h"
 #include "utils.h"
 
@@ -141,56 +142,6 @@ NapiCertCRLCollection::~NapiCertCRLCollection()
     CfObjDestroy(this->certCrlCollection_);
 }
 
-napi_value NapiCertCRLCollection::SelectCertsRet(napi_env env, const HcfX509CertificateArray *certs)
-{
-    napi_value instance;
-    napi_create_array(env, &instance);
-    if (instance == nullptr) {
-        LOGE("create return array failed!");
-        return nullptr;
-    }
-    if (certs == nullptr) {
-        LOGI("return emtpy erray!");
-        return instance;
-    }
-    int j = 0;
-    CfResult res = CF_SUCCESS;
-    for (uint32_t i = 0; i < certs->count; ++i) {
-        HcfX509Certificate *cert = (HcfX509Certificate *)certs->data[i];
-        CfEncodingBlob encodingBlob = { 0 };
-        res = cert->base.getEncoded(&(cert->base), &encodingBlob);
-        if (res != CF_SUCCESS) {
-            LOGE("Failed to getEncoded!");
-            continue;
-        }
-        CfObject *certObj = nullptr;
-        res = static_cast<CfResult>(CfCreate(CF_OBJ_TYPE_CERT, &encodingBlob, &certObj));
-        if (res != CF_SUCCESS) {
-            LOGE("Failed to CfCreate!");
-            CfFree(encodingBlob.data);
-            continue;
-        }
-        CfFree(encodingBlob.data);
-        NapiX509Certificate *x509Cert = new (std::nothrow) NapiX509Certificate(cert, certObj);
-        if (x509Cert == nullptr) {
-            LOGE("new x509Cert failed!");
-            certObj->destroy(&certObj);
-            continue;
-        }
-        napi_value element = NapiX509Certificate::CreateX509Cert(env);
-        napi_wrap(
-            env, element, x509Cert,
-            [](napi_env env, void *data, void *hint) {
-                NapiX509Certificate *certClass = static_cast<NapiX509Certificate *>(data);
-                delete certClass;
-                return;
-            },
-            nullptr, nullptr);
-        napi_set_element(env, instance, j++, element);
-    }
-    return instance;
-}
-
 napi_value NapiCertCRLCollection::SelectCRLsRet(napi_env env, const HcfX509CrlArray *crls)
 {
     napi_value instance;
@@ -248,8 +199,7 @@ static void SelectCertsComplete(napi_env env, napi_status status, void *data)
         FreeCryptoFwkCtx(env, context);
         return;
     }
-    NapiCertCRLCollection *certCrlCol = context->certCRLColClass;
-    napi_value instance = certCrlCol->SelectCertsRet(env, &context->retCerts);
+    napi_value instance = ConvertCertArrToNapiValue(env, &context->retCerts);
     ReturnResult(env, context, instance);
     FreeCryptoFwkCtx(env, context);
 }
@@ -309,14 +259,12 @@ napi_value NapiCertCRLCollection::SelectCerts(napi_env env, napi_callback_info i
         return nullptr;
     }
     context->certMatchParam = param;
-
     if (!CreateCallbackAndPromise(env, context, argc, ARGS_SIZE_TWO, argv[PARAM1])) {
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "CreateCallbackAndPromise failed"));
         LOGE("CreateCallbackAndPromise failed!");
         FreeCryptoFwkCtx(env, context);
         return nullptr;
     }
-
     napi_create_async_work(env, nullptr, CertGetResourceName(env, "SelectCerts"), SelectCertsExecute,
         SelectCertsComplete, static_cast<void *>(context), &context->asyncWork);
 
@@ -433,114 +381,18 @@ static napi_value CertCRLColConstructor(napi_env env, napi_callback_info info)
     return thisVar;
 }
 
-static bool GetArrayCertFromValue(napi_env env, napi_value object, HcfX509CertificateArray *certs)
-{
-    bool flag = false;
-    napi_status status = napi_is_array(env, object, &flag);
-    if (status != napi_ok || !flag) {
-        LOGE("not array!");
-        return false;
-    }
-    uint32_t length;
-    status = napi_get_array_length(env, object, &length);
-    if (status != napi_ok || length == 0) {
-        LOGI("array length = 0!");
-        return true;
-    }
-
-    if (length > MAX_LEN_OF_CERT_CRL_ARR) {
-        LOGE("array count is over limit.");
-        return false;
-    }
-
-    certs->data = (HcfX509Certificate **)HcfMalloc(length * sizeof(HcfX509Certificate *), 0);
-    if (certs->data == nullptr) {
-        LOGE("malloc failed");
-        return false;
-    }
-    certs->count = length;
-    for (uint32_t i = 0; i < length; i++) {
-        napi_value element;
-        status = napi_get_element(env, object, i, &element);
-        if (status != napi_ok) {
-            LOGE("get element failed!");
-            CF_FREE_PTR(certs->data);
-            return false;
-        }
-        NapiX509Certificate *napiCertObj = nullptr;
-        napi_unwrap(env, element, reinterpret_cast<void **>(&napiCertObj));
-        if (napiCertObj == nullptr) {
-            LOGE("napi cert objtect is nullptr!");
-            CF_FREE_PTR(certs->data);
-            return false;
-        }
-        certs->data[i] = napiCertObj->GetX509Cert();
-    }
-    return true;
-}
-
-static bool GetArrayCRLFromValue(napi_env env, napi_value object, HcfX509CrlArray *crls)
-{
-    napi_valuetype valueType;
-    napi_typeof(env, object, &valueType);
-    if (valueType == napi_undefined) {
-        LOGI("crl list is undefined.");
-        return true;
-    }
-    bool flag = false;
-    napi_status status = napi_is_array(env, object, &flag);
-    if (status != napi_ok || !flag) {
-        LOGE("not array!");
-        return false;
-    }
-    uint32_t length;
-    status = napi_get_array_length(env, object, &length);
-    if (status != napi_ok || length == 0) {
-        LOGI("array length = 0!");
-        return true;
-    }
-    if (length > MAX_LEN_OF_CERT_CRL_ARR) {
-        LOGE("array count is over limit.");
-        return false;
-    }
-    crls->data = (HcfX509Crl **)HcfMalloc(length * sizeof(HcfX509Crl *), 0);
-    if (crls->data == nullptr) {
-        LOGE("malloc failed");
-        return false;
-    }
-    crls->count = length;
-    for (uint32_t i = 0; i < length; i++) {
-        napi_value element;
-        status = napi_get_element(env, object, i, &element);
-        if (status != napi_ok) {
-            LOGE("get element failed!");
-            CF_FREE_PTR(crls->data);
-            return false;
-        }
-        NapiX509Crl *napiCrlObj = nullptr;
-        napi_unwrap(env, element, reinterpret_cast<void **>(&napiCrlObj));
-        if (napiCrlObj == nullptr) {
-            LOGE("napi cert objtect is nullptr!");
-            CF_FREE_PTR(crls->data);
-            return false;
-        }
-        crls->data[i] = napiCrlObj->GetX509Crl();
-    }
-    return true;
-}
-
 static CfResult ParseCreateCertCRLColJSParams(napi_env env, napi_callback_info info, HcfCertCrlCollection *&out)
 {
     size_t argc = ARGS_SIZE_TWO;
     napi_value argv[ARGS_SIZE_TWO] = { nullptr };
     napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
     HcfX509CertificateArray certs = { nullptr, 0 };
-    if (argv[PARAM0] != nullptr && !GetArrayCertFromValue(env, argv[PARAM0], &certs)) {
+    if (argv[PARAM0] != nullptr && !GetArrayCertFromNapiValue(env, argv[PARAM0], &certs)) {
         LOGE("get array cert from data failed!");
         return CF_INVALID_PARAMS;
     }
     HcfX509CrlArray crls = { nullptr, 0 };
-    if (argv[PARAM1] != nullptr && !GetArrayCRLFromValue(env, argv[PARAM1], &crls)) {
+    if (argv[PARAM1] != nullptr && !GetArrayCRLFromNapiValue(env, argv[PARAM1], &crls)) {
         LOGE("get array crl from data failed!");
         CF_FREE_PTR(certs.data);
         return CF_INVALID_PARAMS;
