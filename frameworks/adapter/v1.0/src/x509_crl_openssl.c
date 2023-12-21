@@ -795,12 +795,11 @@ static CfResult MatchX509CRLOpenssl(HcfX509CrlSpi *self, const HcfX509CrlMatchPa
         return CF_INVALID_PARAMS;
     }
 
-    CfResult res = CF_SUCCESS;
     *out = true;
 
     // x509Cert
     if (matchParams->x509Cert != NULL) {
-        res = Comparex509CertX509Openssl(self, matchParams->x509Cert, out);
+        CfResult res = Comparex509CertX509Openssl(self, matchParams->x509Cert, out);
         if (res != CF_SUCCESS || (*out == false)) {
             LOGE("x509Crl matchParams->x509Cert failed!");
             return res;
@@ -809,7 +808,7 @@ static CfResult MatchX509CRLOpenssl(HcfX509CrlSpi *self, const HcfX509CrlMatchPa
 
     // issuer
     if (matchParams->issuer != NULL) {
-        res = CompareIssuerX509Openssl(self, matchParams->issuer, out);
+        CfResult res = CompareIssuerX509Openssl(self, matchParams->issuer, out);
         if (res != CF_SUCCESS || (*out == false)) {
             LOGE("x509Crl matchParams->issuer failed!");
             return res;
