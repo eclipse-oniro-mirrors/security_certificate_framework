@@ -29,6 +29,7 @@ struct CfBlob {
 enum CfEncodingFormat {
     CF_FORMAT_DER = 0,
     CF_FORMAT_PEM = 1,
+    CF_FORMAT_PKCS7 = 2,
 };
 
 typedef struct {

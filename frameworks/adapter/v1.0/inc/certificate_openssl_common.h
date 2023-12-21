@@ -32,9 +32,11 @@ extern "C" {
 const char *GetAlgorithmName(const char *oid);
 void CfPrintOpensslError(void);
 CfResult DeepCopyDataToBlob(const unsigned char *data, uint32_t len, CfBlob *outBlob);
+CfResult DeepCopyBlobToBlob(const CfBlob *inBlob, CfBlob **outBlob);
 CfResult CopyExtensionsToBlob(const X509_EXTENSIONS *ext, CfBlob *outBlob);
 CfResult ConvertNameDerDataToString(const unsigned char *data, uint32_t derLen, CfBlob *out);
 CfResult CompareBigNum(const CfBlob *lhs, const CfBlob *rhs, int *out);
+uint8_t *GetX509EncodedDataStream(const X509 *certificate, int *dataLength);
 #ifdef __cplusplus
 }
 #endif
