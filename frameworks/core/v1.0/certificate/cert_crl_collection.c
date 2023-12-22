@@ -67,12 +67,11 @@ static CfResult GetMatchCerts(const HcfX509CertificateArray *inCerts, const HcfX
         LOGE("Failed to allocate memory!");
         return CF_ERR_MALLOC;
     }
-    CfResult res = CF_SUCCESS;
     uint32_t outInd = 0;
     for (uint32_t i = 0; i < inCerts->count; ++i) {
         HcfX509Certificate *cert = inCerts->data[i];
         bool out = false;
-        res = cert->match(cert, matchParams, &out);
+        CfResult res = cert->match(cert, matchParams, &out);
         if (res != CF_SUCCESS) {
             LOGE("match failed");
             FreeCertArrayData(&tmpArr);
@@ -119,12 +118,11 @@ static CfResult GetMatchCRLs(
         LOGE("Failed to allocate memory!");
         return CF_ERR_MALLOC;
     }
-    CfResult res = CF_SUCCESS;
     uint32_t outInd = 0;
     for (uint32_t i = 0; i < inCrls->count; ++i) {
         HcfX509Crl *crl = inCrls->data[i];
         bool out = false;
-        res = crl->match(crl, matchParams, &out);
+        CfResult res = crl->match(crl, matchParams, &out);
         if (res != CF_SUCCESS) {
             LOGE("match failed");
             FreeCrlArrayData(&tmpArr);
