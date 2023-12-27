@@ -225,10 +225,25 @@ CfBlob *CertGetBlobFromNapiValue(napi_env env, napi_value arg)
 
 napi_value CertConvertBlobToNapiValue(napi_env env, CfBlob *blob)
 {
+    napi_value outData = ConvertBlobToUint8ArrNapiValue(env, blob);
+    if (outData == nullptr) {
+        LOGE("convert to uint8 arr failed");
+        return nullptr;
+    }
+    napi_value dataBlob = nullptr;
+    napi_create_object(env, &dataBlob);
+    napi_set_named_property(env, dataBlob, CERT_TAG_DATA.c_str(), outData);
+
+    return dataBlob;
+}
+
+napi_value ConvertBlobToUint8ArrNapiValue(napi_env env, CfBlob *blob)
+{
     if (blob == nullptr || blob->data == nullptr || blob->size == 0) {
         LOGE("Invalid blob!");
         return nullptr;
     }
+    /* free in napi_create_external_arraybuffer, not in this scope. */
     uint8_t *buffer = static_cast<uint8_t *>(HcfMalloc(blob->size, 0));
     if (buffer == nullptr) {
         LOGE("malloc uint8 array buffer failed!");
@@ -253,11 +268,8 @@ napi_value CertConvertBlobToNapiValue(napi_env env, CfBlob *blob)
 
     napi_value outData = nullptr;
     napi_create_typedarray(env, napi_uint8_array, blob->size, outBuffer, 0, &outData);
-    napi_value dataBlob = nullptr;
-    napi_create_object(env, &dataBlob);
-    napi_set_named_property(env, dataBlob, CERT_TAG_DATA.c_str(), outData);
 
-    return dataBlob;
+    return outData;
 }
 
 static bool GetDataOfCertChain(napi_env env, napi_value data, HcfCertChainData *certChain)

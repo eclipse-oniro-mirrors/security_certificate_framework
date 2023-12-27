@@ -136,6 +136,27 @@ CfResult CopyExtensionsToBlob(const X509_EXTENSIONS *exts, CfBlob *outBlob)
     return ret;
 }
 
+CfResult CompareDateWithCertTime(const X509 *x509, const ASN1_TIME *inputDate)
+{
+    ASN1_TIME *startDate = X509_get_notBefore(x509);
+    ASN1_TIME *expirationDate = X509_get_notAfter(x509);
+    if ((startDate == NULL) || (expirationDate == NULL)) {
+        LOGE("Date is null in x509 cert!");
+        CfPrintOpensslError();
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    CfResult res = CF_SUCCESS;
+    /* 0: equal in ASN1_TIME_compare, -1: a < b, 1: a > b, -2: error. */
+    if (ASN1_TIME_compare(inputDate, startDate) < 0) {
+        LOGE("Date is not validate in x509 cert!");
+        res = CF_ERR_CERT_NOT_YET_VALID;
+    } else if (ASN1_TIME_compare(expirationDate, inputDate) < 0) {
+        LOGE("Date is expired in x509 cert!");
+        res = CF_ERR_CERT_HAS_EXPIRED;
+    }
+    return res;
+}
+
 CfResult ConvertNameDerDataToString(const unsigned char *data, uint32_t derLen, CfBlob *out)
 {
     if (data == NULL || derLen == 0 || out == NULL) {
@@ -159,6 +180,45 @@ CfResult ConvertNameDerDataToString(const unsigned char *data, uint32_t derLen, 
     OPENSSL_free(name);
     X509_NAME_free(x509Name);
     return res;
+}
+
+CfResult CompareNameObject(const X509 *cert, const CfBlob *derBlob, X509NameType type, bool *compareRes)
+{
+    X509_NAME *name = NULL;
+    if (type == NAME_TYPE_SUBECT) {
+        name = X509_get_subject_name(cert);
+    } else if (type == NAME_TYPE_ISSUER) {
+        name = X509_get_issuer_name(cert);
+    }
+    if (name == NULL) {
+        LOGE("x509Cert get name failed!");
+        CfPrintOpensslError();
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    char *nameStr = X509_NAME_oneline(name, NULL, 0);
+    if (nameStr == NULL) {
+        LOGE("x509Cert name oneline failed!");
+        CfPrintOpensslError();
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    CfBlob nameBlob = { 0 };
+    CfResult res = ConvertNameDerDataToString(derBlob->data, derBlob->size, &nameBlob);
+    if (res != CF_SUCCESS) {
+        LOGE("x509Cert ConvertNameDerDataToString failed!");
+        OPENSSL_free(nameStr);
+        return res;
+    }
+    uint32_t len = strlen(nameStr) + 1;
+    if (len != nameBlob.size || strncmp((const char *)nameStr, (const char *)nameBlob.data, nameBlob.size) != 0) {
+        LOGE("name do not match!");
+        *compareRes = false;
+    } else {
+        *compareRes = true;
+    }
+    CfBlobDataFree(&nameBlob);
+    OPENSSL_free(nameStr);
+    return CF_SUCCESS;
 }
 
 CfResult CompareBigNum(const CfBlob *lhs, const CfBlob *rhs, int *out)

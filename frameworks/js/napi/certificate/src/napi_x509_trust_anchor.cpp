@@ -88,7 +88,7 @@ napi_value BuildX509TrustAnchorJS(napi_env env, const HcfX509TrustAnchor *trustA
     napi_value instance = nullptr;
     napi_create_object(env, &instance);
     if (trustAnchor->CAPubKey != nullptr) {
-        napi_value CAPubKey = CertConvertBlobToNapiValue(env, trustAnchor->CAPubKey);
+        napi_value CAPubKey = ConvertBlobToUint8ArrNapiValue(env, trustAnchor->CAPubKey);
         if (CAPubKey == nullptr) {
             LOGE("CA pub key convert failed!");
             return nullptr;
@@ -97,7 +97,7 @@ napi_value BuildX509TrustAnchorJS(napi_env env, const HcfX509TrustAnchor *trustA
     }
 
     if (trustAnchor->CASubject != nullptr) {
-        napi_value CASubject = CertConvertBlobToNapiValue(env, trustAnchor->CASubject);
+        napi_value CASubject = ConvertBlobToUint8ArrNapiValue(env, trustAnchor->CASubject);
         if (CASubject == nullptr) {
             LOGE("CA subject convert failed!");
             return nullptr;

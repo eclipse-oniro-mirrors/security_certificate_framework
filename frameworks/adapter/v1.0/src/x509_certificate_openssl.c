@@ -42,11 +42,6 @@ typedef struct {
     EVP_PKEY *pubKey;
 } X509PubKeyOpensslImpl;
 
-typedef enum {
-    NAME_TYPE_SUBECT,
-    NAME_TYPE_ISSUER,
-} X509NameType;
-
 static CfResult GetSubjectDNX509Openssl(HcfX509CertificateSpi *self, CfBlob *out);
 static CfResult GetIssuerDNX509Openssl(HcfX509CertificateSpi *self, CfBlob *out);
 static CfResult GetKeyUsageX509Openssl(HcfX509CertificateSpi *self, CfBlob *boolArr);
@@ -245,27 +240,6 @@ static CfResult GetPublicKeyX509Openssl(HcfX509CertificateSpi *self, HcfPubKey *
     return CF_SUCCESS;
 }
 
-static CfResult CompareDateWithCertTime(const X509 *x509, const ASN1_TIME *inputDate)
-{
-    ASN1_TIME *startDate = X509_get_notBefore(x509);
-    ASN1_TIME *expirationDate = X509_get_notAfter(x509);
-    if ((startDate == NULL) || (expirationDate == NULL)) {
-        LOGE("Date is null in x509 cert!");
-        CfPrintOpensslError();
-        return CF_ERR_CRYPTO_OPERATION;
-    }
-    CfResult res = CF_SUCCESS;
-    /* 0: equal in ASN1_TIME_compare, -1: a < b, 1: a > b, -2: error. */
-    if (ASN1_TIME_compare(inputDate, startDate) < 0) {
-        LOGE("Date is not validate in x509 cert!");
-        res = CF_ERR_CERT_NOT_YET_VALID;
-    } else if (ASN1_TIME_compare(expirationDate, inputDate) < 0) {
-        LOGE("Date is expired in x509 cert!");
-        res = CF_ERR_CERT_HAS_EXPIRED;
-    }
-    return res;
-}
-
 static CfResult CompareCertBlobX509Openssl(HcfX509CertificateSpi *self, HcfCertificate *x509Cert, bool *out)
 {
     CfResult res = CF_SUCCESS;
@@ -299,35 +273,11 @@ static CfResult CompareNameObjectX509Openssl(
     HcfX509CertificateSpi *self, const CfBlob *blobObj, X509NameType nameType, bool *out)
 {
     CfResult res = CF_SUCCESS;
-    CfBlob cfBlobDataSelf = { 0 };
-    CfBlob cfBlobDataParam = { 0 };
-
     if (blobObj != NULL) {
-        res = ConvertNameDerDataToString(blobObj->data, blobObj->size, &cfBlobDataParam);
-        if (res != CF_SUCCESS) {
-            LOGE("x509Cert ConvertNameDerDataToString failed!");
-            return res;
-        }
-
-        if (nameType == NAME_TYPE_SUBECT) {
-            res = GetSubjectDNX509Openssl(self, &cfBlobDataSelf);
-        } else if (nameType == NAME_TYPE_ISSUER) {
-            res = GetIssuerDNX509Openssl(self, &cfBlobDataSelf);
-        }
-        if (res != CF_SUCCESS) {
-            LOGE("x509Cert get param object failed!");
-            CfFree(cfBlobDataParam.data);
-            return res;
-        }
-
-        if (cfBlobDataSelf.size != cfBlobDataParam.size ||
-            strncmp((const char *)cfBlobDataSelf.data, (const char *)cfBlobDataParam.data, cfBlobDataSelf.size) != 0) {
-            *out = false;
-        }
-        CfFree(cfBlobDataSelf.data);
-        CfFree(cfBlobDataParam.data);
+        HcfOpensslX509Cert *realCert = (HcfOpensslX509Cert *)self;
+        X509 *x509 = realCert->x509;
+        res = CompareNameObject(x509, blobObj, nameType, out);
     }
-
     return res;
 }
 

@@ -137,7 +137,7 @@ const int g_testCertChainPemNoRootSize = sizeof(g_testCertChainPemNoRoot) / size
 
 const int g_testCertChainPemNoRootHasPubKeySize = sizeof(g_testCertChainPemNoRootHasPubKey) / sizeof(char);
 
-const int g_testCertChainPem2Size = sizeof(g_testCertChainPem2) / sizeof(char);
+const int g_testCertChainPemNoRootLastSize = sizeof(g_testCertChainPemNoRootLast) / sizeof(char);
 
 const int g_testChainDataP7bSize = sizeof(g_testChainDataP7b) / sizeof(g_testChainDataP7b[0]);
 
@@ -156,6 +156,21 @@ const int g_testChainSubjectPemOtherSubjectDataSize =
     sizeof(g_testChainSubjectPemOtherSubjectData) / sizeof(g_testChainSubjectPemOtherSubjectData[0]);
 
 const int g_testIssuerCertSize = sizeof(g_testIssuerCert);
+
+const int g_testCertChainPemDisorderSize = sizeof(g_testCertChainPemDisorder) / sizeof(char);
+
+const int g_testChainPubkeyPemNoRootLastSize =
+    sizeof(g_testChainPubkeyPemNoRootLast) / sizeof(g_testChainPubkeyPemNoRootLast[0]);
+
+const int g_testChainSubjectPemNoRootLastUpSize =
+    sizeof(g_testChainSubjectPemNoRootLastUp) / sizeof(g_testChainSubjectPemNoRootLastUp[0]);
+
+const int g_testChainPubkeyPemNoRootLastUpSize =
+    sizeof(g_testChainPubkeyPemNoRootLastUp) / sizeof(g_testChainPubkeyPemNoRootLastUp[0]);
+
+const int g_testChainSubjectPemNoRootLastSize =
+    sizeof(g_testChainSubjectPemNoRootLast) / sizeof(g_testChainSubjectPemNoRootLast[0]);
+
 const CfEncodingBlob g_crlDerInStream = { const_cast<uint8_t *>(g_crlDerData), sizeof(g_crlDerData), CF_FORMAT_DER };
 
 const CfEncodingBlob g_inStreamCrl = { reinterpret_cast<uint8_t *>(const_cast<char *>(g_testCrl)), sizeof(g_testCrl),
@@ -212,9 +227,13 @@ const CfEncodingBlob g_inStreamChainPemNoRootHasPubKey = { reinterpret_cast<uint
                                                                const_cast<char *>(g_testCertChainPemNoRootHasPubKey)),
     g_testCertChainPemNoRootHasPubKeySize, CF_FORMAT_PEM };
 
-/* Cert chain Pem without Root and Last Cert Has PubKey */
-const CfEncodingBlob g_inStreamChainPem2 = { reinterpret_cast<uint8_t *>(const_cast<char *>(g_testCertChainPem2)),
-    g_testCertChainPem2Size, CF_FORMAT_PEM };
+const CfEncodingBlob g_inStreamChainPemNoRootLast = { reinterpret_cast<uint8_t *>(
+                                                          const_cast<char *>(g_testCertChainPemNoRootLast)),
+    g_testCertChainPemNoRootLastSize, CF_FORMAT_PEM };
+
+const CfEncodingBlob g_inStreamChainDataPemDisorder = { reinterpret_cast<uint8_t *>(
+                                                            const_cast<char *>(g_testCertChainPemDisorder)),
+    g_testCertChainPemDisorderSize, CF_FORMAT_PEM };
 
 const char *GetInvalidCertClass(void)
 {

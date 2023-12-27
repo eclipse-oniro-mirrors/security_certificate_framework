@@ -1152,7 +1152,7 @@ HWTEST_F(CryptoX509CertificateTest, CopyExtensionsToBlobTest001, TestSize.Level0
     CfResult ret = CopyExtensionsToBlob(exts, &outBlob);
     EXPECT_EQ(ret, CF_SUCCESS);
 
-    sk_X509_EXTENSION_pop_free(exts, X509_EXTENSION_free);
+    sk_X509_EXTENSION_free(exts);
 }
 
 /* ConvertNameDerDataToString : data is nullptr */
@@ -1401,6 +1401,7 @@ HWTEST_F(CryptoX509CertificateTest, GetX509EncodedDataStreamTest002, TestSize.Le
     uint8_t *ret = GetX509EncodedDataStream(certificate, &dataLength);
     EXPECT_EQ(ret, nullptr);
     SetMockFlag(false);
+    X509_free(certificate);
 }
 
 HWTEST_F(CryptoX509CertificateTest, NullInput, TestSize.Level0)

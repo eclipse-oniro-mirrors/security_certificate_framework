@@ -38,7 +38,7 @@ inline void CertAddUint32Property(napi_env env, napi_value object, const char *n
 
 CfBlob *CertGetBlobFromNapiValue(napi_env env, napi_value arg);
 napi_value CertConvertBlobToNapiValue(napi_env env, CfBlob *blob);
-
+napi_value ConvertBlobToUint8ArrNapiValue(napi_env env, CfBlob *blob);
 napi_value GetProp(napi_env env, napi_value arg, const char *name);
 CfBlob *CertGetBlobFromUint8ArrJSParams(napi_env env, napi_value arg);
 CfBlob *CertGetBlobFromStringJSParams(napi_env env, napi_value arg);
