@@ -45,7 +45,6 @@ static HcfX509CertChainSpi *g_certChainP7bSpi = nullptr;
 static HcfX509CertChainSpi *g_certChainPemSpi = nullptr;
 static HcfX509CertChainSpi *g_certChainDerSpi = nullptr;
 constexpr uint32_t TEST_MAX_CERT_NUM = 257; /* max certs number of a certchain */
-constexpr uint32_t DATE_TIME_LENGTH = 16;
 
 static const char *GetInvalidCertChainClass(void)
 {
@@ -834,7 +833,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest009, TestSize.Level0)
     CfFree(trustAnchorArray.data);
 }
 
-HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest01001, TestSize.Level0)
+HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest010, TestSize.Level0)
 {
     ASSERT_NE(g_certChainPemSpi, nullptr);
 
@@ -869,7 +868,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest01001, TestSize.Level0)
     FreeValidateResult(result);
 }
 
-HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest01002, TestSize.Level0)
+HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest011, TestSize.Level0)
 {
     ASSERT_NE(g_certChainPemSpi, nullptr);
 
@@ -897,12 +896,12 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest01002, TestSize.Level0)
     HcfX509CertChainValidateResult result = { 0 };
     CfResult ret = g_certChainPemSpi->engineValidate(g_certChainPemSpi, &pCertChainValidateParams, &result);
 
-    ASSERT_NE(ret, CF_SUCCESS);
+    ASSERT_EQ(ret, CF_INVALID_PARAMS);
 
     CfFree(trustAnchorArray.data);
 }
 
-HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest011, TestSize.Level0)
+HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest012, TestSize.Level0)
 {
     ASSERT_NE(g_certChainPemSpi, nullptr);
 
@@ -930,7 +929,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest011, TestSize.Level0)
     CfFree(trustAnchorArray.data);
 }
 
-HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest012, TestSize.Level0)
+HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest013, TestSize.Level0)
 {
     ASSERT_NE(g_certChainPemSpi, nullptr);
 
@@ -959,7 +958,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest012, TestSize.Level0)
     CfFree(trustAnchorArray.data);
 }
 
-HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest013, TestSize.Level0)
+HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest014, TestSize.Level0)
 {
     HcfX509CertChainSpi *certChainSpi = nullptr;
     CfResult ret = HcfX509CertChainByEncSpiCreate(&g_inStreamChainDataPemNoRoot, &certChainSpi);
@@ -983,7 +982,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest013, TestSize.Level0)
     CfObjDestroy(certChainSpi);
 }
 
-HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest014, TestSize.Level0)
+HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest015, TestSize.Level0)
 {
     HcfX509CertChainSpi *certChainSpi = nullptr;
     CfResult ret = HcfX509CertChainByEncSpiCreate(&g_inStreamChainPemNoRootHasPubKey, &certChainSpi);
@@ -1017,7 +1016,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest014, TestSize.Level0)
     FreeValidateResult(result);
 }
 
-HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest015, TestSize.Level0)
+HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest016, TestSize.Level0)
 {
     ASSERT_NE(g_certChainPemSpi, nullptr);
 
@@ -1035,7 +1034,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest015, TestSize.Level0)
     FreeValidateResult(result);
 }
 
-HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest016, TestSize.Level0)
+HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest017, TestSize.Level0)
 {
     HcfX509CertChainSpi *certChainSpi = nullptr;
     CfResult ret = HcfX509CertChainByEncSpiCreate(&g_inStreamChainDataPemRoot, &certChainSpi);
@@ -1071,18 +1070,18 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest016, TestSize.Level0)
     CfObjDestroy(certChainSpi);
 }
 
-HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest01701, TestSize.Level0)
+HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest018, TestSize.Level0)
 {
     ASSERT_NE(g_certChainPemSpi, nullptr);
 
     HcfX509TrustAnchorArray trustAnchorArray = { 0 };
     BuildAnchorArr(g_inStreamChainDataPemRoot, trustAnchorArray);
 
-    const char *date = "20231212080000Z";
+    const char *date = "20231205073900Z";
     CfBlob validDate = { 0 };
     validDate.data = (uint8_t *)date;
     validDate.size = strlen(date) + 1;
-    // validatetime :notBeforeDate: 20231205080000, notAfterDate: 20241205075959
+    // validatetime :notBeforeDate: 2023-12-05 07:39:00 UTC , notAfterDate: 2024-09-01 23:59:00 UTC
 
     HcfX509CertChainValidateParams pCertChainValidateParams = { 0 };
     pCertChainValidateParams.trustAnchors = &trustAnchorArray;
@@ -1098,18 +1097,18 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest01701, TestSize.Level0)
     FreeValidateResult(result);
 }
 
-HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest01702, TestSize.Level0)
+HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest019, TestSize.Level0)
 {
     ASSERT_NE(g_certChainPemSpi, nullptr);
 
     HcfX509TrustAnchorArray trustAnchorArray = { 0 };
     BuildAnchorArr(g_inStreamChainDataPemRoot, trustAnchorArray);
 
-    const char *date = "231212080000";
+    const char *date = "20240901235900Z";
     CfBlob validDate = { 0 };
     validDate.data = (uint8_t *)date;
     validDate.size = strlen(date) + 1;
-    // validatetime :notBeforeDate: 20231205080000, notAfterDate: 20241205075959
+    // validatetime :notBeforeDate: 2023-12-05 07:39:00 UTC , notAfterDate: 2024-09-01 23:59:00 UTC
 
     HcfX509CertChainValidateParams pCertChainValidateParams = { 0 };
     pCertChainValidateParams.trustAnchors = &trustAnchorArray;
@@ -1125,18 +1124,18 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest01702, TestSize.Level0)
     FreeValidateResult(result);
 }
 
-HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest01703, TestSize.Level0)
+HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest020, TestSize.Level0)
 {
     ASSERT_NE(g_certChainPemSpi, nullptr);
 
     HcfX509TrustAnchorArray trustAnchorArray = { 0 };
     BuildAnchorArr(g_inStreamChainDataPemRoot, trustAnchorArray);
 
-    const char *date = "2023121208Z";
+    const char *date = "231205073900Z";
     CfBlob validDate = { 0 };
     validDate.data = (uint8_t *)date;
-    validDate.size = DATE_TIME_LENGTH;
-    // validatetime :notBeforeDate: 20231205080000, notAfterDate: 20241205075959
+    validDate.size = strlen(date) + 1;
+    // validatetime :notBeforeDate: 2023-12-05 07:39:00 UTC , notAfterDate: 2024-09-01 23:59:00 UTC
 
     HcfX509CertChainValidateParams pCertChainValidateParams = { 0 };
     pCertChainValidateParams.trustAnchors = &trustAnchorArray;
@@ -1152,18 +1151,18 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest01703, TestSize.Level0)
     FreeValidateResult(result);
 }
 
-HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest01704, TestSize.Level0)
+HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest021, TestSize.Level0)
 {
     ASSERT_NE(g_certChainPemSpi, nullptr);
 
     HcfX509TrustAnchorArray trustAnchorArray = { 0 };
     BuildAnchorArr(g_inStreamChainDataPemRoot, trustAnchorArray);
 
-    const char *date = "23121208";
+    const char *date = "231206090000";
     CfBlob validDate = { 0 };
     validDate.data = (uint8_t *)date;
-    validDate.size = strlen(date) + 1;
-    // validatetime :notBeforeDate: 20231205080000, notAfterDate: 20241205075959
+    validDate.size = strlen(date); // len is wrong.
+    // validatetime :notBeforeDate: 2023-12-05 07:39:00 UTC , notAfterDate: 2024-09-01 23:59:00 UTC
 
     HcfX509CertChainValidateParams pCertChainValidateParams = { 0 };
     pCertChainValidateParams.trustAnchors = &trustAnchorArray;
@@ -1171,26 +1170,47 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest01704, TestSize.Level0)
 
     HcfX509CertChainValidateResult result = { 0 };
     CfResult ret = g_certChainPemSpi->engineValidate(g_certChainPemSpi, &pCertChainValidateParams, &result);
-    ASSERT_EQ(ret, CF_SUCCESS);
-    ASSERT_NE(result.entityCert, nullptr);
-    ASSERT_NE(result.trustAnchor, nullptr);
+    ASSERT_EQ(ret, CF_INVALID_PARAMS);
 
     FreeTrustAnchorArr(trustAnchorArray);
-    FreeValidateResult(result);
 }
 
-HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest01801, TestSize.Level0)
+HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest022, TestSize.Level0)
 {
     ASSERT_NE(g_certChainPemSpi, nullptr);
 
     HcfX509TrustAnchorArray trustAnchorArray = { 0 };
     BuildAnchorArr(g_inStreamChainDataPemRoot, trustAnchorArray);
 
-    const char *date = "20231204080000Z";
+    const char *date = "abc"; // format is not correct.
     CfBlob validDate = { 0 };
     validDate.data = (uint8_t *)date;
     validDate.size = strlen(date) + 1;
-    // validatetime :notBeforeDate: 20231205080000, notAfterDate: 20241205075959
+    // validatetime :notBeforeDate: 2023-12-05 07:39:00 UTC , notAfterDate: 2024-09-01 23:59:00 UTC
+
+    HcfX509CertChainValidateParams pCertChainValidateParams = { 0 };
+    pCertChainValidateParams.trustAnchors = &trustAnchorArray;
+    pCertChainValidateParams.date = &validDate;
+
+    HcfX509CertChainValidateResult result = { 0 };
+    CfResult ret = g_certChainPemSpi->engineValidate(g_certChainPemSpi, &pCertChainValidateParams, &result);
+    ASSERT_EQ(ret, CF_INVALID_PARAMS);
+
+    FreeTrustAnchorArr(trustAnchorArray);
+}
+
+HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest023, TestSize.Level0)
+{
+    ASSERT_NE(g_certChainPemSpi, nullptr);
+
+    HcfX509TrustAnchorArray trustAnchorArray = { 0 };
+    BuildAnchorArr(g_inStreamChainDataPemRoot, trustAnchorArray);
+
+    const char *date = "20231205073500Z";
+    CfBlob validDate = { 0 };
+    validDate.data = (uint8_t *)date;
+    validDate.size = strlen(date) + 1;
+    // validatetime :notBeforeDate: 2023-12-05 07:39:00 UTC , notAfterDate: 2024-09-01 23:59:00 UTC
 
     HcfX509CertChainValidateParams pCertChainValidateParams = { 0 };
     pCertChainValidateParams.trustAnchors = &trustAnchorArray;
@@ -1204,18 +1224,18 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest01801, TestSize.Level0)
     FreeValidateResult(result);
 }
 
-HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest01802, TestSize.Level0)
+HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest024, TestSize.Level0)
 {
     ASSERT_NE(g_certChainPemSpi, nullptr);
 
     HcfX509TrustAnchorArray trustAnchorArray = { 0 };
     BuildAnchorArr(g_inStreamChainDataPemRoot, trustAnchorArray);
 
-    const char *date = "20241206075959Z";
+    const char *date = "20240901235901Z";
     CfBlob validDate = { 0 };
     validDate.data = (uint8_t *)date;
     validDate.size = strlen(date) + 1;
-    // validatetime :notBeforeDate: 20231205080000, notAfterDate: 20241205075959
+    // validatetime :notBeforeDate: 2023-12-05 07:39:00 UTC , notAfterDate: 2024-09-01 23:59:00 UTC
 
     HcfX509CertChainValidateParams pCertChainValidateParams = { 0 };
     pCertChainValidateParams.trustAnchors = &trustAnchorArray;
@@ -1228,7 +1248,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest01802, TestSize.Level0)
     FreeTrustAnchorArr(trustAnchorArray);
 }
 
-HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest019, TestSize.Level0)
+HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest025, TestSize.Level0)
 {
     ASSERT_NE(g_certChainPemSpi, nullptr);
 
@@ -1253,7 +1273,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest019, TestSize.Level0)
     FreeValidateResult(result);
 }
 
-HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest020, TestSize.Level0)
+HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest026, TestSize.Level0)
 {
     ASSERT_NE(g_certChainPemSpi, nullptr);
 
@@ -1275,7 +1295,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest020, TestSize.Level0)
     FreeCertCrlCollectionArr(certCRLCollections);
 }
 
-HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest021, TestSize.Level0)
+HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest027, TestSize.Level0)
 {
     ASSERT_NE(g_certChainPemSpi, nullptr);
 
@@ -1307,7 +1327,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest021, TestSize.Level0)
     FreeValidateResult(result);
 }
 
-HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest022, TestSize.Level0)
+HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest028, TestSize.Level0)
 {
     for (unsigned int i = 0; i < 1000; i++) {
         HcfX509TrustAnchorArray trustAnchorArray = { 0 };
@@ -1327,7 +1347,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest022, TestSize.Level0)
     }
 }
 
-HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest023, TestSize.Level0)
+HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest029, TestSize.Level0)
 {
     HcfX509CertChainSpi *certChainSpi = nullptr;
     CfResult ret = HcfX509CertChainByEncSpiCreate(&g_inStreamChainPemNoRootHasPubKey, &certChainSpi);
@@ -1335,7 +1355,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest023, TestSize.Level0)
     ASSERT_NE(certChainSpi, nullptr);
 
     HcfX509TrustAnchorArray trustAnchorArray = { 0 };
-    BuildAnchorArr(g_inStreamChainPem2, trustAnchorArray);
+    BuildAnchorArr(g_inStreamChainPemNoRootLast, trustAnchorArray);
 
     HcfX509CertChainValidateParams pCertChainValidateParams = { 0 };
     pCertChainValidateParams.trustAnchors = &trustAnchorArray;
@@ -1351,7 +1371,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest023, TestSize.Level0)
     CfObjDestroy(certChainSpi);
 }
 
-HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest024, TestSize.Level0)
+HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest030, TestSize.Level0)
 {
     ASSERT_NE(g_certChainPemSpi, nullptr);
 
@@ -1374,6 +1394,133 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest024, TestSize.Level0)
     FreeTrustAnchorArr(trustAnchorArray);
     FreeCertCrlCollectionArr(certCRLCollections);
     FreeValidateResult(result);
+}
+
+HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest031, TestSize.Level0)
+{
+    HcfX509CertChainSpi *certChainSpi = nullptr;
+    CfResult ret = HcfX509CertChainByEncSpiCreate(&g_inStreamChainDataPemDisorder, &certChainSpi);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ASSERT_NE(certChainSpi, nullptr);
+
+    HcfX509TrustAnchorArray trustAnchorArray = { 0 };
+    BuildAnchorArr(g_inStreamChainDataPemRoot, trustAnchorArray);
+
+    HcfX509CertChainValidateParams pCertChainValidateParams = { 0 };
+    pCertChainValidateParams.trustAnchors = &trustAnchorArray;
+
+    HcfX509CertChainValidateResult result = { 0 };
+    ret = certChainSpi->engineValidate(certChainSpi, &pCertChainValidateParams, &result);
+    ASSERT_EQ(ret, CF_INVALID_PARAMS);
+
+    FreeTrustAnchorArr(trustAnchorArray);
+    CfObjDestroy(certChainSpi);
+}
+
+HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest032, TestSize.Level0)
+{
+    HcfX509CertChainSpi *certChainSpi = nullptr;
+    CfResult ret = HcfX509CertChainByEncSpiCreate(&g_inStreamChainPemNoRootHasPubKey, &certChainSpi);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ASSERT_NE(certChainSpi, nullptr);
+
+    CfBlob pubkey = { 0, nullptr };
+    pubkey.data = (uint8_t *)(&g_testChainPubkeyPemNoRootLast[0]);
+    pubkey.size = g_testChainPubkeyPemNoRootLastSize;
+
+    HcfX509TrustAnchor anchor = { 0 };
+    anchor.CAPubKey = &pubkey;
+
+    HcfX509TrustAnchorArray trustAnchorArray = { 0 };
+    trustAnchorArray.data = (HcfX509TrustAnchor **)HcfMalloc(1 * sizeof(HcfX509TrustAnchor *), 0);
+    ASSERT_NE(trustAnchorArray.data, nullptr);
+    trustAnchorArray.data[0] = &anchor;
+    trustAnchorArray.count = 1;
+
+    HcfX509CertChainValidateParams pCertChainValidateParams = { 0 };
+    pCertChainValidateParams.trustAnchors = &trustAnchorArray;
+
+    HcfX509CertChainValidateResult result = { 0 };
+    ret = certChainSpi->engineValidate(certChainSpi, &pCertChainValidateParams, &result);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ASSERT_NE(result.entityCert, nullptr);
+    ASSERT_NE(result.trustAnchor, nullptr);
+
+    CfFree(trustAnchorArray.data);
+    CfObjDestroy(certChainSpi);
+    FreeValidateResult(result);
+}
+
+HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest033, TestSize.Level0)
+{
+    HcfX509CertChainSpi *certChainSpi = nullptr;
+    CfResult ret = HcfX509CertChainByEncSpiCreate(&g_inStreamChainPemNoRootHasPubKey, &certChainSpi);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ASSERT_NE(certChainSpi, nullptr);
+
+    CfBlob pubkey = { 0, nullptr };
+    pubkey.data = (uint8_t *)(&g_testChainPubkeyPemNoRootLast[0]);
+    pubkey.size = g_testChainPubkeyPemNoRootLastSize;
+
+    CfBlob subject = { 0, nullptr };
+    subject.data = (uint8_t *)(&g_testChainSubjectPemNoRootLastUp[0]);
+    subject.size = g_testChainSubjectPemNoRootLastUpSize;
+
+    HcfX509TrustAnchor anchor = { 0 };
+    anchor.CAPubKey = &pubkey;
+    anchor.CASubject = &subject;
+
+    HcfX509TrustAnchorArray trustAnchorArray = { 0 };
+    trustAnchorArray.data = (HcfX509TrustAnchor **)HcfMalloc(1 * sizeof(HcfX509TrustAnchor *), 0);
+    ASSERT_NE(trustAnchorArray.data, nullptr);
+    trustAnchorArray.data[0] = &anchor;
+    trustAnchorArray.count = 1;
+
+    HcfX509CertChainValidateParams pCertChainValidateParams = { 0 };
+    pCertChainValidateParams.trustAnchors = &trustAnchorArray;
+
+    HcfX509CertChainValidateResult result = { 0 };
+    ret = certChainSpi->engineValidate(certChainSpi, &pCertChainValidateParams, &result);
+    ASSERT_EQ(ret, CF_INVALID_PARAMS);
+
+    CfFree(trustAnchorArray.data);
+    CfObjDestroy(certChainSpi);
+}
+
+HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest034, TestSize.Level0)
+{
+    HcfX509CertChainSpi *certChainSpi = nullptr;
+    CfResult ret = HcfX509CertChainByEncSpiCreate(&g_inStreamChainPemNoRootHasPubKey, &certChainSpi);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ASSERT_NE(certChainSpi, nullptr);
+
+    CfBlob pubkey = { 0, nullptr };
+    pubkey.data = (uint8_t *)(&g_testChainPubkeyPemNoRootLastUp[0]);
+    pubkey.size = g_testChainPubkeyPemNoRootLastUpSize;
+
+    CfBlob subject = { 0, nullptr };
+    subject.data = (uint8_t *)(&g_testChainSubjectPemNoRootLast[0]);
+    subject.size = g_testChainSubjectPemNoRootLastSize;
+
+    HcfX509TrustAnchor anchor = { 0 };
+    anchor.CAPubKey = &pubkey;
+    anchor.CASubject = &subject;
+
+    HcfX509TrustAnchorArray trustAnchorArray = { 0 };
+    trustAnchorArray.data = (HcfX509TrustAnchor **)HcfMalloc(1 * sizeof(HcfX509TrustAnchor *), 0);
+    ASSERT_NE(trustAnchorArray.data, nullptr);
+    trustAnchorArray.data[0] = &anchor;
+    trustAnchorArray.count = 1;
+
+    HcfX509CertChainValidateParams pCertChainValidateParams = { 0 };
+    pCertChainValidateParams.trustAnchors = &trustAnchorArray;
+
+    HcfX509CertChainValidateResult result = { 0 };
+    ret = certChainSpi->engineValidate(certChainSpi, &pCertChainValidateParams, &result);
+    ASSERT_EQ(ret, CF_INVALID_PARAMS);
+
+    CfFree(trustAnchorArray.data);
+    CfObjDestroy(certChainSpi);
 }
 
 HWTEST_F(CryptoX509CertChainTest, ValidateCoreTest001, TestSize.Level0)

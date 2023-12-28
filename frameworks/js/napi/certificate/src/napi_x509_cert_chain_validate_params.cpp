@@ -36,10 +36,12 @@ static bool GetValidDate(napi_env env, napi_value arg, CfBlob *&out)
 {
     napi_value obj = GetProp(env, arg, CERT_CHAIN_VALIDATE_TAG_DATE.c_str());
     if (obj == nullptr) {
+        LOGI("prop date do not exist!");
         return true;
     }
     out = CertGetBlobFromStringJSParams(env, obj);
     if (out == nullptr) {
+        LOGE("get blob failed!");
         return false;
     }
     return true;
@@ -114,7 +116,7 @@ static bool GetCertCRLCollectionArray(napi_env env, napi_value arg, HcfCertCRLCo
 {
     napi_value obj = GetProp(env, arg, CERT_CHAIN_VALIDATE_TAG_CERTCRLS.c_str());
     if (obj == nullptr) {
-        LOGI("param type not array!");
+        LOGI("prop certCRLs do not exist!");
         return true;
     }
 
