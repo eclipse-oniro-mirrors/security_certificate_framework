@@ -387,12 +387,12 @@ static CfResult ParseCreateCertCRLColJSParams(napi_env env, napi_callback_info i
     napi_value argv[ARGS_SIZE_TWO] = { nullptr };
     napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
     HcfX509CertificateArray certs = { nullptr, 0 };
-    if (argv[PARAM0] != nullptr && !GetArrayCertFromNapiValue(env, argv[PARAM0], &certs)) {
+    if (argc > PARAM0 && !GetArrayCertFromNapiValue(env, argv[PARAM0], &certs)) {
         LOGE("get array cert from data failed!");
         return CF_INVALID_PARAMS;
     }
     HcfX509CrlArray crls = { nullptr, 0 };
-    if (argv[PARAM1] != nullptr && !GetArrayCRLFromNapiValue(env, argv[PARAM1], &crls)) {
+    if (argc > PARAM1 && !GetArrayCRLFromNapiValue(env, argv[PARAM1], &crls)) {
         LOGE("get array crl from data failed!");
         CF_FREE_PTR(certs.data);
         return CF_INVALID_PARAMS;
