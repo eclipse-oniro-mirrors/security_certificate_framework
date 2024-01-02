@@ -156,7 +156,7 @@ napi_value NapiCertCRLCollection::SelectCRLsRet(napi_env env, const HcfX509CrlAr
     }
     int j = 0;
     for (uint32_t i = 0; i < crls->count; ++i) {
-        HcfX509Crl *crl = (HcfX509Crl *)crls->data[i];
+        HcfX509Crl *crl = crls->data[i];
         NapiX509Crl *x509Crl = new (std::nothrow) NapiX509Crl(crl);
         if (x509Crl == nullptr) {
             LOGE("new x509Crl failed!");

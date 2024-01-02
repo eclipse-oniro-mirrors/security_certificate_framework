@@ -50,7 +50,7 @@ public:
 void CryptoX509CertCrlCollectionTest::SetUpTestCase(void)
 {
     CfEncodingBlob inStream = { 0 };
-    inStream.data = (uint8_t *)g_testSelfSignedCaCert;
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testSelfSignedCaCert));
     inStream.encodingFormat = CF_FORMAT_PEM;
     inStream.len = strlen(g_testSelfSignedCaCert) + 1;
     CfResult ret = HcfX509CertificateCreate(&inStream, &g_x509CertObj);
@@ -64,12 +64,12 @@ void CryptoX509CertCrlCollectionTest::SetUpTestCase(void)
     HcfX509CertificateArray certArray = { 0 };
     HcfX509CrlArray crlArray = { 0 };
 
-    certArray.data = (HcfX509Certificate **)HcfMalloc(1 * sizeof(HcfX509Certificate *), 0);
+    certArray.data = static_cast<HcfX509Certificate **>(HcfMalloc(1 * sizeof(HcfX509Certificate *), 0));
     ASSERT_NE(certArray.data, nullptr);
     certArray.data[0] = g_x509CertObj;
     certArray.count = 1;
 
-    crlArray.data = (HcfX509Crl **)HcfMalloc(1 * sizeof(HcfX509Crl *), 0);
+    crlArray.data = static_cast<HcfX509Crl **>(HcfMalloc(1 * sizeof(HcfX509Crl *), 0));
     ASSERT_NE(crlArray.data, nullptr);
     crlArray.data[0] = g_x509Crl;
     crlArray.count = 1;
@@ -136,10 +136,11 @@ HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCertsTest001, TestSize.Level0)
 HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCertsTest002, TestSize.Level0)
 {
     HcfCertCrlCollection *invalidTypeCollection = nullptr;
-    HcfX509CertificateArray *certArray = (HcfX509CertificateArray *)HcfMalloc(sizeof(HcfX509CertificateArray), 0);
+    HcfX509CertificateArray *certArray =
+        static_cast<HcfX509CertificateArray *>(HcfMalloc(sizeof(HcfX509CertificateArray), 0));
     ASSERT_NE(certArray, nullptr);
 
-    HcfX509CrlArray *crlArray = (HcfX509CrlArray *)HcfMalloc(sizeof(HcfX509CrlArray), 0);
+    HcfX509CrlArray *crlArray = static_cast<HcfX509CrlArray *>(HcfMalloc(sizeof(HcfX509CrlArray), 0));
     ASSERT_NE(crlArray, nullptr);
 
     CfResult ret = HcfCertCrlCollectionCreate(certArray, crlArray, &invalidTypeCollection);
@@ -182,10 +183,11 @@ HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCertsTest003, TestSize.Level0)
 HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCertsTest004, TestSize.Level0)
 {
     HcfCertCrlCollection *x509CertCrlCollection = nullptr;
-    HcfX509CertificateArray *certArray = (HcfX509CertificateArray *)HcfMalloc(sizeof(HcfX509CertificateArray), 0);
+    HcfX509CertificateArray *certArray =
+        static_cast<HcfX509CertificateArray *>(HcfMalloc(sizeof(HcfX509CertificateArray), 0));
     ASSERT_NE(certArray, nullptr);
 
-    HcfX509CrlArray *crlArray = (HcfX509CrlArray *)HcfMalloc(sizeof(HcfX509CrlArray), 0);
+    HcfX509CrlArray *crlArray = static_cast<HcfX509CrlArray *>(HcfMalloc(sizeof(HcfX509CrlArray), 0));
     ASSERT_NE(crlArray, nullptr);
 
     CfResult ret = HcfCertCrlCollectionCreate(certArray, crlArray, &x509CertCrlCollection);
@@ -217,7 +219,7 @@ HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCertsTest006, TestSize.Level0)
 
     HcfX509Certificate *x509Cert = nullptr;
     CfEncodingBlob inStream = { 0 };
-    inStream.data = (uint8_t *)(g_secondCert);
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_secondCert));
     inStream.encodingFormat = CF_FORMAT_PEM;
     inStream.len = strlen(g_secondCert) + 1;
     CfResult ret = HcfX509CertificateCreate(&inStream, &x509Cert);
@@ -240,7 +242,7 @@ HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCertsTest007, TestSize.Level0)
 
     HcfX509Certificate *x509Cert = nullptr;
     CfEncodingBlob inStream = { 0 };
-    inStream.data = (uint8_t *)(g_testSelfSignedCaCert);
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testSelfSignedCaCert));
     inStream.encodingFormat = CF_FORMAT_PEM;
     inStream.len = strlen(g_testSelfSignedCaCert) + 1;
     CfResult ret = HcfX509CertificateCreate(&inStream, &x509Cert);
@@ -260,10 +262,11 @@ HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCertsTest007, TestSize.Level0)
 HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCertsTest008, TestSize.Level0)
 {
     HcfCertCrlCollection *x509CertCrlCollection = nullptr;
-    HcfX509CertificateArray *certArray = (HcfX509CertificateArray *)HcfMalloc(sizeof(HcfX509CertificateArray), 0);
+    HcfX509CertificateArray *certArray =
+        static_cast<HcfX509CertificateArray *>(HcfMalloc(sizeof(HcfX509CertificateArray), 0));
     ASSERT_NE(certArray, nullptr);
 
-    HcfX509CrlArray *crlArray = (HcfX509CrlArray *)HcfMalloc(sizeof(HcfX509CrlArray), 0);
+    HcfX509CrlArray *crlArray = static_cast<HcfX509CrlArray *>(HcfMalloc(sizeof(HcfX509CrlArray), 0));
     ASSERT_NE(crlArray, nullptr);
 
     CfResult ret = HcfCertCrlCollectionCreate(certArray, crlArray, &x509CertCrlCollection);
@@ -291,15 +294,16 @@ HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCertsTest008, TestSize.Level0)
 HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCertsTest009, TestSize.Level0)
 {
     HcfCertCrlCollection *x509CertCrlCollection = nullptr;
-    HcfX509CertificateArray *certArray = (HcfX509CertificateArray *)HcfMalloc(sizeof(HcfX509CertificateArray), 0);
+    HcfX509CertificateArray *certArray =
+        static_cast<HcfX509CertificateArray *>(HcfMalloc(sizeof(HcfX509CertificateArray), 0));
     ASSERT_NE(certArray, nullptr);
 
-    certArray->data = (HcfX509Certificate **)HcfMalloc(1 * sizeof(HcfX509Certificate *), 0);
+    certArray->data = static_cast<HcfX509Certificate **>(HcfMalloc(1 * sizeof(HcfX509Certificate *), 0));
     ASSERT_NE(certArray->data, nullptr);
     certArray->data[0] = g_x509CertObj;
     certArray->count = MAX_LEN_OF_CERT_CRL_ARR + 1;
 
-    HcfX509CrlArray *crlArray = (HcfX509CrlArray *)HcfMalloc(sizeof(HcfX509CrlArray), 0);
+    HcfX509CrlArray *crlArray = static_cast<HcfX509CrlArray *>(HcfMalloc(sizeof(HcfX509CrlArray), 0));
     ASSERT_NE(crlArray, nullptr);
 
     CfResult ret = HcfCertCrlCollectionCreate(certArray, crlArray, &x509CertCrlCollection);
@@ -341,10 +345,11 @@ HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCRLsTest003, TestSize.Level0)
 HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCRLsTest004, TestSize.Level0)
 {
     HcfCertCrlCollection *x509CertCrlCollection = nullptr;
-    HcfX509CertificateArray *certArray = (HcfX509CertificateArray *)HcfMalloc(sizeof(HcfX509CertificateArray), 0);
+    HcfX509CertificateArray *certArray =
+        static_cast<HcfX509CertificateArray *>(HcfMalloc(sizeof(HcfX509CertificateArray), 0));
     ASSERT_NE(certArray, nullptr);
 
-    HcfX509CrlArray *crlArray = (HcfX509CrlArray *)HcfMalloc(sizeof(HcfX509CrlArray), 0);
+    HcfX509CrlArray *crlArray = static_cast<HcfX509CrlArray *>(HcfMalloc(sizeof(HcfX509CrlArray), 0));
     ASSERT_NE(crlArray, nullptr);
 
     CfResult ret = HcfCertCrlCollectionCreate(certArray, crlArray, &x509CertCrlCollection);
@@ -406,10 +411,11 @@ HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCRLsTest006, TestSize.Level0)
 
 HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCRLsTest007, TestSize.Level0)
 {
-    HcfX509CertificateArray *certArray = (HcfX509CertificateArray *)HcfMalloc(sizeof(HcfX509CertificateArray), 0);
+    HcfX509CertificateArray *certArray =
+        static_cast<HcfX509CertificateArray *>(HcfMalloc(sizeof(HcfX509CertificateArray), 0));
     ASSERT_NE(certArray, nullptr);
 
-    HcfX509CrlArray *crlArray = (HcfX509CrlArray *)HcfMalloc(sizeof(HcfX509CrlArray), 0);
+    HcfX509CrlArray *crlArray = static_cast<HcfX509CrlArray *>(HcfMalloc(sizeof(HcfX509CrlArray), 0));
     ASSERT_NE(crlArray, nullptr);
 
     CfResult ret = HcfCertCrlCollectionCreate(certArray, crlArray, nullptr);
@@ -422,10 +428,11 @@ HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCRLsTest007, TestSize.Level0)
 HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCRLsTest008, TestSize.Level0)
 {
     HcfCertCrlCollection *x509CertCrlCollection = nullptr;
-    HcfX509CertificateArray *certArray = (HcfX509CertificateArray *)HcfMalloc(sizeof(HcfX509CertificateArray), 0);
+    HcfX509CertificateArray *certArray =
+        static_cast<HcfX509CertificateArray *>(HcfMalloc(sizeof(HcfX509CertificateArray), 0));
     ASSERT_NE(certArray, nullptr);
 
-    HcfX509CrlArray *crlArray = (HcfX509CrlArray *)HcfMalloc(sizeof(HcfX509CrlArray), 0);
+    HcfX509CrlArray *crlArray = static_cast<HcfX509CrlArray *>(HcfMalloc(sizeof(HcfX509CrlArray), 0));
     ASSERT_NE(crlArray, nullptr);
 
     HcfX509Crl *x509Crl = nullptr;
@@ -433,7 +440,7 @@ HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCRLsTest008, TestSize.Level0)
     ASSERT_EQ(ret, CF_SUCCESS);
     ASSERT_NE(x509Crl, nullptr);
 
-    crlArray->data = (HcfX509Crl **)HcfMalloc(1 * sizeof(HcfX509Crl *), 0);
+    crlArray->data = static_cast<HcfX509Crl **>(HcfMalloc(1 * sizeof(HcfX509Crl *), 0));
     ASSERT_NE(crlArray->data, nullptr);
     crlArray->data[0] = x509Crl;
     crlArray->count = MAX_LEN_OF_CERT_CRL_ARR + 1;
@@ -450,15 +457,16 @@ HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCRLsTest008, TestSize.Level0)
 HWTEST_F(CryptoX509CertCrlCollectionTest, InvalidCert, TestSize.Level0)
 {
     HcfCertCrlCollection *x509CertCrlCollection = nullptr;
-    HcfX509CertificateArray *certArray = (HcfX509CertificateArray *)HcfMalloc(sizeof(HcfX509CertificateArray), 0);
+    HcfX509CertificateArray *certArray =
+        static_cast<HcfX509CertificateArray *>(HcfMalloc(sizeof(HcfX509CertificateArray), 0));
     ASSERT_NE(certArray, nullptr);
 
-    HcfX509CrlArray *crlArray = (HcfX509CrlArray *)HcfMalloc(sizeof(HcfX509CrlArray), 0);
+    HcfX509CrlArray *crlArray = static_cast<HcfX509CrlArray *>(HcfMalloc(sizeof(HcfX509CrlArray), 0));
     ASSERT_NE(crlArray, nullptr);
 
     HcfX509Certificate *x509CertObj = nullptr;
     CfEncodingBlob inStream = { 0 };
-    inStream.data = (uint8_t *)g_testSelfSignedCaCert;
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testSelfSignedCaCert));
     inStream.encodingFormat = CF_FORMAT_PEM;
     inStream.len = strlen(g_testSelfSignedCaCert) + 1;
     (void)HcfX509CertificateCreate(&inStream, &x509CertObj);
@@ -469,12 +477,12 @@ HWTEST_F(CryptoX509CertCrlCollectionTest, InvalidCert, TestSize.Level0)
     ASSERT_EQ(ret, CF_SUCCESS);
     ASSERT_NE(x509Crl, nullptr);
 
-    certArray->data = (HcfX509Certificate **)HcfMalloc(1 * sizeof(HcfX509Certificate *), 0);
+    certArray->data = static_cast<HcfX509Certificate **>(HcfMalloc(1 * sizeof(HcfX509Certificate *), 0));
     ASSERT_NE(certArray->data, nullptr);
     certArray->data[0] = x509CertObj;
     certArray->count = 1;
 
-    crlArray->data = (HcfX509Crl **)HcfMalloc(1 * sizeof(HcfX509Crl *), 0);
+    crlArray->data = static_cast<HcfX509Crl **>(HcfMalloc(1 * sizeof(HcfX509Crl *), 0));
     ASSERT_NE(crlArray->data, nullptr);
     crlArray->data[0] = x509Crl;
     crlArray->count = 1;
@@ -495,15 +503,16 @@ HWTEST_F(CryptoX509CertCrlCollectionTest, InvalidCert, TestSize.Level0)
 HWTEST_F(CryptoX509CertCrlCollectionTest, InvalidCrl, TestSize.Level0)
 {
     HcfCertCrlCollection *x509CertCrlCollection = nullptr;
-    HcfX509CertificateArray *certArray = (HcfX509CertificateArray *)HcfMalloc(sizeof(HcfX509CertificateArray), 0);
+    HcfX509CertificateArray *certArray =
+        static_cast<HcfX509CertificateArray *>(HcfMalloc(sizeof(HcfX509CertificateArray), 0));
     ASSERT_NE(certArray, nullptr);
 
-    HcfX509CrlArray *crlArray = (HcfX509CrlArray *)HcfMalloc(sizeof(HcfX509CrlArray), 0);
+    HcfX509CrlArray *crlArray = static_cast<HcfX509CrlArray *>(HcfMalloc(sizeof(HcfX509CrlArray), 0));
     ASSERT_NE(crlArray, nullptr);
 
     HcfX509Certificate *x509CertObj = nullptr;
     CfEncodingBlob inStream = { 0 };
-    inStream.data = (uint8_t *)g_testSelfSignedCaCert;
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testSelfSignedCaCert));
     inStream.encodingFormat = CF_FORMAT_PEM;
     inStream.len = strlen(g_testSelfSignedCaCert) + 1;
     (void)HcfX509CertificateCreate(&inStream, &x509CertObj);
@@ -513,12 +522,12 @@ HWTEST_F(CryptoX509CertCrlCollectionTest, InvalidCrl, TestSize.Level0)
     ASSERT_EQ(ret, CF_SUCCESS);
     ASSERT_NE(x509Crl, nullptr);
 
-    certArray->data = (HcfX509Certificate **)HcfMalloc(1 * sizeof(HcfX509Certificate *), 0);
+    certArray->data = static_cast<HcfX509Certificate **>(HcfMalloc(1 * sizeof(HcfX509Certificate *), 0));
     ASSERT_NE(certArray->data, nullptr);
     certArray->data[0] = x509CertObj;
     certArray->count = 1;
 
-    crlArray->data = (HcfX509Crl **)HcfMalloc(1 * sizeof(HcfX509Crl *), 0);
+    crlArray->data = static_cast<HcfX509Crl **>(HcfMalloc(1 * sizeof(HcfX509Crl *), 0));
     ASSERT_NE(crlArray->data, nullptr);
     crlArray->data[0] = x509Crl;
     crlArray->count = 1;
