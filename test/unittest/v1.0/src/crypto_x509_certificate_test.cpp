@@ -48,7 +48,7 @@ static HcfX509Certificate *g_x509CertObj = nullptr;
 void CryptoX509CertificateTest::SetUpTestCase()
 {
     CfEncodingBlob inStream = { 0 };
-    inStream.data = (uint8_t *)g_testSelfSignedCaCert;
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testSelfSignedCaCert));
     inStream.encodingFormat = CF_FORMAT_PEM;
     inStream.len = strlen(g_testSelfSignedCaCert) + 1;
     (void)HcfX509CertificateCreate(&inStream, &g_x509CertObj);
@@ -77,7 +77,7 @@ HWTEST_F(CryptoX509CertificateTest, GenerateCert001, TestSize.Level0)
 {
     HcfX509Certificate *x509Cert = nullptr;
     CfEncodingBlob inStream = { 0 };
-    inStream.data = (uint8_t *)g_testSelfSignedCaCert;
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testSelfSignedCaCert));
     inStream.encodingFormat = CF_FORMAT_PEM;
     inStream.len = strlen(g_testSelfSignedCaCert) + 1;
     CfResult ret = HcfX509CertificateCreate(&inStream, &x509Cert);
@@ -102,7 +102,7 @@ HWTEST_F(CryptoX509CertificateTest, GenerateCert003, TestSize.Level0)
 {
     HcfX509Certificate *x509Cert = nullptr;
     CfEncodingBlob inStream = { 0 };
-    inStream.data = (uint8_t *)g_testInvalidCert;
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testInvalidCert));
     inStream.encodingFormat = CF_FORMAT_PEM;
     inStream.len = strlen(g_testInvalidCert) + 1;
     CfResult ret = HcfX509CertificateCreate(&inStream, &x509Cert);
@@ -115,7 +115,7 @@ HWTEST_F(CryptoX509CertificateTest, GenerateCert003, TestSize.Level0)
 HWTEST_F(CryptoX509CertificateTest, GenerateCert004, TestSize.Level0)
 {
     CfEncodingBlob derBlob = { 0 };
-    CfResult ret = g_x509CertObj->base.getEncoded((HcfCertificate *)g_x509CertObj, &derBlob);
+    CfResult ret = g_x509CertObj->base.getEncoded(reinterpret_cast<HcfCertificate *>(g_x509CertObj), &derBlob);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(derBlob.data, nullptr);
     EXPECT_EQ(derBlob.encodingFormat, CF_FORMAT_DER);
@@ -132,10 +132,10 @@ HWTEST_F(CryptoX509CertificateTest, GenerateCert004, TestSize.Level0)
 HWTEST_F(CryptoX509CertificateTest, Verify001, TestSize.Level0)
 {
     HcfPubKey *keyOut = nullptr;
-    CfResult ret = g_x509CertObj->base.getPublicKey((HcfCertificate *)g_x509CertObj, &keyOut);
+    CfResult ret = g_x509CertObj->base.getPublicKey(reinterpret_cast<HcfCertificate *>(g_x509CertObj), &keyOut);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(keyOut, nullptr);
-    ret = g_x509CertObj->base.verify((HcfCertificate *)g_x509CertObj, keyOut);
+    ret = g_x509CertObj->base.verify(reinterpret_cast<HcfCertificate *>(g_x509CertObj), keyOut);
     EXPECT_EQ(ret, CF_SUCCESS);
     CfObjDestroy(keyOut);
 }
@@ -145,26 +145,26 @@ HWTEST_F(CryptoX509CertificateTest, Verify002, TestSize.Level0)
 {
     HcfX509Certificate *rootCert = nullptr;
     CfEncodingBlob root = { 0 };
-    root.data = (uint8_t *)g_rootCert;
+    root.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_rootCert));
     root.encodingFormat = CF_FORMAT_PEM;
     root.len = strlen(g_rootCert) + 1;
     CfResult ret = HcfX509CertificateCreate(&root, &rootCert);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(rootCert, nullptr);
     HcfPubKey *rootkeyOut = nullptr;
-    ret = rootCert->base.getPublicKey((HcfCertificate *)rootCert, &rootkeyOut);
+    ret = rootCert->base.getPublicKey(reinterpret_cast<HcfCertificate *>(rootCert), &rootkeyOut);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(rootkeyOut, nullptr);
 
     HcfX509Certificate *secondCert = nullptr;
     CfEncodingBlob second = { 0 };
-    second.data = (uint8_t *)g_secondCert;
+    second.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_secondCert));
     second.encodingFormat = CF_FORMAT_PEM;
     second.len = strlen(g_secondCert) + 1;
     ret = HcfX509CertificateCreate(&root, &secondCert);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(rootCert, nullptr);
-    ret = secondCert->base.verify((HcfCertificate *)secondCert, rootkeyOut);
+    ret = secondCert->base.verify(reinterpret_cast<HcfCertificate *>(secondCert), rootkeyOut);
     EXPECT_EQ(ret, CF_SUCCESS);
     CfObjDestroy(rootkeyOut);
     CfObjDestroy(rootCert);
@@ -176,18 +176,18 @@ HWTEST_F(CryptoX509CertificateTest, Verify003, TestSize.Level0)
 {
     HcfX509Certificate *rootCert = nullptr;
     CfEncodingBlob root = { 0 };
-    root.data = (uint8_t *)g_rootCert;
+    root.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_rootCert));
     root.encodingFormat = CF_FORMAT_PEM;
     root.len = strlen(g_rootCert) + 1;
     CfResult ret = HcfX509CertificateCreate(&root, &rootCert);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(rootCert, nullptr);
     HcfPubKey *rootkeyOut = nullptr;
-    ret = rootCert->base.getPublicKey((HcfCertificate *)rootCert, &rootkeyOut);
+    ret = rootCert->base.getPublicKey(reinterpret_cast<HcfCertificate *>(rootCert), &rootkeyOut);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(rootkeyOut, nullptr);
 
-    ret = g_x509CertObj->base.verify((HcfCertificate *)g_x509CertObj, rootkeyOut);
+    ret = g_x509CertObj->base.verify(reinterpret_cast<HcfCertificate *>(g_x509CertObj), rootkeyOut);
     EXPECT_NE(ret, CF_SUCCESS);
     CfObjDestroy(rootkeyOut);
     CfObjDestroy(rootCert);
@@ -196,14 +196,14 @@ HWTEST_F(CryptoX509CertificateTest, Verify003, TestSize.Level0)
 /* verify cert with invalid input pub key. */
 HWTEST_F(CryptoX509CertificateTest, Verify004, TestSize.Level0)
 {
-    CfResult ret = g_x509CertObj->base.verify((HcfCertificate *)g_x509CertObj, nullptr);
+    CfResult ret = g_x509CertObj->base.verify(reinterpret_cast<HcfCertificate *>(g_x509CertObj), nullptr);
     EXPECT_NE(ret, CF_SUCCESS);
 }
 
 HWTEST_F(CryptoX509CertificateTest, GetEncoded001, TestSize.Level0)
 {
     CfEncodingBlob encodingBlob = { 0 };
-    CfResult ret = g_x509CertObj->base.getEncoded((HcfCertificate *)g_x509CertObj, &encodingBlob);
+    CfResult ret = g_x509CertObj->base.getEncoded(reinterpret_cast<HcfCertificate *>(g_x509CertObj), &encodingBlob);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(encodingBlob.data, nullptr);
     EXPECT_EQ(encodingBlob.encodingFormat, CF_FORMAT_DER);
@@ -213,14 +213,14 @@ HWTEST_F(CryptoX509CertificateTest, GetEncoded001, TestSize.Level0)
 /* Invalid input. */
 HWTEST_F(CryptoX509CertificateTest, GetEncoded002, TestSize.Level0)
 {
-    CfResult ret = g_x509CertObj->base.getEncoded((HcfCertificate *)g_x509CertObj, nullptr);
+    CfResult ret = g_x509CertObj->base.getEncoded(reinterpret_cast<HcfCertificate *>(g_x509CertObj), nullptr);
     EXPECT_NE(ret, CF_SUCCESS);
 }
 
 HWTEST_F(CryptoX509CertificateTest, GetPublicKey, TestSize.Level0)
 {
     HcfPubKey *keyOut = nullptr;
-    CfResult ret = g_x509CertObj->base.getPublicKey((HcfCertificate *)g_x509CertObj, &keyOut);
+    CfResult ret = g_x509CertObj->base.getPublicKey(reinterpret_cast<HcfCertificate *>(g_x509CertObj), &keyOut);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(keyOut, nullptr);
     CfObjDestroy(keyOut);
@@ -440,7 +440,7 @@ HWTEST_F(CryptoX509CertificateTest, GetExtKeyUsage002, TestSize.Level0)
     CfArray keyUsageOut = { 0 };
     HcfX509Certificate *x509Cert = nullptr;
     CfEncodingBlob inStream = { 0 };
-    inStream.data = (uint8_t *)g_secondCert;
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_secondCert));
     inStream.encodingFormat = CF_FORMAT_PEM;
     inStream.len = strlen(g_secondCert) + 1;
     CfResult ret = HcfX509CertificateCreate(&inStream, &x509Cert);
@@ -457,7 +457,7 @@ HWTEST_F(CryptoX509CertificateTest, GetBasicConstraints001, TestSize.Level0)
 {
     HcfX509Certificate *x509Cert = nullptr;
     CfEncodingBlob inStream = { 0 };
-    inStream.data = (uint8_t *)g_deviceTestCert;
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_deviceTestCert));
     inStream.encodingFormat = CF_FORMAT_PEM;
     inStream.len = strlen(g_deviceTestCert) + 1;
     CfResult ret = HcfX509CertificateCreate(&inStream, &x509Cert);
@@ -497,7 +497,7 @@ HWTEST_F(CryptoX509CertificateTest, GetSubjectAltNames002, TestSize.Level0)
     CfArray outName = { 0 };
     HcfX509Certificate *x509Cert = nullptr;
     CfEncodingBlob inStream = { 0 };
-    inStream.data = (uint8_t *)g_secondCert;
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_secondCert));
     inStream.encodingFormat = CF_FORMAT_PEM;
     inStream.len = strlen(g_secondCert) + 1;
     CfResult ret = HcfX509CertificateCreate(&inStream, &x509Cert);
@@ -514,7 +514,7 @@ HWTEST_F(CryptoX509CertificateTest, GetSubjectAltNames003, TestSize.Level0)
 {
     HcfX509Certificate *x509Cert = nullptr;
     CfEncodingBlob inStream = { 0 };
-    inStream.data = (uint8_t *)g_secondCert;
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_secondCert));
     inStream.encodingFormat = CF_FORMAT_PEM;
     inStream.len = strlen(g_secondCert) + 1;
     CfResult ret = HcfX509CertificateCreate(&inStream, &x509Cert);
@@ -540,7 +540,7 @@ HWTEST_F(CryptoX509CertificateTest, GetIssuerAltNames002, TestSize.Level0)
     CfArray outName = { 0 };
     HcfX509Certificate *x509Cert = nullptr;
     CfEncodingBlob inStream = { 0 };
-    inStream.data = (uint8_t *)g_secondCert;
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_secondCert));
     inStream.encodingFormat = CF_FORMAT_PEM;
     inStream.len = strlen(g_secondCert) + 1;
     CfResult ret = HcfX509CertificateCreate(&inStream, &x509Cert);
@@ -557,7 +557,7 @@ HWTEST_F(CryptoX509CertificateTest, GetIssuerAltNames003, TestSize.Level0)
 {
     HcfX509Certificate *x509Cert = nullptr;
     CfEncodingBlob inStream = { 0 };
-    inStream.data = (uint8_t *)g_secondCert;
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_secondCert));
     inStream.encodingFormat = CF_FORMAT_PEM;
     inStream.len = strlen(g_secondCert) + 1;
     CfResult ret = HcfX509CertificateCreate(&inStream, &x509Cert);
@@ -628,7 +628,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest005, TestSize.Level0)
 {
     HcfX509Certificate *x509Cert = nullptr;
     CfEncodingBlob inStream = { 0 };
-    inStream.data = (uint8_t *)(g_secondCert);
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_secondCert));
     inStream.encodingFormat = CF_FORMAT_PEM;
     inStream.len = strlen(g_secondCert) + 1;
     CfResult ret = HcfX509CertificateCreate(&inStream, &x509Cert);
@@ -695,7 +695,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest009, TestSize.Level0)
     bool bResult = true;
     const char *date = "20220819124900Z";
     CfBlob validDate = { 0 };
-    validDate.data = (uint8_t *)date;
+    validDate.data = reinterpret_cast<uint8_t *>(const_cast<char *>(date));
     validDate.size = strlen(date) + 1;
     HcfX509CertMatchParams matchParams;
     matchParams.validDate = &validDate;
@@ -712,7 +712,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest010, TestSize.Level0)
     bool bResult = true;
     const char *date = "20220819124906Z";
     CfBlob validDate = { 0 };
-    validDate.data = (uint8_t *)date;
+    validDate.data = reinterpret_cast<uint8_t *>(const_cast<char *>(date));
     validDate.size = strlen(date) + 1;
     HcfX509CertMatchParams matchParams;
     matchParams.validDate = &validDate;
@@ -729,7 +729,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest011, TestSize.Level0)
     bool bResult = true;
     const char *date = "20231018162433Z";
     CfBlob validDate = { 0 };
-    validDate.data = (uint8_t *)date;
+    validDate.data = reinterpret_cast<uint8_t *>(const_cast<char *>(date));
     validDate.size = strlen(date) + 1;
     HcfX509CertMatchParams matchParams;
     matchParams.validDate = &validDate;
@@ -746,7 +746,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest012, TestSize.Level0)
     bool bResult = true;
     const char *date = "20320816124906Z";
     CfBlob validDate = { 0 };
-    validDate.data = (uint8_t *)date;
+    validDate.data = reinterpret_cast<uint8_t *>(const_cast<char *>(date));
     validDate.size = strlen(date) + 1;
     HcfX509CertMatchParams matchParams;
     matchParams.validDate = &validDate;
@@ -763,7 +763,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest013, TestSize.Level0)
     bool bResult = true;
     const char *date = "20330816124906Z";
     CfBlob validDate = { 0 };
-    validDate.data = (uint8_t *)date;
+    validDate.data = reinterpret_cast<uint8_t *>(const_cast<char *>(date));
     validDate.size = strlen(date) + 1;
     HcfX509CertMatchParams matchParams;
     matchParams.validDate = &validDate;
@@ -781,7 +781,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest014, TestSize.Level0)
     string emptyData = "";
     const char *date = emptyData.c_str();
     CfBlob validDate = { 0 };
-    validDate.data = (uint8_t *)date;
+    validDate.data = reinterpret_cast<uint8_t *>(const_cast<char *>(date));
     validDate.size = strlen(date) + 1;
     HcfX509CertMatchParams matchParams;
     matchParams.validDate = &validDate;
@@ -848,8 +848,8 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest018, TestSize.Level0)
     CfResult ret = g_x509CertObj->getKeyUsage(g_x509CertObj, &cfBlobDataSelf);
     EXPECT_EQ(ret, CF_SUCCESS);
 
-    uint8_t *data = (uint8_t *)HcfMalloc(cfBlobDataSelf.size - 1, 0);
-    for (int index = 0; index < cfBlobDataSelf.size - 1; index++) {
+    uint8_t *data = static_cast<uint8_t *>(HcfMalloc(cfBlobDataSelf.size - 1, 0));
+    for (uint32_t index = 0; index < cfBlobDataSelf.size - 1; index++) {
         data[index] = cfBlobDataSelf.data[index];
     }
     cfBlobDataParam.size = cfBlobDataSelf.size - 1;
@@ -874,8 +874,8 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest019, TestSize.Level0)
     CfResult ret = g_x509CertObj->getKeyUsage(g_x509CertObj, &cfBlobDataSelf);
     EXPECT_EQ(ret, CF_SUCCESS);
 
-    uint8_t *data = (uint8_t *)HcfMalloc(cfBlobDataSelf.size + 1, 0);
-    int index = 0;
+    uint8_t *data = static_cast<uint8_t *>(HcfMalloc(cfBlobDataSelf.size + 1, 0));
+    uint32_t index = 0;
     for (index = 0; index < cfBlobDataSelf.size; index++) {
         data[index] = cfBlobDataSelf.data[index];
     }
@@ -903,8 +903,8 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest020, TestSize.Level0)
     CfResult ret = g_x509CertObj->getKeyUsage(g_x509CertObj, &cfBlobDataSelf);
     EXPECT_EQ(ret, CF_SUCCESS);
 
-    uint8_t *data = (uint8_t *)HcfMalloc(cfBlobDataSelf.size + 1, 0);
-    int index = 0;
+    uint8_t *data = static_cast<uint8_t *>(HcfMalloc(cfBlobDataSelf.size + 1, 0));
+    uint32_t index = 0;
     for (index = 0; index < cfBlobDataSelf.size; index++) {
         data[index] = cfBlobDataSelf.data[index];
     }
@@ -932,8 +932,8 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest021, TestSize.Level0)
     CfResult ret = g_x509CertObj->getKeyUsage(g_x509CertObj, &cfBlobDataSelf);
     EXPECT_EQ(ret, CF_SUCCESS);
 
-    uint8_t *data = (uint8_t *)HcfMalloc(cfBlobDataSelf.size, 0);
-    for (int index = 0; index < cfBlobDataSelf.size; index++) {
+    uint8_t *data = static_cast<uint8_t *>(HcfMalloc(cfBlobDataSelf.size, 0));
+    for (uint32_t index = 0; index < cfBlobDataSelf.size; index++) {
         data[index] = (cfBlobDataSelf.data[index]) ? 0 : 1;
     }
     cfBlobDataParam.size = cfBlobDataSelf.size;
@@ -986,7 +986,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest024, TestSize.Level0)
     ASSERT_NE(g_x509CertObj, nullptr);
     bool bResult = true;
     CfBlob cfBlobDataParam = { 0 };
-    cfBlobDataParam.data = (uint8_t *)(&g_testPublicKeyDerData[0]);
+    cfBlobDataParam.data = reinterpret_cast<uint8_t *>(const_cast<uint8_t *>(&g_testPublicKeyDerData[0]));
     cfBlobDataParam.size = g_testPublicKeyDerDataSize;
 
     HcfX509CertMatchParams matchParams;
@@ -1002,7 +1002,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest025, TestSize.Level0)
     ASSERT_NE(g_x509CertObj, nullptr);
     bool bResult = true;
     CfBlob cfBlobDataParam = { 0 };
-    cfBlobDataParam.data = (uint8_t *)(&g_testSubjectAndIssuerNameDerData);
+    cfBlobDataParam.data = const_cast<uint8_t *>(g_testSubjectAndIssuerNameDerData);
     cfBlobDataParam.size = g_testSubjectAndIssuerNameDerDataSize;
 
     HcfX509CertMatchParams matchParams;
@@ -1019,7 +1019,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest026, TestSize.Level0)
     bool bResult = true;
     const char *data = "1.2.840.113549.1.1.1";
     CfBlob cfBlobDataParam = { 0 };
-    cfBlobDataParam.data = (uint8_t *)data;
+    cfBlobDataParam.data = reinterpret_cast<uint8_t *>(const_cast<char *>(data));
     cfBlobDataParam.size = strlen(data) + 1;
     HcfX509CertMatchParams matchParams;
     matchParams.publicKeyAlgID = &cfBlobDataParam;
@@ -1035,7 +1035,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest027, TestSize.Level0)
     bool bResult = true;
     const char *data = "3.1.4.1.5.926";
     CfBlob cfBlobDataParam = { 0 };
-    cfBlobDataParam.data = (uint8_t *)data;
+    cfBlobDataParam.data = reinterpret_cast<uint8_t *>(const_cast<char *>(data));
     cfBlobDataParam.size = strlen(data) + 1;
     HcfX509CertMatchParams matchParams;
     matchParams.publicKeyAlgID = &cfBlobDataParam;
@@ -1052,7 +1052,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest028, TestSize.Level0)
     string emptyData = "";
     const char *data = emptyData.c_str();
     CfBlob cfBlobDataParam = { 0 };
-    cfBlobDataParam.data = (uint8_t *)data;
+    cfBlobDataParam.data = reinterpret_cast<uint8_t *>(const_cast<char *>(data));
     cfBlobDataParam.size = strlen(data) + 1;
     HcfX509CertMatchParams matchParams;
     matchParams.publicKeyAlgID = &cfBlobDataParam;
@@ -1067,7 +1067,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest029, TestSize.Level0)
     ASSERT_NE(g_x509CertObj, nullptr);
     bool bResult = true;
     CfBlob cfBlobDataParam = { 0 };
-    cfBlobDataParam.data = (uint8_t *)(&g_deviceTestCert[0]);
+    cfBlobDataParam.data = reinterpret_cast<uint8_t *>(const_cast<char *>(&g_deviceTestCert[0]));
     cfBlobDataParam.size = 0;
 
     HcfX509CertMatchParams matchParams;
@@ -1083,25 +1083,25 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest030, TestSize.Level0)
     bool bResult = true;
     HcfX509CertMatchParams matchParams;
     CfBlob cfDataSubject = { 0 };
-    cfDataSubject.data = (uint8_t *)(&g_testSubjectAndIssuerNameDerData[0]);
+    cfDataSubject.data = const_cast<uint8_t *>(&g_testSubjectAndIssuerNameDerData[0]);
     cfDataSubject.size = g_testSubjectAndIssuerNameDerDataSize;
     const char *date = "20220819124906Z";
     CfBlob validDate = { 0 };
-    validDate.data = (uint8_t *)date;
+    validDate.data = reinterpret_cast<uint8_t *>(const_cast<char *>(date));
     validDate.size = strlen(date) + 1;
     CfBlob cfDataIssuer = { 0 };
-    cfDataIssuer.data = (uint8_t *)(&g_testSubjectAndIssuerNameDerData[0]);
+    cfDataIssuer.data = const_cast<uint8_t *>(&g_testSubjectAndIssuerNameDerData[0]);
     cfDataIssuer.size = g_testSubjectAndIssuerNameDerDataSize;
     CfBlob cfDataKeyUsage = { 0 };
     CfResult ret = g_x509CertObj->getKeyUsage(g_x509CertObj, &cfDataKeyUsage);
     uint8_t testSn[] = { 0x01, 0x10 };
     CfBlob testSnBlob = { sizeof(testSn) / sizeof(testSn[0]), testSn };
     CfBlob cfDataPublicKey = { 0 };
-    cfDataPublicKey.data = (uint8_t *)(&g_testPublicKeyDerData[0]);
+    cfDataPublicKey.data = const_cast<uint8_t *>(&g_testPublicKeyDerData[0]);
     cfDataPublicKey.size = g_testPublicKeyDerDataSize;
     const char *dataOid = "1.2.840.113549.1.1.1";
     CfBlob cfDataPublicKeyAlgID = { 0 };
-    cfDataPublicKeyAlgID.data = (uint8_t *)dataOid;
+    cfDataPublicKeyAlgID.data = reinterpret_cast<uint8_t *>(const_cast<char *>(dataOid));
     cfDataPublicKeyAlgID.size = strlen(dataOid) + 1;
 
     matchParams.x509Cert = &(g_x509CertObj->base);
@@ -1228,7 +1228,7 @@ HWTEST_F(CryptoX509CertificateTest, ConvertNameDerDataToStringTest006, TestSize.
 HWTEST_F(CryptoX509CertificateTest, ConvertNameDerDataToStringTest007, TestSize.Level0)
 {
     const char *data = "abc";
-    uint32_t derLen = sizeof((const char *)data);
+    uint32_t derLen = sizeof(data);
     CfBlob out = { 0, nullptr };
 
     CfResult ret = ConvertNameDerDataToString((const unsigned char *)&data, derLen, &out);
@@ -1282,7 +1282,7 @@ HWTEST_F(CryptoX509CertificateTest, CompareBigNumTest003, TestSize.Level0)
     CfBlob lhs = { 0 };
     uint8_t testBigNum1[] = { 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
         0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01 };
-    lhs.data = (uint8_t *)testBigNum1;
+    lhs.data = testBigNum1;
     lhs.size = sizeof(lhs.data);
     int out;
 
@@ -1300,9 +1300,9 @@ HWTEST_F(CryptoX509CertificateTest, CompareBigNumTest004, TestSize.Level0)
         0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01 };
     uint8_t testBigNum2[] = { 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
         0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x02 };
-    lhs.data = (uint8_t *)testBigNum1;
+    lhs.data = testBigNum1;
     lhs.size = sizeof(testBigNum1) / sizeof(testBigNum1[0]);
-    rhs.data = (unsigned char *)testBigNum2;
+    rhs.data = testBigNum2;
     rhs.size = sizeof(testBigNum2) / sizeof(testBigNum2[0]);
     EXPECT_EQ(lhs.size, rhs.size);
     int out;
@@ -1321,7 +1321,7 @@ HWTEST_F(CryptoX509CertificateTest, CompareBigNumTest005, TestSize.Level0)
     CfBlob lhs = { 0 };
     uint8_t testBigNum1[] = { 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
         0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01 };
-    lhs.data = (uint8_t *)testBigNum1;
+    lhs.data = testBigNum1;
     lhs.size = ~0;
     int out;
 
@@ -1369,9 +1369,9 @@ HWTEST_F(CryptoX509CertificateTest, CompareBigNumTest008, TestSize.Level0)
         0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01 };
     uint8_t testBigNum2[] = { 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
         0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x02 };
-    lhs.data = (uint8_t *)testBigNum1;
+    lhs.data = testBigNum1;
     lhs.size = sizeof(testBigNum1) / sizeof(testBigNum1[0]);
-    rhs.data = (uint8_t *)testBigNum2;
+    rhs.data = testBigNum2;
     rhs.size = ~0;
     int out;
 
@@ -1392,7 +1392,7 @@ HWTEST_F(CryptoX509CertificateTest, GetX509EncodedDataStreamTest002, TestSize.Le
 {
     int dataLength;
     X509 *certificate = nullptr;
-    BIO *bio = BIO_new_mem_buf((const void *)g_testCertChainPemMid, sizeof(g_testCertChainPemMid));
+    BIO *bio = BIO_new_mem_buf(g_testCertChainPemMid, sizeof(g_testCertChainPemMid));
     EXPECT_NE(bio, nullptr);
     certificate = PEM_read_bio_X509(bio, nullptr, nullptr, nullptr);
     BIO_free(bio);
@@ -1408,7 +1408,7 @@ HWTEST_F(CryptoX509CertificateTest, NullInput, TestSize.Level0)
 {
     (void)HcfX509CertificateCreate(nullptr, nullptr);
     HcfPubKey *keyOut = nullptr;
-    CfResult ret = g_x509CertObj->base.getPublicKey((HcfCertificate *)g_x509CertObj, &keyOut);
+    CfResult ret = g_x509CertObj->base.getPublicKey(reinterpret_cast<HcfCertificate *>(g_x509CertObj), &keyOut);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(keyOut, nullptr);
     (void)g_x509CertObj->base.base.destroy(nullptr);
@@ -1478,7 +1478,7 @@ HWTEST_F(CryptoX509CertificateTest, NullSpiInput, TestSize.Level0)
 {
     HcfX509CertificateSpi *spiObj = nullptr;
     CfEncodingBlob inStream = { 0 };
-    inStream.data = (uint8_t *)g_testSelfSignedCaCert;
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testSelfSignedCaCert));
     inStream.encodingFormat = CF_FORMAT_PEM;
     inStream.len = strlen(g_testSelfSignedCaCert) + 1;
     (void)OpensslX509CertSpiCreate(nullptr, nullptr);
@@ -1563,14 +1563,14 @@ HWTEST_F(CryptoX509CertificateTest, NullSpiInput003, TestSize.Level0)
 {
     HcfX509CertificateSpi *spiObj = nullptr;
     CfEncodingBlob inStream = { 0 };
-    inStream.data = (uint8_t *)g_testSelfSignedCaCert;
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testSelfSignedCaCert));
     inStream.encodingFormat = CF_FORMAT_PEM;
     inStream.len = strlen(g_testSelfSignedCaCert) + 1;
     CfResult ret = OpensslX509CertSpiCreate(&inStream, &spiObj);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(spiObj, nullptr);
 
-    HcfOpensslX509Cert *realCert = (HcfOpensslX509Cert *)spiObj;
+    HcfOpensslX509Cert *realCert = reinterpret_cast<HcfOpensslX509Cert *>(spiObj);
     X509 *bk = realCert->x509;
     realCert->x509 = nullptr;
 
@@ -1594,7 +1594,7 @@ HWTEST_F(CryptoX509CertificateTest, InvalidSpiClass, TestSize.Level0)
     invalidSpi.base.getClass = GetInvalidCertClass;
     CfBlob invalidOut = { 0 };
     CfEncodingBlob inStream = { 0 };
-    inStream.data = (uint8_t *)g_testSelfSignedCaCert;
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testSelfSignedCaCert));
     inStream.encodingFormat = CF_FORMAT_PEM;
     inStream.len = strlen(g_testSelfSignedCaCert) + 1;
     CfResult ret = OpensslX509CertSpiCreate(&inStream, &spiObj);
@@ -1683,7 +1683,7 @@ HWTEST_F(CryptoX509CertificateTest, InvalidMalloc, TestSize.Level0)
     SetMockFlag(true);
     HcfX509Certificate *x509Cert = nullptr;
     CfEncodingBlob inStream = { 0 };
-    inStream.data = (uint8_t *)g_secondCert;
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_secondCert));
     inStream.encodingFormat = CF_FORMAT_PEM;
     inStream.len = strlen(g_secondCert) + 1;
     CfResult ret = HcfX509CertificateCreate(&inStream, &x509Cert);

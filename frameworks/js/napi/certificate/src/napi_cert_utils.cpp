@@ -454,7 +454,8 @@ CfBlob *CertGetBlobFromStringJSParams(napi_env env, napi_value arg)
         return nullptr;
     }
 
-    if (napi_get_value_string_utf8(env, arg, (char *)newBlob->data, newBlob->size, &length) != napi_ok) {
+    if (napi_get_value_string_utf8(env, arg, reinterpret_cast<char *>(newBlob->data), newBlob->size, &length) !=
+        napi_ok) {
         LOGE("can not get string value");
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get string failed"));
         CfFree(newBlob->data);
@@ -541,21 +542,30 @@ CfBlobArray *CertGetBlobArrFromArrUarrJSParams(napi_env env, napi_value arg)
     return newBlobArr;
 }
 
-CfBlob *CertGetBlobFromArrBoolJSParams(napi_env env, napi_value arg)
+static bool GetArrayLen(napi_env env, napi_value arg, uint32_t &length)
 {
     bool flag = false;
     napi_status status = napi_is_array(env, arg, &flag);
     if (status != napi_ok || !flag) {
         LOGE("not array!");
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "not array!"));
-        return nullptr;
+        return false;
     }
 
-    uint32_t length = 0;
     status = napi_get_array_length(env, arg, &length);
     if (status != napi_ok || length == 0) {
         LOGI("array length = 0!");
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "array length = 0!"));
+        return false;
+    }
+    return true;
+}
+
+CfBlob *CertGetBlobFromArrBoolJSParams(napi_env env, napi_value arg)
+{
+    uint32_t length = 0;
+    if (!GetArrayLen(env, arg, length)) {
+        LOGI("get array length failed!");
         return nullptr;
     }
 
@@ -574,6 +584,7 @@ CfBlob *CertGetBlobFromArrBoolJSParams(napi_env env, napi_value arg)
         CfFree(newBlob);
         return nullptr;
     }
+    napi_status status = napi_ok;
     for (uint32_t i = 0; i < length; i++) {
         napi_value element;
         status = napi_get_element(env, arg, i, &element);
