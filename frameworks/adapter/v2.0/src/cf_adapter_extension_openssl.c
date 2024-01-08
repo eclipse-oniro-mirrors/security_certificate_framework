@@ -207,7 +207,8 @@ static int32_t DeepCopyDataToOutblob(const char *data, uint32_t len, CfBlob *out
     return CF_SUCCESS;
 }
 
-static int32_t DeepCopyOidsToOut(const X509_EXTENSIONS *exts, uint32_t *idxArray, uint32_t arrayLen, CfBlobArray *out)
+static int32_t DeepCopyOidsToOut(const X509_EXTENSIONS *exts, const uint32_t *idxArray, uint32_t arrayLen,
+    CfBlobArray *out)
 {
     uint32_t memSize = sizeof(CfBlob) * arrayLen;
     CfBlob *dataArray = (CfBlob *)CfMalloc(memSize);

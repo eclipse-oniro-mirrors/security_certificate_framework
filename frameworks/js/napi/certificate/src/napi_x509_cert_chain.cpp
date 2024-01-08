@@ -121,11 +121,6 @@ static bool CreateCallbackAndPromise(
 static void CreateCertChainExecute(napi_env env, void *data)
 {
     CfCtx *context = static_cast<CfCtx *>(data);
-    if (context == nullptr) {
-        context->async->errCode = CF_INVALID_PARAMS;
-        context->async->errMsg = "context is nullptr";
-        return;
-    }
     context->async->errCode = HcfCertChainCreate(context->encodingBlob, nullptr, &context->certChain);
     if (context->async->errCode != CF_SUCCESS) {
         context->async->errMsg = "create cert chain failed";
@@ -189,12 +184,6 @@ static void ValidateExecute(napi_env env, void *data)
 {
     LOGI("enter");
     CfCtx *context = static_cast<CfCtx *>(data);
-    if (context == nullptr || context->certChain == nullptr) {
-        context->async->errCode = CF_INVALID_PARAMS;
-        context->async->errMsg = "context or cert chain is invalid";
-        return;
-    }
-
     context->async->errCode = context->certChain->validate(context->certChain, &context->params, &context->result);
     if (context->async->errCode != CF_SUCCESS) {
         context->async->errMsg = "create cert chain failed";
