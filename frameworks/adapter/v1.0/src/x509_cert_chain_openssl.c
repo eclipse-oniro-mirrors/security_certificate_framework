@@ -262,11 +262,8 @@ static X509 *GetX509FromHcfX509Certificate(const HcfCertificate *cert)
     return realCert->x509;
 }
 
-static CfResult CheckCertChainIsRevoked(const STACK_OF(X509_CRL) * crlStack, const STACK_OF(X509) * certChain)
+static CfResult CheckCertChainIsRevoked(const STACK_OF(X509_CRL) *crlStack, const STACK_OF(X509) *certChain)
 {
-    X509 *cert = NULL;
-    X509_CRL *crl = NULL;
-    int32_t res = 0;
     int cerNum = sk_X509_num(certChain);
     if (cerNum == 0) {
         LOGE("sk X509 num : 0, failed !");
@@ -276,7 +273,7 @@ static CfResult CheckCertChainIsRevoked(const STACK_OF(X509_CRL) * crlStack, con
 
     int crlNum = sk_X509_CRL_num(crlStack); // allow crlNum : 0, no crl
     for (int i = 0; i < crlNum; ++i) {
-        crl = sk_X509_CRL_value(crlStack, i);
+        X509_CRL *crl = sk_X509_CRL_value(crlStack, i);
         if (crl == NULL) {
             LOGE("sk X509 CRL value is null, failed !");
             CfPrintOpensslError();
@@ -284,16 +281,16 @@ static CfResult CheckCertChainIsRevoked(const STACK_OF(X509_CRL) * crlStack, con
         }
 
         /* crl in certcrlcollection object is not null. */
-        X509_REVOKED *rev = NULL;
         for (int j = 0; j < cerNum; ++j) {
-            cert = sk_X509_value(certChain, j);
+            X509 *cert = sk_X509_value(certChain, j);
             if (cert == NULL) {
                 LOGE("sk X509 value is null, failed !");
                 CfPrintOpensslError();
                 return CF_ERR_CRYPTO_OPERATION;
             }
 
-            res = X509_CRL_get0_by_cert(crl, &rev, cert);
+            X509_REVOKED *rev = NULL;
+            int32_t res = X509_CRL_get0_by_cert(crl, &rev, cert);
             if (res != 0) {
                 LOGE("cert is revoked.");
                 return CF_ERR_CRYPTO_OPERATION;
