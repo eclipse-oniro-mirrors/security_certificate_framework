@@ -899,7 +899,7 @@ static CfResult GetExtendedKeyUsageX509Openssl(HcfX509CertificateSpi *self, CfAr
             res = CF_ERR_MALLOC;
             break;
         }
-        keyUsageOut->count = size;
+        keyUsageOut->count = (uint32_t)size;
         for (int32_t i = 0; i < size; ++i) {
             res = DeepCopyExtendedKeyUsage(extUsage, i, keyUsageOut);
             if (res != CF_SUCCESS) {
@@ -1009,7 +1009,7 @@ static CfResult GetSubjectAltNamesX509Openssl(HcfX509CertificateSpi *self, CfArr
             res = CF_ERR_MALLOC;
             break;
         }
-        outName->count = size;
+        outName->count = (uint32_t)size;
         for (int32_t i = 0; i < size; ++i) {
             res = DeepCopyAlternativeNames(subjectAltName, i, outName);
             if (res != CF_SUCCESS) {
@@ -1059,7 +1059,7 @@ static CfResult GetIssuerAltNamesX509Openssl(HcfX509CertificateSpi *self, CfArra
             res = CF_ERR_MALLOC;
             break;
         }
-        outName->count = size;
+        outName->count = (uint32_t)size;
         for (int32_t i = 0; i < size; ++i) {
             res = DeepCopyAlternativeNames(issuerAltName, i, outName);
             if (res != CF_SUCCESS) {
@@ -1298,7 +1298,7 @@ static CfResult GetCRLDpURI(STACK_OF(DIST_POINT) *crlDp, CfArray *outURI)
     LOGI("get uriCount success, uriCount = %u", uriCount);
 
     /* 2. malloc outArray buffer */
-    int32_t blobSize = sizeof(CfBlob) * uriCount;
+    uint32_t blobSize = sizeof(CfBlob) * uriCount;
     outURI->data = (CfBlob *)HcfMalloc(blobSize, 0);
     if (outURI->data == NULL) {
         LOGE("Failed to malloc for outURI array!");
