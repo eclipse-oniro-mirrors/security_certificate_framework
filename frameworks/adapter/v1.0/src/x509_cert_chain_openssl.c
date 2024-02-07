@@ -225,7 +225,7 @@ static CfResult GetCertlist(HcfX509CertChainSpi *self, HcfX509CertificateArray *
         return CF_ERR_MALLOC;
     }
 
-    certsList->count = certsNum;
+    certsList->count = (uint32_t)certsNum;
     for (int32_t i = 0; i < certsNum; ++i) {
         X509 *cert = sk_X509_value(x509CertChain, i);
         if (cert == NULL) {
