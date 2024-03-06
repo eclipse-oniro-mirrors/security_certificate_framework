@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -113,33 +113,33 @@ static CfResult IsOrderCertChain(STACK_OF(X509) * certsChain, bool *isOrder)
     for (int i = num - 1; i > 0; --i) {
         cert = sk_X509_value(certsChain, i);
         if (cert == NULL) {
-            LOGE("sk X509 value is null, failed !");
+            LOGE("sk X509 value is null, failed!");
             CfPrintOpensslError();
             return CF_ERR_CRYPTO_OPERATION;
         }
         certNext = sk_X509_value(certsChain, i - 1);
         if (certNext == NULL) {
-            LOGE("sk X509 value is null, failed !");
+            LOGE("sk X509 value is null, failed!");
             CfPrintOpensslError();
             return CF_ERR_CRYPTO_OPERATION;
         }
 
         subjectName = X509_get_subject_name(cert);
         if (subjectName == NULL) {
-            LOGE("x509 get subject name failed !");
+            LOGE("x509 get subject name failed!");
             CfPrintOpensslError();
             return CF_ERR_CRYPTO_OPERATION;
         }
         issuerName = X509_get_issuer_name(certNext);
         if (issuerName == NULL) {
-            LOGE("x509 get subject name failed !");
+            LOGE("x509 get subject name failed!");
             CfPrintOpensslError();
             return CF_ERR_CRYPTO_OPERATION;
         }
 
         if (!(X509_NAME_cmp(subjectName, issuerName) == 0)) {
             *isOrder = false;
-            LOGI("is a misOrder chain .");
+            LOGI("is a misOrder chain.");
             break;
         }
     }
@@ -225,7 +225,7 @@ static CfResult GetCertlist(HcfX509CertChainSpi *self, HcfX509CertificateArray *
         return CF_ERR_MALLOC;
     }
 
-    certsList->count = (uint32_t)certsNum;
+    certsList->count = certsNum;
     for (int32_t i = 0; i < certsNum; ++i) {
         X509 *cert = sk_X509_value(x509CertChain, i);
         if (cert == NULL) {

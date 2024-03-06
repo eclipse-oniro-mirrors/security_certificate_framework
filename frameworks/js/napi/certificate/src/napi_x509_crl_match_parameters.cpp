@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -66,6 +66,43 @@ static bool GetX509Cert(napi_env env, napi_value arg, HcfCertificate *&out)
     return true;
 }
 
+static bool GetUpdateDateTime(napi_env env, napi_value arg, CfBlob *&out)
+{
+    napi_value obj = GetProp(env, arg, CRL_MATCH_TAG_UPDATE_DATE_TIME.c_str());
+    if (obj == nullptr) {
+        return true;
+    }
+    out = CertGetBlobFromStringJSParams(env, obj);
+    if (out == nullptr) {
+        LOGE("out is nullptr");
+        return false;
+    }
+    return true;
+}
+
+static bool GetCRLNum(napi_env env, napi_value arg, const std::string nameTag, CfBlob *&out)
+{
+    napi_value obj = GetProp(env, arg, nameTag.c_str());
+    if (obj == nullptr) {
+        return true;
+    }
+    CfBlob outBlob = { 0, nullptr };
+    bool flag = CertGetBlobFromBigIntJSParams(env, obj, outBlob);
+    if (!flag) {
+        LOGE("out is nullptr");
+        return false;
+    }
+    out = static_cast<CfBlob *>(HcfMalloc(sizeof(CfBlob), 0));
+    if (out == nullptr) {
+        LOGE("Failed to allocate newBlob memory!");
+        CfBlobDataFree(&outBlob);
+        return false;
+    }
+    out->data = outBlob.data;
+    out->size = outBlob.size;
+    return true;
+}
+
 bool BuildX509CrlMatchParams(napi_env env, napi_value arg, HcfX509CrlMatchParams *&matchParams)
 {
     napi_valuetype type;
@@ -78,6 +115,15 @@ bool BuildX509CrlMatchParams(napi_env env, napi_value arg, HcfX509CrlMatchParams
         return false;
     }
     if (!GetIssuer(env, arg, matchParams->issuer)) {
+        return false;
+    }
+    if (!GetUpdateDateTime(env, arg, matchParams->updateDateTime)) {
+        return false;
+    }
+    if (!GetCRLNum(env, arg, CRL_MATCH_TAG_MAXCRL, matchParams->maxCRL)) {
+        return false;
+    }
+    if (!GetCRLNum(env, arg, CRL_MATCH_TAG_MINCRL, matchParams->minCRL)) {
         return false;
     }
     return true;
@@ -94,6 +140,9 @@ void FreeX509CrlMatchParams(HcfX509CrlMatchParams *&matchParams)
         CF_FREE_PTR(matchParams->issuer);
     }
     matchParams->x509Cert = nullptr;
+    CfBlobFree(&matchParams->updateDateTime);
+    CfBlobFree(&matchParams->maxCRL);
+    CfBlobFree(&matchParams->minCRL);
 
     CF_FREE_PTR(matchParams);
 }

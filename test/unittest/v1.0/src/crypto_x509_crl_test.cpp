@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,9 +18,11 @@
 
 #include "asy_key_generator.h"
 #include "certificate_openssl_class.h"
+#include "cf_log.h"
 #include "cf_memory.h"
 #include "cipher.h"
 #include "crypto_x509_test_common.h"
+#include "fwk_class.h"
 #include "key_pair.h"
 #include "memory_mock.h"
 #include "securec.h"
@@ -1750,5 +1752,97 @@ HWTEST_F(CryptoX509CrlTest, HcfCX509CRLEntryCreateInvalid, TestSize.Level0)
     EXPECT_NE(ret, CF_SUCCESS);
 
     X509_REVOKED_free(rev);
+}
+
+HWTEST_F(CryptoX509CrlTest, CompareUpdateDateTimeTest001, TestSize.Level0)
+{
+    CF_LOG_I("CompareUpdateDateTimeTest001");
+    HcfX509CrlSpi *spiObj = nullptr;
+    CfResult ret = HcfCX509CrlSpiCreate(&g_crlDerInStream, &spiObj);
+
+    HcfX509CrlMatchParams matchParams;
+    CfBlob blob;
+    blob.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testUpdateDateTime));
+    blob.size = strlen(g_testUpdateDateTime) + 1;
+    matchParams.updateDateTime = &blob;
+
+    bool bOut = true;
+    ret = spiObj->engineMatch(spiObj, &matchParams, &bOut);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    CfObjDestroy(spiObj);
+}
+
+HWTEST_F(CryptoX509CrlTest, CompareMaxCRLTest001, TestSize.Level0)
+{
+    CF_LOG_I("CompareMaxCRLTest001");
+    HcfX509CrlSpi *spiObj = nullptr;
+    CfResult ret = HcfCX509CrlSpiCreate(&g_crlDerInStream, &spiObj);
+
+    HcfX509CrlMatchParams matchParams;
+    CfBlob blob;
+    blob.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testUpdateDateTime));
+    blob.size = strlen(g_testUpdateDateTime) + 1;
+    matchParams.maxCRL = &blob;
+
+    bool bOut = true;
+    ret = spiObj->engineMatch(spiObj, &matchParams, &bOut);
+    EXPECT_EQ(ret, CF_SUCCESS);
+
+    CfObjDestroy(spiObj);
+}
+
+HWTEST_F(CryptoX509CrlTest, CompareMinCRLTest001, TestSize.Level0)
+{
+    CF_LOG_I("CompareMinCRLTest001");
+    HcfX509CrlSpi *spiObj = nullptr;
+    CfResult ret = HcfCX509CrlSpiCreate(&g_crlDerInStream, &spiObj);
+
+    HcfX509CrlMatchParams matchParams;
+    CfBlob blob;
+    blob.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testUpdateDateTime));
+    blob.size = strlen(g_testUpdateDateTime) + 1;
+    matchParams.minCRL = &blob;
+
+    bool bOut = true;
+    ret = spiObj->engineMatch(spiObj, &matchParams, &bOut);
+    EXPECT_EQ(ret, CF_SUCCESS);
+
+    CfObjDestroy(spiObj);
+}
+
+HWTEST_F(CryptoX509CrlTest, GetX509FromCertificateBranchTest, TestSize.Level0)
+{
+    CF_LOG_I("GetX509FromCertificateBranchTest");
+    HcfX509CrlSpi invalidSpi = { { 0 } };
+    invalidSpi.base.getClass = GetValidCrlClass;
+    HcfX509CrlEntry *entry = nullptr;
+    HcfX509CrlSpi *spiObj = nullptr;
+
+    // test ParseX509CRL invalid encodingFormat
+    CfResult ret = HcfCX509CrlSpiCreate(&g_invalidCrlDerInStream, &spiObj);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+
+    ret = HcfCX509CrlSpiCreate(&g_crlDerInStream, &spiObj);
+    EXPECT_EQ(ret, CF_SUCCESS);
+
+    HcfCertificate cert;
+    cert.base.getClass = GetInvalidCertClass;
+    bool flag = spiObj->engineIsRevoked(&invalidSpi, &cert);
+    EXPECT_EQ(flag, false);
+
+    HcfX509Certificate x509Cert;
+    x509Cert.base.base.getClass = GetInvalidCertClass;
+    ret = spiObj->engineGetRevokedCertWithCert(&invalidSpi, &x509Cert, &entry);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+
+    x509Cert.base.base.getClass = GetValidX509CertificateClass;
+    HcfX509CertificateImpl *impl = (HcfX509CertificateImpl *)(&x509Cert);
+    HcfX509CertificateSpi spi;
+    impl->spiObj = &spi;
+    ((CfObjectBase *)(impl->spiObj))->getClass = GetInvalidCertClass;
+    ret = spiObj->engineGetRevokedCertWithCert(&invalidSpi, &x509Cert, &entry);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+
+    CfObjDestroy(spiObj);
 }
 } // namespace

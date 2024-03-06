@@ -1,4 +1,4 @@
-# Copyright (c) 2023 Huawei Device Co., Ltd.
+# Copyright (c) 2023-2024 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -31,15 +31,18 @@ ohos_unittest("cf_version1_test") {
     "../../../frameworks/common/v1.0/inc",
     "../../../frameworks/core/v1.0/spi",
     "../../../frameworks/adapter/v1.0/inc",
+    "//third_party/googletest/googlemock/include",
     "//third_party/openssl/include/",
   ]
 
   sources = [
+    "src/cf_mock.cpp",
     "src/crypto_x509_cert_chain_test.cpp",
     "src/crypto_x509_cert_chain_validator_test.cpp",
     "src/crypto_x509_cert_crl_collection_test.cpp",
     "src/crypto_x509_certificate_test.cpp",
     "src/crypto_x509_certificate_test_part2.cpp",
+    "src/crypto_x509_certificate_test_part3.cpp",
     "src/crypto_x509_crl_test.cpp",
     "src/crypto_x509_crl_test_part2.cpp",
     "src/crypto_x509_test_common.cpp",
@@ -70,11 +73,68 @@ ohos_unittest("cf_version1_test") {
     "src/memory_mock.c",
   ]
   cflags = [ "-DHILOG_ENABLE" ]
+
+  ldflags = [
+    "-fPIC",
+    "-Wl,-E",
+    "-Wl,-rpath=/vendor/lib64/hw",
+    "-Wl,--whole-archive",
+    "-Wl,--wrap=ASN1_INTEGER_get",
+    "-Wl,--wrap=ASN1_STRING_get0_data",
+    "-Wl,--wrap=ASN1_TIME_new",
+    "-Wl,--wrap=ASN1_TIME_normalize",
+    "-Wl,--wrap=ASN1_TYPE_new",
+    "-Wl,--wrap=ASN1_TYPE_set1",
+    "-Wl,--wrap=BIO_new_mem_buf",
+    "-Wl,--wrap=BN_bin2bn",
+    "-Wl,--wrap=DeepCopyBlobToBlob",
+    "-Wl,--wrap=DeepCopyDataToBlob",
+    "-Wl,--wrap=GENERAL_NAME_get0_value",
+    "-Wl,--wrap=HcfX509CertificateCreate",
+    "-Wl,--wrap=i2d_AUTHORITY_KEYID",
+    "-Wl,--wrap=i2d_ASN1_INTEGER",
+    "-Wl,--wrap=i2d_ASN1_OCTET_STRING",
+    "-Wl,--wrap=i2d_ASN1_TYPE",
+    "-Wl,--wrap=i2d_GENERAL_NAME",
+    "-Wl,--wrap=i2d_X509",
+    "-Wl,--wrap=i2d_X509_CRL",
+    "-Wl,--wrap=i2d_X509_EXTENSIONS",
+    "-Wl,--wrap=i2d_X509_REVOKED",
+    "-Wl,--wrap=i2d_PUBKEY",
+    "-Wl,--wrap=OBJ_obj2nid",
+    "-Wl,--wrap=OBJ_nid2obj",
+    "-Wl,--wrap=OBJ_obj2txt",
+    "-Wl,--wrap=OPENSSL_sk_deep_copy",
+    "-Wl,--wrap=OPENSSL_sk_num",
+    "-Wl,--wrap=OPENSSL_sk_value",
+    "-Wl,--wrap=OPENSSL_sk_new_null",
+    "-Wl,--wrap=OPENSSL_sk_push",
+    "-Wl,--wrap=X509_ALGOR_get0",
+    "-Wl,--wrap=X509_dup",
+    "-Wl,--wrap=X509_get_pubkey",
+    "-Wl,--wrap=X509_get_ext",
+    "-Wl,--wrap=X509_get_ext_d2i",
+    "-Wl,--wrap=X509_get0_serialNumber",
+    "-Wl,--wrap=X509_getm_notBefore",
+    "-Wl,--wrap=X509_getm_notAfter",
+    "-Wl,--wrap=X509_NAME_oneline",
+    "-Wl,--wrap=X509_STORE_add_cert",
+    "-Wl,--wrap=X509_STORE_CTX_new",
+    "-Wl,--wrap=X509_STORE_new",
+    "-Wl,--wrap=X509_STORE_CTX_init",
+    "-Wl,--wrap=X509_verify",
+    "-Wl,--wrap=X509_verify_cert",
+    "-Wl,--wrap=X509V3_EXT_d2i",
+  ]
+
   if (target_cpu == "arm") {
     cflags += [ "-DBINDER_IPC_32BIT" ]
   }
 
-  deps = [ "//third_party/openssl:libcrypto_shared" ]
+  deps = [
+    "//third_party/googletest:gmock",
+    "//third_party/openssl:libcrypto_shared",
+  ]
 
   external_deps = [
     "c_utils:utils",

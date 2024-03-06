@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -66,6 +66,18 @@ typedef enum {
     CF_EXT_ENTRY_TYPE_ENTRY_CRITICAL,
     CF_EXT_ENTRY_TYPE_ENTRY_VALUE,
 } CfExtensionEntryType;
+
+typedef enum {
+    CF_GENERAL_NAME_TYPE_OTHER_NAME,
+    CF_GENERAL_NAME_TYPE_RFC822_NAME,
+    CF_GENERAL_NAME_TYPE_DNS_NAME,
+    CF_GENERAL_NAME_TYPE_X400_ADDRESS,
+    CF_GENERAL_NAME_TYPE_DIRECTORY_NAME,
+    CF_GENERAL_NAME_TYPE_EDI_PARTY_NAME,
+    CF_GENERAL_NAME_TYPE_UNIFORM_RESOURCE_ID,
+    CF_GENERAL_NAME_TYPE_IP_ADDRESS,
+    CF_GENERAL_NAME_TYPE_REGISTERED_ID
+} CfGeneralNameType;
 
 typedef enum {
     CF_GET_TYPE_CERT_ITEM,

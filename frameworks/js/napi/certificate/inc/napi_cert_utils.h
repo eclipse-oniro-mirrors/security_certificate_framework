@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,11 +18,13 @@
 
 #include <cstdint>
 #include <string>
+
+#include "cert_chain_validator.h"
+#include "cf_blob.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
-#include "cf_blob.h"
-#include "cert_chain_validator.h"
 #include "napi_cert_defines.h"
+#include "x509_cert_match_parameters.h"
 
 namespace OHOS {
 namespace CertFramework {
@@ -43,6 +45,9 @@ napi_value GetProp(napi_env env, napi_value arg, const char *name);
 CfBlob *CertGetBlobFromUint8ArrJSParams(napi_env env, napi_value arg);
 CfBlob *CertGetBlobFromStringJSParams(napi_env env, napi_value arg);
 CfBlob *CertGetBlobFromArrBoolJSParams(napi_env env, napi_value arg);
+SubAltNameArray *CertGetSANArrFromArrUarrJSParams(napi_env env, napi_value arg);
+CfArray *CertGetArrFromArrUarrJSParams(napi_env env, napi_value arg);
+bool CertGetBlobFromBigIntJSParams(napi_env env, napi_value arg, CfBlob &outBlob);
 bool CertGetSerialNumberFromBigIntJSParams(napi_env env, napi_value arg, CfBlob &outBlob);
 CfBlobArray *CertGetBlobArrFromArrUarrJSParams(napi_env env, napi_value arg);
 bool CertGetStringFromJSParams(napi_env env, napi_value arg, std::string &returnStr);
