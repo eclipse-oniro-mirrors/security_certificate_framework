@@ -39,6 +39,12 @@ const std::string CERT_TAG_ENCODING_FORMAT = "encodingFormat";
 const std::string CERT_TAG_ALGORITHM = "algorithm";
 const std::string CRYPTO_TAG_ALG_NAME = "algName";
 const std::string CRYPTO_TAG_FORMAT = "format";
+const std::string CERT_TAG_CERT_COLLECTION = "certCollection";
+const std::string CERT_TAG_CERT_MATCH_PARAMS = "certMatchParameters";
+const std::string CERT_TAG_MAX_LENGTH = "maxLength";
+const std::string CERT_TAG_VALIDATE_PARAMS = "validationParameters";
+const std::string CERT_TAG_KEYSTORE = "keystore";
+const std::string CERT_TAG_PWD = "pwd";
 
 enum ResultCode {
     JS_SUCCESS = 0,
@@ -55,10 +61,7 @@ enum ResultCode {
     JS_ERR_KEYUSAGE_NO_DIGITAL_SIGNATURE = 19030007
 };
 
-enum AsyncType {
-    ASYNC_TYPE_CALLBACK = 1,
-    ASYNC_TYPE_PROMISE = 2
-};
+enum AsyncType { ASYNC_TYPE_CALLBACK = 1, ASYNC_TYPE_PROMISE = 2 };
 // X509 CERT MATCH PARAMETERS
 const std::string CERT_MATCH_TAG_SUBJECT_ALT_NAMES_TYPE = "type";
 const std::string CERT_MATCH_TAG_SUBJECT_ALT_NAMES_DATA = "name";
@@ -100,6 +103,9 @@ const std::string CERT_CHAIN_VALIDATE_TAG_CERTCRLS = "certCRLs";
 // CertChainValidateResult
 const std::string CERT_CHAIN_VALIDATE_RESULLT_TAG_TRUSTANCHOR = "trustAnchor";
 const std::string CERT_CHAIN_VALIDATE_RESULLT_TAG_X509CERT = "entityCert";
+
+const std::string CERT_CHAIN_BUILD_RESULLT_TAG_CERTCHAIN = "certChain";
+const std::string CERT_CHAIN_BUILD_RESULLT_TAG_VALIDATERESULT = "validationResult";
 
 } // namespace CertFramework
 } // namespace OHOS

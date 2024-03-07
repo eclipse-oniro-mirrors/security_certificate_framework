@@ -52,7 +52,7 @@ base/security/certificate_framwork
 
 ## 约束
 
-[约束与限制](https://gitee.com/openharmony/docs/blob/master/zh-cn/application-dev/security/cert-overview.md)
+[约束与限制](https://gitee.com/openharmony/docs/blob/master/zh-cn/application-dev/security/DeviceCertificateKit/certManager-overview.md)
 
 ## 说明
 
@@ -62,7 +62,7 @@ base/security/certificate_framwork
 
 ### 使用说明
 
-[开发指导](https://gitee.com/openharmony/docs/blob/master/zh-cn/application-dev/security/cert-guidelines.md)
+[开发指导](https://gitee.com/openharmony/docs/blob/master/zh-cn/application-dev/security/DeviceCertificateKit/certManager-guidelines.md)
 
 ## 相关仓
 

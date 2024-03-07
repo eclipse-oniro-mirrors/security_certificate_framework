@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -38,6 +38,20 @@ struct HcfCertChain {
         HcfCertChain *self, const HcfX509CertChainValidateParams *params, HcfX509CertChainValidateResult *result);
 };
 
+typedef struct HcfX509CertChainBuildResult HcfX509CertChainBuildResult;
+struct HcfX509CertChainBuildResult {
+    CfObjectBase base;
+    HcfCertChain *certChain;
+    HcfX509CertChainValidateResult validateResult;
+};
+
+typedef struct HcfX509CertChainBuildParameters HcfX509CertChainBuildParameters;
+struct HcfX509CertChainBuildParameters {
+    HcfX509CertMatchParams certMatchParameters;
+    int32_t maxlength;
+    HcfX509CertChainValidateParams validateParameters;
+};
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -47,6 +61,12 @@ extern "C" {
  */
 CfResult HcfCertChainCreate(
     const CfEncodingBlob *inStream, const HcfX509CertificateArray *inCerts, HcfCertChain **returnObj);
+
+CfResult HcfCertChainBuildResultCreate(
+    const HcfX509CertChainBuildParameters *inParams, HcfX509CertChainBuildResult **returnObj);
+
+CfResult HcfCreateTrustAnchorWithKeyStore(
+    const CfBlob *keyStore, const CfBlob *pwd, HcfX509TrustAnchorArray **trustAnchorArray);
 
 #ifdef __cplusplus
 }

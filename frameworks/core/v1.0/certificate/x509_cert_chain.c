@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -32,6 +32,8 @@
 
 typedef CfResult (*CertChainSpiCreateByEncFunc)(const CfEncodingBlob *, HcfX509CertChainSpi **);
 typedef CfResult (*CertChainSpiCreateByArrFunc)(const HcfX509CertificateArray *, HcfX509CertChainSpi **);
+typedef CfResult (*CertChainSpiCreateByParamsFunc)(const HcfX509CertChainBuildParameters *, HcfX509CertChainSpi **);
+typedef CfResult (*CreateTrustAnchorWithKeyStoreFunc)(const CfBlob *, const CfBlob *, HcfX509TrustAnchorArray **);
 
 typedef struct {
     HcfCertChain base;
@@ -39,8 +41,14 @@ typedef struct {
 } CertChainImpl;
 
 typedef struct {
+    HcfX509CertChainBuildResult base;
+} CertChainBuildResultImpl;
+
+typedef struct {
     CertChainSpiCreateByEncFunc createByEncFunc;
     CertChainSpiCreateByArrFunc createByArrFunc;
+    CertChainSpiCreateByParamsFunc createByParamsFunc;
+    CreateTrustAnchorWithKeyStoreFunc createTrustAnchorFunc;
 } HcfCertChainFuncSet;
 
 typedef struct {
@@ -49,7 +57,8 @@ typedef struct {
 } HcfCertChainAbility;
 
 static const HcfCertChainAbility X509_CERT_CHAIN_ABILITY_SET[] = { { "X509",
-    { HcfX509CertChainByEncSpiCreate, HcfX509CertChainByArrSpiCreate } } };
+    { HcfX509CertChainByEncSpiCreate, HcfX509CertChainByArrSpiCreate, HcfX509CertChainByParamsSpiCreate,
+        HcfX509CreateTrustAnchorWithKeyStoreFunc } } };
 
 static const HcfCertChainFuncSet *FindAbility(const char *certType)
 {
@@ -118,7 +127,7 @@ static CfResult Validate(
 CfResult HcfCertChainCreate(
     const CfEncodingBlob *inStream, const HcfX509CertificateArray *inCerts, HcfCertChain **returnObj)
 {
-    CF_LOG_I("enter");
+    LOGI("enter");
     if ((inStream == NULL && inCerts == NULL) || (inStream != NULL && inCerts != NULL) || returnObj == NULL) {
         LOGE("invalid param!");
         return CF_INVALID_PARAMS;
@@ -155,4 +164,71 @@ CfResult HcfCertChainCreate(
 
     *returnObj = (HcfCertChain *)impl;
     return CF_SUCCESS;
+}
+
+CfResult HcfCertChainBuildResultCreate(
+    const HcfX509CertChainBuildParameters *inParams, HcfX509CertChainBuildResult **returnObj)
+{
+    if (inParams == NULL || returnObj == NULL) {
+        LOGE("Invalid param!");
+        return CF_INVALID_PARAMS;
+    }
+
+    const HcfCertChainFuncSet *func = FindAbility("X509");
+    if ((func == NULL) || (func->createByParamsFunc == NULL)) {
+        LOGE("Func is null!");
+        return CF_NOT_SUPPORT;
+    }
+    HcfX509CertChainSpi *spiObj = NULL;
+    CfResult res = CF_SUCCESS;
+    res = func->createByParamsFunc(inParams, &spiObj);
+    if (res != CF_SUCCESS) {
+        LOGE("Failed to create certChainBuildResult spi object!");
+        return res;
+    }
+
+    CertChainBuildResultImpl *impl = (CertChainBuildResultImpl *)HcfMalloc(sizeof(CertChainBuildResultImpl), 0);
+    if (impl == NULL) {
+        LOGE("Failed to allocate CertChainBuildResultImpl return memory!");
+        CfObjDestroy(spiObj);
+        return CF_ERR_MALLOC;
+    }
+
+    CertChainImpl *implCertChain = (CertChainImpl *)HcfMalloc(sizeof(CertChainImpl), 0);
+    if (implCertChain == NULL) {
+        LOGE("Failed to allocate CertChainImpl return memory!");
+        CfObjDestroy(spiObj);
+        CfFree(impl);
+        return CF_ERR_MALLOC;
+    }
+
+    implCertChain->base.base.destroy = DestroyCertChain;
+    implCertChain->base.base.getClass = GetCertChainClass;
+    implCertChain->base.getCertList = GetCertList;
+    implCertChain->base.validate = Validate;
+    implCertChain->spiObj = spiObj;
+    impl->base.base.destroy = DestroyCertChain;
+    impl->base.base.getClass = GetCertChainClass;
+    impl->base.certChain = (HcfCertChain *)implCertChain;
+
+    *returnObj = (HcfX509CertChainBuildResult *)impl;
+    return CF_SUCCESS;
+}
+
+CfResult HcfCreateTrustAnchorWithKeyStore(
+    const CfBlob *keyStore, const CfBlob *pwd, HcfX509TrustAnchorArray **trustAnchorArray)
+{
+    LOGI("enter");
+    if (keyStore == NULL || pwd == NULL || trustAnchorArray == NULL) {
+        LOGE("invalid param!");
+        return CF_INVALID_PARAMS;
+    }
+
+    const HcfCertChainFuncSet *func = FindAbility("X509");
+    if (func == NULL) {
+        LOGE("Func is null!");
+        return CF_NOT_SUPPORT;
+    }
+
+    return func->createTrustAnchorFunc(keyStore, pwd, trustAnchorArray);
 }
