@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,13 +17,14 @@
 
 #include "cf_log.h"
 #include "cf_memory.h"
-#include "config.h"
-#include "securec.h"
 #include "cipher.h"
-#include "napi_cert_defines.h"
-#include "detailed_iv_params.h"
-#include "detailed_gcm_params.h"
+#include "config.h"
 #include "detailed_ccm_params.h"
+#include "detailed_gcm_params.h"
+#include "detailed_iv_params.h"
+#include "napi_cert_defines.h"
+#include "securec.h"
+#include "utils.h"
 
 namespace OHOS {
 namespace CertFramework {
@@ -609,6 +610,164 @@ CfBlob *CertGetBlobFromArrBoolJSParams(napi_env env, napi_value arg)
     }
 
     return newBlob;
+}
+
+bool ParserArray(napi_env env, napi_value arg, uint32_t &arrayLen)
+{
+    bool flag = false;
+    napi_status status = napi_is_array(env, arg, &flag);
+    if (status != napi_ok || !flag) {
+        return false;
+    }
+    uint32_t length = 0;
+    status = napi_get_array_length(env, arg, &length);
+    if (status != napi_ok || length == 0 || length > MAX_NAPI_ARRAY_OF_U8ARR) {
+        return false;
+    }
+    arrayLen = length;
+    return true;
+}
+
+SubAltNameArray *CertGetSANArrFromArrUarrJSParams(napi_env env, napi_value arg)
+{
+    uint32_t length = 0;
+    if (!ParserArray(env, arg, length)) {
+        LOGE("Length is invalid!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "length is invalid!"));
+        return nullptr;
+    }
+
+    SubAltNameArray *newSANArr = static_cast<SubAltNameArray *>(HcfMalloc(sizeof(SubAltNameArray), 0));
+    if (newSANArr == nullptr) {
+        LOGE("Failed to allocate newSANArr memory!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed"));
+        return nullptr;
+    }
+
+    newSANArr->count = length;
+    newSANArr->data =
+        static_cast<SubjectAlternaiveNameData *>(HcfMalloc(length * sizeof(SubjectAlternaiveNameData), 0));
+    if (newSANArr->data == nullptr) {
+        LOGE("Failed to allocate data memory!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed"));
+        SubAltNameArrayDataClearAndFree(newSANArr);
+        CfFree(newSANArr);
+        return nullptr;
+    }
+    for (uint32_t i = 0; i < length; i++) {
+        napi_value element;
+        if (napi_get_element(env, arg, i, &element) == napi_ok) {
+            napi_value obj = GetProp(env, element, CERT_MATCH_TAG_SUBJECT_ALT_NAMES_TYPE.c_str());
+            if (obj == nullptr || napi_get_value_int32(env, obj, (int32_t *)&(newSANArr->data[i].type)) != napi_ok) {
+                LOGE("Failed to get type!");
+                SubAltNameArrayDataClearAndFree(newSANArr);
+                CfFree(newSANArr);
+                return nullptr;
+            }
+            obj = GetProp(env, element, CERT_MATCH_TAG_SUBJECT_ALT_NAMES_DATA.c_str());
+            CfBlob *blob = CertGetBlobFromUint8ArrJSParams(env, obj);
+            if (blob != nullptr) {
+                newSANArr->data[i].name = *blob;
+                CfFree(blob);
+                continue;
+            }
+        }
+        LOGE("Failed to allocate data memory!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "input arr is invalid"));
+        SubAltNameArrayDataClearAndFree(newSANArr);
+        CfFree(newSANArr);
+        return nullptr;
+    }
+    return newSANArr;
+}
+
+CfArray *CertGetArrFromArrUarrJSParams(napi_env env, napi_value arg)
+{
+    bool flag = false;
+    napi_status status = napi_is_array(env, arg, &flag);
+    if (status != napi_ok || !flag) {
+        LOGE("Not array!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "not array!"));
+        return nullptr;
+    }
+    uint32_t length = 0;
+    status = napi_get_array_length(env, arg, &length);
+    if (status != napi_ok || length == 0 || length > MAX_NAPI_ARRAY_OF_U8ARR) {
+        LOGI("Length is invalid!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "length is invalid!"));
+        return nullptr;
+    }
+    CfArray *newBlobArr = static_cast<CfArray *>(HcfMalloc(sizeof(CfArray), 0));
+    if (newBlobArr == nullptr) {
+        LOGE("Failed to allocate newBlobArr memory!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed"));
+        return nullptr;
+    }
+    newBlobArr->count = length;
+    newBlobArr->format = CF_FORMAT_DER;
+    newBlobArr->data = static_cast<CfBlob *>(HcfMalloc(length * sizeof(CfBlob), 0));
+    if (newBlobArr->data == nullptr) {
+        LOGE("Failed to allocate data memory!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed"));
+        CfFree(newBlobArr);
+        return nullptr;
+    }
+    for (uint32_t i = 0; i < length; i++) {
+        napi_value element;
+        if (napi_get_element(env, arg, i, &element) == napi_ok) {
+            CfBlob *blob = CertGetBlobFromStringJSParams(env, element);
+            if (blob != nullptr) {
+                newBlobArr->data[i] = *blob;
+                CfFree(blob);
+                continue;
+            }
+        }
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "input arr is invalid"));
+        FreeCfBlobArray(newBlobArr->data, newBlobArr->count);
+        CfFree(newBlobArr);
+        LOGE("Failed to allocate data memory!");
+        return nullptr;
+    }
+    return newBlobArr;
+}
+
+bool CertGetBlobFromBigIntJSParams(napi_env env, napi_value arg, CfBlob &outBlob)
+{
+    napi_valuetype valueType;
+    napi_typeof(env, arg, &valueType);
+    if (valueType != napi_bigint) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "param type error"));
+        LOGE("Wrong argument type. expect int type. [Type]: %d", valueType);
+        return false;
+    }
+
+    int signBit;
+    size_t wordCount;
+
+    napi_get_value_bigint_words(env, arg, nullptr, &wordCount, nullptr);
+    if ((wordCount == 0) || (wordCount > (MAX_SN_BYTE_CNT / sizeof(uint64_t)))) {
+        LOGE("Get big int failed.");
+        return false;
+    }
+    int length = wordCount * sizeof(uint64_t);
+    uint8_t *retArr = reinterpret_cast<uint8_t *>(HcfMalloc(length, 0));
+    if (retArr == nullptr) {
+        LOGE("Malloc blob data failed!");
+        return false;
+    }
+    if (napi_get_value_bigint_words(env, arg, &signBit, &wordCount, reinterpret_cast<uint64_t *>(retArr)) != napi_ok) {
+        CfFree(retArr);
+        LOGE("Failed to get valid rawData.");
+        return false;
+    }
+    if (signBit != 0) {
+        CfFree(retArr);
+        LOGE("Failed to get gegative rawData.");
+        return false;
+    }
+    outBlob.data = retArr;
+    outBlob.size = length;
+    return true;
 }
 
 bool CertGetSerialNumberFromBigIntJSParams(napi_env env, napi_value arg, CfBlob &outBlob)

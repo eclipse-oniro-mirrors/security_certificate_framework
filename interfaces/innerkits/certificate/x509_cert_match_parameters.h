@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,8 +20,19 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "cf_blob.h"
 #include "certificate.h"
+#include "cf_blob.h"
+#include "cf_type.h"
+
+typedef struct {
+    CfGeneralNameType type;
+    CfBlob name;
+} SubjectAlternaiveNameData;
+
+typedef struct {
+    SubjectAlternaiveNameData *data;
+    uint32_t count;
+} SubAltNameArray;
 
 typedef struct HcfX509CertMatchParams HcfX509CertMatchParams;
 struct HcfX509CertMatchParams {
@@ -33,6 +44,15 @@ struct HcfX509CertMatchParams {
     CfBlob *subject;
     CfBlob *publicKey;
     CfBlob *publicKeyAlgID;
+    SubAltNameArray *subjectAlternativeNames;
+    bool matchAllSubjectAltNames;
+    CfBlob *authorityKeyIdentifier;
+    int32_t minPathLenConstraint;
+    CfArray *extendedKeyUsage;
+    CfBlob *nameConstraints;
+    CfArray *certPolicy;
+    CfBlob *privateKeyValid;
+    CfBlob *subjectKeyIdentifier;
 };
 
 #endif // X509_CERT_MATCH_PARAMETERS_H

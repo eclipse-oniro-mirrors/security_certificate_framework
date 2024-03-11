@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -71,7 +71,7 @@ const std::string CERT_MATCH_TAG_VALID_DATE = "validDate";
 const std::string CERT_MATCH_TAG_ISSUER = "issuer";
 const std::string CERT_MATCH_TAG_EXTENDED_KEY_USAGE = "extendedKeyUsage";
 const std::string CERT_MATCH_TAG_KEY_USAGE = "keyUsage";
-const std::string CERT_MATCH_TAG_NAME_CONSTRAINT = "nameConstraint";
+const std::string CERT_MATCH_TAG_NAME_CONSTRAINTS = "nameConstraints";
 const std::string CERT_MATCH_TAG_CERT_POLICY = "certPolicy";
 const std::string CERT_MATCH_TAG_PRIVATE_KEY_VALID = "privateKeyValid";
 const std::string CERT_MATCH_TAG_SERIAL_NUMBER = "serialNumber";

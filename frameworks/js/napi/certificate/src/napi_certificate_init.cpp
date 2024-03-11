@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -141,6 +141,35 @@ static void DefineExtensionEntryTypeProperties(napi_env env, napi_value exports)
     napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
 }
 
+static napi_value CreateGeneralNameTypeType(napi_env env)
+{
+    napi_value generalNameType = nullptr;
+    napi_create_object(env, &generalNameType);
+
+    CertAddUint32Property(env, generalNameType, "GENERAL_NAME_TYPE_OTHER_NAME", CF_GENERAL_NAME_TYPE_OTHER_NAME);
+    CertAddUint32Property(env, generalNameType, "GENERAL_NAME_TYPE_RFC822_NAME", CF_GENERAL_NAME_TYPE_RFC822_NAME);
+    CertAddUint32Property(env, generalNameType, "GENERAL_NAME_TYPE_DNS_NAME", CF_GENERAL_NAME_TYPE_DNS_NAME);
+    CertAddUint32Property(env, generalNameType, "GENERAL_NAME_TYPE_X400_ADDRESS", CF_GENERAL_NAME_TYPE_X400_ADDRESS);
+    CertAddUint32Property(
+        env, generalNameType, "GENERAL_NAME_TYPE_DIRECTORY_NAME", CF_GENERAL_NAME_TYPE_DIRECTORY_NAME);
+    CertAddUint32Property(
+        env, generalNameType, "GENERAL_NAME_TYPE_EDI_PARTY_NAME", CF_GENERAL_NAME_TYPE_EDI_PARTY_NAME);
+    CertAddUint32Property(
+        env, generalNameType, "GENERAL_NAME_TYPE_UNIFORM_RESOURCE_ID", CF_GENERAL_NAME_TYPE_UNIFORM_RESOURCE_ID);
+    CertAddUint32Property(env, generalNameType, "GENERAL_NAME_TYPE_IP_ADDRESS", CF_GENERAL_NAME_TYPE_IP_ADDRESS);
+    CertAddUint32Property(env, generalNameType, "GENERAL_NAME_TYPE_REGISTERED_ID", CF_GENERAL_NAME_TYPE_REGISTERED_ID);
+
+    return generalNameType;
+}
+
+static void DefineGeneralNameTypeProperties(napi_env env, napi_value exports)
+{
+    napi_property_descriptor desc[] = {
+        DECLARE_NAPI_PROPERTY("GeneralNameType", CreateGeneralNameTypeType(env)),
+    };
+    napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
+}
+
 /***********************************************
  * Module export and register
  ***********************************************/
@@ -152,6 +181,7 @@ static napi_value CertModuleExport(napi_env env, napi_value exports)
     DefineCertItemTypeProperties(env, exports);
     DefineExtensionOidTypeProperties(env, exports);
     DefineExtensionEntryTypeProperties(env, exports);
+    DefineGeneralNameTypeProperties(env, exports);
 
     NapiKey::DefineHcfKeyJSClass(env);
     NapiPubKey::DefinePubKeyJSClass(env);

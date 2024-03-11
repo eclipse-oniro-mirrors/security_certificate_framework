@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,10 +19,15 @@
 
 #include "certificate_openssl_common.h"
 #include "cf_blob.h"
+#include "cf_log.h"
 #include "memory_mock.h"
 #include "securec.h"
 #include "x509_certificate.h"
 #include "x509_certificate_openssl.h"
+#include "fwk_class.h"
+#include <openssl/x509v3.h>
+
+#define CONSTRUCT_CERTPOLICY_DATA_SIZE 1
 
 using namespace std;
 
@@ -173,6 +178,9 @@ const int g_testChainSubjectPemNoRootLastSize =
 
 const CfEncodingBlob g_crlDerInStream = { const_cast<uint8_t *>(g_crlDerData), sizeof(g_crlDerData), CF_FORMAT_DER };
 
+const CfEncodingBlob g_invalidCrlDerInStream = { const_cast<uint8_t *>(g_crlDerData), sizeof(g_crlDerData),
+    (enum CfEncodingFormat)(-1) };
+
 const CfEncodingBlob g_inStreamCrl = { reinterpret_cast<uint8_t *>(const_cast<char *>(g_testCrl)), sizeof(g_testCrl),
     CF_FORMAT_PEM };
 
@@ -243,4 +251,63 @@ const char *GetInvalidCertClass(void)
 const char *GetInvalidCrlClass(void)
 {
     return "INVALID_CRL_CLASS";
+}
+
+SubAltNameArray *ConstructSubAltNameArrayData()
+{
+    SubAltNameArray *newSANArr = static_cast<SubAltNameArray *>(HcfMalloc(sizeof(SubAltNameArray), 0));
+    if (newSANArr == nullptr) {
+        CF_LOG_E("Failed to allocate newSANArr memory!");
+        return nullptr;
+    }
+
+    newSANArr->count = TEST_SUBJECT_ALTERNATIVE_NAMES_SIZE;
+    newSANArr->data =
+        static_cast<SubjectAlternaiveNameData *>(HcfMalloc(newSANArr->count * sizeof(SubjectAlternaiveNameData), 0));
+    if (newSANArr->data == nullptr) {
+        CF_LOG_E("Failed to allocate data memory!");
+        CfFree(newSANArr);
+        return nullptr;
+    }
+
+    for (uint32_t i = 0; i < newSANArr->count; i++) {
+        newSANArr->data[i].type = (CfGeneralNameType)GEN_DNS;
+        newSANArr->data[i].name.data = const_cast<uint8_t *>(g_testSubjectAlternativeNames[i].data);
+        newSANArr->data[i].name.size = g_testSubjectAlternativeNames[i].size;
+    }
+
+    return newSANArr;
+}
+
+CfArray *ConstructCertPolicyData()
+{
+    CfArray *newBlobArr = static_cast<CfArray *>(HcfMalloc(sizeof(CfArray), 0));
+    if (newBlobArr == nullptr) {
+        CF_LOG_E("Failed to allocate newBlobArr memory!");
+        return nullptr;
+    }
+
+    newBlobArr->count = CONSTRUCT_CERTPOLICY_DATA_SIZE;
+    newBlobArr->format = CF_FORMAT_DER;
+    newBlobArr->data = static_cast<CfBlob *>(HcfMalloc(newBlobArr->count * sizeof(CfBlob), 0));
+    if (newBlobArr->data == nullptr) {
+        CF_LOG_E("Failed to allocate data memory!");
+        CfFree(newBlobArr);
+        return nullptr;
+    }
+
+    newBlobArr->data[0].data = const_cast<uint8_t *>(g_testCertPolicy);
+    newBlobArr->data[0].size = sizeof(g_testCertPolicy);
+
+    return newBlobArr;
+}
+
+const char *GetValidCrlClass(void)
+{
+    return X509_CRL_OPENSSL_CLASS;
+}
+
+const char *GetValidX509CertificateClass(void)
+{
+    return HCF_X509_CERTIFICATE_CLASS;
 }

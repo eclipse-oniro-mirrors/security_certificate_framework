@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -24,6 +24,11 @@
 #include "config.h"
 
 #include <openssl/err.h>
+
+#define TIME_MON_LEN 2
+#define TIME_HOUR_LEN 8
+#define TIME_MIN_LEN 10
+#define TIME_SEC_LEN 12
 
 typedef struct {
     char *oid;
@@ -272,4 +277,59 @@ uint8_t *GetX509EncodedDataStream(const X509 *certificate, int *dataLength)
     *dataLength = length;
 
     return data;
+}
+
+char *Asn1TimeToStr(const ASN1_GENERALIZEDTIME *time)
+{
+    char buffer[24];
+    if (time == NULL || time->data == NULL) {
+        return NULL;
+    }
+
+    if (snprintf_s(buffer, sizeof(buffer), sizeof(buffer) - 1, "%.6s-", time->data + TIME_MON_LEN) < 0 ||
+        snprintf_s(buffer + strlen(buffer), sizeof(buffer) - strlen(buffer), sizeof(buffer) - strlen(buffer) - 1,
+            "%.2s:", time->data + TIME_HOUR_LEN) < 0 ||
+        snprintf_s(buffer + strlen(buffer), sizeof(buffer) - strlen(buffer), sizeof(buffer) - strlen(buffer) - 1,
+            "%.2s:", time->data + TIME_MIN_LEN) < 0 ||
+        snprintf_s(buffer + strlen(buffer), sizeof(buffer) - strlen(buffer), sizeof(buffer) - strlen(buffer) - 1,
+            "%.2sZ", time->data + TIME_SEC_LEN) < 0) {
+        return NULL;
+    }
+
+    char *result = strdup(buffer);
+    if (result == NULL) {
+        return NULL;
+    }
+
+    return result;
+}
+
+bool CfArrayContains(const CfArray *self, const CfArray *sub)
+{
+    for (uint32_t i = 0; i < self->count; ++i) {
+        bool found = false;
+        for (uint32_t j = 0; j < sub->count; ++j) {
+            if (self->data[i].size == sub->data[j].size &&
+                memcmp(self->data[i].data, sub->data[j].data, self->data[i].size) == 0) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            return false;
+        }
+    }
+    return true;
+}
+
+CfResult DeepCopyDataToOut(const char *data, uint32_t len, CfBlob *out)
+{
+    out->data = (uint8_t *)HcfMalloc(len, 0);
+    if (out->data == NULL) {
+        LOGE("Failed to malloc for sig algorithm params!");
+        return CF_ERR_MALLOC;
+    }
+    (void)memcpy_s(out->data, len, data, len);
+    out->size = len;
+    return CF_SUCCESS;
 }

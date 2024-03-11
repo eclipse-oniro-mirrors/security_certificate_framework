@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -39,6 +39,11 @@ typedef struct {
     X509_CRL *crl;
     CfBlob *certIssuer;
 } HcfX509CRLOpensslImpl;
+
+typedef enum {
+    CRL_MAX,
+    CRL_MIN,
+} X509CRLType;
 
 #define OPENSSL_INVALID_VERSION (-1)
 #define OPENSSL_ERROR 0
@@ -380,8 +385,7 @@ static CfResult GetRevokedCert(HcfX509CrlSpi *self, const CfBlob *serialNumber, 
     return CF_SUCCESS;
 }
 
-static CfResult GetRevokedCertWithCert(HcfX509CrlSpi *self, HcfX509Certificate *cert,
-    HcfX509CrlEntry **entryOut)
+static CfResult GetRevokedCertWithCert(HcfX509CrlSpi *self, HcfX509Certificate *cert, HcfX509CrlEntry **entryOut)
 {
     if ((self == NULL) || (cert == NULL) || (entryOut == NULL)) {
         LOGE("Invalid Paramas!");
@@ -416,8 +420,8 @@ static CfResult GetRevokedCertWithCert(HcfX509CrlSpi *self, HcfX509Certificate *
     return CF_SUCCESS;
 }
 
-static CfResult DeepCopyRevokedCertificates(HcfX509CrlSpi *self, const STACK_OF(X509_REVOKED) *entrys,
-    int32_t i, CfArray *entrysOut)
+static CfResult DeepCopyRevokedCertificates(
+    HcfX509CrlSpi *self, const STACK_OF(X509_REVOKED) * entrys, int32_t i, CfArray *entrysOut)
 {
     X509_REVOKED *rev = sk_X509_REVOKED_value(entrys, i);
     if (rev == NULL) {
@@ -734,6 +738,31 @@ static CfResult GetExtensions(HcfX509CrlSpi *self, CfBlob *outBlob)
     return ret;
 }
 
+static CfResult GetNumOfCRL(HcfX509CrlSpi *self, CfBlob *outBlob)
+{
+    X509_CRL *crl = GetCrl(self);
+    if (crl == NULL) {
+        LOGE("Crl is null!");
+        return CF_INVALID_PARAMS;
+    }
+
+    ASN1_INTEGER *crlNumber = X509_CRL_get_ext_d2i(crl, NID_crl_number, NULL, NULL);
+    if (crlNumber == NULL) {
+        LOGE("Crl number is null!");
+        return CF_INVALID_PARAMS;
+    }
+    outBlob->data = (uint8_t *)HcfMalloc(crlNumber->length, 0);
+    if (!outBlob->data) {
+        ASN1_INTEGER_free(crlNumber);
+        LOGE("Malloc failed!");
+        return CF_ERR_MALLOC;
+    }
+    (void)memcpy_s(outBlob->data, crlNumber->length, crlNumber->data, crlNumber->length);
+    outBlob->size = crlNumber->length;
+    ASN1_INTEGER_free(crlNumber);
+    return CF_SUCCESS;
+}
+
 static CfResult Comparex509CertX509Openssl(HcfX509CrlSpi *self, const HcfCertificate *x509Cert, bool *out)
 {
     bool bRet = IsRevoked(self, x509Cert);
@@ -783,6 +812,117 @@ static CfResult CompareIssuerX509Openssl(HcfX509CrlSpi *self, const CfBlobArray 
     return CF_SUCCESS;
 }
 
+static CfResult CompareUpdateDateTimeX509Openssl(HcfX509CrlSpi *self, const CfBlob *updateDateTime, bool *out)
+{
+    *out = false;
+    CfBlob outNextUpdate = { 0 };
+    CfBlob outThisUpdate = { 0 };
+    CfResult res = GetNextUpdate(self, &outNextUpdate);
+    if (res != CF_SUCCESS) {
+        LOGE("X509Crl getNextUpdate failed!");
+        return res;
+    }
+    res = GetLastUpdate(self, &outThisUpdate);
+    if (res != CF_SUCCESS) {
+        LOGE("X509Crl getLastUpdate failed!");
+        CfFree(outNextUpdate.data);
+        return res;
+    }
+
+    int ret = 0;
+    res = CompareBigNum(updateDateTime, &outNextUpdate, &ret);
+    if (res != CF_SUCCESS || ret > 0) {
+        LOGE("updateDateTime should <= outNextUpdate!");
+        CfFree(outNextUpdate.data);
+        CfFree(outThisUpdate.data);
+        return res;
+    }
+    res = CompareBigNum(updateDateTime, &outThisUpdate, &ret);
+    if (res != CF_SUCCESS || ret < 0) {
+        LOGE("updateDateTime should >= outThisUpdate!");
+        CfFree(outNextUpdate.data);
+        CfFree(outThisUpdate.data);
+        return res;
+    }
+    *out = true;
+    CfFree(outNextUpdate.data);
+    CfFree(outThisUpdate.data);
+    return CF_SUCCESS;
+}
+
+static CfResult CompareCRLX509Openssl(HcfX509CrlSpi *self, const CfBlob *crlBlob, X509CRLType type, bool *out)
+{
+    *out = false;
+    CfBlob outNum = { 0, NULL };
+    CfResult res = GetNumOfCRL(self, &outNum);
+    if (res != CF_SUCCESS) {
+        LOGE("X509Crl get num of CRL failed!");
+        return res;
+    }
+
+    int ret = 0;
+    res = CompareBigNum(crlBlob, &outNum, &ret);
+    switch (type) {
+        case CRL_MAX:
+            if (res == CF_SUCCESS && ret > 0) {
+                *out = true;
+            }
+            break;
+        case CRL_MIN:
+            if (res == CF_SUCCESS && ret < 0) {
+                *out = true;
+            }
+            break;
+        default:
+            LOGE("Unknown type!");
+            break;
+    }
+    CfFree(outNum.data);
+    return CF_SUCCESS;
+}
+
+static CfResult MatchX509CRLOpensslPart2(HcfX509CrlSpi *self, const HcfX509CrlMatchParams *matchParams, bool *out)
+{
+    CfResult res = CF_SUCCESS;
+    // updateDateTime
+    if (matchParams->updateDateTime != NULL) {
+        res = CompareUpdateDateTimeX509Openssl(self, matchParams->updateDateTime, out);
+        if (res != CF_SUCCESS || (*out == false)) {
+            LOGE("X509Crl match updateDateTime failed!");
+            return res;
+        }
+    }
+
+    // maxCRL & minCRL
+    if ((matchParams->maxCRL != NULL) && (matchParams->minCRL != NULL)) {
+        int ret = 0;
+        res = CompareBigNum(matchParams->maxCRL, matchParams->minCRL, &ret);
+        if (res != CF_SUCCESS || ret < 0) {
+            LOGE("X509Crl minCRL should be smaller than maxCRL!");
+            return CF_INVALID_PARAMS;
+        }
+    }
+
+    // maxCRL
+    if (matchParams->maxCRL != NULL) {
+        res = CompareCRLX509Openssl(self, matchParams->maxCRL, CRL_MAX, out);
+        if (res != CF_SUCCESS || (*out == false)) {
+            LOGE("X509Crl match maxCRL failed!");
+            return res;
+        }
+    }
+
+    // minCRL
+    if (matchParams->minCRL != NULL) {
+        res = CompareCRLX509Openssl(self, matchParams->minCRL, CRL_MIN, out);
+        if (res != CF_SUCCESS || (*out == false)) {
+            LOGE("X509Crl match minCRL failed!");
+            return res;
+        }
+    }
+    return CF_SUCCESS;
+}
+
 static CfResult MatchX509CRLOpenssl(HcfX509CrlSpi *self, const HcfX509CrlMatchParams *matchParams, bool *out)
 {
     LOGI("enter MatchX509CRLOpenssl!");
@@ -801,7 +941,7 @@ static CfResult MatchX509CRLOpenssl(HcfX509CrlSpi *self, const HcfX509CrlMatchPa
     if (matchParams->x509Cert != NULL) {
         CfResult res = Comparex509CertX509Openssl(self, matchParams->x509Cert, out);
         if (res != CF_SUCCESS || (*out == false)) {
-            LOGE("x509Crl matchParams->x509Cert failed!");
+            LOGE("X509Crl match x509Cert failed!");
             return res;
         }
     }
@@ -810,12 +950,13 @@ static CfResult MatchX509CRLOpenssl(HcfX509CrlSpi *self, const HcfX509CrlMatchPa
     if (matchParams->issuer != NULL) {
         CfResult res = CompareIssuerX509Openssl(self, matchParams->issuer, out);
         if (res != CF_SUCCESS || (*out == false)) {
-            LOGE("x509Crl matchParams->issuer failed!");
+            LOGE("X509Crl match issuer failed!");
             return res;
         }
     }
 
-    return CF_SUCCESS;
+    // updateDateTime、maxCRL、minCRL
+    return MatchX509CRLOpensslPart2(self, matchParams, out);
 }
 
 static void Destroy(CfObjectBase *self)

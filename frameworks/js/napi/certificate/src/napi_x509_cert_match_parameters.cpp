@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,7 +14,7 @@
  */
 
 #include "napi_x509_cert_match_parameters.h"
-#include "napi_x509_certificate.h"
+
 #include "cf_log.h"
 #include "cf_memory.h"
 #include "cf_type.h"
@@ -23,6 +23,7 @@
 #include "napi_cert_defines.h"
 #include "napi_cert_utils.h"
 #include "napi_object.h"
+#include "napi_x509_certificate.h"
 #include "utils.h"
 
 namespace OHOS {
@@ -159,15 +160,150 @@ static bool GetX509Cert(napi_env env, napi_value arg, HcfCertificate *&out)
     return true;
 }
 
-bool BuildX509CertMatchParams(napi_env env, napi_value arg, HcfX509CertMatchParams *&matchParams)
+static bool GetSubjectAltNamesArray(napi_env env, napi_value arg, SubAltNameArray *&out)
+{
+    napi_value obj = GetProp(env, arg, CERT_MATCH_TAG_SUBJECT_ALT_NAMES.c_str());
+    if (obj == nullptr) {
+        return true;
+    }
+    out = CertGetSANArrFromArrUarrJSParams(env, obj);
+    if (out == nullptr) {
+        LOGE("Failed to get subject alternative name array!");
+        return false;
+    }
+    return true;
+}
+
+static bool GetMatchAllSubjectAltNames(napi_env env, napi_value arg, bool &out)
+{
+    napi_value obj = GetProp(env, arg, CERT_MATCH_TAG_MATCH_ALL_SUBJECT.c_str());
+    if (obj == nullptr) {
+        return true;
+    }
+
+    napi_valuetype valueType;
+    napi_typeof(env, obj, &valueType);
+    if (valueType != napi_boolean) {
+        LOGE("Get %s obj is not bool!", CERT_MATCH_TAG_MATCH_ALL_SUBJECT.c_str());
+        return false;
+    }
+
+    napi_status status = napi_get_value_bool(env, obj, &out);
+    if (status != napi_ok) {
+        LOGE("Failed to get value bool!");
+        return false;
+    }
+    return true;
+}
+
+static bool GetAuthorityKeyIdentifier(napi_env env, napi_value arg, CfBlob *&out)
+{
+    napi_value obj = GetProp(env, arg, CERT_MATCH_TAG_AUTH_KEY_ID.c_str());
+    if (obj == nullptr) {
+        return true;
+    }
+    out = CertGetBlobFromUint8ArrJSParams(env, obj);
+    if (out == nullptr) {
+        LOGE("Out is nullptr");
+        return false;
+    }
+    return true;
+}
+
+static bool GetMinPathLenConstraint(napi_env env, napi_value arg, int32_t &out)
+{
+    napi_value obj = GetProp(env, arg, CERT_MATCH_TAG_MIN_PATH_LEN.c_str());
+    if (obj == nullptr) {
+        out = -1; // default value
+        return true;
+    }
+    napi_status status = napi_get_value_int32(env, obj, &out);
+    if (status != napi_ok) {
+        LOGE("Failed to get value int32!");
+        return false;
+    }
+    return true;
+}
+
+static bool GetExtendedKeyUsage(napi_env env, napi_value arg, CfArray *&out)
+{
+    napi_value obj = GetProp(env, arg, CERT_MATCH_TAG_EXTENDED_KEY_USAGE.c_str());
+    if (obj == nullptr) {
+        return true;
+    }
+    out = CertGetArrFromArrUarrJSParams(env, obj);
+    if (out == nullptr) {
+        LOGE("Out is nullptr");
+        return false;
+    }
+    return true;
+}
+
+static bool GetNameConstraints(napi_env env, napi_value arg, CfBlob *&out)
+{
+    napi_value obj = GetProp(env, arg, CERT_MATCH_TAG_NAME_CONSTRAINTS.c_str());
+    if (obj == nullptr) {
+        return true;
+    }
+    out = CertGetBlobFromUint8ArrJSParams(env, obj);
+    if (out == nullptr) {
+        LOGE("Out is nullptr");
+        return false;
+    }
+    return true;
+}
+
+static bool GetCertPolicy(napi_env env, napi_value arg, CfArray *&out)
+{
+    napi_value obj = GetProp(env, arg, CERT_MATCH_TAG_CERT_POLICY.c_str());
+    if (obj == nullptr) {
+        return true;
+    }
+    out = CertGetArrFromArrUarrJSParams(env, obj);
+    if (out == nullptr) {
+        LOGE("Out is nullptr");
+        return false;
+    }
+    return true;
+}
+
+static bool GetPrivateKeyValid(napi_env env, napi_value arg, CfBlob *&out)
+{
+    napi_value obj = GetProp(env, arg, CERT_MATCH_TAG_PRIVATE_KEY_VALID.c_str());
+    if (obj == nullptr) {
+        return true;
+    }
+
+    out = CertGetBlobFromStringJSParams(env, obj);
+    if (out == nullptr) {
+        LOGE("Out is nullptr");
+        return false;
+    }
+    return true;
+}
+
+static bool GetSubjectKeyIdentifier(napi_env env, napi_value arg, CfBlob *&out)
+{
+    napi_value obj = GetProp(env, arg, CERT_MATCH_TAG_SUBJECT_KEY_IDENTIFIER.c_str());
+    if (obj == nullptr) {
+        return true;
+    }
+    out = CertGetBlobFromUint8ArrJSParams(env, obj);
+    if (out == nullptr) {
+        LOGE("Out is nullptr.");
+        return false;
+    }
+    return true;
+}
+
+bool BuildX509CertMatchParamsV1(napi_env env, napi_value arg, HcfX509CertMatchParams *&matchParams)
 {
     napi_valuetype type;
     napi_typeof(env, arg, &type);
     if (type != napi_object) {
-        LOGE("wrong argument type. expect object type. [Type]: %d", type);
+        LOGE("Wrong argument type. expect object type. [Type]: %d", type);
         return false;
     }
-
     if (!GetValidDate(env, arg, matchParams->validDate)) {
         return false;
     }
@@ -192,6 +328,61 @@ bool BuildX509CertMatchParams(napi_env env, napi_value arg, HcfX509CertMatchPara
     if (!GetX509Cert(env, arg, matchParams->x509Cert)) {
         return false;
     }
+    return true;
+}
+
+bool BuildX509CertMatchParamsV2(napi_env env, napi_value arg, HcfX509CertMatchParams *&matchParams)
+{
+    napi_valuetype type;
+    napi_typeof(env, arg, &type);
+    if (type != napi_object) {
+        LOGE("Wrong argument type. expect object type. [Type]: %d", type);
+        return false;
+    }
+    if (!GetSubjectAltNamesArray(env, arg, matchParams->subjectAlternativeNames)) {
+        return false;
+    }
+    if (!GetMatchAllSubjectAltNames(env, arg, matchParams->matchAllSubjectAltNames)) {
+        return false;
+    }
+    if (!GetAuthorityKeyIdentifier(env, arg, matchParams->authorityKeyIdentifier)) {
+        return false;
+    }
+    if (!GetMinPathLenConstraint(env, arg, matchParams->minPathLenConstraint)) {
+        return false;
+    }
+    if (!GetExtendedKeyUsage(env, arg, matchParams->extendedKeyUsage)) {
+        return false;
+    }
+    if (!GetNameConstraints(env, arg, matchParams->nameConstraints)) {
+        return false;
+    }
+    if (!GetCertPolicy(env, arg, matchParams->certPolicy)) {
+        return false;
+    }
+    if (!GetPrivateKeyValid(env, arg, matchParams->privateKeyValid)) {
+        return false;
+    }
+    if (!GetSubjectKeyIdentifier(env, arg, matchParams->subjectKeyIdentifier)) {
+        return false;
+    }
+    return true;
+}
+
+bool BuildX509CertMatchParams(napi_env env, napi_value arg, HcfX509CertMatchParams *&matchParams)
+{
+    napi_valuetype type;
+    napi_typeof(env, arg, &type);
+    if (type != napi_object) {
+        LOGE("wrong argument type. expect object type. [Type]: %d", type);
+        return false;
+    }
+    if (!BuildX509CertMatchParamsV1(env, arg, matchParams)) {
+        return false;
+    }
+    if (!BuildX509CertMatchParamsV2(env, arg, matchParams)) {
+        return false;
+    }
 
     return true;
 }
@@ -210,6 +401,23 @@ void FreeX509CertMatchParams(HcfX509CertMatchParams *&matchParams)
     CfBlobFree(&matchParams->subject);
     CfBlobFree(&matchParams->publicKey);
     CfBlobFree(&matchParams->publicKeyAlgID);
+    CfBlobFree(&matchParams->authorityKeyIdentifier);
+    CfBlobFree(&matchParams->nameConstraints);
+    CfBlobFree(&matchParams->privateKeyValid);
+    CfBlobFree(&matchParams->subjectKeyIdentifier);
+    CfFree(matchParams->certPolicy);
+    CfFree(matchParams->extendedKeyUsage);
+    CfArrayDataClearAndFree(matchParams->certPolicy);
+    CfArrayDataClearAndFree(matchParams->extendedKeyUsage);
+    if (matchParams->subjectAlternativeNames != nullptr) {
+        for (int i = 0; i < matchParams->subjectAlternativeNames->count; ++i) {
+            if (matchParams->subjectAlternativeNames->data != nullptr) {
+                CF_FREE_BLOB(matchParams->subjectAlternativeNames->data[i].name);
+            }
+        }
+        CfFree(matchParams->subjectAlternativeNames->data);
+        CfFree(matchParams->subjectAlternativeNames);
+    }
 
     CF_FREE_PTR(matchParams);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,9 +18,11 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+
 #include "cf_blob.h"
 #include "cf_object_base.h"
 #include "object_base.h"
+#include "x509_cert_match_parameters.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,6 +32,7 @@ bool IsStrValid(const char *str, uint32_t maxLen);
 bool IsBlobValid(const CfBlob *blob);
 bool IsClassMatch(const CfObjectBase *obj, const char *className);
 bool IsPubKeyClassMatch(const HcfObjectBase *obj, const char *className);
+void SubAltNameArrayDataClearAndFree(SubAltNameArray *array);
 
 #ifdef __cplusplus
 }

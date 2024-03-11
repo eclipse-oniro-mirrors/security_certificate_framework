@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,9 @@
 #include "utils.h"
 
 #include <string.h>
+
 #include "cf_log.h"
+#include "cf_memory.h"
 
 bool IsStrValid(const char *str, uint32_t maxLen)
 {
@@ -60,5 +62,21 @@ bool IsPubKeyClassMatch(const HcfObjectBase *obj, const char *className)
     } else {
         LOGE("class is not match. expect class: %s, input class: %s", className, obj->getClass());
         return false;
+    }
+}
+
+void SubAltNameArrayDataClearAndFree(SubAltNameArray *array)
+{
+    if (array == NULL) {
+        LOGD("The input array is null, no need to free.");
+        return;
+    }
+    if (array->data != NULL) {
+        for (uint32_t i = 0; i < array->count; ++i) {
+            CF_FREE_BLOB(array->data[i].name);
+        }
+        CfFree(array->data);
+        array->data = NULL;
+        array->count = 0;
     }
 }
