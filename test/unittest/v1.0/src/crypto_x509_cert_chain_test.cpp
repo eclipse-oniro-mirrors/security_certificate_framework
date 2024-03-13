@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,7 +15,10 @@
 
 #include <gtest/gtest.h>
 
+#include "certificate_openssl_common.h"
 #include "cf_blob.h"
+#include "cf_log.h"
+#include "cf_mock.h"
 #include "cf_object_base.h"
 #include "cf_result.h"
 #include "crypto_x509_test_common.h"
@@ -26,9 +29,34 @@
 #include "x509_cert_chain_openssl.h"
 #include "x509_certificate_openssl.h"
 #include "cert_crl_common.h"
+#include "fwk_class.h"
+
+#define OID_STR_MAX_LEN 128
+#define MAX_CERT_NUM 256
+#define DEMO_CERT_ARRAY_SIZE 2
 
 using namespace std;
 using namespace testing::ext;
+using namespace CFMock;
+
+using ::testing::_;
+using ::testing::AnyNumber;
+using ::testing::Invoke;
+using ::testing::Return;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+int __real_OPENSSL_sk_num(const OPENSSL_STACK *st);
+void *__real_OPENSSL_sk_value(const OPENSSL_STACK *st, int i);
+CfResult __real_DeepCopyBlobToBlob(const CfBlob *inBlob, CfBlob **outBlob);
+CfResult __real_HcfX509CertificateCreate(const CfEncodingBlob *inStream, HcfX509Certificate **returnObj);
+int __real_OPENSSL_sk_push(OPENSSL_STACK *st, const int data);
+
+#ifdef __cplusplus
+}
+#endif
 
 namespace {
 class CryptoX509CertChainTest : public testing::Test {
@@ -38,6 +66,27 @@ public:
     void SetUp();
     void TearDown();
 };
+
+static const char g_testSelfSignedCaCertValid[] =
+    "-----BEGIN CERTIFICATE-----\r\n"
+    "MIIDHTCCAgWgAwIBAgIBAjANBgkqhkiG9w0BAQsFADAXMRUwEwYDVQQDDAxUZXN0\r\n"
+    "IE5DIENBIDEwIBcNMjExMjAyMTcyNTAyWhgPMjEyMTEyMDMxNzI1MDJaMDwxIzAh\r\n"
+    "BgNVBAoMGkdvb2QgTkMgVGVzdCBDZXJ0aWZpY2F0ZSAxMRUwEwYDVQQDDAx3d3cu\r\n"
+    "Z29vZC5vcmcwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDqx1t7HiPe\r\n"
+    "kRAWdiGUt4pklKGZ7338An6R7/y0e/8Grx2jeUfyc19BAB7MW1p8L+zdMjbclNE0\r\n"
+    "UZ6RZZNexfgMksNI/nW+4Lzu8qu2wFx1MjbTpMT8w/vnsGBMthxLu6+2wdnpdD1B\r\n"
+    "0led8xu7PSBgVULqyHcUvoLeRGEsB14yGx7dbIsokYxno1nr4u3BK5ic9KTTSxJR\r\n"
+    "Ig93qwo2pAZR7mfnOo33B9alhzvSwmEKJ9v7pERDnIP5ED0HaWFAeXl7GFgoH2y9\r\n"
+    "QDyJVuwWsoSWIx4Mr8UIr0IbVJU6KsqEiqqc5P5rX/y4tYMkpHZd9U1EONd2uwmX\r\n"
+    "dwSp0LEmQb/DAgMBAAGjTTBLMB0GA1UdDgQWBBSfJPZqs1tk+xjjDrovr13ORDWn\r\n"
+    "ojAfBgNVHSMEGDAWgBQI0Zv55tVkcKDxaxqe7VLa3fVQQzAJBgNVHRMEAjAAMA0G\r\n"
+    "CSqGSIb3DQEBCwUAA4IBAQAEKXs56hB4DOO1vJe7pByfCHU33ij/ux7u68BdkDQ8\r\n"
+    "S9SNaoD7h1XNSmC8kKULvpoKctJzJxh1IH4wtvGGGXsUt1By0a6Y5SnKW9/mG4NM\r\n"
+    "D4fGea0G2AeI8BHFs6vl8voYK9wgx9Ygus3Kj/8h6V7t2zB8ZhhVqpZkAQEjj0C2\r\n"
+    "1IV273wD0VdZl7uB+MEKk+7eTjNMeo6JzlBBf5GhtA1WbLNdszMfI0ljo7HAX+9L\r\n"
+    "yco0xKSKkZQ+v7VdJBfC6odp+epPMZqfyHrkFzUr8XRJfriP1lydPK7AbXLVrLJg\r\n"
+    "fIXCvUdxQx4B1LaclUDORL5r2tRhRYdAEKtUz7RpQzJK\r\n"
+    "-----END CERTIFICATE-----\r\n";
 
 static HcfCertChain *g_certChainP7b = nullptr;
 static HcfX509Certificate *g_x509CertObj = nullptr;
@@ -1603,4 +1652,299 @@ HWTEST_F(CryptoX509CertChainTest, ValidateCoreTest005, TestSize.Level0)
     FreeValidateResult(result);
 }
 
+static void BuildX509CertMatchParamsData(
+    const CfEncodingBlob *certInStream, const CfEncodingBlob *crlInStream, HcfX509CertChainValidateParams *params)
+{
+    if (certInStream == nullptr || params == nullptr) {
+        return;
+    }
+
+    CfBlob *blob = (CfBlob *)HcfMalloc(sizeof(CfBlob), 0);
+    ASSERT_NE(blob, nullptr);
+    blob->data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testUpdateDateTime));
+    blob->size = strlen(g_testUpdateDateTime) + 1;
+    params->date = blob;
+
+    HcfX509TrustAnchorArray *trustAnchorArray =
+        (HcfX509TrustAnchorArray *)HcfMalloc(sizeof(HcfX509TrustAnchorArray), 0);
+    ASSERT_NE(trustAnchorArray, nullptr);
+    BuildAnchorArr(*certInStream, *trustAnchorArray);
+
+    HcfCertCRLCollectionArray *certCRLCollections =
+        (HcfCertCRLCollectionArray *)HcfMalloc(sizeof(HcfCertCRLCollectionArray), 0);
+    ASSERT_NE(certCRLCollections, nullptr);
+    BuildCollectionArr(certInStream, crlInStream, *certCRLCollections);
+
+    params->trustAnchors = trustAnchorArray;
+    params->certCRLCollections = certCRLCollections;
+}
+
+static void FreeX509CertMatchParamsData(HcfX509CertChainValidateParams *params)
+{
+    if (params == nullptr) {
+        return;
+    }
+
+    if (params->date != nullptr) {
+        CfFree(params->date);
+        params->date = nullptr;
+    }
+
+    if (params->trustAnchors != nullptr) {
+        FreeTrustAnchorArr(*(params->trustAnchors));
+        CfFree(params->trustAnchors);
+        params->trustAnchors = nullptr;
+    }
+
+    if (params->certCRLCollections != nullptr) {
+        FreeCertCrlCollectionArr(*(params->certCRLCollections));
+        CfFree(params->certCRLCollections);
+        params->certCRLCollections = nullptr;
+    }
+}
+
+HWTEST_F(CryptoX509CertChainTest, HcfX509CertChainByParamsSpiCreateTest001, TestSize.Level0)
+{
+    CF_LOG_I("HcfX509CertChainByParamsSpiCreateTest001");
+    HcfX509CertChainBuildParameters inParams;
+    HcfX509CertChainSpi *spi = nullptr;
+
+    CfResult result;
+
+    inParams.maxlength = -1;
+
+    CfEncodingBlob inStream = { 0 };
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testSelfSignedCaCertValid));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testSelfSignedCaCertValid) + 1;
+
+    BuildX509CertMatchParamsData(&inStream, NULL, &inParams.validateParameters);
+
+    CfBlob issue;
+    issue.data = const_cast<uint8_t *>(g_testIssuerValid);
+    issue.size = sizeof(g_testIssuerValid);
+    inParams.certMatchParameters.issuer = &issue;
+    inParams.certMatchParameters.minPathLenConstraint = -1;
+
+    result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
+    EXPECT_EQ(result, CF_SUCCESS);
+    EXPECT_NE(spi, nullptr);
+    CfObjDestroy(spi);
+
+    // test inParams.maxlength
+    inParams.maxlength = 2;
+    result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
+    EXPECT_EQ(result, CF_SUCCESS);
+    EXPECT_NE(spi, nullptr);
+    CfObjDestroy(spi);
+
+    FreeX509CertMatchParamsData(&inParams.validateParameters);
+}
+
+HWTEST_F(CryptoX509CertChainTest, HcfX509CertChainByParamsSpiCreateInvalidParamTest, TestSize.Level0)
+{
+    CF_LOG_I("HcfX509CertChainByParamsSpiCreateInvalidParamTest");
+    HcfX509CertChainBuildParameters inParams;
+    HcfX509CertChainSpi *spi = nullptr;
+
+    CfResult result = HcfX509CertChainByParamsSpiCreate(NULL, &spi);
+    EXPECT_EQ(result, CF_INVALID_PARAMS);
+
+    result = HcfX509CertChainByParamsSpiCreate(&inParams, NULL);
+    EXPECT_EQ(result, CF_INVALID_PARAMS);
+
+    result = HcfX509CertChainByParamsSpiCreate(NULL, NULL);
+    EXPECT_EQ(result, CF_INVALID_PARAMS);
+}
+
+HWTEST_F(CryptoX509CertChainTest, HcfX509CertChainByParamsSpiCreateTest002, TestSize.Level0)
+{
+    CF_LOG_I("HcfX509CertChainByParamsSpiCreateTest002");
+    HcfX509CertChainBuildParameters inParams;
+    HcfX509CertChainSpi *spi = nullptr;
+
+    inParams.maxlength = -1;
+
+    CfEncodingBlob inStream = { 0 };
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testSelfSignedCaCertValid));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testSelfSignedCaCertValid) + 1;
+
+    BuildX509CertMatchParamsData(&inStream, NULL, &inParams.validateParameters);
+
+    CfBlob issue;
+    issue.data = const_cast<uint8_t *>(g_testIssuerValid);
+    issue.size = sizeof(g_testIssuerValid);
+    inParams.certMatchParameters.issuer = &issue;
+    inParams.certMatchParameters.minPathLenConstraint = -1;
+
+    // test HcfX509CertChainByParamsSpiCreate failed case
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_new_null()).Times(AnyNumber()).WillOnce(Return(NULL));
+    CfResult result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
+    EXPECT_EQ(result, CF_ERR_MALLOC);
+    X509OpensslMock::SetMockFlag(false);
+
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_dup(_)).Times(AnyNumber()).WillOnce(Return(NULL));
+    result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
+    EXPECT_EQ(result, CF_ERR_MALLOC);
+    X509OpensslMock::SetMockFlag(false);
+
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_push(_, _)).Times(AnyNumber()).WillOnce(Return(-1));
+    result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
+    EXPECT_EQ(result, CF_ERR_CRYPTO_OPERATION);
+    X509OpensslMock::SetMockFlag(false);
+
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_value(_, _)).Times(AnyNumber()).WillOnce(Return(NULL));
+    result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
+    EXPECT_EQ(result, CF_INVALID_PARAMS);
+    X509OpensslMock::SetMockFlag(false);
+
+    // test HcfMalloc failed case in HcfX509CertChainByParamsSpiCreate
+    SetMockFlag(true);
+    result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
+    EXPECT_EQ(result, CF_ERR_MALLOC);
+    SetMockFlag(false);
+
+    FreeX509CertMatchParamsData(&inParams.validateParameters);
+}
+
+static void FreeHcfX509CertChainBuildResult(HcfX509CertChainBuildResult *result)
+{
+    if (result == nullptr) {
+        return;
+    }
+
+    CfObjDestroy(result->certChain);
+    CfFree(result);
+}
+
+HWTEST_F(CryptoX509CertChainTest, HcfCertChainBuildResultCreateTest001, TestSize.Level0)
+{
+    CF_LOG_I("HcfCertChainBuildResultCreateTest001");
+    HcfX509CertChainBuildParameters inParams;
+    HcfX509CertChainBuildResult *returnObj = nullptr;
+    CfEncodingBlob inStream = { 0 };
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testSelfSignedCaCertValid));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testSelfSignedCaCertValid) + 1;
+
+    BuildX509CertMatchParamsData(&inStream, NULL, &inParams.validateParameters);
+
+    inParams.maxlength = 100;
+
+    CfBlob issue;
+    issue.data = const_cast<uint8_t *>(g_testIssuerValid);
+    issue.size = sizeof(g_testIssuerValid);
+    inParams.certMatchParameters.issuer = &issue;
+    inParams.certMatchParameters.minPathLenConstraint = -1;
+
+    CfResult result = HcfCertChainBuildResultCreate(&inParams, &returnObj);
+    EXPECT_EQ(result, CF_SUCCESS);
+    EXPECT_NE(returnObj, nullptr);
+    FreeHcfX509CertChainBuildResult(returnObj);
+    returnObj = nullptr;
+
+    result = HcfCertChainBuildResultCreate(NULL, &returnObj);
+    EXPECT_EQ(result, CF_INVALID_PARAMS);
+
+    result = HcfCertChainBuildResultCreate(&inParams, NULL);
+    EXPECT_EQ(result, CF_INVALID_PARAMS);
+
+    result = HcfCertChainBuildResultCreate(NULL, NULL);
+    EXPECT_EQ(result, CF_INVALID_PARAMS);
+
+    FreeX509CertMatchParamsData(&inParams.validateParameters);
+}
+
+HWTEST_F(CryptoX509CertChainTest, HcfX509CreateTrustAnchorWithKeyStoreFuncTest001, TestSize.Level0)
+{
+    CF_LOG_I("HcfX509CreateTrustAnchorWithKeyStoreFuncTest001");
+    CfBlob keyStore;
+    CfBlob pwd;
+    HcfX509TrustAnchorArray *trustAnchorArray = NULL;
+
+    keyStore.data = const_cast<uint8_t *>(g_testChainKeystore);
+    keyStore.size = sizeof(g_testChainKeystore);
+    pwd.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testKeystorePwd));
+    pwd.size = strlen(g_testKeystorePwd) + 1;
+    CfResult result = HcfX509CreateTrustAnchorWithKeyStoreFunc(&keyStore, &pwd, &trustAnchorArray);
+    EXPECT_EQ(result, CF_SUCCESS);
+    EXPECT_NE(trustAnchorArray, NULL);
+    assert(trustAnchorArray->count > 0);
+    FreeTrustAnchorArr(*trustAnchorArray);
+    CfFree(trustAnchorArray);
+    trustAnchorArray = NULL;
+
+    result = HcfX509CreateTrustAnchorWithKeyStoreFunc(NULL, &pwd, &trustAnchorArray);
+    EXPECT_EQ(result, CF_INVALID_PARAMS);
+
+    result = HcfX509CreateTrustAnchorWithKeyStoreFunc(&keyStore, NULL, &trustAnchorArray);
+    EXPECT_EQ(result, CF_INVALID_PARAMS);
+
+    result = HcfX509CreateTrustAnchorWithKeyStoreFunc(&keyStore, &pwd, NULL);
+    EXPECT_EQ(result, CF_INVALID_PARAMS);
+
+    result = HcfX509CreateTrustAnchorWithKeyStoreFunc(NULL, NULL, &trustAnchorArray);
+    EXPECT_EQ(result, CF_INVALID_PARAMS);
+
+    result = HcfX509CreateTrustAnchorWithKeyStoreFunc(NULL, NULL, NULL);
+    EXPECT_EQ(result, CF_INVALID_PARAMS);
+
+    result = HcfX509CreateTrustAnchorWithKeyStoreFunc(&keyStore, NULL, NULL);
+    EXPECT_EQ(result, CF_INVALID_PARAMS);
+
+    keyStore.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testSelfSignedCaCert));
+    keyStore.size = strlen(g_testSelfSignedCaCert) + 1;
+
+    result = HcfX509CreateTrustAnchorWithKeyStoreFunc(&keyStore, &pwd, &trustAnchorArray);
+    EXPECT_EQ(result, CF_ERR_CRYPTO_OPERATION);
+}
+
+HWTEST_F(CryptoX509CertChainTest, HcfCreateTrustAnchorWithKeyStoreTest001, TestSize.Level0)
+{
+    CF_LOG_I("HcfCreateTrustAnchorWithKeyStoreTest001");
+    CfBlob keyStore;
+    CfBlob pwd;
+    HcfX509TrustAnchorArray *trustAnchorArray = NULL;
+
+    keyStore.data = const_cast<uint8_t *>(g_testChainKeystore);
+    keyStore.size = sizeof(g_testChainKeystore);
+    pwd.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testKeystorePwd));
+    pwd.size = sizeof(g_testKeystorePwd);
+    CfResult result = HcfCreateTrustAnchorWithKeyStore(&keyStore, &pwd, &trustAnchorArray);
+    EXPECT_EQ(result, CF_SUCCESS);
+    EXPECT_NE(trustAnchorArray, NULL);
+    assert(trustAnchorArray->count > 0);
+    FreeTrustAnchorArr(*trustAnchorArray);
+    CfFree(trustAnchorArray);
+    trustAnchorArray = NULL;
+
+    result = HcfCreateTrustAnchorWithKeyStore(NULL, &pwd, &trustAnchorArray);
+    EXPECT_EQ(result, CF_INVALID_PARAMS);
+
+    result = HcfCreateTrustAnchorWithKeyStore(&keyStore, NULL, &trustAnchorArray);
+    EXPECT_EQ(result, CF_INVALID_PARAMS);
+
+    result = HcfCreateTrustAnchorWithKeyStore(&keyStore, &pwd, NULL);
+    EXPECT_EQ(result, CF_INVALID_PARAMS);
+
+    result = HcfCreateTrustAnchorWithKeyStore(NULL, NULL, &trustAnchorArray);
+    EXPECT_EQ(result, CF_INVALID_PARAMS);
+
+    result = HcfCreateTrustAnchorWithKeyStore(NULL, NULL, NULL);
+    EXPECT_EQ(result, CF_INVALID_PARAMS);
+
+    result = HcfCreateTrustAnchorWithKeyStore(&keyStore, NULL, NULL);
+    EXPECT_EQ(result, CF_INVALID_PARAMS);
+
+    keyStore.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testSelfSignedCaCert));
+    keyStore.size = strlen(g_testSelfSignedCaCert) + 1;
+
+    result = HcfCreateTrustAnchorWithKeyStore(&keyStore, &pwd, &trustAnchorArray);
+    EXPECT_EQ(result, CF_ERR_CRYPTO_OPERATION);
+}
 } // namespace

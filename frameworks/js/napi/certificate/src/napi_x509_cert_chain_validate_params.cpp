@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -179,6 +179,27 @@ void FreeX509CertChainValidateParams(HcfX509CertChainValidateParams &param)
         CfFree(param.certCRLCollections);
         param.certCRLCollections = nullptr;
     }
+}
+
+void FreeTrustAnchorArray(HcfX509TrustAnchorArray *trustAnchorArray, bool freeCertFlag)
+{
+    if (trustAnchorArray == NULL) {
+        return;
+    }
+    for (uint32_t i = 0; i < trustAnchorArray->count; i++) {
+        if (trustAnchorArray->data[i] != NULL) {
+            if (freeCertFlag) {
+                CfObjDestroy(trustAnchorArray->data[i]->CACert);
+            }
+            trustAnchorArray->data[i]->CACert = NULL;
+            CfBlobFree(&trustAnchorArray->data[i]->CASubject);
+            CfBlobFree(&trustAnchorArray->data[i]->nameConstraints);
+            CfFree(trustAnchorArray->data[i]);
+            trustAnchorArray->data[i] = NULL;
+        }
+    }
+
+    CfFree(trustAnchorArray);
 }
 
 bool BuildX509CertChainValidateParams(napi_env env, napi_value arg, HcfX509CertChainValidateParams &param)

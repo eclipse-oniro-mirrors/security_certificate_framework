@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,11 +20,11 @@
 #include "cf_type.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#include "napi_cert_crl_common.h"
 #include "napi_cert_defines.h"
 #include "napi_cert_utils.h"
 #include "napi_object.h"
 #include "napi_x509_certificate.h"
-#include "napi_cert_crl_common.h"
 #include "utils.h"
 
 namespace OHOS {
@@ -54,6 +54,20 @@ static bool GetCACert(napi_env env, napi_value arg, HcfX509Certificate *&out)
 static bool GetCASubject(napi_env env, napi_value arg, CfBlob *&out)
 {
     napi_value obj = GetProp(env, arg, CERT_CHAIN_TRUSTANCHOR_TAG_CASUBJECT.c_str());
+    if (obj == nullptr) {
+        return true;
+    }
+    out = CertGetBlobFromUint8ArrJSParams(env, obj);
+    if (out == nullptr) {
+        LOGE("out is null!");
+        return false;
+    }
+    return true;
+}
+
+static bool GetNameConstraints(napi_env env, napi_value arg, CfBlob *&out)
+{
+    napi_value obj = GetProp(env, arg, CERT_MATCH_TAG_NAME_CONSTRAINTS.c_str());
     if (obj == nullptr) {
         return true;
     }
@@ -114,6 +128,15 @@ napi_value BuildX509TrustAnchorJS(napi_env env, const HcfX509TrustAnchor *trustA
         napi_set_named_property(env, instance, CERT_CHAIN_TRUSTANCHOR_TAG_CACERT.c_str(), CACert);
     }
 
+    if (trustAnchor->nameConstraints != nullptr) {
+        napi_value nameConstraints = ConvertBlobToUint8ArrNapiValue(env, trustAnchor->nameConstraints);
+        if (nameConstraints == nullptr) {
+            LOGE("Name constraints convert failed!");
+            return nullptr;
+        }
+        napi_set_named_property(env, instance, CERT_MATCH_TAG_NAME_CONSTRAINTS.c_str(), nameConstraints);
+    }
+
     return instance;
 }
 
@@ -143,6 +166,10 @@ bool BuildX509TrustAnchorObj(napi_env env, napi_value arg, HcfX509TrustAnchor *&
         FreeX509TrustAnchorObj(trustAnchor);
         return false;
     }
+    if (!GetNameConstraints(env, arg, trustAnchor->nameConstraints)) {
+        FreeX509TrustAnchorObj(trustAnchor);
+        return false;
+    }
     return true;
 }
 
@@ -154,6 +181,7 @@ void FreeX509TrustAnchorObj(HcfX509TrustAnchor *&trustAnchor, bool freeCertFlag)
     }
     CfBlobFree(&trustAnchor->CAPubKey);
     CfBlobFree(&trustAnchor->CASubject);
+    CfBlobFree(&trustAnchor->nameConstraints);
     if (freeCertFlag) {
         CfObjDestroy(trustAnchor->CACert);
     }

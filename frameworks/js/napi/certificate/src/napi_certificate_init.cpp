@@ -193,6 +193,7 @@ static napi_value CertModuleExport(napi_env env, napi_value exports)
     NapiX509Crl::DefineX509CrlJSClass(env, exports, std::string("X509CRL"));
     NapiCertExtension::DefineCertExtensionJsClass(env, exports);
     NapiX509CertChain::DefineX509CertChainJsClass(env, exports);
+    NapiX509CertChainBulidResult::DefineX509CertChainBuildResultJsClass(env, exports);
     NapiCertCRLCollection::DefineCertCRLCollectionJSClass(env, exports);
     LOGI("module init end.");
     return exports;

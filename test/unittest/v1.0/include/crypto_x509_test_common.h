@@ -24,13 +24,14 @@
 #include "certificate_openssl_class.h"
 #include "cf_memory.h"
 #include "cipher.h"
+#include "crypto_x509_cert_chain_data_der.h"
+#include "crypto_x509_cert_chain_data_p7b.h"
+#include "crypto_x509_cert_chain_data_pem.h"
+#include "crypto_x509_cert_chain_data_pem_ex.h"
 #include "key_pair.h"
 #include "memory_mock.h"
 #include "securec.h"
 #include "x509_crl.h"
-#include "crypto_x509_cert_chain_data_der.h"
-#include "crypto_x509_cert_chain_data_p7b.h"
-#include "crypto_x509_cert_chain_data_pem.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -170,6 +171,7 @@ static const char g_testSelfSignedCaCert[] =
     "9dBJuHM6vpxEWw3ckZFDZQ1kd91YRgr7jY8fc0v/T0tzHWbOEVzklEIBWL1mompL\r\n"
     "BCwe0/Gw+BO60bfi2MoJw8t2IcB1Qw==\r\n"
     "-----END CERTIFICATE-----\r\n";
+
 extern const int g_testSelfSignedCaCertSize;
 static const uint8_t g_testSubjectAndIssuerNameDerData[] = {
     0x30, 0x76, 0x31, 0x0B, 0x30, 0x09, 0x06, 0x03, 0x55, 0x04, 0x06, 0x13, 0x02, 0x43, 0x4E, 0x31, 0x0B, 0x30,

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -31,8 +31,10 @@ public:
     explicit NapiX509CertChain(HcfCertChain *certChain);
     ~NapiX509CertChain();
 
+    static napi_value Constructor(napi_env env, napi_callback_info info);
     static void DefineX509CertChainJsClass(napi_env env, napi_value exports);
     napi_value Validate(napi_env env, napi_callback_info info);
+    napi_value ConvertToJsCertChain(napi_env env);
 
     HcfCertChain *GetCertChain()
     {
@@ -43,6 +45,25 @@ public:
 
 private:
     HcfCertChain *certChain_ = nullptr;
+};
+
+class NapiX509CertChainBulidResult {
+public:
+    explicit NapiX509CertChainBulidResult(HcfX509CertChainBuildResult *buildResult);
+    ~NapiX509CertChainBulidResult();
+
+    static napi_value Constructor(napi_env env, napi_callback_info info);
+    static void DefineX509CertChainBuildResultJsClass(napi_env env, napi_value exports);
+    napi_value ConvertToJsBuildResult(napi_env env);
+    HcfX509CertChainBuildResult *GetCertChainBuildResult()
+    {
+        return buildResult_;
+    }
+
+    static thread_local napi_ref classRef_;
+
+private:
+    HcfX509CertChainBuildResult *buildResult_ = nullptr;
 };
 } // namespace CertFramework
 } // namespace OHOS

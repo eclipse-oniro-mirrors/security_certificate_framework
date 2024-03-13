@@ -106,7 +106,7 @@ static bool IsRevoked(HcfX509CrlSpi *self, const HcfCertificate *cert)
     }
     X509 *certOpenssl = GetX509FromCertificate(cert);
     if (certOpenssl == NULL) {
-        LOGE("Input Cert is wrong !");
+        LOGE("Input Cert is wrong!");
         return false;
     }
     X509_CRL *crl = ((HcfX509CRLOpensslImpl *)self)->crl;
@@ -397,7 +397,7 @@ static CfResult GetRevokedCertWithCert(HcfX509CrlSpi *self, HcfX509Certificate *
     }
     X509 *certOpenssl = GetX509FromCertificate((HcfCertificate *)cert);
     if (certOpenssl == NULL) {
-        LOGE("Input Cert is wrong !");
+        LOGE("Input Cert is wrong!");
         return CF_INVALID_PARAMS;
     }
     X509_CRL *crl = ((HcfX509CRLOpensslImpl *)self)->crl;
