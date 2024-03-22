@@ -264,6 +264,10 @@ static CfResult GetAuKeyIdDNX509Openssl(HcfX509CertificateSpi *self, CfBlob *out
     HcfOpensslX509Cert *realCert = (HcfOpensslX509Cert *)self;
     X509 *x509 = realCert->x509;
     AUTHORITY_KEYID *akid = X509_get_ext_d2i(x509, NID_authority_key_identifier, NULL, NULL);
+    if (akid == NULL) {
+        LOGE("Failed to get authority key identifier!");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
     unsigned char *akidBytes = NULL;
     int32_t akidLen = i2d_AUTHORITY_KEYID(akid, &akidBytes);
     if (akidLen <= 0) {
@@ -1255,8 +1259,8 @@ static CfResult DeepCopySubAltName(
     (void)memcpy_s(subAltNameData->name.data, derLength, derData, derLength);
     subAltNameData->name.size = derLength;
     subAltNameData->type = generalName->type;
-    return CF_SUCCESS;
     CfFree(derData);
+    return CF_SUCCESS;
 }
 
 static bool IsMatch(SubjectAlternaiveNameData *subAltName, SubAltNameArray *subArraySelf)
