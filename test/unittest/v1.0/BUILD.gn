@@ -131,6 +131,8 @@ ohos_unittest("cf_version1_test") {
     cflags += [ "-DBINDER_IPC_32BIT" ]
   }
 
+  defines = [ "HILOG_ENABLE" ]
+
   deps = [
     "//third_party/googletest:gmock",
     "//third_party/openssl:libcrypto_shared",

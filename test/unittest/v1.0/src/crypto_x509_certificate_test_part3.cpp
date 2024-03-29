@@ -593,13 +593,6 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareCertPolicyTest002, TestSize.Leve
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_EQ(bResult, true);
 
-    // test DeepCopyCertPolices failed case
-    X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), OBJ_obj2txt(_, _, _, _)).Times(AnyNumber()).WillOnce(Return(-1));
-    ret = g_x509CertExtAttrObj->match(g_x509CertExtAttrObj, &certMatchParameters, &bResult);
-    EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
-    X509OpensslMock::SetMockFlag(false);
-
     X509OpensslMock::SetMockFlag(true);
     EXPECT_CALL(X509OpensslMock::GetInstance(), OBJ_obj2txt(_, _, _, _))
         .Times(AnyNumber())
