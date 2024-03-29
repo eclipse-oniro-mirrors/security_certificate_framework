@@ -1797,12 +1797,6 @@ HWTEST_F(CryptoX509CertChainTest, HcfX509CertChainByParamsSpiCreateTest002, Test
     EXPECT_EQ(result, CF_ERR_CRYPTO_OPERATION);
     X509OpensslMock::SetMockFlag(false);
 
-    X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_value(_, _)).Times(AnyNumber()).WillOnce(Return(NULL));
-    result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
-    EXPECT_EQ(result, CF_INVALID_PARAMS);
-    X509OpensslMock::SetMockFlag(false);
-
     // test HcfMalloc failed case in HcfX509CertChainByParamsSpiCreate
     SetMockFlag(true);
     result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);

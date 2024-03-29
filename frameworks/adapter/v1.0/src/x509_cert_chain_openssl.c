@@ -1261,7 +1261,7 @@ static CfResult GetCertChainFromCollection(const HcfX509CertChainBuildParameters
                 LOGE("Memory allocation failure!");
                 return CF_ERR_MALLOC;
             }
-            if (sk_X509_push(certStack, cert) <= 0) {
+            if (sk_X509_push(certStack, certDup) <= 0) {
                 LOGE("Push cert to SK failed!");
                 X509_free(certDup);
                 return CF_ERR_CRYPTO_OPERATION;
@@ -1345,7 +1345,7 @@ CfResult GetCertStackInner(
     }
     for (int i = 0; i < allCertsLen; ++i) {
         if (CheckIsLeafCert(sk_X509_value(allCerts, i))) {
-            if (sk_X509_push(leafCerts, sk_X509_value(allCerts, i)) != 1) {
+            if (sk_X509_push(leafCerts, X509_dup(sk_X509_value(allCerts, i))) != 1) {
                 LOGE("Push the cert into stack failed.");
                 return CF_ERR_CRYPTO_OPERATION;
             }
