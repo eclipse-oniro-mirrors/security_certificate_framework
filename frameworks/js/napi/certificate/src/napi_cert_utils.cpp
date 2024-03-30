@@ -628,6 +628,22 @@ bool ParserArray(napi_env env, napi_value arg, uint32_t &arrayLen)
     return true;
 }
 
+void SubAltNameArrayDataClearAndFree(SubAltNameArray *array)
+{
+    if (array == NULL) {
+        LOGD("The input array is null, no need to free.");
+        return;
+    }
+    if (array->data != NULL) {
+        for (uint32_t i = 0; i < array->count; ++i) {
+            CF_FREE_BLOB(array->data[i].name);
+        }
+        CfFree(array->data);
+        array->data = NULL;
+        array->count = 0;
+    }
+}
+
 SubAltNameArray *CertGetSANArrFromArrUarrJSParams(napi_env env, napi_value arg)
 {
     uint32_t length = 0;

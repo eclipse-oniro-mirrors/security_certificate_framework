@@ -15,6 +15,8 @@
 
 #include "certificate_openssl_common.h"
 
+#include <openssl/err.h>
+#include <openssl/x509v3.h>
 #include <securec.h>
 #include <string.h>
 
@@ -22,8 +24,6 @@
 #include "cf_memory.h"
 #include "cf_result.h"
 #include "config.h"
-
-#include <openssl/err.h>
 
 #define TIME_MON_LEN 2
 #define TIME_HOUR_LEN 8
@@ -332,4 +332,164 @@ CfResult DeepCopyDataToOut(const char *data, uint32_t len, CfBlob *out)
     (void)memcpy_s(out->data, len, data, len);
     out->size = len;
     return CF_SUCCESS;
+}
+
+bool CheckIsSelfSigned(const X509 *cert)
+{
+    bool ret = false;
+    X509_NAME *issuer = X509_get_issuer_name(cert);
+    if (issuer == NULL) {
+        LOGE("x509 get issuer name failed!");
+        CfPrintOpensslError();
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    X509_NAME *subject = X509_get_subject_name(cert);
+    if (subject == NULL) {
+        LOGE("x509 get subject name failed!");
+        CfPrintOpensslError();
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    ret = (X509_NAME_cmp(issuer, subject) == 0);
+    LOGI("CheckIsSelfSigned() ret: %d .", ret);
+    return ret;
+}
+
+bool CheckIsLeafCert(X509 *cert)
+{
+    if (cert == NULL) {
+        return false;
+    }
+
+    bool ret = true;
+    if (X509_check_ca(cert)) {
+        return false;
+    }
+
+    return ret;
+}
+
+CfResult IsOrderCertChain(STACK_OF(X509) * certsChain, bool *isOrder)
+{
+    int num = sk_X509_num(certsChain);
+    if (num == 1) {
+        LOGI("1 certs is order chain.");
+        return CF_SUCCESS;
+    }
+
+    X509 *cert = NULL;
+    X509 *certNext = NULL;
+    X509_NAME *issuerName = NULL;
+    X509_NAME *subjectName = NULL;
+    for (int i = num - 1; i > 0; --i) {
+        cert = sk_X509_value(certsChain, i);
+        if (cert == NULL) {
+            LOGE("sk X509 value is null, failed!");
+            CfPrintOpensslError();
+            return CF_ERR_CRYPTO_OPERATION;
+        }
+        certNext = sk_X509_value(certsChain, i - 1);
+        if (certNext == NULL) {
+            LOGE("sk X509 value is null, failed!");
+            CfPrintOpensslError();
+            return CF_ERR_CRYPTO_OPERATION;
+        }
+
+        subjectName = X509_get_subject_name(cert);
+        if (subjectName == NULL) {
+            LOGE("x509 get subject name failed!");
+            CfPrintOpensslError();
+            return CF_ERR_CRYPTO_OPERATION;
+        }
+        issuerName = X509_get_issuer_name(certNext);
+        if (issuerName == NULL) {
+            LOGE("x509 get subject name failed!");
+            CfPrintOpensslError();
+            return CF_ERR_CRYPTO_OPERATION;
+        }
+
+        if (X509_NAME_cmp(subjectName, issuerName) != 0) {
+            *isOrder = false;
+            LOGI("is a misOrder chain.");
+            break;
+        }
+    }
+
+    return CF_SUCCESS;
+}
+
+CfResult CheckSelfPubkey(X509 *cert, const EVP_PKEY *pubKey)
+{
+    EVP_PKEY *certPublicKey = X509_get_pubkey(cert);
+    if (certPublicKey == NULL) {
+        LOGE("get cert public key failed!");
+        CfPrintOpensslError();
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    int isMatch = EVP_PKEY_cmp(certPublicKey, pubKey);
+    if (isMatch != CF_OPENSSL_SUCCESS) {
+        LOGE("cmp cert public key failed!");
+        CfPrintOpensslError();
+        EVP_PKEY_free(certPublicKey);
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    EVP_PKEY_free(certPublicKey);
+    return CF_SUCCESS;
+}
+
+X509 *FindCertificateBySubject(STACK_OF(X509) * certs, X509_NAME *subjectName)
+{
+    X509_STORE_CTX *ctx = NULL;
+    X509 *cert = NULL;
+    X509_OBJECT *obj;
+
+    X509_STORE *store = X509_STORE_new();
+    if (store == NULL) {
+        return NULL;
+    }
+    for (int i = 0; i < sk_X509_num(certs); i++) {
+        cert = sk_X509_value(certs, i);
+        X509_STORE_add_cert(store, cert);
+    }
+
+    if (!(ctx = X509_STORE_CTX_new())) {
+        X509_STORE_free(store);
+        return NULL;
+    }
+    if (X509_STORE_CTX_init(ctx, store, NULL, NULL) != 1) {
+        X509_STORE_free(store);
+        X509_STORE_CTX_free(ctx);
+        return NULL;
+    }
+    obj = X509_STORE_CTX_get_obj_by_subject(ctx, X509_LU_X509, subjectName);
+    if (obj == NULL) {
+        X509_STORE_free(store);
+        X509_STORE_CTX_free(ctx);
+        return NULL;
+    }
+    cert = X509_OBJECT_get0_X509(obj);
+    X509_STORE_free(store);
+    X509_OBJECT_free(obj);
+    X509_STORE_CTX_free(ctx);
+
+    return cert;
+}
+
+void SubAltNameArrayDataClearAndFree(SubAltNameArray *array)
+{
+    if (array == NULL) {
+        LOGD("The input array is null, no need to free.");
+        return;
+    }
+    if (array->data != NULL) {
+        for (uint32_t i = 0; i < array->count; ++i) {
+            CF_FREE_BLOB(array->data[i].name);
+        }
+        CfFree(array->data);
+        array->data = NULL;
+        array->count = 0;
+    }
 }

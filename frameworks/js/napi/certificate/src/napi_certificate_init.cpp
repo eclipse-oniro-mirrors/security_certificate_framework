@@ -170,6 +170,76 @@ static void DefineGeneralNameTypeProperties(napi_env env, napi_value exports)
     napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
 }
 
+static napi_value CreateRevocationCheckOptions(napi_env env)
+{
+    napi_value revocationCheckOptions = nullptr;
+    napi_create_object(env, &revocationCheckOptions);
+
+    CertAddUint32Property(
+        env, revocationCheckOptions, "REVOCATION_CHECK_OPTION_PREFER_OCSP", CF_REVOCATION_CHECK_OPTION_PREFER_OCSP);
+    CertAddUint32Property(env, revocationCheckOptions, "REVOCATION_CHECK_OPTION_ACCESS_NETWORK",
+        CF_REVOCATION_CHECK_OPTION_ACCESS_NETWORK);
+    CertAddUint32Property(env, revocationCheckOptions, "REVOCATION_CHECK_OPTION_FALLBACK_NO_PREFER",
+        CF_REVOCATION_CHECK_OPTION_FALLBACK_NO_PREFER);
+    CertAddUint32Property(env, revocationCheckOptions, "REVOCATION_CHECK_OPTION_FALLBACK_LOCAL",
+        CF_REVOCATION_CHECK_OPTION_FALLBACK_LOCAL);
+
+    return revocationCheckOptions;
+}
+
+static napi_value CreateValidationPolicyType(napi_env env)
+{
+    napi_value ValidationPolicyType = nullptr;
+    napi_create_object(env, &ValidationPolicyType);
+
+    CertAddUint32Property(env, ValidationPolicyType, "VALIDATION_POLICY_TYPE_X509", CF_VALIDATION_POLICY_TYPE_X509);
+    CertAddUint32Property(env, ValidationPolicyType, "VALIDATION_POLICY_TYPE_SSL", CF_VALIDATION_POLICY_TYPE_SSL);
+
+    return ValidationPolicyType;
+}
+
+static napi_value CreateValidationKeyUsageType(napi_env env)
+{
+    napi_value ValidationKeyUsageType = nullptr;
+    napi_create_object(env, &ValidationKeyUsageType);
+
+    CertAddUint32Property(env, ValidationKeyUsageType, "KEYUSAGE_DIGITAL_SIGNATURE", CF_KEYUSAGE_DIGITAL_SIGNATURE);
+    CertAddUint32Property(env, ValidationKeyUsageType, "KEYUSAGE_NON_REPUDIATION", CF_KEYUSAGE_NON_REPUDIATION);
+    CertAddUint32Property(env, ValidationKeyUsageType, "KEYUSAGE_KEY_ENCIPHERMENT", CF_KEYUSAGE_KEY_ENCIPHERMENT);
+    CertAddUint32Property(env, ValidationKeyUsageType, "KEYUSAGE_DATA_ENCIPHERMENT", CF_KEYUSAGE_DATA_ENCIPHERMENT);
+    CertAddUint32Property(env, ValidationKeyUsageType, "KEYUSAGE_KEY_AGREEMENT", CF_KEYUSAGE_KEY_AGREEMENT);
+    CertAddUint32Property(env, ValidationKeyUsageType, "KEYUSAGE_KEY_CERT_SIGN", CF_KEYUSAGE_KEY_CERT_SIGN);
+    CertAddUint32Property(env, ValidationKeyUsageType, "KEYUSAGE_CRL_SIGN", CF_KEYUSAGE_CRL_SIGN);
+    CertAddUint32Property(env, ValidationKeyUsageType, "KEYUSAGE_ENCIPHER_ONLY", CF_KEYUSAGE_ENCIPHER_ONLY);
+    CertAddUint32Property(env, ValidationKeyUsageType, "KEYUSAGE_DECIPHER_ONLY", CF_KEYUSAGE_DECIPHER_ONLY);
+
+    return ValidationKeyUsageType;
+}
+
+static void DefineOcspCheckOptionTypeProperties(napi_env env, napi_value exports)
+{
+    napi_property_descriptor desc[] = {
+        DECLARE_NAPI_PROPERTY("RevocationCheckOptions", CreateRevocationCheckOptions(env)),
+    };
+    napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
+}
+
+static void DefineValidationPolicyTypeProperties(napi_env env, napi_value exports)
+{
+    napi_property_descriptor desc[] = {
+        DECLARE_NAPI_PROPERTY("ValidationPolicyType", CreateValidationPolicyType(env)),
+    };
+    napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
+}
+
+static void DefineValidationKeyUsageTypeProperties(napi_env env, napi_value exports)
+{
+    napi_property_descriptor desc[] = {
+        DECLARE_NAPI_PROPERTY("KeyUsageType", CreateValidationKeyUsageType(env)),
+    };
+    napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
+}
+
 /***********************************************
  * Module export and register
  ***********************************************/
@@ -182,6 +252,9 @@ static napi_value CertModuleExport(napi_env env, napi_value exports)
     DefineExtensionOidTypeProperties(env, exports);
     DefineExtensionEntryTypeProperties(env, exports);
     DefineGeneralNameTypeProperties(env, exports);
+    DefineOcspCheckOptionTypeProperties(env, exports);
+    DefineValidationPolicyTypeProperties(env, exports);
+    DefineValidationKeyUsageTypeProperties(env, exports);
 
     NapiKey::DefineHcfKeyJSClass(env);
     NapiPubKey::DefinePubKeyJSClass(env);

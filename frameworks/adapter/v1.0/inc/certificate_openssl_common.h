@@ -51,6 +51,11 @@ char *Asn1TimeToStr(const ASN1_GENERALIZEDTIME *time);
 bool CfArrayContains(const CfArray *self, const CfArray *sub);
 CfResult DeepCopyDataToOut(const char *data, uint32_t len, CfBlob *out);
 void SubAltNameArrayDataClearAndFree(SubAltNameArray *array);
+bool CheckIsSelfSigned(const X509 *cert);
+bool CheckIsLeafCert(X509 *cert);
+CfResult IsOrderCertChain(STACK_OF(X509) * certsChain, bool *isOrder);
+CfResult CheckSelfPubkey(X509 *cert, const EVP_PKEY *pubKey);
+X509 *FindCertificateBySubject(STACK_OF(X509) * certs, X509_NAME *subjectName);
 #ifdef __cplusplus
 }
 #endif

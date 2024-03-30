@@ -22,6 +22,138 @@
 extern "C" {
 #endif
 
+static const char g_testCertChainPem163[] =
+    "-----BEGIN CERTIFICATE-----\r\n"
+    "MIIGVjCCBT6gAwIBAgIQBMO0W3CU9LWVw1bE/jqYojANBgkqhkiG9w0BAQsFADBE\r\n"
+    "MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMR4wHAYDVQQDExVH\r\n"
+    "ZW9UcnVzdCBSU0EgQ04gQ0EgRzIwHhcNMjMwMzIzMDAwMDAwWhcNMjQwNDIyMjM1\r\n"
+    "OTU5WjB1MQswCQYDVQQGEwJDTjERMA8GA1UECBMIemhlamlhbmcxETAPBgNVBAcT\r\n"
+    "CGhhbmd6aG91MSwwKgYDVQQKEyNOZXRFYXNlIChIYW5nemhvdSkgTmV0d29yayBD\r\n"
+    "by4sIEx0ZDESMBAGA1UEAwwJKi4xNjMuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOC\r\n"
+    "AQ8AMIIBCgKCAQEAwELks0Q1Z81u1OpbGdEFE2Snm/WpLfmiC5YFj5nFrinSX+UZ\r\n"
+    "MIk42euBdjYSsWFxbljmWDdUCjstMhG8vRAjz3Nt1QniMCunHHFGujR5rSNLWYHE\r\n"
+    "vCPhfptIhqOaE/rvkWGZZr2KjTQQN0dRf8dm9Oewy8DHu95c9jW6c9AVgKWUVOni\r\n"
+    "tTOcJCnrndWjgCIPfKmKgrwaNaMnuQyy5nPIUHl/5EGzuGHrwjwlF+w+cT+Fwdix\r\n"
+    "C3msEOCwX6wzo6baDs4og2EzuPNyTp4n4UqH5aHhLePgBFboOAyJwWp3+XJNpNGw\r\n"
+    "GkU56cUUy7+AAn268EVvUNr7uQ65t2t+Ys32bQIDAQABo4IDETCCAw0wHwYDVR0j\r\n"
+    "BBgwFoAUJG+RP4mHhw4ywkAY38VM60/ISTIwHQYDVR0OBBYEFD1HyRYJ5jqkvYL7\r\n"
+    "C6TSt8/y3e7hMB0GA1UdEQQWMBSCCSouMTYzLmNvbYIHMTYzLmNvbTAOBgNVHQ8B\r\n"
+    "Af8EBAMCBaAwHQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMD0GA1UdHwQ2\r\n"
+    "MDQwMqAwoC6GLGh0dHA6Ly9jcmwuZGlnaWNlcnQuY24vR2VvVHJ1c3RSU0FDTkNB\r\n"
+    "RzIuY3JsMD4GA1UdIAQ3MDUwMwYGZ4EMAQICMCkwJwYIKwYBBQUHAgEWG2h0dHA6\r\n"
+    "Ly93d3cuZGlnaWNlcnQuY29tL0NQUzBxBggrBgEFBQcBAQRlMGMwIwYIKwYBBQUH\r\n"
+    "MAGGF2h0dHA6Ly9vY3NwLmRpZ2ljZXJ0LmNuMDwGCCsGAQUFBzAChjBodHRwOi8v\r\n"
+    "Y2FjZXJ0cy5kaWdpY2VydC5jbi9HZW9UcnVzdFJTQUNOQ0FHMi5jcnQwCQYDVR0T\r\n"
+    "BAIwADCCAX4GCisGAQQB1nkCBAIEggFuBIIBagFoAHUA7s3QZNXbGs7FXLedtM0T\r\n"
+    "ojKHRny87N7DUUhZRnEftZsAAAGHDSE15QAABAMARjBEAiBRpmsJ3F9AI8wFxqOQ\r\n"
+    "bHp+RL6F8cvNydajQ0Bqxjvd3AIgefAU/po3jBm+96dFVdbX+AG1uss67DL3VL5I\r\n"
+    "nUmVva8AdgBz2Z6JG0yWeKAgfUed5rLGHNBRXnEZKoxrgBB6wXdytQAAAYcNITZS\r\n"
+    "AAAEAwBHMEUCID/sUP12odF7uTTEyE0PjCpKo3nF7A3ba3b5wJJsZrDrAiEAxrat\r\n"
+    "W2eeZTD458LPSPrMMBb1/o6zibWXqJCQye+bVFwAdwBIsONr2qZHNA/lagL6nTDr\r\n"
+    "HFIBy1bdLIHZu7+rOdiEcwAAAYcNITYeAAAEAwBIMEYCIQCCJ2ktM1F+d1I5mQju\r\n"
+    "Tn7oDYxy3GCGyG3u/yhu8k7EaAIhANSP8cAaMQFV6y8B2tubKY5eSQtgkF3a6NNq\r\n"
+    "QJjtPnoHMA0GCSqGSIb3DQEBCwUAA4IBAQC8dK/G4nvs/SyQe/mnK+rUYIdSFs+4\r\n"
+    "lgzatmq8V/I1tBly+Sv/FPhnn4F3iCrqy9j8y202FP51ev95DGbjlJRTIFPqVAO8\r\n"
+    "ywYrLhvl1SJhV0b/8NF0Pr3dZVnK5Vfn11+LSBUg0cBB2hcVV30nv3IuVhz3d12n\r\n"
+    "P+VseYQgMpQf7ad+ttpZtA7yqHzrUm4fzr03G7q88GztACRSHoYiPbOlz99SeTgW\r\n"
+    "7bzZl1I4taxy2Q3b0ZBGfUt/kPY05tpKzKwDTbbqSErYszCt5X1RfVvf3coxF8Mo\r\n"
+    "9bHbs2wYIzQBdujDQ/hU0u6ItERer3SUItZoxaSIxdrZ9eXFwVvXsT/g\r\n"
+    "-----END CERTIFICATE-----\r\n"
+    "-----BEGIN CERTIFICATE-----\r\n"
+    "MIIFDzCCA/egAwIBAgIQCxNitu5qnT6WiTDxbiB9OTANBgkqhkiG9w0BAQsFADBh\r\n"
+    "MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3\r\n"
+    "d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBD\r\n"
+    "QTAeFw0yMDAzMDQxMjA0NDBaFw0zMDAzMDQxMjA0NDBaMEQxCzAJBgNVBAYTAlVT\r\n"
+    "MRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxHjAcBgNVBAMTFUdlb1RydXN0IFJTQSBD\r\n"
+    "TiBDQSBHMjCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBANA1OZJJtZUI\r\n"
+    "7zj4qFHT79g+Otks4TEfmUEDhrNKBEEjb/i29GBfnpvFdT36azCg2VODJRSjIzFn\r\n"
+    "4qADcc84EmfKiDEM97HFsQPp9RRkqxH5cB51EU2eBE9Ua95x+wQp/KSdCqITCQ/v\r\n"
+    "yvm3J4Upjl0wlW8wRCPCWcYw3pKClGRkNzVtI1KXnfpn7fG3N84n7wlBb9IGKJFa\r\n"
+    "c/6+hxvZx2qnfLsxdIKR0Q/biGoU6Z8Iy/R/p7GoPO8vamV090+QHEL5AdSzKtEh\r\n"
+    "U9vdvcuWjjLxVnaJLfj/6WoGZj8UWn3zFbEoTVaAfp2xqdzW7yRvi2r148m9ev7l\r\n"
+    "jDqHo8UX69sCAwEAAaOCAd4wggHaMB0GA1UdDgQWBBQkb5E/iYeHDjLCQBjfxUzr\r\n"
+    "T8hJMjAfBgNVHSMEGDAWgBQD3lA1VtFMu2bwo+IbG8OXsj3RVTAOBgNVHQ8BAf8E\r\n"
+    "BAMCAYYwHQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMBIGA1UdEwEB/wQI\r\n"
+    "MAYBAf8CAQAwMwYIKwYBBQUHAQEEJzAlMCMGCCsGAQUFBzABhhdodHRwOi8vb2Nz\r\n"
+    "cC5kaWdpY2VydC5jbjBABgNVHR8EOTA3MDWgM6Axhi9odHRwOi8vY3JsLmRpZ2lj\r\n"
+    "ZXJ0LmNuL0RpZ2lDZXJ0R2xvYmFsUm9vdENBLmNybDCB3QYDVR0gBIHVMIHSMIHF\r\n"
+    "BglghkgBhv1sAQEwgbcwKAYIKwYBBQUHAgEWHGh0dHBzOi8vd3d3LmRpZ2ljZXJ0\r\n"
+    "LmNvbS9DUFMwgYoGCCsGAQUFBwICMH4MfEFueSB1c2Ugb2YgdGhpcyBDZXJ0aWZp\r\n"
+    "Y2F0ZSBjb25zdGl0dXRlcyBhY2NlcHRhbmNlIG9mIHRoZSBSZWx5aW5nIFBhcnR5\r\n"
+    "IEFncmVlbWVudCBsb2NhdGVkIGF0IGh0dHBzOi8vd3d3LmRpZ2ljZXJ0LmNvbS9y\r\n"
+    "cGEtdWEwCAYGZ4EMAQICMA0GCSqGSIb3DQEBCwUAA4IBAQCzkcXq0TN0oSn4UeXp\r\n"
+    "FBW7U8zrHBIhH9MXHNBp+Yy/yN19133UY05uuHXHaU2Uv0hxefckjPdkaX7ARso+\r\n"
+    "O3Ar6nf7YfBwCqSpqsNckKT7KKtf3Ot95wYFpKDa64jcRUfxzRWnmq12IVzczqHI\r\n"
+    "sIvUZQINw/UHSQcWekdUnMg58bQSHyTjwkj9jcX2RURxaVZkr15wxo/Z3Ydo2PVK\r\n"
+    "3afEr0/vcuFvE7QeGXiI2DJdVt3JefatZ3rj4VTW2aUZwHGUiWWIUudBfQKR0JEp\r\n"
+    "lJ8MFaKDh4/A2VEJnXILu1iwvc1m3jCaPuzZKdoHM/1234bznJI2aAfhfIhoHw90\r\n"
+    "tPO+\r\n"
+    "-----END CERTIFICATE-----\r\n";
+
+static const char g_testOcspResponderCert[] =
+    "-----BEGIN CERTIFICATE-----\r\n"
+    "MIIFDzCCA/egAwIBAgIQCxNitu5qnT6WiTDxbiB9OTANBgkqhkiG9w0BAQsFADBh\r\n"
+    "MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3\r\n"
+    "d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBD\r\n"
+    "QTAeFw0yMDAzMDQxMjA0NDBaFw0zMDAzMDQxMjA0NDBaMEQxCzAJBgNVBAYTAlVT\r\n"
+    "MRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxHjAcBgNVBAMTFUdlb1RydXN0IFJTQSBD\r\n"
+    "TiBDQSBHMjCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBANA1OZJJtZUI\r\n"
+    "7zj4qFHT79g+Otks4TEfmUEDhrNKBEEjb/i29GBfnpvFdT36azCg2VODJRSjIzFn\r\n"
+    "4qADcc84EmfKiDEM97HFsQPp9RRkqxH5cB51EU2eBE9Ua95x+wQp/KSdCqITCQ/v\r\n"
+    "yvm3J4Upjl0wlW8wRCPCWcYw3pKClGRkNzVtI1KXnfpn7fG3N84n7wlBb9IGKJFa\r\n"
+    "c/6+hxvZx2qnfLsxdIKR0Q/biGoU6Z8Iy/R/p7GoPO8vamV090+QHEL5AdSzKtEh\r\n"
+    "U9vdvcuWjjLxVnaJLfj/6WoGZj8UWn3zFbEoTVaAfp2xqdzW7yRvi2r148m9ev7l\r\n"
+    "jDqHo8UX69sCAwEAAaOCAd4wggHaMB0GA1UdDgQWBBQkb5E/iYeHDjLCQBjfxUzr\r\n"
+    "T8hJMjAfBgNVHSMEGDAWgBQD3lA1VtFMu2bwo+IbG8OXsj3RVTAOBgNVHQ8BAf8E\r\n"
+    "BAMCAYYwHQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMBIGA1UdEwEB/wQI\r\n"
+    "MAYBAf8CAQAwMwYIKwYBBQUHAQEEJzAlMCMGCCsGAQUFBzABhhdodHRwOi8vb2Nz\r\n"
+    "cC5kaWdpY2VydC5jbjBABgNVHR8EOTA3MDWgM6Axhi9odHRwOi8vY3JsLmRpZ2lj\r\n"
+    "ZXJ0LmNuL0RpZ2lDZXJ0R2xvYmFsUm9vdENBLmNybDCB3QYDVR0gBIHVMIHSMIHF\r\n"
+    "BglghkgBhv1sAQEwgbcwKAYIKwYBBQUHAgEWHGh0dHBzOi8vd3d3LmRpZ2ljZXJ0\r\n"
+    "LmNvbS9DUFMwgYoGCCsGAQUFBwICMH4MfEFueSB1c2Ugb2YgdGhpcyBDZXJ0aWZp\r\n"
+    "Y2F0ZSBjb25zdGl0dXRlcyBhY2NlcHRhbmNlIG9mIHRoZSBSZWx5aW5nIFBhcnR5\r\n"
+    "IEFncmVlbWVudCBsb2NhdGVkIGF0IGh0dHBzOi8vd3d3LmRpZ2ljZXJ0LmNvbS9y\r\n"
+    "cGEtdWEwCAYGZ4EMAQICMA0GCSqGSIb3DQEBCwUAA4IBAQCzkcXq0TN0oSn4UeXp\r\n"
+    "FBW7U8zrHBIhH9MXHNBp+Yy/yN19133UY05uuHXHaU2Uv0hxefckjPdkaX7ARso+\r\n"
+    "O3Ar6nf7YfBwCqSpqsNckKT7KKtf3Ot95wYFpKDa64jcRUfxzRWnmq12IVzczqHI\r\n"
+    "sIvUZQINw/UHSQcWekdUnMg58bQSHyTjwkj9jcX2RURxaVZkr15wxo/Z3Ydo2PVK\r\n"
+    "3afEr0/vcuFvE7QeGXiI2DJdVt3JefatZ3rj4VTW2aUZwHGUiWWIUudBfQKR0JEp\r\n"
+    "lJ8MFaKDh4/A2VEJnXILu1iwvc1m3jCaPuzZKdoHM/1234bznJI2aAfhfIhoHw90\r\n"
+    "tPO+\r\n"
+    "-----END CERTIFICATE-----\r\n";
+
+static const char g_testCertChainPemRoot163[] =
+    "-----BEGIN CERTIFICATE-----\r\n"
+    "MIIFDzCCA/egAwIBAgIQCxNitu5qnT6WiTDxbiB9OTANBgkqhkiG9w0BAQsFADBh\r\n"
+    "MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3\r\n"
+    "d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBD\r\n"
+    "QTAeFw0yMDAzMDQxMjA0NDBaFw0zMDAzMDQxMjA0NDBaMEQxCzAJBgNVBAYTAlVT\r\n"
+    "MRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxHjAcBgNVBAMTFUdlb1RydXN0IFJTQSBD\r\n"
+    "TiBDQSBHMjCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBANA1OZJJtZUI\r\n"
+    "7zj4qFHT79g+Otks4TEfmUEDhrNKBEEjb/i29GBfnpvFdT36azCg2VODJRSjIzFn\r\n"
+    "4qADcc84EmfKiDEM97HFsQPp9RRkqxH5cB51EU2eBE9Ua95x+wQp/KSdCqITCQ/v\r\n"
+    "yvm3J4Upjl0wlW8wRCPCWcYw3pKClGRkNzVtI1KXnfpn7fG3N84n7wlBb9IGKJFa\r\n"
+    "c/6+hxvZx2qnfLsxdIKR0Q/biGoU6Z8Iy/R/p7GoPO8vamV090+QHEL5AdSzKtEh\r\n"
+    "U9vdvcuWjjLxVnaJLfj/6WoGZj8UWn3zFbEoTVaAfp2xqdzW7yRvi2r148m9ev7l\r\n"
+    "jDqHo8UX69sCAwEAAaOCAd4wggHaMB0GA1UdDgQWBBQkb5E/iYeHDjLCQBjfxUzr\r\n"
+    "T8hJMjAfBgNVHSMEGDAWgBQD3lA1VtFMu2bwo+IbG8OXsj3RVTAOBgNVHQ8BAf8E\r\n"
+    "BAMCAYYwHQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMBIGA1UdEwEB/wQI\r\n"
+    "MAYBAf8CAQAwMwYIKwYBBQUHAQEEJzAlMCMGCCsGAQUFBzABhhdodHRwOi8vb2Nz\r\n"
+    "cC5kaWdpY2VydC5jbjBABgNVHR8EOTA3MDWgM6Axhi9odHRwOi8vY3JsLmRpZ2lj\r\n"
+    "ZXJ0LmNuL0RpZ2lDZXJ0R2xvYmFsUm9vdENBLmNybDCB3QYDVR0gBIHVMIHSMIHF\r\n"
+    "BglghkgBhv1sAQEwgbcwKAYIKwYBBQUHAgEWHGh0dHBzOi8vd3d3LmRpZ2ljZXJ0\r\n"
+    "LmNvbS9DUFMwgYoGCCsGAQUFBwICMH4MfEFueSB1c2Ugb2YgdGhpcyBDZXJ0aWZp\r\n"
+    "Y2F0ZSBjb25zdGl0dXRlcyBhY2NlcHRhbmNlIG9mIHRoZSBSZWx5aW5nIFBhcnR5\r\n"
+    "IEFncmVlbWVudCBsb2NhdGVkIGF0IGh0dHBzOi8vd3d3LmRpZ2ljZXJ0LmNvbS9y\r\n"
+    "cGEtdWEwCAYGZ4EMAQICMA0GCSqGSIb3DQEBCwUAA4IBAQCzkcXq0TN0oSn4UeXp\r\n"
+    "FBW7U8zrHBIhH9MXHNBp+Yy/yN19133UY05uuHXHaU2Uv0hxefckjPdkaX7ARso+\r\n"
+    "O3Ar6nf7YfBwCqSpqsNckKT7KKtf3Ot95wYFpKDa64jcRUfxzRWnmq12IVzczqHI\r\n"
+    "sIvUZQINw/UHSQcWekdUnMg58bQSHyTjwkj9jcX2RURxaVZkr15wxo/Z3Ydo2PVK\r\n"
+    "3afEr0/vcuFvE7QeGXiI2DJdVt3JefatZ3rj4VTW2aUZwHGUiWWIUudBfQKR0JEp\r\n"
+    "lJ8MFaKDh4/A2VEJnXILu1iwvc1m3jCaPuzZKdoHM/1234bznJI2aAfhfIhoHw90\r\n"
+    "tPO+\r\n"
+    "-----END CERTIFICATE-----\r\n";
+
 const uint8_t g_testChainKeystore[] = { 0x30, 0x82, 0x0D, 0xF1, 0x02, 0x01, 0x03, 0x30, 0x82, 0x0D, 0xB7, 0x06, 0x09,
     0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x07, 0x01, 0xA0, 0x82, 0x0D, 0xA8, 0x04, 0x82, 0x0D, 0xA4, 0x30, 0x82,
     0x0D, 0xA0, 0x30, 0x82, 0x08, 0x57, 0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x07, 0x06, 0xA0, 0x82,
@@ -216,6 +348,39 @@ static const char g_testKeystorePwd[] = "123456";
 
 const uint8_t g_testIssuerValid[] = { 0x30, 0x17, 0x31, 0x15, 0x30, 0x13, 0x06, 0x03, 0x55, 0x04, 0x03, 0x0C, 0x0C,
     0x54, 0x65, 0x73, 0x74, 0x20, 0x4E, 0x43, 0x20, 0x43, 0x41, 0x20, 0x31 };
+
+static const uint8_t g_testOcspResponses[] = { 0x30, 0x82, 0x01, 0xd3, 0x0a, 0x01, 0x00, 0xa0, 0x82, 0x01, 0xcc, 0x30,
+    0x82, 0x01, 0xc8, 0x06, 0x09, 0x2b, 0x06, 0x01, 0x05, 0x05, 0x07, 0x30, 0x01, 0x01, 0x04, 0x82, 0x01, 0xb9, 0x30,
+    0x82, 0x01, 0xb5, 0x30, 0x81, 0x9e, 0xa2, 0x16, 0x04, 0x14, 0x24, 0x6f, 0x91, 0x3f, 0x89, 0x87, 0x87, 0x0e, 0x32,
+    0xc2, 0x40, 0x18, 0xdf, 0xc5, 0x4c, 0xeb, 0x4f, 0xc8, 0x49, 0x32, 0x18, 0x0f, 0x32, 0x30, 0x32, 0x34, 0x30, 0x32,
+    0x32, 0x31, 0x31, 0x33, 0x30, 0x30, 0x33, 0x31, 0x5a, 0x30, 0x73, 0x30, 0x71, 0x30, 0x49, 0x30, 0x09, 0x06, 0x05,
+    0x2b, 0x0e, 0x03, 0x02, 0x1a, 0x05, 0x00, 0x04, 0x14, 0xd1, 0x5d, 0xff, 0xaa, 0x00, 0x86, 0xa3, 0x32, 0x76, 0x5e,
+    0x89, 0x07, 0x31, 0xdb, 0xba, 0x75, 0x0b, 0x31, 0x13, 0xdb, 0x04, 0x14, 0x24, 0x6f, 0x91, 0x3f, 0x89, 0x87, 0x87,
+    0x0e, 0x32, 0xc2, 0x40, 0x18, 0xdf, 0xc5, 0x4c, 0xeb, 0x4f, 0xc8, 0x49, 0x32, 0x02, 0x10, 0x04, 0xc3, 0xb4, 0x5b,
+    0x70, 0x94, 0xf4, 0xb5, 0x95, 0xc3, 0x56, 0xc4, 0xfe, 0x3a, 0x98, 0xa2, 0x80, 0x00, 0x18, 0x0f, 0x32, 0x30, 0x32,
+    0x34, 0x30, 0x32, 0x32, 0x31, 0x31, 0x32, 0x34, 0x35, 0x30, 0x31, 0x5a, 0xa0, 0x11, 0x18, 0x0f, 0x32, 0x30, 0x32,
+    0x34, 0x30, 0x32, 0x32, 0x38, 0x31, 0x31, 0x34, 0x35, 0x30, 0x31, 0x5a, 0x30, 0x0d, 0x06, 0x09, 0x2a, 0x86, 0x48,
+    0x86, 0xf7, 0x0d, 0x01, 0x01, 0x0b, 0x05, 0x00, 0x03, 0x82, 0x01, 0x01, 0x00, 0xb0, 0xdf, 0x0f, 0x94, 0x4f, 0x25,
+    0x05, 0xec, 0x59, 0x65, 0x15, 0xb7, 0x04, 0x91, 0x10, 0x45, 0xf5, 0xbd, 0x26, 0x16, 0xd1, 0x7d, 0x4e, 0x69, 0x2f,
+    0xb3, 0xb2, 0xb5, 0x1c, 0xaa, 0x1d, 0xe5, 0xe9, 0x2a, 0x52, 0xdb, 0xde, 0x69, 0xed, 0xa0, 0x2e, 0x84, 0x18, 0x88,
+    0xfd, 0x26, 0x9f, 0xe7, 0x1c, 0x09, 0xba, 0xe8, 0x18, 0x7c, 0x17, 0x5e, 0xfd, 0x1f, 0x52, 0x75, 0x7e, 0xec, 0x3c,
+    0xf2, 0x1d, 0x55, 0xa4, 0xf7, 0x2c, 0xdf, 0x40, 0x06, 0x8c, 0x19, 0xc2, 0xbc, 0x72, 0xbb, 0xc2, 0xa1, 0xbb, 0xd7,
+    0xd3, 0x79, 0xb3, 0x70, 0xcb, 0x4c, 0x07, 0x18, 0xbc, 0xd1, 0x4e, 0xe2, 0x3e, 0x18, 0xca, 0x08, 0x3d, 0x7f, 0xbc,
+    0xf2, 0x0c, 0x1a, 0x2c, 0x10, 0x83, 0x59, 0xa0, 0xfb, 0x1f, 0xc2, 0x0e, 0x26, 0x17, 0x27, 0xa3, 0xba, 0x49, 0x9b,
+    0x13, 0xdd, 0x55, 0xeb, 0xc8, 0xa2, 0x49, 0x76, 0xcd, 0x46, 0x5a, 0x78, 0x19, 0x26, 0xde, 0xff, 0x66, 0xac, 0x13,
+    0x42, 0x89, 0x86, 0x7e, 0x5c, 0xa4, 0x67, 0xd7, 0x0d, 0xbb, 0x5f, 0xf4, 0x38, 0x91, 0x87, 0x99, 0xeb, 0xd3, 0x99,
+    0x97, 0xd8, 0x0c, 0xae, 0xfa, 0x23, 0x2c, 0x4a, 0xbd, 0xd1, 0xe6, 0xa5, 0x31, 0xee, 0x8a, 0x88, 0xc2, 0x5d, 0x61,
+    0x2c, 0x43, 0x04, 0x33, 0x57, 0x16, 0x98, 0xc2, 0x9a, 0x01, 0xd1, 0xad, 0x8b, 0xa5, 0x56, 0x0b, 0xd9, 0x4c, 0x81,
+    0x88, 0x90, 0x92, 0x07, 0x38, 0xf3, 0xab, 0x38, 0xf8, 0xbc, 0x97, 0x59, 0xae, 0x71, 0xea, 0x25, 0x05, 0x75, 0x3f,
+    0x35, 0x0b, 0x00, 0xcc, 0x1b, 0xe3, 0x32, 0x46, 0x01, 0x72, 0x4c, 0x46, 0x1a, 0x72, 0xd4, 0x7f, 0x4a, 0x94, 0x4f,
+    0x82, 0xf8, 0x69, 0x86, 0x40, 0x32, 0x69, 0x79, 0xbd, 0x09, 0x16, 0x2b, 0xbb, 0x9a, 0x0a, 0x11, 0xa9, 0x65, 0xf0,
+    0xac, 0xbe, 0xd8 };
+
+static const char g_crlDownloadURI[] = "http://crl.digicert.cn/GeoTrustRSACNCAG2.crl";
+
+static const char g_crlDownloadURIHttps[] = "https://ocsp.digicert.cn";
+
+static const char g_crlDownloadURIHttpsInvalid[] = "https://www.123.com";
 
 #ifdef __cplusplus
 }

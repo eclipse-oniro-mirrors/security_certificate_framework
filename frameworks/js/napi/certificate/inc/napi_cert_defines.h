@@ -100,6 +100,16 @@ const std::string CERT_CHAIN_TRUSTANCHOR_TAG_CASUBJECT = "CASubject";
 const std::string CERT_CHAIN_VALIDATE_TAG_DATE = "date";
 const std::string CERT_CHAIN_VALIDATE_TAG_TRUSTANCHORS = "trustAnchors";
 const std::string CERT_CHAIN_VALIDATE_TAG_CERTCRLS = "certCRLs";
+const std::string CERT_CHAIN_VALIDATE_TAG_REVOCATIONCHECKPARAM = "revocationCheckParam";
+const std::string CERT_CHAIN_VALIDATE_TAG_OCSP_REQ_EXTENSION = "ocspRequestExtension";
+const std::string CERT_CHAIN_VALIDATE_TAG_OCSP_RESP_URI = "ocspResponderURI";
+const std::string CERT_CHAIN_VALIDATE_TAG_OCSP_RESP_CERT = "ocspResponderCert";
+const std::string CERT_CHAIN_VALIDATE_TAG_OCSP_RESPS = "ocspResponses";
+const std::string CERT_CHAIN_VALIDATE_TAG_CRL_DOWNLOAD_URI = "crlDownloadURI";
+const std::string CERT_CHAIN_VALIDATE_TAG_OPTIONS = "options";
+const std::string CERT_CHAIN_VALIDATE_TAG_POLICY = "policy";
+const std::string CERT_CHAIN_VALIDATE_TAG_SSLHOSTNAME = "sslHostname";
+const std::string CERT_CHAIN_VALIDATE_TAG_KEYUSAGE = "keyUsage";
 // CertChainValidateResult
 const std::string CERT_CHAIN_VALIDATE_RESULLT_TAG_TRUSTANCHOR = "trustAnchor";
 const std::string CERT_CHAIN_VALIDATE_RESULLT_TAG_X509CERT = "entityCert";

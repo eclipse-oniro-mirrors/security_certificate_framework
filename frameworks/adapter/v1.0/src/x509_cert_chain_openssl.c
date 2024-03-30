@@ -15,14 +15,15 @@
 
 #include "x509_cert_chain_openssl.h"
 
-#include <openssl/asn1.h>
-#include <openssl/bio.h>
 #include <openssl/crypto.h>
+#include <openssl/err.h>
 #include <openssl/evp.h>
 #include <openssl/obj_mac.h>
+#include <openssl/ocsp.h>
 #include <openssl/ossl_typ.h>
 #include <openssl/pem.h>
 #include <openssl/pkcs12.h>
+#include <openssl/ssl.h>
 #include <openssl/x509.h>
 #include <openssl/x509_vfy.h>
 #include <openssl/x509v3.h>
@@ -45,6 +46,12 @@
 #define TIMET_NUM 6
 #define TIMET_YEAR_START 1900
 #define TIMET_YEAR_OFFSET 100 // start time year from 1900 + 100
+#define HTTP_TIMEOUT 10
+#define TRY_CONNECT_TIMES 3
+#define OCSP_CONN_MILLISECOND 5000 // millisecond
+#define OCSP_CONN_TIMEOUT (-1)     // timeout == 0 means no timeout, < 0 means exactly one try.
+#define HTTP_PORT "80"
+#define HTTPS_PORT "443"
 
 typedef struct {
     HcfX509CertChainSpi base;
@@ -57,6 +64,21 @@ typedef struct {
     int32_t errCode;
     CfResult result;
 } OpensslErrorToResult;
+
+typedef struct {
+    OCSP_REQUEST *req;
+    OCSP_RESPONSE *resp;
+    OCSP_CERTID *certid;
+} OcspLocalParam;
+
+typedef struct {
+    X509 *leafCert;
+    HcfRevocationCheckParam *revo;
+    char **host;
+    char **port;
+    char **path;
+    int *ssl;
+} GetOcspUrlParams;
 
 static const OpensslErrorToResult ERROR_TO_RESULT_MAP[] = {
     { X509_V_OK, CF_SUCCESS },
@@ -77,93 +99,6 @@ static CfResult ConvertOpensslErrorMsg(int32_t errCode)
     }
     return CF_ERR_CRYPTO_OPERATION;
 }
-
-static bool CheckIsSelfSigned(const X509 *cert)
-{
-    bool ret = false;
-    X509_NAME *issuer = X509_get_issuer_name(cert);
-    if (issuer == NULL) {
-        LOGE("x509 get issuer name failed!");
-        CfPrintOpensslError();
-        return CF_ERR_CRYPTO_OPERATION;
-    }
-
-    X509_NAME *subject = X509_get_subject_name(cert);
-    if (subject == NULL) {
-        LOGE("x509 get subject name failed!");
-        CfPrintOpensslError();
-        return CF_ERR_CRYPTO_OPERATION;
-    }
-
-    ret = (X509_NAME_cmp(issuer, subject) == 0);
-    LOGI("CheckIsSelfSigned() ret: %d .", ret);
-    return ret;
-}
-
-static bool CheckIsLeafCert(X509 *cert)
-{
-    if (cert == NULL) {
-        return false;
-    }
-
-    bool ret = true;
-    if (X509_check_ca(cert)) {
-        return false;
-    }
-
-    return ret;
-}
-
-static CfResult IsOrderCertChain(STACK_OF(X509) * certsChain, bool *isOrder)
-{
-    int num = sk_X509_num(certsChain);
-    if (num == 1) {
-        LOGI("1 certs is order chain.");
-        return CF_SUCCESS;
-    }
-
-    X509 *cert = NULL;
-    X509 *certNext = NULL;
-    X509_NAME *issuerName = NULL;
-    X509_NAME *subjectName = NULL;
-    for (int i = num - 1; i > 0; --i) {
-        cert = sk_X509_value(certsChain, i);
-        if (cert == NULL) {
-            LOGE("sk X509 value is null, failed!");
-            CfPrintOpensslError();
-            return CF_ERR_CRYPTO_OPERATION;
-        }
-        certNext = sk_X509_value(certsChain, i - 1);
-        if (certNext == NULL) {
-            LOGE("sk X509 value is null, failed!");
-            CfPrintOpensslError();
-            return CF_ERR_CRYPTO_OPERATION;
-        }
-
-        subjectName = X509_get_subject_name(cert);
-        if (subjectName == NULL) {
-            LOGE("x509 get subject name failed!");
-            CfPrintOpensslError();
-            return CF_ERR_CRYPTO_OPERATION;
-        }
-        issuerName = X509_get_issuer_name(certNext);
-        if (issuerName == NULL) {
-            LOGE("x509 get subject name failed!");
-            CfPrintOpensslError();
-            return CF_ERR_CRYPTO_OPERATION;
-        }
-
-        if (!(X509_NAME_cmp(subjectName, issuerName) == 0)) {
-            *isOrder = false;
-            LOGI("is a misOrder chain.");
-            break;
-        }
-    }
-
-    return CF_SUCCESS;
-}
-
-// helper functions end
 
 static const char *GetX509CertChainClass(void)
 {
@@ -407,27 +342,6 @@ static EVP_PKEY *ConvertByteArrayToPubKey(const uint8_t *pubKeyBytes, size_t len
     }
 
     return pubKey;
-}
-
-static CfResult CheckSelfPubkey(X509 *cert, const EVP_PKEY *pubKey)
-{
-    EVP_PKEY *certPublicKey = X509_get_pubkey(cert);
-    if (certPublicKey == NULL) {
-        LOGE("get cert public key failed!");
-        CfPrintOpensslError();
-        return CF_ERR_CRYPTO_OPERATION;
-    }
-
-    int isMatch = EVP_PKEY_cmp(certPublicKey, pubKey);
-    if (isMatch != CF_OPENSSL_SUCCESS) {
-        LOGE("cmp cert public key failed!");
-        CfPrintOpensslError();
-        EVP_PKEY_free(certPublicKey);
-        return CF_ERR_CRYPTO_OPERATION;
-    }
-
-    EVP_PKEY_free(certPublicKey);
-    return CF_SUCCESS;
 }
 
 static CfResult CheckOthersInTrustAnchor(const HcfX509TrustAnchor *anchor, X509 *rootCert, bool *checkResult)
@@ -744,7 +658,7 @@ static CfResult GetX509Crls(const HcfCertCRLCollectionArray *certCRLCollections,
     return res;
 }
 
-static CfResult ValidateCrls(const HcfCertCRLCollectionArray *collectionArr, STACK_OF(X509) * x509CertChain)
+static CfResult ValidateCrlLocal(const HcfCertCRLCollectionArray *collectionArr, STACK_OF(X509) * x509CertChain)
 {
     STACK_OF(X509_CRL) *crlStack = sk_X509_CRL_new_null();
     if (crlStack == NULL) {
@@ -843,6 +757,594 @@ static CfResult ValidateTrustAnchor(const HcfX509TrustAnchorArray *trustAnchorsA
     return res;
 }
 
+static const char *GetDpUrl(DIST_POINT *dp)
+{
+    GENERAL_NAMES *gens = NULL;
+    GENERAL_NAME *gen = NULL;
+    ASN1_STRING *url = NULL;
+
+    if (dp == NULL || dp->distpoint == NULL || dp->distpoint->type != 0) {
+        return NULL;
+    }
+    gens = dp->distpoint->name.fullname;
+    if (gens == NULL) {
+        return NULL;
+    }
+    for (uint32_t i = 0; i < sk_GENERAL_NAME_num(gens); i++) {
+        gen = sk_GENERAL_NAME_value(gens, i);
+        if (gen == NULL) {
+            continue;
+        }
+        int gtype;
+        url = GENERAL_NAME_get0_value(gen, &gtype);
+        if (url == NULL) {
+            continue;
+        }
+        if (gtype == GEN_URI && ASN1_STRING_length(url) > GEN_URI) {
+            const char *uptr = (const char *)ASN1_STRING_get0_data(url);
+            if (IsHttp(uptr)) {
+                // can/should not use HTTPS here
+                return uptr;
+            }
+        }
+    }
+    return NULL;
+}
+
+static X509_CRL *LoadCrlDp(STACK_OF(DIST_POINT) * crldp)
+{
+    const char *urlptr = NULL;
+    for (int i = 0; i < sk_DIST_POINT_num(crldp); i++) {
+        DIST_POINT *dp = sk_DIST_POINT_value(crldp, i);
+        urlptr = GetDpUrl(dp);
+        if (urlptr != NULL) {
+            return X509_CRL_load_http(urlptr, NULL, NULL, HTTP_TIMEOUT);
+        }
+    }
+    return NULL;
+}
+
+static X509_CRL *GetCrlFromCert(const HcfX509CertChainValidateParams *params, X509 *x509)
+{
+    STACK_OF(DIST_POINT) *crlStack = X509_get_ext_d2i(x509, NID_crl_distribution_points, NULL, NULL);
+    if (crlStack != NULL) {
+        X509_CRL *crl = LoadCrlDp(crlStack);
+        sk_DIST_POINT_pop_free(crlStack, DIST_POINT_free);
+        if (crl != NULL) {
+            return crl;
+        }
+    }
+
+    if (params->revocationCheckParam->crlDownloadURI != NULL &&
+        params->revocationCheckParam->crlDownloadURI->data != NULL) {
+        char *url = (char *)params->revocationCheckParam->crlDownloadURI->data;
+        if (IsUrlValid(url)) {
+            return X509_CRL_load_http(url, NULL, NULL, HTTP_TIMEOUT);
+        }
+    }
+
+    return NULL;
+}
+
+static CfResult ValidateCrlOnline(const HcfX509CertChainValidateParams *params, STACK_OF(X509) * x509CertChain)
+{
+    X509 *x509 = sk_X509_value(x509CertChain, 0);
+    if (x509 == NULL) {
+        LOGE("Get leaf cert failed!");
+        return CF_INVALID_PARAMS;
+    }
+    X509_CRL *crl = GetCrlFromCert(params, x509);
+    if (crl == NULL) {
+        LOGE("Get crl online is null!");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    STACK_OF(X509_CRL) *crlStack = sk_X509_CRL_new_null();
+    if (crlStack == NULL) {
+        LOGE("Create crl stack failed!");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    if (sk_X509_CRL_push(crlStack, crl) == 0) {
+        LOGE("Push crl stack failed!");
+        sk_X509_CRL_pop_free(crlStack, X509_CRL_free);
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    if (CheckCertChainIsRevoked(crlStack, x509CertChain) != CF_SUCCESS) {
+        LOGE("Certchain is revoked, verify failed!");
+        sk_X509_CRL_pop_free(crlStack, X509_CRL_free);
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    sk_X509_CRL_pop_free(crlStack, X509_CRL_free);
+    return CF_SUCCESS;
+}
+
+static bool ContainsOption(HcfRevChkOpArray *options, HcfRevChkOption op)
+{
+    if (options == NULL || options->data == NULL) {
+        return false;
+    }
+
+    for (uint32_t i = 0; i < options->count; i++) {
+        if (options->data[i] == op) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static CfResult VerifyOcspSinger(OCSP_BASICRESP *bs, STACK_OF(X509) * certChain, X509 *cert)
+{
+    if (cert == NULL) {
+        LOGE("Input data cert is null!");
+        return CF_INVALID_PARAMS;
+    }
+    X509_STORE *store = X509_STORE_new();
+    if (store == NULL) {
+        LOGE("New x509 store failed!");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    CfResult res = SetVerifyParams(store, cert);
+    if (res != CF_SUCCESS) {
+        LOGE("Set verify params failed!");
+        X509_STORE_free(store);
+        return res;
+    }
+
+    if (OCSP_basic_verify(bs, certChain, store, 0) != 1) {
+        LOGE("OCSP basic verify failed!");
+        res = CF_ERR_CERT_SIGNATURE_FAILURE;
+    }
+    X509_STORE_free(store);
+
+    return res;
+}
+
+static CfResult ParseResp(OCSP_BASICRESP *bs, OCSP_CERTID *certid)
+{
+    int ocspStatus;
+    ASN1_GENERALIZEDTIME *thisUpdate = NULL;
+    ASN1_GENERALIZEDTIME *nextUpdate = NULL;
+    CfResult res = CF_ERR_CRYPTO_OPERATION;
+    if (certid != NULL && OCSP_resp_find_status(bs, certid, &ocspStatus, NULL, NULL, &thisUpdate, &nextUpdate)) {
+        LOGI("OCSP_resp_find_status success!");
+        switch (ocspStatus) {
+            case V_OCSP_CERTSTATUS_GOOD:
+                LOGI("The OCSP status is [V_OCSP_CERTSTATUS_GOOD]!");
+                res = CF_SUCCESS;
+                break;
+            case V_OCSP_CERTSTATUS_REVOKED:
+                LOGE("The OCSP status is [V_OCSP_CERTSTATUS_REVOKED]!");
+                break;
+            case V_OCSP_CERTSTATUS_UNKNOWN:
+            default:
+                LOGE("!The OCSP status is [UNKNOWN]!");
+                break;
+        }
+    }
+    return res;
+}
+
+static CfResult ValidateOcspLocal(OcspLocalParam localParam, STACK_OF(X509) * x509CertChain,
+    HcfX509TrustAnchor *trustAnchor, const HcfX509CertChainValidateParams *params)
+{
+    int i;
+    OCSP_BASICRESP *bs = NULL;
+    X509 *trustCert = NULL;
+
+    HcfRevocationCheckParam *revo = params->revocationCheckParam;
+    if (localParam.resp == NULL && revo->ocspResponses != NULL) {
+        localParam.resp =
+            d2i_OCSP_RESPONSE(NULL, (const unsigned char **)&(revo->ocspResponses->data), revo->ocspResponses->size);
+    }
+    if (localParam.resp == NULL || localParam.certid == NULL) {
+        LOGE("The input data is null!");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    if (OCSP_response_status(localParam.resp) != OCSP_RESPONSE_STATUS_SUCCESSFUL) {
+        LOGE("The resp status is not success!");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    bs = OCSP_response_get1_basic(localParam.resp);
+    if (bs == NULL) {
+        LOGE("Error parsing response!");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    if (localParam.req != NULL && ((i = OCSP_check_nonce(localParam.req, bs)) <= 0)) {
+        if (i == -1) {
+            LOGW("No nonce in response!");
+        } else {
+            LOGE("Nonce Verify error!");
+            OCSP_BASICRESP_free(bs);
+            return CF_ERR_CRYPTO_OPERATION;
+        }
+    }
+    if (revo->ocspResponderCert != NULL) {
+        trustCert = GetX509FromHcfX509Certificate((HcfCertificate *)(params->revocationCheckParam->ocspResponderCert));
+    } else if (trustAnchor->CACert != NULL) {
+        trustCert = GetX509FromHcfX509Certificate((HcfCertificate *)(trustAnchor->CACert));
+    } else {
+        trustCert = sk_X509_value(x509CertChain, sk_X509_num(x509CertChain) - 1);
+    }
+
+    CfResult res = VerifyOcspSinger(bs, x509CertChain, trustCert);
+    if (res != CF_SUCCESS) {
+        LOGE("VerifySinger failed!");
+        OCSP_BASICRESP_free(bs);
+        return res;
+    }
+    res = ParseResp(bs, localParam.certid);
+    OCSP_BASICRESP_free(bs);
+    return res;
+}
+
+static OCSP_RESPONSE *SendReqBioCustom(BIO *bio, const char *host, const char *path, OCSP_REQUEST *req)
+{
+    OCSP_RESPONSE *resp = NULL;
+    OCSP_REQ_CTX *ctx;
+
+    ctx = OCSP_sendreq_new(bio, path, NULL, -1);
+    if (ctx == NULL) {
+        LOGE("Create ocsp req ctx failed!");
+        return NULL;
+    }
+    if (!OCSP_REQ_CTX_add1_header(ctx, "Accept", "application/ocsp-response")) {
+        return NULL;
+    }
+    if (!OCSP_REQ_CTX_add1_header(ctx, "Host", host)) {
+        return NULL;
+    }
+    if (!OCSP_REQ_CTX_set1_req(ctx, req)) {
+        return NULL;
+    }
+    if (ctx == NULL) {
+        return NULL;
+    }
+    int ret;
+    int tryNum = TRY_CONNECT_TIMES;
+    do {
+        ret = OCSP_sendreq_nbio(&resp, ctx);
+        tryNum--;
+    } while ((ret == -1) && BIO_should_retry(bio) && tryNum != 0);
+    OCSP_REQ_CTX_free(ctx);
+    if (ret) {
+        return resp;
+    }
+    return NULL;
+}
+
+static bool ConnectToServer(BIO *bio, int tryNum)
+{
+    int ret = 0;
+    do {
+        ret = BIO_do_connect_retry(bio, OCSP_CONN_TIMEOUT, OCSP_CONN_MILLISECOND);
+        if (ret == 1) {
+            LOGI("OCSP connecte service successfully.");
+            break;
+        } else if (ret <= 0) {
+            LOGE("OCSP connecte service failed.");
+            CfPrintOpensslError();
+            if (BIO_should_retry(bio)) {
+                LOGI("Try to connect service again, [%d]st.", tryNum);
+                tryNum--;
+            } else {
+                break;
+            }
+        }
+    } while (ret <= 0 && tryNum != 0);
+    return (ret == 1 ? true : false);
+}
+
+static CfResult GetOcspUrl(GetOcspUrlParams *params)
+{
+    char *url = NULL;
+
+    if (params->leafCert == NULL) {
+        LOGE("Unable to get leafCert.");
+        return CF_INVALID_PARAMS;
+    }
+    STACK_OF(OPENSSL_STRING) *ocspList = X509_get1_ocsp(params->leafCert);
+    if (ocspList != NULL && sk_OPENSSL_STRING_num(ocspList) > 0) {
+        url = sk_OPENSSL_STRING_value(ocspList, 0);
+    }
+
+    if (url == NULL) {
+        if (params->revo->ocspResponderURI == NULL || params->revo->ocspResponderURI->data == NULL) {
+            LOGE("Unable to get url.");
+            return CF_ERR_CRYPTO_OPERATION;
+        }
+    }
+    char *urlValiable = (url == NULL) ? (char *)(params->revo->ocspResponderURI->data) : url;
+    if (!IsUrlValid(urlValiable)) {
+        LOGE("Invalid url.");
+        return CF_INVALID_PARAMS;
+    }
+    if (!OCSP_parse_url(urlValiable, params->host, params->port, params->path, params->ssl)) {
+        LOGE("Unable to parse url.");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    return CF_SUCCESS;
+}
+
+static CfResult SetRequestData(HcfRevocationCheckParam *revo, OCSP_REQUEST *req, OCSP_CERTID *certId)
+{
+    if (OCSP_request_add0_id(req, certId) == NULL) {
+        LOGE("Unable to add certId to req.");
+        return CF_INVALID_PARAMS;
+    }
+
+    if (revo->ocspRequestExtension != NULL) {
+        for (size_t i = 0; i < revo->ocspRequestExtension->count; i++) {
+            X509_EXTENSION *ext =
+                d2i_X509_EXTENSION(NULL, (const unsigned char **)&(revo->ocspRequestExtension->data[i].data),
+                    revo->ocspRequestExtension->data[i].size);
+            if (ext == NULL) {
+                return CF_INVALID_PARAMS;
+            }
+            if (!OCSP_REQUEST_add_ext(req, ext, -1)) {
+                X509_EXTENSION_free(ext);
+                return CF_ERR_CRYPTO_OPERATION;
+            }
+            X509_EXTENSION_free(ext);
+            ext = NULL;
+        }
+    }
+
+    return CF_SUCCESS;
+}
+
+static BIO *CreateConnectBio(char *host, char *port, int ssl)
+{
+    BIO *bio = NULL;
+    if (ssl == 1) {
+        SSL_library_init();
+        SSL_load_error_strings();
+        OpenSSL_add_all_algorithms();
+
+        SSL_CTX *sslCtx = SSL_CTX_new(TLS_client_method());
+        if (sslCtx == NULL) {
+            LOGE("Create ssl context failed.");
+            return NULL;
+        }
+        bio = BIO_new_ssl_connect(sslCtx);
+        if (BIO_set_conn_hostname(bio, host) != 1) {
+            LOGE("Set host name %s failed.", host);
+            return NULL;
+        }
+    } else {
+        bio = BIO_new_connect(host);
+    }
+
+    if (bio == NULL) {
+        LOGE("Create connect bio failed.");
+        return bio;
+    }
+
+    if (port != NULL) {
+        if (BIO_set_conn_port(bio, port) != 1) {
+            LOGE("Set port %s failed.", port);
+            return NULL;
+        }
+    } else if (ssl) {
+        if (BIO_set_conn_port(bio, HTTPS_PORT) != 1) {
+            LOGE("Set port %s failed.", HTTPS_PORT);
+            return NULL;
+        }
+    } else {
+        if (BIO_set_conn_port(bio, HTTP_PORT) != 1) {
+            LOGE("Set port %s failed.", HTTP_PORT);
+            return NULL;
+        }
+    }
+    return bio;
+}
+
+static CfResult ValidateOcspOnline(STACK_OF(X509) * x509CertChain, OCSP_CERTID *certId, HcfX509TrustAnchor *trustAnchor,
+    const HcfX509CertChainValidateParams *params)
+{
+    char *host = NULL;
+    char *port = NULL;
+    char *path = NULL;
+    int ssl = 0;
+
+    HcfRevocationCheckParam *revo = params->revocationCheckParam;
+
+    CfResult res = GetOcspUrl(&(GetOcspUrlParams) { .leafCert = sk_X509_value(x509CertChain, 0),
+        .revo = revo, .host = &host, .port = &port, .path = &path, .ssl = &ssl });
+    if (res != CF_SUCCESS) {
+        LOGE("Unable to get ocps url.");
+        return res;
+    }
+
+    BIO *cbio = CreateConnectBio(host, port, ssl);
+    if (cbio == NULL) {
+        LOGE("Unable to create connection.");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    if (!ConnectToServer(cbio, TRY_CONNECT_TIMES)) {
+        LOGE("Unable to connect service.");
+        BIO_free_all(cbio);
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    OCSP_REQUEST *req = OCSP_REQUEST_new();
+    if (req == NULL) {
+        LOGE("Unable to create req.");
+        BIO_free_all(cbio);
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    res = SetRequestData(revo, req, certId);
+    if (res != CF_SUCCESS) {
+        LOGE("Unable to set request data.");
+        OCSP_REQUEST_free(req);
+        BIO_free_all(cbio);
+        return res;
+    }
+
+    /* Send OCSP request and wait for response */
+    OCSP_RESPONSE *resp = SendReqBioCustom(cbio, host, path, req);
+    if (resp == NULL) {
+        LOGE("Unable to Send request.");
+        OCSP_REQUEST_free(req);
+        BIO_free_all(cbio);
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    res = ValidateOcspLocal(
+        (OcspLocalParam) { .req = req, .resp = resp, .certid = certId }, x509CertChain, trustAnchor, params);
+    OCSP_REQUEST_free(req);
+    BIO_free_all(cbio);
+    OCSP_RESPONSE_free(resp);
+    return res;
+}
+
+static OCSP_CERTID *GetCertId(STACK_OF(X509) * x509CertChain)
+{
+    X509 *issuerCert = NULL;
+    X509 *leafCert = NULL;
+    X509_STORE *store = NULL;
+    X509_STORE_CTX *storeCtx = NULL;
+    OCSP_CERTID* ret = NULL;
+    do
+    {
+        store = X509_STORE_new();
+        if (store == NULL) {
+            LOGE("Unable to create store.");
+            break;
+        }
+        leafCert = sk_X509_value(x509CertChain, 0);
+        if (leafCert == NULL) {
+            LOGE("Get the leaf cert is null.");
+            break;
+        }
+        for (int i = 1; i < sk_X509_num(x509CertChain); i++) {
+            X509 *tmpCert = sk_X509_value(x509CertChain, i);
+            if ((X509_cmp(leafCert, tmpCert) != 0) && (!X509_STORE_add_cert(store, tmpCert))) {
+                LOGE("Add cert to store failed.");
+                break;
+            }
+        }
+        storeCtx = X509_STORE_CTX_new();
+        if (storeCtx == NULL) {
+            LOGE("Unable to create storeCtx.");
+            break;
+        }
+        if (X509_STORE_CTX_init(storeCtx, store, NULL, NULL) == 0) {
+            LOGE("Unable to init STORE_CTX.");
+            break;
+        }
+
+        if ((X509_STORE_CTX_get1_issuer(&issuerCert, storeCtx, leafCert) != 1) || (issuerCert == NULL)) {
+            LOGE("Unable to get issuer.");
+            break;
+        }
+        ret = OCSP_cert_to_id(EVP_sha1(), leafCert, issuerCert);
+    } while (0);
+
+    if (store != NULL) {
+        X509_STORE_free(store);
+    }
+    if (storeCtx != NULL) {
+        X509_STORE_CTX_free(storeCtx);
+    }
+
+    return ret;
+}
+
+static CfResult ValidateRevocationOnLine(const HcfX509CertChainValidateParams *params, STACK_OF(X509) * x509CertChain,
+    HcfX509TrustAnchor *trustAnchor, OCSP_CERTID *certId)
+{
+    CfResult res = CF_INVALID_PARAMS;
+    if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_PREFER_OCSP)) {
+        if ((res = ValidateOcspOnline(x509CertChain, certId, trustAnchor, params)) == CF_SUCCESS) {
+            LOGI("Excute validate ocsp online success.");
+            return res;
+        }
+        if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_FALLBACK_NO_PREFER) &&
+            (res = ValidateCrlOnline(params, x509CertChain)) == CF_SUCCESS) {
+            LOGI("Excute validateCRLOnline success.");
+            return res;
+        }
+        if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_FALLBACK_LOCAL)) {
+            if ((res = ValidateOcspLocal((OcspLocalParam) { .req = NULL, .resp = NULL, .certid = certId },
+                     x509CertChain, trustAnchor, params)) == CF_SUCCESS) {
+                LOGI("Excute validate ocsp local success.");
+                return res;
+            }
+            LOGI("Try to run CRLLocal.");
+            return ValidateCrlLocal(params->certCRLCollections, x509CertChain);
+        }
+    } else {
+        if ((res = ValidateCrlOnline(params, x509CertChain)) == CF_SUCCESS) {
+            LOGI("Excute validateCRLOnline success.");
+            return res;
+        }
+        if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_FALLBACK_NO_PREFER) &&
+            (res = ValidateOcspOnline(x509CertChain, certId, trustAnchor, params)) == CF_SUCCESS) {
+            LOGI("Excute validate ocsp online success.");
+            return res;
+        }
+        if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_FALLBACK_LOCAL)) {
+            if ((res = ValidateCrlLocal(params->certCRLCollections, x509CertChain)) == CF_SUCCESS) {
+                LOGI("Excute validateCRLLocal success.");
+                return res;
+            }
+            LOGI("Try to ValidateOcspLocal.");
+            return ValidateOcspLocal(
+                (OcspLocalParam) { .req = NULL, .resp = NULL, .certid = certId }, x509CertChain, trustAnchor, params);
+        }
+    }
+    return res;
+}
+
+static CfResult ValidateRevocationLocal(const HcfX509CertChainValidateParams *params, STACK_OF(X509) * x509CertChain,
+    HcfX509TrustAnchor *trustAnchor, OCSP_CERTID *certId)
+{
+    CfResult res = CF_INVALID_PARAMS;
+    if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_PREFER_OCSP)) {
+        if ((res = ValidateOcspLocal((OcspLocalParam) { .req = NULL, .resp = NULL, .certid = certId }, x509CertChain,
+                 trustAnchor, params)) == CF_SUCCESS) {
+            LOGI("Excute validate ocsp local success.");
+            return res;
+        }
+    } else {
+        if ((res = ValidateCrlLocal(params->certCRLCollections, x509CertChain)) == CF_SUCCESS) {
+            LOGI("Excute validate crl local success.");
+            return res;
+        }
+    }
+    return CF_INVALID_PARAMS;
+}
+
+static CfResult ValidateRevocation(
+    STACK_OF(X509) * x509CertChain, HcfX509TrustAnchor *trustAnchor, const HcfX509CertChainValidateParams *params)
+{
+    if (x509CertChain == NULL || params == NULL) {
+        LOGE("The input data is null!");
+        return CF_INVALID_PARAMS;
+    }
+
+    CfResult res = CF_INVALID_PARAMS;
+    if (params->revocationCheckParam && params->revocationCheckParam->options) {
+        OCSP_CERTID *certId = GetCertId(x509CertChain);
+        if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_ACCESS_NETWORK)) {
+            res = ValidateRevocationOnLine(params, x509CertChain, trustAnchor, certId);
+            if (res != CF_SUCCESS) {
+                LOGI("Try to validate revocation online failed.");
+                return res;
+            }
+        } else {
+            res = ValidateRevocationLocal(params, x509CertChain, trustAnchor, certId);
+            if (res != CF_SUCCESS) {
+                LOGI("Try to validate revocation local failed.");
+                return res;
+            }
+        }
+        return res;
+    } else {
+        LOGI("Try to ValidateCrlLocal.");
+        return ValidateCrlLocal(params->certCRLCollections, x509CertChain);
+    }
+}
+
 static CfResult ValidateDate(const STACK_OF(X509) * x509CertChain, CfBlob *date)
 {
     if (date == NULL) {
@@ -885,20 +1387,143 @@ static CfResult ValidateDate(const STACK_OF(X509) * x509CertChain, CfBlob *date)
     return res;
 }
 
+static CfResult ValidatePolicy(const STACK_OF(X509) * x509CertChain, HcfValPolicyType policy, CfBlob *sslHostname)
+{
+    CfResult res = CF_SUCCESS;
+    switch (policy) {
+        case VALIDATION_POLICY_TYPE_SSL:
+            if (sslHostname == NULL) {
+                LOGE("The specified policy is SSL, but sslHostname is null!");
+                return CF_INVALID_PARAMS;
+            }
+            if (!X509_check_host(
+                    sk_X509_value(x509CertChain, 0), (const char *)(sslHostname->data), sslHostname->size, 0, NULL)) {
+                LOGE("Validate SSL policy failed!");
+                return CF_ERR_CRYPTO_OPERATION;
+            }
+        case VALIDATION_POLICY_TYPE_X509:
+            res = CF_SUCCESS;
+            break;
+        default:
+            LOGE("Unknown policy type!");
+            res = CF_INVALID_PARAMS;
+            break;
+    }
+    return res;
+}
+
+static CfResult ValidateUseage(const STACK_OF(X509) * x509CertChain, HcfKuArray *keyUsage)
+{
+    CfResult res = CF_SUCCESS;
+    if (keyUsage != NULL) {
+        X509 *cert = sk_X509_value(x509CertChain, 0);
+        if (cert == NULL) {
+            return CF_INVALID_PARAMS;
+        }
+        uint32_t count = 0;
+        for (size_t i = 0; i < keyUsage->count; i++) {
+            HcfKeyUsageType kuType = keyUsage->data[i];
+            int usageFlag = 0;
+            switch (kuType) {
+                case KEYUSAGE_DIGITAL_SIGNATURE:
+                    usageFlag = X509v3_KU_DIGITAL_SIGNATURE;
+                    break;
+                case KEYUSAGE_NON_REPUDIATION:
+                    usageFlag = X509v3_KU_NON_REPUDIATION;
+                    break;
+                case KEYUSAGE_KEY_ENCIPHERMENT:
+                    usageFlag = X509v3_KU_KEY_ENCIPHERMENT;
+                    break;
+                case KEYUSAGE_DATA_ENCIPHERMENT:
+                    usageFlag = X509v3_KU_DATA_ENCIPHERMENT;
+                    break;
+                case KEYUSAGE_KEY_AGREEMENT:
+                    usageFlag = X509v3_KU_KEY_AGREEMENT;
+                    break;
+                case KEYUSAGE_KEY_CERT_SIGN:
+                    usageFlag = X509v3_KU_KEY_CERT_SIGN;
+                    break;
+                case KEYUSAGE_CRL_SIGN:
+                    usageFlag = X509v3_KU_CRL_SIGN;
+                    break;
+                case KEYUSAGE_ENCIPHER_ONLY:
+                    usageFlag = X509v3_KU_ENCIPHER_ONLY;
+                    break;
+                case KEYUSAGE_DECIPHER_ONLY:
+                    usageFlag = X509v3_KU_DECIPHER_ONLY;
+                    break;
+                default:
+                    return CF_INVALID_PARAMS;
+            }
+            if ((X509_get_key_usage(cert) & usageFlag)) {
+                count++;
+            }
+        }
+        res = (count == keyUsage->count) ? CF_SUCCESS : CF_ERR_CRYPTO_OPERATION;
+    }
+    return res;
+}
+
+static CfResult ValidateStrategies(const HcfX509CertChainValidateParams *params, STACK_OF(X509) * x509CertChain)
+{
+    CfResult res = ValidateDate(x509CertChain, params->date);
+    if (res != CF_SUCCESS) {
+        LOGE("Validate date failed.");
+        return res;
+    }
+    res = ValidatePolicy(x509CertChain, params->policy, params->sslHostname);
+    if (res != CF_SUCCESS) {
+        LOGE("Validate policy failed.");
+        return res;
+    }
+    res = ValidateUseage(x509CertChain, params->keyUsage);
+    if (res != CF_SUCCESS) {
+        LOGE("Validate usage failed.");
+        return res;
+    }
+    return res;
+}
+
+static CfResult ValidateOther(const HcfX509CertChainValidateParams *params, STACK_OF(X509) * x509CertChain,
+    HcfX509TrustAnchor **trustAnchorResult)
+{
+    if (sk_X509_num(x509CertChain) < 1) {
+        LOGE("No cert in the certchain!");
+        return CF_INVALID_PARAMS;
+    }
+    X509 *rootCert = sk_X509_value(x509CertChain, sk_X509_num(x509CertChain) - 1);
+    if (rootCert == NULL) {
+        LOGE("Sk X509 value failed!");
+        CfPrintOpensslError();
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    CfResult res = ValidateTrustAnchor(params->trustAnchors, rootCert, x509CertChain, trustAnchorResult);
+    if (res != CF_SUCCESS) {
+        LOGE("ValidateTrustAnchor failed!");
+        return CF_INVALID_PARAMS;
+    }
+    res = ValidateRevocation(x509CertChain, *trustAnchorResult, params);
+    if (res != CF_SUCCESS) {
+        return res;
+    }
+    return res;
+}
+
 static CfResult Validate(
     HcfX509CertChainSpi *self, const HcfX509CertChainValidateParams *params, HcfX509CertChainValidateResult *result)
 {
     if ((self == NULL) || (params == NULL) || (params->trustAnchors == NULL) || (params->trustAnchors->data == NULL) ||
         (params->trustAnchors->count == 0) || (result == NULL)) {
-        LOGE("[Validate openssl] The input data is null!");
+        LOGE("The input data is null!");
         return CF_INVALID_PARAMS;
     }
     if (!IsClassMatch((CfObjectBase *)self, GetX509CertChainClass())) {
-        LOGE("[Validate openssl] Input wrong class type!");
+        LOGE("Input wrong class type!");
         return CF_INVALID_PARAMS;
     }
     if (!((HcfX509CertChainOpensslImpl *)self)->isOrder) {
-        LOGE("misOrder certs chain , verify failed");
+        LOGE("MisOrder certs chain, verify failed!");
         return CF_INVALID_PARAMS;
     }
 
@@ -906,37 +1531,25 @@ static CfResult Validate(
     /* when check time with X509_STORE_CTX_set_time, the noAfter of cert is exclusive, but in RFC5280, it is inclusive,
      * so check manually here.
      */
-    CfResult res = ValidateDate(x509CertChain, params->date);
+    CfResult res = ValidateStrategies(params, x509CertChain);
     if (res != CF_SUCCESS) {
-        LOGE("validate date failed.");
+        LOGE("Validate part1 failed!");
         return res;
     }
 
-    X509 *rootCert = sk_X509_value(x509CertChain, sk_X509_num(x509CertChain) - 1); // root CA
-    if (rootCert == NULL) {
-        LOGE("sk X509 value failed!");
+    HcfX509TrustAnchor *trustAnchorResult = NULL;
+    res = ValidateOther(params, x509CertChain, &trustAnchorResult);
+    if (res != CF_SUCCESS) {
+        LOGE("Validate part2 failed!");
+        return res;
+    }
+    X509 *entityCert = sk_X509_value(x509CertChain, 0);
+    if (entityCert == NULL) {
         CfPrintOpensslError();
         return CF_ERR_CRYPTO_OPERATION;
     }
 
-    HcfX509TrustAnchor *trustAnchorResult = NULL; // Verify trust anchor
-    res = ValidateTrustAnchor(params->trustAnchors, rootCert, x509CertChain, &trustAnchorResult);
-    if (res == CF_SUCCESS) {
-        res = ValidateCrls(params->certCRLCollections, x509CertChain); // Verify Crls
-        if (res != CF_SUCCESS) {
-            LOGE("Validate Crls failed");
-            return res;
-        }
-        X509 *entityCert = sk_X509_value(x509CertChain, 0); // leaf CA
-        if (entityCert == NULL) {
-            LOGE("sk X509 value failed!");
-            CfPrintOpensslError();
-            return CF_ERR_CRYPTO_OPERATION;
-        }
-        res = FillValidateResult(trustAnchorResult, entityCert, result); // build return result
-    }
-
-    return res;
+    return FillValidateResult(trustAnchorResult, entityCert, result);
 }
 
 static int32_t CreateX509CertChainPEM(const CfEncodingBlob *inData, STACK_OF(X509) * *certchainObj)
@@ -1271,44 +1884,6 @@ static CfResult GetCertChainFromCollection(const HcfX509CertChainBuildParameters
     return CF_SUCCESS;
 }
 
-X509 *FindCertificateBySubject(STACK_OF(X509) * certs, X509_NAME *subjectName)
-{
-    X509_STORE_CTX *ctx = NULL;
-    X509 *cert = NULL;
-    X509_OBJECT *obj;
-
-    X509_STORE *store = X509_STORE_new();
-    if (store == NULL) {
-        return NULL;
-    }
-    for (int i = 0; i < sk_X509_num(certs); i++) {
-        cert = sk_X509_value(certs, i);
-        X509_STORE_add_cert(store, cert);
-    }
-
-    if (!(ctx = X509_STORE_CTX_new())) {
-        X509_STORE_free(store);
-        return NULL;
-    }
-    if (X509_STORE_CTX_init(ctx, store, NULL, NULL) != 1) {
-        X509_STORE_free(store);
-        X509_STORE_CTX_free(ctx);
-        return NULL;
-    }
-    obj = X509_STORE_CTX_get_obj_by_subject(ctx, X509_LU_X509, subjectName);
-    if (obj == NULL) {
-        X509_STORE_free(store);
-        X509_STORE_CTX_free(ctx);
-        return NULL;
-    }
-    cert = X509_OBJECT_get0_X509(obj);
-    X509_STORE_free(store);
-    X509_OBJECT_free(obj);
-    X509_STORE_CTX_free(ctx);
-
-    return cert;
-}
-
 bool ValidatCertChainX509(STACK_OF(X509) * x509CertChain, HcfX509CertChainValidateParams params)
 {
     CfResult res = ValidateDate(x509CertChain, params.date);
@@ -1323,7 +1898,7 @@ bool ValidatCertChainX509(STACK_OF(X509) * x509CertChain, HcfX509CertChainValida
     if (ValidateTrustAnchor(params.trustAnchors, rootCert, x509CertChain, &trustAnchorResult) != CF_SUCCESS) {
         return false;
     }
-    if (ValidateCrls(params.certCRLCollections, x509CertChain) != CF_SUCCESS) {
+    if (ValidateCrlLocal(params.certCRLCollections, x509CertChain) != CF_SUCCESS) {
         return false;
     }
     return true;

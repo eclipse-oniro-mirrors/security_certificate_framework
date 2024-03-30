@@ -20,6 +20,10 @@
 #include "cf_log.h"
 #include "cf_memory.h"
 
+#define MIN_URL_LEN 5
+#define HTTP_URL_LEN 7
+#define HTTPS_URL_LEN 8
+
 bool IsStrValid(const char *str, uint32_t maxLen)
 {
     if (str == NULL) {
@@ -65,18 +69,49 @@ bool IsPubKeyClassMatch(const HcfObjectBase *obj, const char *className)
     }
 }
 
-void SubAltNameArrayDataClearAndFree(SubAltNameArray *array)
+bool IsUrlValid(const char *url)
 {
-    if (array == NULL) {
-        LOGD("The input array is null, no need to free.");
-        return;
+    if (url == NULL) {
+        return false;
     }
-    if (array->data != NULL) {
-        for (uint32_t i = 0; i < array->count; ++i) {
-            CF_FREE_BLOB(array->data[i].name);
+    if (strlen(url) < MIN_URL_LEN) {
+        return false;
+    }
+    if (strncmp(url, "http://", HTTP_URL_LEN) != 0 && strncmp(url, "https://", HTTPS_URL_LEN) != 0) {
+        return false;
+    }
+
+    int httpHeaderLen = (strncmp(url, "http://", HTTP_URL_LEN) == 0) ? HTTP_URL_LEN : HTTPS_URL_LEN;
+    const char *startDomain = url + httpHeaderLen;
+    const char *endDomain = startDomain;
+    while (*endDomain != '\0' && *endDomain != '/') {
+        endDomain++;
+    }
+    if (endDomain == startDomain) {
+        return false;
+    }
+
+    if (*endDomain == '\0') {
+        return true;
+    } else {
+        const char *startPath = endDomain;
+        while (*startPath == '/') {
+            startPath++;
         }
-        CfFree(array->data);
-        array->data = NULL;
-        array->count = 0;
+        if (*startPath == '\0') {
+            return false;
+        } else {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool IsHttp(const char *url)
+{
+    if (url != NULL && strncmp(url, "http://", strlen("http://")) == 0) {
+        return true;
+    } else {
+        return false;
     }
 }

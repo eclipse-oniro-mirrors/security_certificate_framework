@@ -16,16 +16,17 @@
 #include "crypto_x509_test_common.h"
 
 #include <gtest/gtest.h>
+#include <openssl/x509v3.h>
 
+#include "cert_crl_common.h"
 #include "certificate_openssl_common.h"
 #include "cf_blob.h"
 #include "cf_log.h"
+#include "fwk_class.h"
 #include "memory_mock.h"
 #include "securec.h"
 #include "x509_certificate.h"
 #include "x509_certificate_openssl.h"
-#include "fwk_class.h"
-#include <openssl/x509v3.h>
 
 #define CONSTRUCT_CERTPOLICY_DATA_SIZE 1
 
@@ -132,11 +133,17 @@ const int g_testCrlWhichEntryWithExtSize = sizeof(g_testCrlWhichEntryWithExt);
 
 const int g_testCertChainPemSize = sizeof(g_testCertChainPem) / sizeof(char);
 
+const int g_testCertChainPem163Size = sizeof(g_testCertChainPem163) / sizeof(char);
+
+const int g_testOcspResponderCertSize = sizeof(g_testOcspResponderCert) / sizeof(char);
+
 const int g_testCertChainPemMidSize = sizeof(g_testCertChainPemMid) / sizeof(char);
 
 const int g_testCertChainPemMidCRLSize = sizeof(g_testCertChainPemMidCRL) / sizeof(char);
 
 const int g_testCertChainPemRootSize = sizeof(g_testCertChainPemRoot) / sizeof(char);
+
+const int g_testCertChainPemRoot163Size = sizeof(g_testCertChainPemRoot163) / sizeof(char);
 
 const int g_testCertChainPemNoRootSize = sizeof(g_testCertChainPemNoRoot) / sizeof(char);
 
@@ -215,6 +222,14 @@ const CfEncodingBlob g_inStreamChainDataDer = { const_cast<uint8_t *>(g_testChai
 const CfEncodingBlob g_inStreamChainDataPem = { reinterpret_cast<uint8_t *>(const_cast<char *>(g_testCertChainPem)),
     g_testCertChainPemSize, CF_FORMAT_PEM };
 
+const CfEncodingBlob g_inStreamChainDataPem163 = {
+    reinterpret_cast<uint8_t *>(const_cast<char *>(g_testCertChainPem163)), g_testCertChainPem163Size, CF_FORMAT_PEM
+};
+
+const CfEncodingBlob g_inStreamOcspResponderCert = {
+    reinterpret_cast<uint8_t *>(const_cast<char *>(g_testOcspResponderCert)), g_testOcspResponderCertSize, CF_FORMAT_PEM
+};
+
 const CfEncodingBlob g_inStreamChainDataPemMid = {
     reinterpret_cast<uint8_t *>(const_cast<char *>(g_testCertChainPemMid)), g_testCertChainPemMidSize, CF_FORMAT_PEM
 };
@@ -222,6 +237,10 @@ const CfEncodingBlob g_inStreamChainDataPemMid = {
 const CfEncodingBlob g_inStreamChainDataPemRoot = {
     reinterpret_cast<uint8_t *>(const_cast<char *>(g_testCertChainPemRoot)), g_testCertChainPemRootSize, CF_FORMAT_PEM
 };
+
+const CfEncodingBlob g_inStreamChainDataPemRoot163 = { reinterpret_cast<uint8_t *>(
+                                                           const_cast<char *>(g_testCertChainPemRoot163)),
+    g_testCertChainPemRoot163Size, CF_FORMAT_PEM };
 
 const CfEncodingBlob g_inStreamChainDataPemNoRoot = { reinterpret_cast<uint8_t *>(
                                                           const_cast<char *>(g_testCertChainPemNoRoot)),
@@ -310,4 +329,114 @@ const char *GetValidCrlClass(void)
 const char *GetValidX509CertificateClass(void)
 {
     return HCF_X509_CERTIFICATE_CLASS;
+}
+
+void FreeTrustAnchor(HcfX509TrustAnchor *&trustAnchor)
+{
+    if (trustAnchor == nullptr) {
+        return;
+    }
+    CfBlobFree(&trustAnchor->CAPubKey);
+    CfBlobFree(&trustAnchor->CASubject);
+    CfObjDestroy(trustAnchor->CACert);
+    trustAnchor->CACert = nullptr;
+    CfFree(trustAnchor);
+    trustAnchor = nullptr;
+}
+
+void BuildAnchorArr(const CfEncodingBlob &certInStream, HcfX509TrustAnchorArray &trustAnchorArray)
+{
+    HcfX509TrustAnchor *anchor = static_cast<HcfX509TrustAnchor *>(HcfMalloc(sizeof(HcfX509TrustAnchor), 0));
+    ASSERT_NE(anchor, nullptr);
+
+    (void)HcfX509CertificateCreate(&certInStream, &anchor->CACert);
+    trustAnchorArray.data = static_cast<HcfX509TrustAnchor **>(HcfMalloc(1 * sizeof(HcfX509TrustAnchor *), 0));
+    ASSERT_NE(trustAnchorArray.data, nullptr);
+    trustAnchorArray.data[0] = anchor;
+    trustAnchorArray.count = 1;
+}
+
+void FreeTrustAnchorArr(HcfX509TrustAnchorArray &trustAnchorArray)
+{
+    for (uint32_t i = 0; i < trustAnchorArray.count; ++i) {
+        HcfX509TrustAnchor *anchor = trustAnchorArray.data[i];
+        FreeTrustAnchor(anchor);
+    }
+    CfFree(trustAnchorArray.data);
+    trustAnchorArray.data = nullptr;
+    trustAnchorArray.count = 0;
+}
+
+void BuildCollectionArr(const CfEncodingBlob *certInStream, const CfEncodingBlob *crlInStream,
+    HcfCertCRLCollectionArray &certCRLCollections)
+{
+    CfResult ret = CF_SUCCESS;
+    HcfX509CertificateArray *certArray = nullptr;
+    if (certInStream != nullptr) {
+        certArray = static_cast<HcfX509CertificateArray *>(HcfMalloc(sizeof(HcfX509CertificateArray), 0));
+        ASSERT_NE(certArray, nullptr);
+
+        HcfX509Certificate *x509CertObj = nullptr;
+        (void)HcfX509CertificateCreate(certInStream, &x509CertObj);
+        ASSERT_NE(x509CertObj, nullptr);
+
+        certArray->data = static_cast<HcfX509Certificate **>(HcfMalloc(1 * sizeof(HcfX509Certificate *), 0));
+        ASSERT_NE(certArray->data, nullptr);
+        certArray->data[0] = x509CertObj;
+        certArray->count = 1;
+    }
+
+    HcfX509CrlArray *crlArray = nullptr;
+    if (crlInStream != nullptr) {
+        crlArray = static_cast<HcfX509CrlArray *>(HcfMalloc(sizeof(HcfX509CrlArray), 0));
+        ASSERT_NE(crlArray, nullptr);
+
+        HcfX509Crl *x509Crl = nullptr;
+        ret = HcfX509CrlCreate(crlInStream, &x509Crl);
+        ASSERT_EQ(ret, CF_SUCCESS);
+        ASSERT_NE(x509Crl, nullptr);
+
+        crlArray->data = static_cast<HcfX509Crl **>(HcfMalloc(1 * sizeof(HcfX509Crl *), 0));
+        ASSERT_NE(crlArray->data, nullptr);
+        crlArray->data[0] = x509Crl;
+        crlArray->count = 1;
+    }
+
+    HcfCertCrlCollection *x509CertCrlCollection = nullptr;
+    ret = HcfCertCrlCollectionCreate(certArray, crlArray, &x509CertCrlCollection);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ASSERT_NE(x509CertCrlCollection, nullptr);
+
+    certCRLCollections.data = static_cast<HcfCertCrlCollection **>(HcfMalloc(1 * sizeof(HcfCertCrlCollection *), 0));
+    ASSERT_NE(certCRLCollections.data, nullptr);
+    certCRLCollections.data[0] = x509CertCrlCollection;
+    certCRLCollections.count = 1;
+
+    FreeCertArrayData(certArray);
+    CfFree(certArray);
+    FreeCrlArrayData(crlArray);
+    CfFree(crlArray);
+}
+
+void FreeCertCrlCollectionArr(HcfCertCRLCollectionArray &certCRLCollections)
+{
+    for (uint32_t i = 0; i < certCRLCollections.count; ++i) {
+        HcfCertCrlCollection *collection = certCRLCollections.data[i];
+        CfObjDestroy(collection);
+    }
+    CfFree(certCRLCollections.data);
+    certCRLCollections.data = nullptr;
+    certCRLCollections.count = 0;
+}
+
+void FreeValidateResult(HcfX509CertChainValidateResult &result)
+{
+    if (result.entityCert != nullptr) {
+        CfObjDestroy(result.entityCert);
+        result.entityCert = nullptr;
+    }
+
+    if (result.trustAnchor != nullptr) {
+        FreeTrustAnchor(result.trustAnchor);
+    }
 }

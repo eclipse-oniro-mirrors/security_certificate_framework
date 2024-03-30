@@ -53,6 +53,9 @@ void *__real_OPENSSL_sk_value(const OPENSSL_STACK *st, int i);
 CfResult __real_DeepCopyBlobToBlob(const CfBlob *inBlob, CfBlob **outBlob);
 CfResult __real_HcfX509CertificateCreate(const CfEncodingBlob *inStream, HcfX509Certificate **returnObj);
 int __real_OPENSSL_sk_push(OPENSSL_STACK *st, const int data);
+OPENSSL_STACK *__real_OPENSSL_sk_new_null(void);
+int __real_OPENSSL_sk_push(OPENSSL_STACK *st, const int data);
+X509 *__real_X509_dup(X509 *x509);
 
 #ifdef __cplusplus
 }
@@ -98,93 +101,6 @@ constexpr uint32_t TEST_MAX_CERT_NUM = 257; /* max certs number of a certchain *
 static const char *GetInvalidCertChainClass(void)
 {
     return "HcfInvalidCertChain";
-}
-
-static void FreeTrustAnchor(HcfX509TrustAnchor *&trustAnchor)
-{
-    if (trustAnchor == nullptr) {
-        return;
-    }
-    CfBlobFree(&trustAnchor->CAPubKey);
-    CfBlobFree(&trustAnchor->CASubject);
-    CfObjDestroy(trustAnchor->CACert);
-    trustAnchor->CACert = nullptr;
-    CfFree(trustAnchor);
-    trustAnchor = nullptr;
-}
-
-static void BuildAnchorArr(const CfEncodingBlob &certInStream, HcfX509TrustAnchorArray &trustAnchorArray)
-{
-    HcfX509TrustAnchor *anchor = static_cast<HcfX509TrustAnchor *>(HcfMalloc(sizeof(HcfX509TrustAnchor), 0));
-    ASSERT_NE(anchor, nullptr);
-
-    (void)HcfX509CertificateCreate(&certInStream, &anchor->CACert);
-    trustAnchorArray.data = static_cast<HcfX509TrustAnchor **>(HcfMalloc(1 * sizeof(HcfX509TrustAnchor *), 0));
-    ASSERT_NE(trustAnchorArray.data, nullptr);
-    trustAnchorArray.data[0] = anchor;
-    trustAnchorArray.count = 1;
-}
-
-static void FreeTrustAnchorArr(HcfX509TrustAnchorArray &trustAnchorArray)
-{
-    for (uint32_t i = 0; i < trustAnchorArray.count; ++i) {
-        HcfX509TrustAnchor *anchor = trustAnchorArray.data[i];
-        FreeTrustAnchor(anchor);
-    }
-    CfFree(trustAnchorArray.data);
-    trustAnchorArray.data = nullptr;
-    trustAnchorArray.count = 0;
-}
-
-static void BuildCollectionArr(const CfEncodingBlob *certInStream, const CfEncodingBlob *crlInStream,
-    HcfCertCRLCollectionArray &certCRLCollections)
-{
-    CfResult ret = CF_SUCCESS;
-    HcfX509CertificateArray *certArray = nullptr;
-    if (certInStream != nullptr) {
-        certArray = static_cast<HcfX509CertificateArray *>(HcfMalloc(sizeof(HcfX509CertificateArray), 0));
-        ASSERT_NE(certArray, nullptr);
-
-        HcfX509Certificate *x509CertObj = nullptr;
-        (void)HcfX509CertificateCreate(certInStream, &x509CertObj);
-        ASSERT_NE(x509CertObj, nullptr);
-
-        certArray->data = static_cast<HcfX509Certificate **>(HcfMalloc(1 * sizeof(HcfX509Certificate *), 0));
-        ASSERT_NE(certArray->data, nullptr);
-        certArray->data[0] = x509CertObj;
-        certArray->count = 1;
-    }
-
-    HcfX509CrlArray *crlArray = nullptr;
-    if (crlInStream != nullptr) {
-        crlArray = static_cast<HcfX509CrlArray *>(HcfMalloc(sizeof(HcfX509CrlArray), 0));
-        ASSERT_NE(crlArray, nullptr);
-
-        HcfX509Crl *x509Crl = nullptr;
-        ret = HcfX509CrlCreate(crlInStream, &x509Crl);
-        ASSERT_EQ(ret, CF_SUCCESS);
-        ASSERT_NE(x509Crl, nullptr);
-
-        crlArray->data = static_cast<HcfX509Crl **>(HcfMalloc(1 * sizeof(HcfX509Crl *), 0));
-        ASSERT_NE(crlArray->data, nullptr);
-        crlArray->data[0] = x509Crl;
-        crlArray->count = 1;
-    }
-
-    HcfCertCrlCollection *x509CertCrlCollection = nullptr;
-    ret = HcfCertCrlCollectionCreate(certArray, crlArray, &x509CertCrlCollection);
-    ASSERT_EQ(ret, CF_SUCCESS);
-    ASSERT_NE(x509CertCrlCollection, nullptr);
-
-    certCRLCollections.data = static_cast<HcfCertCrlCollection **>(HcfMalloc(1 * sizeof(HcfCertCrlCollection *), 0));
-    ASSERT_NE(certCRLCollections.data, nullptr);
-    certCRLCollections.data[0] = x509CertCrlCollection;
-    certCRLCollections.count = 1;
-
-    FreeCertArrayData(certArray);
-    CfFree(certArray);
-    FreeCrlArrayData(crlArray);
-    CfFree(crlArray);
 }
 
 void CryptoX509CertChainTest::SetUpTestCase()
@@ -233,29 +149,6 @@ void CryptoX509CertChainTest::TearDownTestCase()
 void CryptoX509CertChainTest::SetUp() {}
 
 void CryptoX509CertChainTest::TearDown() {}
-
-static void FreeCertCrlCollectionArr(HcfCertCRLCollectionArray &certCRLCollections)
-{
-    for (uint32_t i = 0; i < certCRLCollections.count; ++i) {
-        HcfCertCrlCollection *collection = certCRLCollections.data[i];
-        CfObjDestroy(collection);
-    }
-    CfFree(certCRLCollections.data);
-    certCRLCollections.data = nullptr;
-    certCRLCollections.count = 0;
-}
-
-static void FreeValidateResult(HcfX509CertChainValidateResult &result)
-{
-    if (result.entityCert != nullptr) {
-        CfObjDestroy(result.entityCert);
-        result.entityCert = nullptr;
-    }
-
-    if (result.trustAnchor != nullptr) {
-        FreeTrustAnchor(result.trustAnchor);
-    }
-}
 
 /* invalid encodingBlob. */
 HWTEST_F(CryptoX509CertChainTest, CertChainByEncSpiCreateTest001, TestSize.Level0)
@@ -694,6 +587,7 @@ HWTEST_F(CryptoX509CertChainTest, GetCertListCoreTest004, TestSize.Level0)
 
 HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest001, TestSize.Level0)
 {
+    CF_LOG_I("ValidateOpensslTest001");
     HcfX509CertChainSpi *certChainSpi = nullptr;
     CfResult ret = HcfX509CertChainByEncSpiCreate(&g_inStreamChainDataP7b, &certChainSpi);
     ASSERT_EQ(ret, CF_SUCCESS);
@@ -707,6 +601,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest001, TestSize.Level0)
 
 HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest002, TestSize.Level0)
 {
+    CF_LOG_I("ValidateOpensslTest002");
     ASSERT_NE(g_certChainP7bSpi, nullptr);
     CfResult ret = g_certChainP7bSpi->engineValidate(g_certChainP7bSpi, nullptr, nullptr);
     ASSERT_EQ(ret, CF_INVALID_PARAMS);
@@ -714,6 +609,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest002, TestSize.Level0)
 
 HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest003, TestSize.Level0)
 {
+    CF_LOG_I("ValidateOpensslTest003");
     ASSERT_NE(g_certChainP7bSpi, nullptr);
     HcfX509TrustAnchor anchor = { 0 };
     CfEncodingBlob inStream = { 0 };
@@ -742,6 +638,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest003, TestSize.Level0)
 
 HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest004, TestSize.Level0)
 {
+    CF_LOG_I("ValidateOpensslTest004");
     ASSERT_NE(g_certChainP7bSpi, nullptr);
 
     HcfX509CertChainSpi *certChainSpi = nullptr;
@@ -767,6 +664,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest004, TestSize.Level0)
 
 HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest005, TestSize.Level0)
 {
+    CF_LOG_I("ValidateOpensslTest005");
     ASSERT_NE(g_certChainPemSpi, nullptr);
 
     HcfX509TrustAnchorArray trustAnchorArray = { 0 };
@@ -787,6 +685,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest005, TestSize.Level0)
 
 HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest006, TestSize.Level0)
 {
+    CF_LOG_I("ValidateOpensslTest006");
     ASSERT_NE(g_certChainPemSpi, nullptr);
 
     HcfX509TrustAnchorArray trustAnchorArray = { 0 };
@@ -804,6 +703,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest006, TestSize.Level0)
 
 HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest007, TestSize.Level0)
 {
+    CF_LOG_I("ValidateOpensslTest007");
     ASSERT_NE(g_certChainPemSpi, nullptr);
 
     HcfX509TrustAnchor anchor = { 0 };
@@ -826,6 +726,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest007, TestSize.Level0)
 
 HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest008, TestSize.Level0)
 {
+    CF_LOG_I("ValidateOpensslTest008");
     ASSERT_NE(g_certChainPemSpi, nullptr);
 
     CfBlob pubkey = { 0, nullptr };
@@ -857,6 +758,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest008, TestSize.Level0)
 
 HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest009, TestSize.Level0)
 {
+    CF_LOG_I("ValidateOpensslTest009");
     ASSERT_NE(g_certChainPemSpi, nullptr);
 
     CfBlob pubkey = { 0, nullptr };
@@ -877,13 +779,14 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest009, TestSize.Level0)
 
     HcfX509CertChainValidateResult result = { 0 };
     CfResult ret = g_certChainPemSpi->engineValidate(g_certChainPemSpi, &pCertChainValidateParams, &result);
-    ASSERT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
+    ASSERT_EQ(ret, CF_INVALID_PARAMS);
 
     CfFree(trustAnchorArray.data);
 }
 
 HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest010, TestSize.Level0)
 {
+    CF_LOG_I("ValidateOpensslTest010");
     ASSERT_NE(g_certChainPemSpi, nullptr);
 
     CfBlob pubkey = { 0, nullptr };
@@ -919,6 +822,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest010, TestSize.Level0)
 
 HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest011, TestSize.Level0)
 {
+    CF_LOG_I("ValidateOpensslTest011");
     ASSERT_NE(g_certChainPemSpi, nullptr);
 
     CfBlob pubkey = { 0, nullptr };
@@ -952,6 +856,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest011, TestSize.Level0)
 
 HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest012, TestSize.Level0)
 {
+    CF_LOG_I("ValidateOpensslTest012");
     ASSERT_NE(g_certChainPemSpi, nullptr);
 
     CfBlob pubkey = { 0, nullptr };
@@ -973,13 +878,14 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest012, TestSize.Level0)
 
     HcfX509CertChainValidateResult result = { 0 };
     CfResult ret = g_certChainPemSpi->engineValidate(g_certChainPemSpi, &pCertChainValidateParams, &result);
-    ASSERT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
+    ASSERT_EQ(ret, CF_INVALID_PARAMS);
 
     CfFree(trustAnchorArray.data);
 }
 
 HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest013, TestSize.Level0)
 {
+    CF_LOG_I("ValidateOpensslTest013");
     ASSERT_NE(g_certChainPemSpi, nullptr);
 
     CfBlob pubkey = { 0, nullptr };
@@ -1002,13 +908,14 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest013, TestSize.Level0)
 
     HcfX509CertChainValidateResult result = { 0 };
     CfResult ret = g_certChainPemSpi->engineValidate(g_certChainPemSpi, &pCertChainValidateParams, &result);
-    ASSERT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
+    ASSERT_EQ(ret, CF_INVALID_PARAMS);
 
     CfFree(trustAnchorArray.data);
 }
 
 HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest014, TestSize.Level0)
 {
+    CF_LOG_I("ValidateOpensslTest014");
     HcfX509CertChainSpi *certChainSpi = nullptr;
     CfResult ret = HcfX509CertChainByEncSpiCreate(&g_inStreamChainDataPemNoRoot, &certChainSpi);
     ASSERT_EQ(ret, CF_SUCCESS);
@@ -1033,6 +940,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest014, TestSize.Level0)
 
 HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest015, TestSize.Level0)
 {
+    CF_LOG_I("ValidateOpensslTest015");
     HcfX509CertChainSpi *certChainSpi = nullptr;
     CfResult ret = HcfX509CertChainByEncSpiCreate(&g_inStreamChainPemNoRootHasPubKey, &certChainSpi);
     ASSERT_EQ(ret, CF_SUCCESS);
@@ -1067,6 +975,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest015, TestSize.Level0)
 
 HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest016, TestSize.Level0)
 {
+    CF_LOG_I("ValidateOpensslTest016");
     ASSERT_NE(g_certChainPemSpi, nullptr);
 
     HcfX509TrustAnchorArray trustAnchorArray = { 0 };
@@ -1085,6 +994,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest016, TestSize.Level0)
 
 HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest017, TestSize.Level0)
 {
+    CF_LOG_I("ValidateOpensslTest017");
     HcfX509CertChainSpi *certChainSpi = nullptr;
     CfResult ret = HcfX509CertChainByEncSpiCreate(&g_inStreamChainDataPemRoot, &certChainSpi);
     ASSERT_EQ(ret, CF_SUCCESS);
@@ -1121,6 +1031,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest017, TestSize.Level0)
 
 HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest018, TestSize.Level0)
 {
+    CF_LOG_I("ValidateOpensslTest018");
     ASSERT_NE(g_certChainPemSpi, nullptr);
 
     HcfX509TrustAnchorArray trustAnchorArray = { 0 };
@@ -1148,6 +1059,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest018, TestSize.Level0)
 
 HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest019, TestSize.Level0)
 {
+    CF_LOG_I("ValidateOpensslTest019");
     ASSERT_NE(g_certChainPemSpi, nullptr);
 
     HcfX509TrustAnchorArray trustAnchorArray = { 0 };
@@ -1175,6 +1087,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest019, TestSize.Level0)
 
 HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest020, TestSize.Level0)
 {
+    CF_LOG_I("ValidateOpensslTest020");
     ASSERT_NE(g_certChainPemSpi, nullptr);
 
     HcfX509TrustAnchorArray trustAnchorArray = { 0 };
@@ -1202,6 +1115,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest020, TestSize.Level0)
 
 HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest021, TestSize.Level0)
 {
+    CF_LOG_I("ValidateOpensslTest021");
     ASSERT_NE(g_certChainPemSpi, nullptr);
 
     HcfX509TrustAnchorArray trustAnchorArray = { 0 };
@@ -1226,6 +1140,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest021, TestSize.Level0)
 
 HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest022, TestSize.Level0)
 {
+    CF_LOG_I("ValidateOpensslTest022");
     ASSERT_NE(g_certChainPemSpi, nullptr);
 
     HcfX509TrustAnchorArray trustAnchorArray = { 0 };
@@ -1250,6 +1165,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest022, TestSize.Level0)
 
 HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest023, TestSize.Level0)
 {
+    CF_LOG_I("ValidateOpensslTest023");
     ASSERT_NE(g_certChainPemSpi, nullptr);
 
     HcfX509TrustAnchorArray trustAnchorArray = { 0 };
@@ -1275,6 +1191,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest023, TestSize.Level0)
 
 HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest024, TestSize.Level0)
 {
+    CF_LOG_I("ValidateOpensslTest024");
     ASSERT_NE(g_certChainPemSpi, nullptr);
 
     HcfX509TrustAnchorArray trustAnchorArray = { 0 };
@@ -1299,6 +1216,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest024, TestSize.Level0)
 
 HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest025, TestSize.Level0)
 {
+    CF_LOG_I("ValidateOpensslTest025");
     ASSERT_NE(g_certChainPemSpi, nullptr);
 
     HcfX509TrustAnchorArray trustAnchorArray = { 0 };
@@ -1324,6 +1242,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest025, TestSize.Level0)
 
 HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest026, TestSize.Level0)
 {
+    CF_LOG_I("ValidateOpensslTest026");
     ASSERT_NE(g_certChainPemSpi, nullptr);
 
     HcfX509TrustAnchorArray trustAnchorArray = { 0 };
@@ -1346,6 +1265,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest026, TestSize.Level0)
 
 HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest027, TestSize.Level0)
 {
+    CF_LOG_I("ValidateOpensslTest027");
     ASSERT_NE(g_certChainPemSpi, nullptr);
 
     HcfX509TrustAnchorArray trustAnchorArray = { 0 };
@@ -1378,6 +1298,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest027, TestSize.Level0)
 
 HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest028, TestSize.Level0)
 {
+    CF_LOG_I("ValidateOpensslTest028");
     for (unsigned int i = 0; i < 1000; i++) {
         HcfX509TrustAnchorArray trustAnchorArray = { 0 };
         BuildAnchorArr(g_inStreamChainDataPemRoot, trustAnchorArray);
@@ -1398,6 +1319,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest028, TestSize.Level0)
 
 HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest029, TestSize.Level0)
 {
+    CF_LOG_I("ValidateOpensslTest029");
     HcfX509CertChainSpi *certChainSpi = nullptr;
     CfResult ret = HcfX509CertChainByEncSpiCreate(&g_inStreamChainPemNoRootHasPubKey, &certChainSpi);
     ASSERT_EQ(ret, CF_SUCCESS);
@@ -1422,6 +1344,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest029, TestSize.Level0)
 
 HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest030, TestSize.Level0)
 {
+    CF_LOG_I("ValidateOpensslTest030");
     ASSERT_NE(g_certChainPemSpi, nullptr);
 
     HcfX509TrustAnchorArray trustAnchorArray = { 0 };
@@ -1447,6 +1370,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest030, TestSize.Level0)
 
 HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest031, TestSize.Level0)
 {
+    CF_LOG_I("ValidateOpensslTest031");
     HcfX509CertChainSpi *certChainSpi = nullptr;
     CfResult ret = HcfX509CertChainByEncSpiCreate(&g_inStreamChainDataPemDisorder, &certChainSpi);
     ASSERT_EQ(ret, CF_SUCCESS);
@@ -1468,6 +1392,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest031, TestSize.Level0)
 
 HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest032, TestSize.Level0)
 {
+    CF_LOG_I("ValidateOpensslTest032");
     HcfX509CertChainSpi *certChainSpi = nullptr;
     CfResult ret = HcfX509CertChainByEncSpiCreate(&g_inStreamChainPemNoRootHasPubKey, &certChainSpi);
     ASSERT_EQ(ret, CF_SUCCESS);
@@ -1502,6 +1427,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest032, TestSize.Level0)
 
 HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest033, TestSize.Level0)
 {
+    CF_LOG_I("ValidateOpensslTest033");
     HcfX509CertChainSpi *certChainSpi = nullptr;
     CfResult ret = HcfX509CertChainByEncSpiCreate(&g_inStreamChainPemNoRootHasPubKey, &certChainSpi);
     ASSERT_EQ(ret, CF_SUCCESS);
@@ -1538,6 +1464,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest033, TestSize.Level0)
 
 HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest034, TestSize.Level0)
 {
+    CF_LOG_I("ValidateOpensslTest034");
     HcfX509CertChainSpi *certChainSpi = nullptr;
     CfResult ret = HcfX509CertChainByEncSpiCreate(&g_inStreamChainPemNoRootHasPubKey, &certChainSpi);
     ASSERT_EQ(ret, CF_SUCCESS);
@@ -1574,6 +1501,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest034, TestSize.Level0)
 
 HWTEST_F(CryptoX509CertChainTest, ValidateCoreTest001, TestSize.Level0)
 {
+    CF_LOG_I("ValidateCoreTest001");
     HcfCertChain *pCertChain = nullptr;
     CfResult ret = HcfCertChainCreate(&g_inStreamChainDataP7b, nullptr, &pCertChain);
     ASSERT_EQ(ret, CF_SUCCESS);
@@ -1587,6 +1515,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateCoreTest001, TestSize.Level0)
 
 HWTEST_F(CryptoX509CertChainTest, ValidateCoreTest002, TestSize.Level0)
 {
+    CF_LOG_I("ValidateCoreTest002");
     HcfCertChain *pCertChain = nullptr;
     CfResult ret = HcfCertChainCreate(&g_inStreamChainDataP7b, nullptr, &pCertChain);
     ASSERT_EQ(ret, CF_SUCCESS);
@@ -1600,6 +1529,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateCoreTest002, TestSize.Level0)
 
 HWTEST_F(CryptoX509CertChainTest, ValidateCoreTest003, TestSize.Level0)
 {
+    CF_LOG_I("ValidateCoreTest003");
     ASSERT_NE(g_certChainP7b, nullptr);
 
     HcfX509TrustAnchorArray trustAnchorArray = { 0 };
@@ -1616,6 +1546,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateCoreTest003, TestSize.Level0)
 
 HWTEST_F(CryptoX509CertChainTest, ValidateCoreTest004, TestSize.Level0)
 {
+    CF_LOG_I("ValidateCoreTest004");
     HcfCertChain *pCertChain = nullptr;
     CfResult ret = HcfCertChainCreate(&g_inStreamChainDataPem, nullptr, &pCertChain);
     ASSERT_EQ(ret, CF_SUCCESS);
@@ -1780,19 +1711,25 @@ HWTEST_F(CryptoX509CertChainTest, HcfX509CertChainByParamsSpiCreateTest002, Test
 
     // test HcfX509CertChainByParamsSpiCreate failed case
     X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_new_null()).Times(AnyNumber()).WillOnce(Return(NULL));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_new_null())
+        .WillOnce(Return(NULL))
+        .WillRepeatedly(Invoke(__real_OPENSSL_sk_new_null));
     CfResult result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
     EXPECT_EQ(result, CF_ERR_MALLOC);
     X509OpensslMock::SetMockFlag(false);
 
     X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_dup(_)).Times(AnyNumber()).WillOnce(Return(NULL));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_dup(_))
+        .WillOnce(Return(NULL))
+        .WillRepeatedly(Invoke(__real_X509_dup));
     result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
     EXPECT_EQ(result, CF_ERR_MALLOC);
     X509OpensslMock::SetMockFlag(false);
 
     X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_push(_, _)).Times(AnyNumber()).WillOnce(Return(-1));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_push(_, _))
+        .WillOnce(Return(-1))
+        .WillRepeatedly(Invoke(__real_OPENSSL_sk_push));
     result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
     EXPECT_EQ(result, CF_ERR_CRYPTO_OPERATION);
     X509OpensslMock::SetMockFlag(false);
