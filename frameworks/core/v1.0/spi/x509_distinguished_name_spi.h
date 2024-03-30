@@ -13,19 +13,21 @@
  * limitations under the License.
  */
 
-#ifndef X509_CERTIFICATE_OEPNSSL_H
-#define X509_CERTIFICATE_OEPNSSL_H
+#ifndef CF_X509_DISTINGUISHED_NAME_SPI_H
+#define CF_X509_DISTINGUISHED_NAME_SPI_H
 
-#include "x509_certificate_spi.h"
+#include "cf_blob.h"
+#include "cf_object_base.h"
+#include "cf_result.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+typedef struct HcfX509DistinguishedNameSpi HcfX509DistinguishedNameSpi;
 
-CfResult OpensslX509CertSpiCreate(const CfEncodingBlob *inStream, HcfX509CertificateSpi **spi);
+struct HcfX509DistinguishedNameSpi {
+    CfObjectBase base;
 
-#ifdef __cplusplus
-}
-#endif
+    CfResult (*engineGetEncode)(HcfX509DistinguishedNameSpi *self, CfEncodingBlob *out);
 
-#endif // X509_CERTIFICATE_OEPNSSL_H
+    CfResult (*engineGetName)(HcfX509DistinguishedNameSpi *self, CfBlob *type, CfBlob *out, CfArray *outArr);
+};
+
+#endif // CF_X509_DISTINGUISHED_NAME_SPI_H

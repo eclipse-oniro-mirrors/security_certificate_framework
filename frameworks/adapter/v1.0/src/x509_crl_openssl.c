@@ -737,6 +737,103 @@ static CfResult GetExtensions(HcfX509CrlSpi *self, CfBlob *outBlob)
     return ret;
 }
 
+static CfResult ToString(HcfX509CrlSpi *self, CfBlob *out)
+{
+    if ((self == NULL) || (out == NULL)) {
+        LOGE("The input data is null!");
+        return CF_INVALID_PARAMS;
+    }
+    if (!IsClassMatch((CfObjectBase *)self, GetClass())) {
+        LOGE("Input wrong class type!");
+        return CF_INVALID_PARAMS;
+    }
+    X509_CRL *crl = GetCrl(self);
+    if (crl == NULL) {
+        LOGE("crl is null!");
+        return CF_INVALID_PARAMS;
+    }
+    BIO *bio = BIO_new(BIO_s_mem());
+    if (bio == NULL) {
+        LOGE("BIO_new error");
+        return CF_ERR_MALLOC;
+    }
+
+    int len = X509_CRL_print(bio, crl);
+    if (len < 0) {
+        LOGE("X509_CRL_print error");
+        BIO_free(bio);
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    BUF_MEM *bufMem = NULL;
+    if (BIO_get_mem_ptr(bio, &bufMem) > 0 && bufMem != NULL) {
+        CfResult res = DeepCopyDataToOut(bufMem->data, bufMem->length, out);
+        BIO_free(bio);
+        return res;
+    }
+    BIO_free(bio);
+    LOGE("BIO_get_mem_ptr error");
+    return CF_ERR_CRYPTO_OPERATION;
+}
+
+static CfResult HashCode(HcfX509CrlSpi *self, CfBlob *out)
+{
+    if ((self == NULL) || (out == NULL)) {
+        LOGE("The input data is null!");
+        return CF_INVALID_PARAMS;
+    }
+    if (!IsClassMatch((CfObjectBase *)self, GetClass())) {
+        LOGE("Input wrong class type!");
+        return CF_INVALID_PARAMS;
+    }
+    X509_CRL *crl = GetCrl(self);
+    if (crl == NULL) {
+        LOGE("crl is null!");
+        return CF_INVALID_PARAMS;
+    }
+    unsigned char *buf = NULL;
+    int len = i2d_X509_CRL(crl, &buf);
+    if (len < 0 || buf == NULL) {
+        LOGE("i2d_X509_CRL error");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    out->data = (uint8_t *)HcfMalloc(SHA256_DIGEST_LENGTH, 0);
+    if (out->data == NULL) {
+        LOGE("HcfMalloc error");
+        CfFree(buf);
+        return CF_ERR_MALLOC;
+    }
+    SHA256(buf, len, out->data);
+    out->size = SHA256_DIGEST_LENGTH;
+    CfFree(buf);
+    return CF_SUCCESS;
+}
+
+static CfResult GetExtensionsObject(HcfX509CrlSpi *self, CfBlob *out)
+{
+    if ((self == NULL) || (out == NULL)) {
+        LOGE("The input data is null!");
+        return CF_INVALID_PARAMS;
+    }
+    if (!IsClassMatch((CfObjectBase *)self, GetClass())) {
+        LOGE("Input wrong class type!");
+        return CF_INVALID_PARAMS;
+    }
+    X509_CRL *crl = GetCrl(self);
+    if (crl == NULL) {
+        LOGE("crl is null!");
+        return CF_INVALID_PARAMS;
+    }
+
+    int len = i2d_X509_EXTENSIONS(X509_CRL_get0_extensions(crl), &out->data);
+    if (len < 0) {
+        LOGE("i2d_X509_EXTENSIONS error");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    out->size = len;
+    return CF_SUCCESS;
+}
+
 static CfResult GetNumOfCRL(HcfX509CrlSpi *self, CfBlob *outBlob)
 {
     X509_CRL *crl = GetCrl(self);
@@ -1051,6 +1148,9 @@ CfResult HcfCX509CrlSpiCreate(const CfEncodingBlob *inStream, HcfX509CrlSpi **sp
     returnCRL->base.engineGetSignatureAlgParams = GetSignatureAlgParams;
     returnCRL->base.engineGetExtensions = GetExtensions;
     returnCRL->base.engineMatch = MatchX509CRLOpenssl;
+    returnCRL->base.engineToString = ToString;
+    returnCRL->base.engineHashCode = HashCode;
+    returnCRL->base.engineGetExtensionsObject = GetExtensionsObject;
     if (SetCertIssuer((HcfX509CrlSpi *)returnCRL) != CF_SUCCESS) {
         LOGI("No cert issuer find or set cert issuer fail!");
     }

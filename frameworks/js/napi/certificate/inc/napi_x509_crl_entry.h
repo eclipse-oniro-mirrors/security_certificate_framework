@@ -39,7 +39,10 @@ public:
     napi_value GetRevocationDate(napi_env env, napi_callback_info info);
     napi_value GetExtensions(napi_env env, napi_callback_info info);
     napi_value HasExtensions(napi_env env, napi_callback_info info);
-
+    napi_value ToString(napi_env env, napi_callback_info info);
+    napi_value HashCode(napi_env env, napi_callback_info info);
+    napi_value GetExtensionsObject(napi_env env, napi_callback_info info);
+    napi_value GetCertIssuerX500DistinguishedName(napi_env env, napi_callback_info info);
     HcfX509CrlEntry *GetX509CrlEntry()
     {
         return x509CrlEntry_;

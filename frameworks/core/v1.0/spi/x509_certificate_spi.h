@@ -67,6 +67,12 @@ struct HcfX509CertificateSpi {
 
     CfResult (*engineMatch)(HcfX509CertificateSpi *self, const HcfX509CertMatchParams *matchParams, bool *out);
 
+    CfResult (*engineToString)(HcfX509CertificateSpi *self, CfBlob *out);
+
+    CfResult (*engineHashCode)(HcfX509CertificateSpi *self, CfBlob *out);
+
+    CfResult (*engineGetExtensionsObject)(HcfX509CertificateSpi *self, CfBlob *out);
+
     CfResult (*engineGetCRLDistributionPointsURI)(HcfX509CertificateSpi *self, CfArray *outURI);
 };
 

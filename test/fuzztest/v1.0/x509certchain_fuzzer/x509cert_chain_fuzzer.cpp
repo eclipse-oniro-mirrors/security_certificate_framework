@@ -168,6 +168,14 @@ namespace OHOS {
     {
         HcfX509CertChainValidateParams params = { 0 };
         TestValidateParam(params, x509CertChainObj);
+
+        CfBlob toStringBlob = { 0 };
+        (void)x509CertChainObj->toString(x509CertChainObj, &toStringBlob);
+        CfBlobDataClearAndFree(&toStringBlob);
+
+        CfBlob hashCodeBlob = { 0 };
+        (void)x509CertChainObj->hashCode(x509CertChainObj, &hashCodeBlob);
+        CfBlobDataClearAndFree(&hashCodeBlob);
     }
 
     static void CreateOneCert(void)

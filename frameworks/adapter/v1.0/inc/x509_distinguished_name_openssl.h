@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,19 +13,20 @@
  * limitations under the License.
  */
 
-#ifndef X509_CERTIFICATE_OEPNSSL_H
-#define X509_CERTIFICATE_OEPNSSL_H
+#ifndef X509_DISTINGUISHED_NAME_OEPNSSL_H
+#define X509_DISTINGUISHED_NAME_OEPNSSL_H
 
-#include "x509_certificate_spi.h"
+#include "x509_distinguished_name_spi.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-CfResult OpensslX509CertSpiCreate(const CfEncodingBlob *inStream, HcfX509CertificateSpi **spi);
+CfResult OpensslX509DistinguishedNameSpiCreate(const CfBlob *inStream, const bool bString,
+                                               HcfX509DistinguishedNameSpi **spi);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // X509_CERTIFICATE_OEPNSSL_H
+#endif // X509_DISTINGUISHED_NAME_OEPNSSL_H

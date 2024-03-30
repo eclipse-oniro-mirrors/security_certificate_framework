@@ -23,6 +23,7 @@
 #include "x509_certificate.h"
 #include "x509_crl_entry.h"
 #include "x509_crl_match_parameters.h"
+#include "x509_distinguished_name.h"
 
 typedef struct HcfX509CrlSpi HcfX509CrlSpi;
 
@@ -65,6 +66,12 @@ struct HcfX509CrlSpi {
     CfResult (*engineGetExtensions)(HcfX509CrlSpi *self, CfBlob *out);
 
     CfResult (*engineMatch)(HcfX509CrlSpi *self, const HcfX509CrlMatchParams *matchParams, bool *out);
+
+    CfResult (*engineToString)(HcfX509CrlSpi *self, CfBlob *out);
+
+    CfResult (*engineHashCode)(HcfX509CrlSpi *self, CfBlob *out);
+
+    CfResult (*engineGetExtensionsObject)(HcfX509CrlSpi *self, CfBlob *out);
 };
 
 #endif // CF_X509_CRL_SPI_H

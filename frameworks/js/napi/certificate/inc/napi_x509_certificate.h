@@ -60,7 +60,11 @@ public:
     napi_value GetSubjectAlternativeNames(napi_env env, napi_callback_info info);
     napi_value GetIssuerAlternativeNames(napi_env env, napi_callback_info info);
     napi_value Match(napi_env env, napi_callback_info info);
-
+    napi_value ToString(napi_env env, napi_callback_info info);
+    napi_value HashCode(napi_env env, napi_callback_info info);
+    napi_value GetExtensionsObject(napi_env env, napi_callback_info info);
+    napi_value GetIssuerX500DistinguishedName(napi_env env, napi_callback_info info);
+    napi_value GetSubjectX500DistinguishedName(napi_env env, napi_callback_info info);
     CfResult MatchProc(HcfX509CertMatchParams *param, bool &boolFlag);
 
     HcfX509Certificate *GetX509Cert()

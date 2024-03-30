@@ -151,6 +151,21 @@ namespace OHOS {
         return buf;
     }
 
+    static void TestX509CrlPemName(HcfX509Crl *x509CrlPem)
+    {
+        CfBlob toStringBlob = { 0 };
+        (void)x509CrlPem->toString(x509CrlPem, &toStringBlob);
+        CfBlobDataClearAndFree(&toStringBlob);
+
+        CfBlob hashCodeBlob = { 0 };
+        (void)x509CrlPem->hashCode(x509CrlPem, &hashCodeBlob);
+        CfBlobDataClearAndFree(&hashCodeBlob);
+
+        CfBlob extensionsObjectBlob = { 0 };
+        (void)x509CrlPem->getExtensionsObject(x509CrlPem, &extensionsObjectBlob);
+        CfBlobDataClearAndFree(&extensionsObjectBlob);
+    }
+
     static void TestX509CrlPem(HcfX509Crl *x509CrlPem)
     {
         CfEncodingBlob encodingBlob = { 0 };
@@ -174,6 +189,7 @@ namespace OHOS {
             CfFree(nextUpdate.data);
         }
         (void)x509CrlPem->base.getType(&(x509CrlPem->base));
+        TestX509CrlPemName(x509CrlPem);
         HcfX509Certificate *x509Cert = nullptr;
         CfEncodingBlob inStreamCert = { 0 };
         inStreamCert.data = reinterpret_cast<uint8_t *>(g_testCert);
@@ -190,6 +206,21 @@ namespace OHOS {
         }
         (void)x509CrlPem->base.isRevoked(&(x509CrlPem->base), &(x509Cert->base));
         CfObjDestroy(x509Cert);
+    }
+
+    static void TestX509CrlEntryName(HcfX509CrlEntry *entry)
+    {
+        CfBlob toStringBlob = { 0 };
+        entry->toString(entry, &toStringBlob);
+        CfBlobDataClearAndFree(&toStringBlob);
+
+        CfBlob hashCodeBlob = { 0 };
+        entry->hashCode(entry, &hashCodeBlob);
+        CfBlobDataClearAndFree(&hashCodeBlob);
+
+        CfBlob extensionsObjectBlob = { 0 };
+        entry->getExtensionsObject(entry, &extensionsObjectBlob);
+        CfBlobDataClearAndFree(&extensionsObjectBlob);
     }
 
     static void TestX509CrlEntry(HcfX509Crl *x509CrlDer, const uint8_t *data, size_t size)
@@ -219,6 +250,8 @@ namespace OHOS {
             if (snBlob.data != nullptr) {
                 CfFree(snBlob.data);
             }
+
+            TestX509CrlEntryName(entry);
             CfObjDestroy(entry);
         }
         if (size >= sizeof(long)) {

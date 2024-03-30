@@ -14,6 +14,7 @@
  */
 
 #include "x509_cert_chain_openssl.h"
+#include "x509_cert_chain_openssl_ex.h"
 
 #include <openssl/crypto.h>
 #include <openssl/err.h>
@@ -41,7 +42,6 @@
 #include "utils.h"
 #include "x509_cert_chain_spi.h"
 
-#define X509_CERT_CHAIN_OPENSSL_CLASS "X509CertChainOpensslClass"
 #define MAX_CERT_NUM 256 /* max certs number of a certchain */
 #define TIMET_NUM 6
 #define TIMET_YEAR_START 1900
@@ -52,12 +52,6 @@
 #define OCSP_CONN_TIMEOUT (-1)     // timeout == 0 means no timeout, < 0 means exactly one try.
 #define HTTP_PORT "80"
 #define HTTPS_PORT "443"
-
-typedef struct {
-    HcfX509CertChainSpi base;
-    STACK_OF(X509) * x509CertChain;
-    bool isOrder; // is an order chain
-} HcfX509CertChainOpensslImpl;
 
 // helper functions
 typedef struct {
@@ -98,11 +92,6 @@ static CfResult ConvertOpensslErrorMsg(int32_t errCode)
         }
     }
     return CF_ERR_CRYPTO_OPERATION;
-}
-
-static const char *GetX509CertChainClass(void)
-{
-    return X509_CERT_CHAIN_OPENSSL_CLASS;
 }
 
 static void DestroyX509CertChain(CfObjectBase *self)
@@ -770,7 +759,7 @@ static const char *GetDpUrl(DIST_POINT *dp)
     if (gens == NULL) {
         return NULL;
     }
-    for (uint32_t i = 0; i < sk_GENERAL_NAME_num(gens); i++) {
+    for (int32_t i = 0; i < sk_GENERAL_NAME_num(gens); i++) {
         gen = sk_GENERAL_NAME_value(gens, i);
         if (gen == NULL) {
             continue;
@@ -1236,7 +1225,7 @@ static OCSP_CERTID *GetCertId(STACK_OF(X509) * x509CertChain)
             LOGE("Unable to get issuer.");
             break;
         }
-        ret = OCSP_cert_to_id(EVP_sha1(), leafCert, issuerCert);
+        ret = OCSP_cert_to_id(NULL, leafCert, issuerCert);
     } while (0);
 
     if (store != NULL) {
@@ -1401,6 +1390,7 @@ static CfResult ValidatePolicy(const STACK_OF(X509) * x509CertChain, HcfValPolic
                 LOGE("Validate SSL policy failed!");
                 return CF_ERR_CRYPTO_OPERATION;
             }
+            break;
         case VALIDATION_POLICY_TYPE_X509:
             res = CF_SUCCESS;
             break;
@@ -1767,7 +1757,8 @@ CfResult HcfX509CertChainByEncSpiCreate(const CfEncodingBlob *inStream, HcfX509C
     certChain->base.base.destroy = DestroyX509CertChain;
     certChain->base.engineGetCertList = GetCertlist;
     certChain->base.engineValidate = Validate;
-
+    certChain->base.engineToString = ToString;
+    certChain->base.engineHashCode = HashCode;
     *spi = (HcfX509CertChainSpi *)certChain;
     return CF_SUCCESS;
 }
@@ -1842,6 +1833,8 @@ CfResult HcfX509CertChainByArrSpiCreate(const HcfX509CertificateArray *inCerts, 
     certChain->base.base.destroy = DestroyX509CertChain;
     certChain->base.engineGetCertList = GetCertlist;
     certChain->base.engineValidate = Validate;
+    certChain->base.engineToString = ToString;
+    certChain->base.engineHashCode = HashCode;
     *spi = (HcfX509CertChainSpi *)certChain;
 
     return CF_SUCCESS;

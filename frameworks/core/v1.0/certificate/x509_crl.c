@@ -323,6 +323,48 @@ static CfResult GetExtensions(HcfX509Crl *self, CfBlob *outBlob)
         ((HcfX509CrlImpl *)self)->spiObj, outBlob);
 }
 
+static CfResult ToString(HcfX509Crl *self, CfBlob *out)
+{
+    if ((self == NULL) || (out == NULL)) {
+        LOGE("Invalid input parameter.");
+        return CF_INVALID_PARAMS;
+    }
+    if (!IsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
+        LOGE("Class is not match.");
+        return CF_INVALID_PARAMS;
+    }
+    return ((HcfX509CrlImpl *)self)->spiObj->engineToString(
+        ((HcfX509CrlImpl *)self)->spiObj, out);
+}
+
+static CfResult HashCode(HcfX509Crl *self, CfBlob *out)
+{
+    if ((self == NULL) || (out == NULL)) {
+        LOGE("Invalid input parameter.");
+        return CF_INVALID_PARAMS;
+    }
+    if (!IsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
+        LOGE("Class is not match.");
+        return CF_INVALID_PARAMS;
+    }
+    return ((HcfX509CrlImpl *)self)->spiObj->engineHashCode(
+        ((HcfX509CrlImpl *)self)->spiObj, out);
+}
+
+static CfResult GetExtensionsOjbect(HcfX509Crl *self, CfBlob *out)
+{
+    if ((self == NULL) || (out == NULL)) {
+        LOGE("Invalid input parameter.");
+        return CF_INVALID_PARAMS;
+    }
+    if (!IsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
+        LOGE("Class is not match.");
+        return CF_INVALID_PARAMS;
+    }
+    return ((HcfX509CrlImpl *)self)->spiObj->engineGetExtensionsObject(
+        ((HcfX509CrlImpl *)self)->spiObj, out);
+}
+
 static CfResult Match(HcfX509Crl *self, const HcfX509CrlMatchParams *matchParams, bool *out)
 {
     if ((self == NULL) || (matchParams == NULL) || (out == NULL)) {
@@ -379,6 +421,9 @@ CfResult HcfX509CrlCreate(const CfEncodingBlob *inStream, HcfX509Crl **returnObj
     x509CertImpl->base.getSignatureAlgOid = GetSignatureAlgOid;
     x509CertImpl->base.getSignatureAlgParams = GetSignatureAlgParams;
     x509CertImpl->base.getExtensions = GetExtensions;
+    x509CertImpl->base.toString = ToString;
+    x509CertImpl->base.hashCode = HashCode;
+    x509CertImpl->base.getExtensionsObject = GetExtensionsOjbect;
     x509CertImpl->base.match = Match;
     x509CertImpl->spiObj = spiObj;
     *returnObj = (HcfX509Crl *)x509CertImpl;

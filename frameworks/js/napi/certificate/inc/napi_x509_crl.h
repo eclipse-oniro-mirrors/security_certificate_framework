@@ -57,6 +57,10 @@ public:
     napi_value GetSigAlgOID(napi_env env, napi_callback_info info);
     napi_value GetSigAlgParams(napi_env env, napi_callback_info info);
     napi_value GetExtensions(napi_env env, napi_callback_info info);
+    napi_value ToString(napi_env env, napi_callback_info info);
+    napi_value HashCode(napi_env env, napi_callback_info info);
+    napi_value GetExtensionsObject(napi_env env, napi_callback_info info);
+    napi_value GetIssuerX500DistinguishedName(napi_env env, napi_callback_info info);
     napi_value Match(napi_env env, napi_callback_info info);
     CfResult MatchProc(HcfX509CrlMatchParams *param, bool &boolFlag);
 

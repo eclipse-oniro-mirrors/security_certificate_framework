@@ -36,6 +36,12 @@ struct HcfCertChain {
     /** Validate Cert Chain. */
     CfResult (*validate)(
         HcfCertChain *self, const HcfX509CertChainValidateParams *params, HcfX509CertChainValidateResult *result);
+
+    /** Get the string of Cert Chain. */
+    CfResult (*toString)(HcfCertChain *self, CfBlob *out);
+
+    /** Get the hashCode of Cert Chain. */
+    CfResult (*hashCode)(HcfCertChain *self, CfBlob *out);
 };
 
 typedef struct HcfX509CertChainBuildResult HcfX509CertChainBuildResult;
