@@ -920,7 +920,7 @@ static CfResult MatchX509CRLOpensslPart2(HcfX509CrlSpi *self, const HcfX509CrlMa
             return res;
         }
     }
-    return CF_SUCCESS;
+    return res;
 }
 
 static CfResult MatchX509CRLOpenssl(HcfX509CrlSpi *self, const HcfX509CrlMatchParams *matchParams, bool *out)

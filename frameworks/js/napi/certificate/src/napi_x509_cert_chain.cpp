@@ -441,8 +441,7 @@ static void CreateTrustAnchorsWithKeyStoreExecute(napi_env env, void *data)
 {
     CfCtx *context = static_cast<CfCtx *>(data);
     if (context == nullptr) {
-        context->async->errCode = CF_INVALID_PARAMS;
-        context->async->errMsg = "context is nullptr";
+        LOGE("context is nullptr");
         return;
     }
     context->async->errCode =
@@ -689,11 +688,11 @@ bool GetChainBuildParametersFromValue(napi_env env, napi_value obj, HcfX509CertC
 {
     HcfX509CertChainBuildParameters *buildParam =
         static_cast<HcfX509CertChainBuildParameters *>(HcfMalloc(sizeof(HcfX509CertChainBuildParameters), 0));
-    buildParam->maxlength = -1;
     if (buildParam == nullptr) {
         LOGE("malloc cert chain build parameters failed!");
         return false;
     }
+    buildParam->maxlength = -1;
 
     if (!GetCertMatchParameters(env, obj, &buildParam)) {
         LOGE("failed to get cert match parameters!");
@@ -838,7 +837,7 @@ napi_value NapiX509CertChainBulidResult::ConvertToJsBuildResult(napi_env env)
     napi_get_reference_value(env, classRef_, &constructor);
     napi_new_instance(env, constructor, 0, nullptr, &instance);
 
-    if (this->buildResult_->certChain != nullptr) {
+    if (this->buildResult_ != nullptr && this->buildResult_->certChain != nullptr) {
         NapiX509CertChain *napiObject = new (std::nothrow) NapiX509CertChain(this->buildResult_->certChain);
         if (napiObject == nullptr) {
             LOGE("new napi object failed.");
