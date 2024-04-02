@@ -1279,7 +1279,7 @@ X509 *FindCertificateBySubject(STACK_OF(X509) * certs, X509_NAME *subjectName)
 
     X509_STORE *store = X509_STORE_new();
     if (store == NULL) {
-        return false;
+        return NULL;
     }
     for (int i = 0; i < sk_X509_num(certs); i++) {
         cert = sk_X509_value(certs, i);
