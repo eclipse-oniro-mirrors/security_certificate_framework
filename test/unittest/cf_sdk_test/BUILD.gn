@@ -40,14 +40,12 @@ ohos_unittest("cf_sdk_test") {
   }
   cflags = cflags_cc
 
-  deps = [
-    "//third_party/googletest:gtest_main",
-    "//third_party/openssl:libcrypto_shared",
-  ]
+  deps = []
 
   external_deps = [
     "c_utils:utils",
     "certificate_framework:certificate_framework_core",
     "hilog:libhilog",
+    "openssl:libcrypto_shared",
   ]
 }

@@ -31,8 +31,6 @@ ohos_unittest("cf_version1_test") {
     "../../../frameworks/common/v1.0/inc",
     "../../../frameworks/core/v1.0/spi",
     "../../../frameworks/adapter/v1.0/inc",
-    "//third_party/googletest/googlemock/include",
-    "//third_party/openssl/include/",
   ]
 
   sources = [
@@ -133,14 +131,13 @@ ohos_unittest("cf_version1_test") {
 
   defines = [ "HILOG_ENABLE" ]
 
-  deps = [
-    "//third_party/googletest:gmock",
-    "//third_party/openssl:libcrypto_shared",
-  ]
+  deps = []
 
   external_deps = [
     "c_utils:utils",
     "crypto_framework:crypto_framework_lib",
+    "googletest:gmock",
     "hilog:libhilog",
+    "openssl:libcrypto_shared",
   ]
 }

@@ -24,10 +24,10 @@
           "c_utils",
           "crypto_framework",
           "hilog",
-          "napi"
+          "napi",
+          "openssl"
         ],
         "third_party": [
-          "openssl"
         ]
       },
       "build": {
