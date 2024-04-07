@@ -758,7 +758,7 @@ static CfResult GetNumOfCRL(HcfX509CrlSpi *self, CfBlob *outBlob)
         return CF_ERR_MALLOC;
     }
     (void)memcpy_s(outBlob->data, crlNumber->length, crlNumber->data, crlNumber->length);
-    outBlob->size = crlNumber->length;
+    outBlob->size = (uint32_t)crlNumber->length;
     ASN1_INTEGER_free(crlNumber);
     return CF_SUCCESS;
 }

@@ -410,7 +410,7 @@ void FreeX509CertMatchParams(HcfX509CertMatchParams *&matchParams)
     CfArrayDataClearAndFree(matchParams->certPolicy);
     CfArrayDataClearAndFree(matchParams->extendedKeyUsage);
     if (matchParams->subjectAlternativeNames != nullptr) {
-        for (int i = 0; i < matchParams->subjectAlternativeNames->count; ++i) {
+        for (uint32_t i = 0; i < matchParams->subjectAlternativeNames->count; ++i) {
             if (matchParams->subjectAlternativeNames->data != nullptr) {
                 CF_FREE_BLOB(matchParams->subjectAlternativeNames->data[i].name);
             }

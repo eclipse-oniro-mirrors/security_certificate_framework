@@ -241,7 +241,7 @@ static CfResult GetCertlist(HcfX509CertChainSpi *self, HcfX509CertificateArray *
         return CF_ERR_MALLOC;
     }
 
-    certsList->count = certsNum;
+    certsList->count = (uint32_t)certsNum;
     for (int32_t i = 0; i < certsNum; ++i) {
         X509 *cert = sk_X509_value(x509CertChain, i);
         if (cert == NULL) {
@@ -1476,13 +1476,14 @@ static CfResult GetPubFromP12(EVP_PKEY *pkey, CfBlob **pub)
         LOGE("Failed to malloc pub key!");
         return CF_ERR_MALLOC;
     }
-    (*pub)->size = i2d_PUBKEY(pkey, &((*pub)->data));
-    if ((*pub)->size < 0) {
+    int32_t size = i2d_PUBKEY(pkey, &((*pub)->data));
+    if (size < 0) {
         LOGE("Failed to convert public key to DER format");
         CfFree(*pub);
         *pub = NULL;
         return CF_INVALID_PARAMS;
     }
+    (*pub)->size = (uint32_t)size;
     return CF_SUCCESS;
 }
 
@@ -1499,13 +1500,14 @@ static CfResult GetSubjectFromP12(X509 *cert, CfBlob **sub)
         return CF_ERR_MALLOC;
     }
 
-    (*sub)->size = i2d_X509_NAME(name, &((*sub)->data));
-    if ((*sub)->size <= 0) {
+    int32_t size = i2d_X509_NAME(name, &((*sub)->data));
+    if (size <= 0) {
         LOGE("Failed to get subject DER data!");
         CfFree(*sub);
         *sub = NULL;
         return CF_ERR_CRYPTO_OPERATION;
     }
+    (*sub)->size = (uint32_t)size;
     return CF_SUCCESS;
 }
 
@@ -1521,13 +1523,14 @@ static CfResult GetNameConstraintsFromP12(X509 *cert, CfBlob **name)
         LOGE("Failed to malloc pub key!");
         return CF_ERR_MALLOC;
     }
-    (*name)->size = i2d_ASN1_BIT_STRING(nc, &((*name)->data));
-    if ((*name)->size < 0) {
+    int32_t size = i2d_ASN1_BIT_STRING(nc, &((*name)->data));
+    if (size < 0) {
         LOGE("Failed to get name DER data!");
         CfFree(*name);
         *name = NULL;
         return CF_ERR_CRYPTO_OPERATION;
     }
+    (*name)->size = (uint32_t)size;
     return CF_SUCCESS;
 }
 
@@ -1592,11 +1595,10 @@ CfResult HcfX509CreateTrustAnchorWithKeyStoreFunc(
         LOGE("Invalid params!");
         return CF_INVALID_PARAMS;
     }
-    PKCS12 *p12 = NULL;
     EVP_PKEY *pkey = NULL;
     X509 *cert = NULL;
     STACK_OF(X509) *ca = NULL;
-    p12 = (PKCS12 *)ASN1_item_d2i_ex(
+    PKCS12 *p12 = (PKCS12 *)ASN1_item_d2i_ex(
         NULL, (const unsigned char **)&(keyStore->data), keyStore->size, ASN1_ITEM_rptr(PKCS12), NULL, NULL);
     if (p12 == NULL) {
         LOGE("Error reading PKCS#12 file!");
@@ -1614,7 +1616,8 @@ CfResult HcfX509CreateTrustAnchorWithKeyStoreFunc(
         LOGE("Failed to allocate trustAnchorArray memory!");
         return CF_ERR_MALLOC;
     }
-    anchor->count = sk_X509_num(ca);
+    int32_t count = sk_X509_num(ca);
+    anchor->count = (uint32_t)(count < 0 ? 0 : count);
     anchor->data = (HcfX509TrustAnchor **)(HcfMalloc(anchor->count * sizeof(HcfX509TrustAnchor *), 0));
     if (anchor->data == NULL) {
         LOGE("Failed to allocate data memory!");
