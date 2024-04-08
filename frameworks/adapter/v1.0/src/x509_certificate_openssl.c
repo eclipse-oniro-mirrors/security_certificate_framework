@@ -985,7 +985,7 @@ static CfResult GetExtendedKeyUsageX509Openssl(HcfX509CertificateSpi *self, CfAr
             res = CF_ERR_MALLOC;
             break;
         }
-        keyUsageOut->count = size;
+        keyUsageOut->count = (uint32_t)size;
         for (int32_t i = 0; i < size; ++i) {
             res = DeepCopyExtendedKeyUsage(extUsage, i, keyUsageOut);
             if (res != CF_SUCCESS) {
@@ -1095,7 +1095,7 @@ static CfResult GetSubjectAltNamesX509Openssl(HcfX509CertificateSpi *self, CfArr
             res = CF_ERR_MALLOC;
             break;
         }
-        outName->count = size;
+        outName->count = (uint32_t)size;
         for (int32_t i = 0; i < size; ++i) {
             res = DeepCopyAlternativeNames(subjectAltName, i, outName);
             if (res != CF_SUCCESS) {
@@ -1145,7 +1145,7 @@ static CfResult GetIssuerAltNamesX509Openssl(HcfX509CertificateSpi *self, CfArra
             res = CF_ERR_MALLOC;
             break;
         }
-        outName->count = size;
+        outName->count = (uint32_t)size;
         for (int32_t i = 0; i < size; ++i) {
             res = DeepCopyAlternativeNames(issuerAltName, i, outName);
             if (res != CF_SUCCESS) {
@@ -1249,6 +1249,10 @@ static CfResult DeepCopySubAltName(
     unsigned char *derData = (unsigned char *)CfMalloc(derLength);
     unsigned char *p = derData;
     derLength = i2d_GENERAL_NAME(generalName, &p);
+    if (derData == NULL) {
+        LOGE("Failed to get derData!");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
     SubjectAlternaiveNameData *subAltNameData = &(subAltNameArrayOut->data[i]);
     subAltNameData->name.data = HcfMalloc(derLength, 0);
     if (subAltNameData->name.data == NULL) {
@@ -1257,7 +1261,7 @@ static CfResult DeepCopySubAltName(
         return CF_ERR_MALLOC;
     }
     (void)memcpy_s(subAltNameData->name.data, derLength, derData, derLength);
-    subAltNameData->name.size = derLength;
+    subAltNameData->name.size = (uint32_t)derLength;
     subAltNameData->type = generalName->type;
     CfFree(derData);
     return CF_SUCCESS;
@@ -1412,7 +1416,7 @@ static CfResult CompareSubAltNameX509Openssl(
             res = CF_ERR_CRYPTO_OPERATION;
             break;
         }
-        if (size > SIZE_MAX / sizeof(SubjectAlternaiveNameData)) {
+        if ((uint32_t)size > SIZE_MAX / sizeof(SubjectAlternaiveNameData)) {
             LOGE("Size is out of max!");
             res = CF_ERR_MALLOC;
             break;
@@ -1424,7 +1428,7 @@ static CfResult CompareSubAltNameX509Openssl(
             res = CF_ERR_MALLOC;
             break;
         }
-        subAltNameArrayOut.count = size;
+        subAltNameArrayOut.count = (uint32_t)size;
         for (int32_t i = 0; i < size; ++i) {
             res = DeepCopySubAltName(altname, i, &subAltNameArrayOut);
             if (res != CF_SUCCESS) {
@@ -1557,7 +1561,7 @@ static CfResult CompareCertPolicesX509Openssl(HcfX509CertificateSpi *self, CfArr
             res = CF_ERR_CRYPTO_OPERATION;
             break;
         }
-        if (size > SIZE_MAX / sizeof(CfBlob)) {
+        if ((uint32_t)size > SIZE_MAX / sizeof(CfBlob)) {
             LOGE("Size is out of max!");
             res = CF_ERR_MALLOC;
             break;
@@ -1569,7 +1573,7 @@ static CfResult CompareCertPolicesX509Openssl(HcfX509CertificateSpi *self, CfArr
             res = CF_ERR_MALLOC;
             break;
         }
-        certPolicesOut.count = size;
+        certPolicesOut.count = (uint32_t)size;
         for (int32_t i = 0; i < size; ++i) {
             res = DeepCopyCertPolices(extCpols, i, &certPolicesOut);
             if (res != CF_SUCCESS) {
@@ -1832,7 +1836,7 @@ static CfResult GetCRLDpURI(STACK_OF(DIST_POINT) *crlDp, CfArray *outURI)
     LOGI("get uriCount success, uriCount = %u", uriCount);
 
     /* 2. malloc outArray buffer */
-    int32_t blobSize = sizeof(CfBlob) * uriCount;
+    int32_t blobSize = (int32_t)(sizeof(CfBlob) * uriCount);
     outURI->data = (CfBlob *)HcfMalloc(blobSize, 0);
     if (outURI->data == NULL) {
         LOGE("Failed to malloc for outURI array!");

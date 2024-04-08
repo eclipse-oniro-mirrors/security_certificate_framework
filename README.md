@@ -58,7 +58,7 @@ base/security/certificate_framwork
 
 ### 接口说明
 
-[接口文档](https://gitee.com/openharmony/docs/blob/master/zh-cn/application-dev/reference/apis/js-apis-cert.md)
+[接口文档](https://gitee.com/openharmony/docs/blob/master/zh-cn/application-dev/reference/apis-device-certificate-kit/js-apis-cert.md)
 
 ### 使用说明
 

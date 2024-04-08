@@ -766,7 +766,7 @@ bool CertGetBlobFromBigIntJSParams(napi_env env, napi_value arg, CfBlob &outBlob
         return false;
     }
     outBlob.data = retArr;
-    outBlob.size = length;
+    outBlob.size = (uint32_t)length;
     return true;
 }
 

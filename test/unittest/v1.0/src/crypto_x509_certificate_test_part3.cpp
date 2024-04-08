@@ -366,7 +366,7 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareNameConstraintsTest001, TestSize
 
     // test CompareNameConstraintsX509Openssl failed case
     // GEN_OTHERNAME
-    GENERAL_SUBTREE *tree = (GENERAL_SUBTREE *)sk_GENERAL_SUBTREE_new_null();
+    GENERAL_SUBTREE *tree = reinterpret_cast<GENERAL_SUBTREE *>sk_GENERAL_SUBTREE_new_null();
     EXPECT_NE(tree, nullptr);
     tree->base = GENERAL_NAME_new();
     EXPECT_NE(tree->base, nullptr);
@@ -381,7 +381,7 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareNameConstraintsTest001, TestSize
     X509OpensslMock::SetMockFlag(false);
 
     // GEN_X400
-    tree = (GENERAL_SUBTREE *)sk_GENERAL_SUBTREE_new_null();
+    tree = reinterpret_cast<GENERAL_SUBTREE *>sk_GENERAL_SUBTREE_new_null();
     EXPECT_NE(tree, nullptr);
     tree->base = GENERAL_NAME_new();
     EXPECT_NE(tree->base, nullptr);
@@ -409,7 +409,7 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareNameConstraintsTest002, TestSize
     certMatchParameters.nameConstraints = &blob;
 
     // GEN_IPADD
-    GENERAL_SUBTREE *tree = (GENERAL_SUBTREE *)sk_GENERAL_SUBTREE_new_null();
+    GENERAL_SUBTREE *tree = reinterpret_cast<GENERAL_SUBTREE *>sk_GENERAL_SUBTREE_new_null();
     EXPECT_NE(tree, nullptr);
     tree->base = GENERAL_NAME_new();
     EXPECT_NE(tree->base, nullptr);
@@ -439,7 +439,7 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareNameConstraintsTest003, TestSize
     certMatchParameters.nameConstraints = &blob;
 
     // GEN_EDIPARTY g_testNameConstraintsEDIPartyInvalid
-    GENERAL_SUBTREE *tree = (GENERAL_SUBTREE *)sk_GENERAL_SUBTREE_new_null();
+    GENERAL_SUBTREE *tree = reinterpret_cast<GENERAL_SUBTREE *>sk_GENERAL_SUBTREE_new_null();
     EXPECT_NE(tree, nullptr);
     tree->base = GENERAL_NAME_new();
     EXPECT_NE(tree->base, nullptr);
@@ -453,7 +453,7 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareNameConstraintsTest003, TestSize
     EXPECT_EQ(bResult, false);
     X509OpensslMock::SetMockFlag(false);
 
-    tree = (GENERAL_SUBTREE *)sk_GENERAL_SUBTREE_new_null();
+    tree = reinterpret_cast<GENERAL_SUBTREE *>sk_GENERAL_SUBTREE_new_null();
     EXPECT_NE(tree, nullptr);
     tree->base = GENERAL_NAME_new();
     EXPECT_NE(tree->base, nullptr);
@@ -485,7 +485,7 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareNameConstraintsTest004, TestSize
     CfResult ret;
 
     // GEN_DIRNAME
-    GENERAL_SUBTREE *tree = (GENERAL_SUBTREE *)sk_GENERAL_SUBTREE_new_null();
+    GENERAL_SUBTREE *tree = reinterpret_cast<GENERAL_SUBTREE *>sk_GENERAL_SUBTREE_new_null();
     EXPECT_NE(tree, nullptr);
     tree->base = GENERAL_NAME_new();
     EXPECT_NE(tree->base, nullptr);
@@ -500,7 +500,7 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareNameConstraintsTest004, TestSize
     X509OpensslMock::SetMockFlag(false);
 
     // GEN_RID
-    tree = (GENERAL_SUBTREE *)sk_GENERAL_SUBTREE_new_null();
+    tree = reinterpret_cast<GENERAL_SUBTREE *>sk_GENERAL_SUBTREE_new_null();
     EXPECT_NE(tree, nullptr);
     tree->base = GENERAL_NAME_new();
     EXPECT_NE(tree->base, nullptr);
