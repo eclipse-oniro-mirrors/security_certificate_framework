@@ -45,8 +45,6 @@ ohos_unittest("cf_adapter_test") {
     "../../../frameworks/ability:libcertificate_framework_ability",
     "../../../frameworks/adapter/v2.0:libcertificate_framework_adapter_openssl",
     "../../../frameworks/common:libcertificate_framework_common_static",
-    "//third_party/googletest:gtest_main",
-    "//third_party/openssl:libcrypto_shared",
   ]
   defines = [ "HILOG_ENABLE" ]
 
@@ -54,6 +52,7 @@ ohos_unittest("cf_adapter_test") {
     "c_utils:utils",
     "crypto_framework:crypto_framework_lib",
     "hilog:libhilog",
+    "openssl:libcrypto_shared",
   ]
   ldflags = [ "-Wl,--whole-archive" ]
 }

@@ -26,7 +26,6 @@ ohos_fuzztest("X509CrlFuzzTest") {
     "../../../../frameworks/adapter/v1.0/inc",
     "../../../../frameworks/common/v1.0/inc",
     "../../../../frameworks/core/v1.0/spi",
-    "//third_party/openssl/include",
   ]
   sources = [ "x509crl_fuzzer.cpp" ]
   cflags = [
@@ -40,13 +39,14 @@ ohos_fuzztest("X509CrlFuzzTest") {
     cflags += [ "-DBINDER_IPC_32BIT" ]
   }
 
-  deps = [ "//third_party/openssl:libcrypto_shared" ]
+  deps = []
 
   external_deps = [
     "c_utils:utils",
     "certificate_framework:certificate_framework_core",
     "crypto_framework:crypto_framework_lib",
     "hilog:libhilog",
+    "openssl:libcrypto_shared",
   ]
 }
 

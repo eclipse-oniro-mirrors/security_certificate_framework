@@ -34,7 +34,6 @@ ohos_static_library("libcertificate_framework_adapter_openssl") {
   include_dirs = [
     "../../core/cert/inc",
     "../../core/extension/inc",
-    "//third_party/openssl/include",
   ]
 
   sources = [
@@ -52,10 +51,10 @@ ohos_static_library("libcertificate_framework_adapter_openssl") {
   deps = [
     "../../ability:libcertificate_framework_ability",
     "../../common:libcertificate_framework_common_static",
-    "//third_party/openssl:libcrypto_shared",
   ]
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
+    "openssl:libcrypto_shared",
   ]
 }
