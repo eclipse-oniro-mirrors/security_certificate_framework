@@ -1416,7 +1416,7 @@ static CfResult CompareSubAltNameX509Openssl(
             res = CF_ERR_CRYPTO_OPERATION;
             break;
         }
-        if ((uint32_t)size > SIZE_MAX / sizeof(SubjectAlternaiveNameData)) {
+        if ((size_t)size > SIZE_MAX / sizeof(SubjectAlternaiveNameData)) {
             LOGE("Size is out of max!");
             res = CF_ERR_MALLOC;
             break;
@@ -1561,7 +1561,7 @@ static CfResult CompareCertPolicesX509Openssl(HcfX509CertificateSpi *self, CfArr
             res = CF_ERR_CRYPTO_OPERATION;
             break;
         }
-        if ((uint32_t)size > SIZE_MAX / sizeof(CfBlob)) {
+        if ((size_t)size > SIZE_MAX / sizeof(CfBlob)) {
             LOGE("Size is out of max!");
             res = CF_ERR_MALLOC;
             break;
