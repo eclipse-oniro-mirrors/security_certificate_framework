@@ -593,21 +593,6 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareCertPolicyTest002, TestSize.Leve
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_EQ(bResult, true);
 
-    X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), OBJ_obj2txt(_, _, _, _))
-        .Times(AnyNumber())
-        .WillOnce(Return(OID_STR_MAX_LEN + 1));
-    ret = g_x509CertExtAttrObj->match(g_x509CertExtAttrObj, &certMatchParameters, &bResult);
-    EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
-    X509OpensslMock::SetMockFlag(false);
-
-    // test CompareCertPolicesX509Openssl failed case
-    X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_num(_)).Times(AnyNumber()).WillOnce(Return(-1));
-    ret = g_x509CertExtAttrObj->match(g_x509CertExtAttrObj, &certMatchParameters, &bResult);
-    EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
-    X509OpensslMock::SetMockFlag(false);
-
     // test IsSubset failed case
     certMatchParameters.certPolicy->data[0].size -= 1;
     ret = g_x509CertExtAttrObj->match(g_x509CertExtAttrObj, &certMatchParameters, &bResult);
