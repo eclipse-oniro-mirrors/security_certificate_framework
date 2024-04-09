@@ -15,7 +15,6 @@
 
 #include "x509_crl_openssl.h"
 
-#include <openssl/bio.h>
 #include <openssl/evp.h>
 #include <openssl/pem.h>
 #include <openssl/pkcs7.h>

@@ -22,7 +22,6 @@
 #include "cf_blob.h"
 #include "cf_object_base.h"
 #include "object_base.h"
-#include "x509_cert_match_parameters.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,7 +31,8 @@ bool IsStrValid(const char *str, uint32_t maxLen);
 bool IsBlobValid(const CfBlob *blob);
 bool IsClassMatch(const CfObjectBase *obj, const char *className);
 bool IsPubKeyClassMatch(const HcfObjectBase *obj, const char *className);
-void SubAltNameArrayDataClearAndFree(SubAltNameArray *array);
+bool IsUrlValid(const char *url);
+bool IsHttp(const char *url);
 
 #ifdef __cplusplus
 }

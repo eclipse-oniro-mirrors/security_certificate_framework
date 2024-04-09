@@ -70,6 +70,12 @@ OPENSSL_STACK *__real_OPENSSL_sk_deep_copy(const OPENSSL_STACK *, OPENSSL_sk_cop
 int __real_OBJ_obj2nid(const ASN1_OBJECT *o);
 X509 *__real_X509_dup(X509 *x509);
 int __real_i2d_X509_EXTENSIONS(X509_EXTENSIONS *a, unsigned char **out);
+int __real_X509_check_host(X509 *x, const char *chk, size_t chklen, unsigned int flags, char **peername);
+OCSP_REQUEST *__real_OCSP_REQUEST_new(void);
+X509_CRL *__real_X509_CRL_load_http(const char *url, BIO *bio, BIO *rbio, int timeout);
+struct stack_st_OPENSSL_STRING *__real_X509_get1_ocsp(X509 *x);
+int __real_OSSL_HTTP_parse_url(const char *url, int *pssl, char **puser, char **phost, char **pport, int *pport_num,
+    char **ppath, char **pquery, char **pfrag);
 
 #ifdef __cplusplus
 }
@@ -77,9 +83,9 @@ int __real_i2d_X509_EXTENSIONS(X509_EXTENSIONS *a, unsigned char **out);
 
 static bool g_mockTagX509Openssl = false;
 
-X509OpensslMock &X509OpensslMock::GetInstance(void)
+NiceMock<X509OpensslMock> &X509OpensslMock::GetInstance(void)
 {
-    static X509OpensslMock gX509OpensslMock;
+    static NiceMock<X509OpensslMock> gX509OpensslMock;
     return gX509OpensslMock;
 }
 
@@ -233,6 +239,25 @@ void X509OpensslMock::SetMockFunDefaultBehaviorPartThree(void)
     ON_CALL(*this, i2d_ASN1_INTEGER).WillByDefault([this](ASN1_INTEGER *a, unsigned char **out) {
         return __real_i2d_ASN1_INTEGER(a, out);
     });
+
+    ON_CALL(*this, X509_check_host)
+        .WillByDefault([this](X509 *x, const char *chk, size_t chklen, unsigned int flags, char **peername) {
+            return __real_X509_check_host(x, chk, chklen, flags, peername);
+        });
+
+    ON_CALL(*this, OCSP_REQUEST_new).WillByDefault([this](void) { return __real_OCSP_REQUEST_new(); });
+
+    ON_CALL(*this, X509_CRL_load_http).WillByDefault([this](const char *url, BIO *bio, BIO *rbio, int timeout) {
+        return __real_X509_CRL_load_http(url, bio, rbio, timeout);
+    });
+
+    ON_CALL(*this, X509_get1_ocsp).WillByDefault([this](X509 *x) { return __real_X509_get1_ocsp(x); });
+
+    ON_CALL(*this, OSSL_HTTP_parse_url)
+        .WillByDefault([this](const char *url, int *pssl, char **puser, char **phost, char **pport, int *pport_num,
+                           char **ppath, char **pquery, char **pfrag) {
+            return __real_OSSL_HTTP_parse_url(url, pssl, puser, phost, pport, pport_num, ppath, pquery, pfrag);
+        });
 }
 
 X509OpensslMock::X509OpensslMock()
@@ -669,6 +694,53 @@ X509 *__wrap_X509_dup(X509 *x509)
         return X509OpensslMock::GetInstance().X509_dup(x509);
     } else {
         return __real_X509_dup(x509);
+    }
+}
+
+int __wrap_X509_check_host(X509 *x, const char *chk, size_t chklen, unsigned int flags, char **peername)
+{
+    if (g_mockTagX509Openssl) {
+        return X509OpensslMock::GetInstance().X509_check_host(x, chk, chklen, flags, peername);
+    } else {
+        return __real_X509_check_host(x, chk, chklen, flags, peername);
+    }
+}
+
+OCSP_REQUEST *__wrap_OCSP_REQUEST_new(void)
+{
+    if (g_mockTagX509Openssl) {
+        return X509OpensslMock::GetInstance().OCSP_REQUEST_new();
+    } else {
+        return __real_OCSP_REQUEST_new();
+    }
+}
+
+X509_CRL *__wrap_X509_CRL_load_http(const char *url, BIO *bio, BIO *rbio, int timeout)
+{
+    if (g_mockTagX509Openssl) {
+        return X509OpensslMock::GetInstance().X509_CRL_load_http(url, bio, rbio, timeout);
+    } else {
+        return __real_X509_CRL_load_http(url, bio, rbio, timeout);
+    }
+}
+
+struct stack_st_OPENSSL_STRING *__wrap_X509_get1_ocsp(X509 *x)
+{
+    if (g_mockTagX509Openssl) {
+        return X509OpensslMock::GetInstance().X509_get1_ocsp(x);
+    } else {
+        return __real_X509_get1_ocsp(x);
+    }
+}
+
+int __wrap_OSSL_HTTP_parse_url(const char *url, int *pssl, char **puser, char **phost, char **pport, int *pport_num,
+    char **ppath, char **pquery, char **pfrag)
+{
+    if (g_mockTagX509Openssl) {
+        return X509OpensslMock::GetInstance().OSSL_HTTP_parse_url(
+            url, pssl, puser, phost, pport, pport_num, ppath, pquery, pfrag);
+    } else {
+        return __real_OSSL_HTTP_parse_url(url, pssl, puser, phost, pport, pport_num, ppath, pquery, pfrag);
     }
 }
 

@@ -163,6 +163,186 @@ static bool GetCertCRLCollectionArray(napi_env env, napi_value arg, HcfCertCRLCo
     return true;
 }
 
+static bool GetRevocationOptions(napi_env env, napi_value rckObj, HcfRevocationCheckParam *&out)
+{
+    napi_value obj = GetProp(env, rckObj, CERT_CHAIN_VALIDATE_TAG_OPTIONS.c_str());
+    if (obj == nullptr) {
+        return true;
+    }
+    bool flag = false;
+    napi_status status = napi_is_array(env, obj, &flag);
+    if (status != napi_ok || !flag) {
+        return false;
+    }
+
+    uint32_t length = 0;
+    status = napi_get_array_length(env, obj, &length);
+    if (status != napi_ok || length == 0 || length > MAX_NAPI_ARRAY_OF_U8ARR) {
+        return false;
+    }
+    out->options = static_cast<HcfRevChkOpArray *>(HcfMalloc(sizeof(HcfRevChkOpArray), 0));
+    out->options->count = length;
+    out->options->data = static_cast<HcfRevChkOption *>(HcfMalloc(length * sizeof(HcfRevChkOption), 0));
+    for (uint32_t i = 0; i < length; i++) {
+        napi_value element;
+        if (napi_get_element(env, obj, i, &element) != napi_ok ||
+            napi_get_value_int32(env, element, (int32_t *)&(out->options->data[i])) != napi_ok) {
+            return false;
+        }
+        switch (out->options->data[i]) {
+            case REVOCATION_CHECK_OPTION_PREFER_OCSP:
+            case REVOCATION_CHECK_OPTION_ACCESS_NETWORK:
+            case REVOCATION_CHECK_OPTION_FALLBACK_NO_PREFER:
+            case REVOCATION_CHECK_OPTION_FALLBACK_LOCAL:
+                break;
+            default:
+                return false;
+        }
+    }
+    return true;
+}
+
+static bool GetRevocationDetail(napi_env env, napi_value rckObj, HcfRevocationCheckParam *&out)
+{
+    napi_value obj = GetProp(env, rckObj, CERT_CHAIN_VALIDATE_TAG_OCSP_REQ_EXTENSION.c_str());
+    if (obj != nullptr) {
+        out->ocspRequestExtension = CertGetBlobArrFromArrUarrJSParams(env, obj);
+        if (out->ocspRequestExtension == nullptr) {
+            return false;
+        }
+    }
+    obj = GetProp(env, rckObj, CERT_CHAIN_VALIDATE_TAG_OCSP_RESP_URI.c_str());
+    if (obj != nullptr) {
+        out->ocspResponderURI = CertGetBlobFromStringJSParams(env, obj);
+        if (out->ocspResponderURI == nullptr) {
+            return false;
+        }
+    }
+    obj = GetProp(env, rckObj, CERT_CHAIN_VALIDATE_TAG_OCSP_RESP_CERT.c_str());
+    if (obj != nullptr) {
+        NapiX509Certificate *napiX509Cert = nullptr;
+        napi_unwrap(env, obj, reinterpret_cast<void **>(&napiX509Cert));
+        if (napiX509Cert != nullptr) {
+            out->ocspResponderCert = napiX509Cert->GetX509Cert();
+            if (out->ocspResponderCert == nullptr) {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
+    obj = GetProp(env, rckObj, CERT_CHAIN_VALIDATE_TAG_OCSP_RESPS.c_str());
+    if (obj != nullptr) {
+        out->ocspResponses = CertGetBlobFromUint8ArrJSParams(env, obj);
+        if (out->ocspResponses == nullptr) {
+            return false;
+        }
+    }
+    obj = GetProp(env, rckObj, CERT_CHAIN_VALIDATE_TAG_CRL_DOWNLOAD_URI.c_str());
+    if (obj != nullptr) {
+        out->crlDownloadURI = CertGetBlobFromStringJSParams(env, obj);
+        if (out->crlDownloadURI == nullptr) {
+            return false;
+        }
+    }
+    return GetRevocationOptions(env, rckObj, out);
+}
+
+static bool GetRevocationCheckParam(napi_env env, napi_value arg, HcfRevocationCheckParam *&out)
+{
+    napi_value rckObj = GetProp(env, arg, CERT_CHAIN_VALIDATE_TAG_REVOCATIONCHECKPARAM.c_str());
+    if (rckObj == nullptr) {
+        LOGI("RevocationCheckParam do not exist!");
+        return true;
+    }
+    napi_valuetype valueType;
+    napi_typeof(env, rckObj, &valueType);
+    if (valueType == napi_null || valueType != napi_object) {
+        LOGE("Failed to check input param!");
+        return false;
+    }
+
+    out = static_cast<HcfRevocationCheckParam *>(HcfMalloc(sizeof(HcfRevocationCheckParam), 0));
+    if (out == nullptr) {
+        LOGE("Failed to allocate out memory!");
+        return false;
+    }
+    if (!GetRevocationDetail(env, rckObj, out)) {
+        LOGE("Failed to get revocation detail!");
+        CfFree(out);
+        return false;
+    }
+
+    return true;
+}
+
+static bool GetValidationPolicyType(napi_env env, napi_value arg, HcfValPolicyType &out)
+{
+    napi_value obj = GetProp(env, arg, CERT_CHAIN_VALIDATE_TAG_POLICY.c_str());
+    if (obj != nullptr) {
+        napi_status status = napi_get_value_int32(env, obj, (int32_t *)&out);
+        if (status != napi_ok) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool GetSSLHostname(napi_env env, napi_value arg, CfBlob *&out)
+{
+    napi_value obj = GetProp(env, arg, CERT_CHAIN_VALIDATE_TAG_SSLHOSTNAME.c_str());
+    if (obj == nullptr) {
+        LOGI("Param type not SSLHostname!");
+        return true;
+    }
+    out = CertGetBlobFromStringJSParams(env, obj);
+    if (out == nullptr) {
+        LOGE("SSLHostname is nullptr");
+        return false;
+    }
+    return true;
+}
+
+static bool GetKeyUsage(napi_env env, napi_value arg, HcfKuArray *&out)
+{
+    out = nullptr;
+    napi_value obj = GetProp(env, arg, CERT_CHAIN_VALIDATE_TAG_KEYUSAGE.c_str());
+    if (obj == nullptr) {
+        return true;
+    }
+    bool flag = false;
+    napi_status status = napi_is_array(env, obj, &flag);
+    if (status != napi_ok || !flag) {
+        return false;
+    }
+    uint32_t length = 0;
+    status = napi_get_array_length(env, obj, &length);
+    if (status != napi_ok || length == 0 || length > MAX_NAPI_ARRAY_OF_U8ARR) {
+        return false;
+    }
+    out = static_cast<HcfKuArray *>(HcfMalloc(sizeof(HcfKuArray), 0));
+    if (out == nullptr) {
+        return false;
+    }
+    out->count = length;
+    out->data = static_cast<HcfKeyUsageType *>(HcfMalloc(length * sizeof(HcfKeyUsageType), 0));
+    if (out->data == nullptr) {
+        CfFree(out);
+        out = nullptr;
+        return false;
+    }
+    for (uint32_t i = 0; i < length; i++) {
+        napi_value element;
+        if (napi_get_element(env, obj, i, &element) != napi_ok ||
+            napi_get_value_int32(env, element, (int32_t *)&(out->data[i])) != napi_ok) {
+            CfFree(out);
+            out = nullptr;
+            return false;
+        }
+    }
+    return true;
+}
+
 void FreeX509CertChainValidateParams(HcfX509CertChainValidateParams &param)
 {
     CfBlobFree(&param.date);
@@ -221,6 +401,22 @@ bool BuildX509CertChainValidateParams(napi_env env, napi_value arg, HcfX509CertC
     }
     if (!GetCertCRLCollectionArray(env, arg, param.certCRLCollections)) {
         LOGE("GetCertCRLCollectionArray failed");
+        return false;
+    }
+    if (!GetRevocationCheckParam(env, arg, param.revocationCheckParam)) {
+        LOGE("Get revocation check param failed!");
+        return false;
+    }
+    if (!GetValidationPolicyType(env, arg, param.policy)) {
+        LOGE("Get validation policy type failed!");
+        return false;
+    }
+    if (!GetSSLHostname(env, arg, param.sslHostname)) {
+        LOGE("Get SSLHostname failed!");
+        return false;
+    }
+    if (!GetKeyUsage(env, arg, param.keyUsage)) {
+        LOGE("Get key usage failed!");
         return false;
     }
 

@@ -31,6 +31,7 @@
 #include "key_pair.h"
 #include "memory_mock.h"
 #include "securec.h"
+#include "x509_cert_chain.h"
 #include "x509_crl.h"
 
 #ifdef __cplusplus
@@ -503,12 +504,23 @@ extern const CfEncodingBlob g_inStreamChainDataPemMidCRL;
 extern const CfEncodingBlob g_inStreamChainPemNoRootHasPubKey;
 extern const CfEncodingBlob g_inStreamChainPemNoRootLast;
 extern const CfEncodingBlob g_inStreamChainDataPemDisorder;
+extern const CfEncodingBlob g_inStreamChainDataPem163;
+extern const CfEncodingBlob g_inStreamChainDataPemRoot163;
+extern const CfEncodingBlob g_inStreamOcspResponderCert;
+
 const char *GetInvalidCertClass(void);
 const char *GetInvalidCrlClass(void);
 SubAltNameArray *ConstructSubAltNameArrayData();
 CfArray *ConstructCertPolicyData();
 const char *GetValidCrlClass(void);
 const char *GetValidX509CertificateClass(void);
+void FreeTrustAnchor(HcfX509TrustAnchor *&trustAnchor);
+void BuildAnchorArr(const CfEncodingBlob &certInStream, HcfX509TrustAnchorArray &trustAnchorArray);
+void FreeTrustAnchorArr(HcfX509TrustAnchorArray &trustAnchorArray);
+void BuildCollectionArr(const CfEncodingBlob *certInStream, const CfEncodingBlob *crlInStream,
+    HcfCertCRLCollectionArray &certCRLCollections);
+void FreeCertCrlCollectionArr(HcfCertCRLCollectionArray &certCRLCollections);
+void FreeValidateResult(HcfX509CertChainValidateResult &result);
 
 #ifdef __cplusplus
 }
