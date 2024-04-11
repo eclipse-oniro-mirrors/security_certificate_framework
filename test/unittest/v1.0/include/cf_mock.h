@@ -87,6 +87,20 @@ public:
         (const char *url, int *pssl, char **puser, char **phost, char **pport, int *pport_num, char **ppath,
             char **pquery, char **pfrag));
 
+    MOCK_METHOD(int, X509_NAME_get0_der, (X509_NAME * nm, const unsigned char **pder, size_t *pderlen));
+    MOCK_METHOD(const char *, OBJ_nid2sn, (int n));
+    MOCK_METHOD(int, ASN1_STRING_length, (const ASN1_STRING *x));
+    MOCK_METHOD(CfResult, DeepCopyDataToOut, (const char *data, uint32_t len, CfBlob *out));
+    MOCK_METHOD(char *, CRYPTO_strdup, (const char *str, const char *file, int line));
+    MOCK_METHOD(X509_NAME *, X509_NAME_new, ());
+    MOCK_METHOD(int, OBJ_txt2nid, (const char *s));
+    MOCK_METHOD(int, X509_NAME_add_entry_by_NID,
+        (X509_NAME * name, int nid, int type, const unsigned char *bytes, int len, int loc, int set));
+    MOCK_METHOD(BIO *, BIO_new, (const BIO_METHOD *type));
+    MOCK_METHOD(int, X509_print, (BIO * bp, X509 *x));
+    MOCK_METHOD(int, BIO_ctrl, (BIO * bp, int cmd, long larg, void *parg));
+    MOCK_METHOD(int, i2d_X509_bio, (BIO * bp, X509 *x509));
+
     static NiceMock<X509OpensslMock> &GetInstance(void);
     static void SetMockFlag(bool flag);
     static bool GetMockFlag(void);
@@ -98,6 +112,7 @@ private:
     void SetMockFunDefaultBehaviorPartOne(void);
     void SetMockFunDefaultBehaviorPartTwo(void);
     void SetMockFunDefaultBehaviorPartThree(void);
+    void SetMockFunDefaultBehaviorPartFour(void);
 };
 } // namespace CFMock
 #endif /* CF_MOCK_H */

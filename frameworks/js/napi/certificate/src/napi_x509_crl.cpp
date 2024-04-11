@@ -30,6 +30,8 @@
 #include "securec.h"
 #include "napi_x509_crl_match_parameters.h"
 #include "utils.h"
+#include "napi_x509_distinguished_name.h"
+#include "napi_cert_extension.h"
 
 namespace OHOS {
 namespace CertFramework {
@@ -663,6 +665,150 @@ napi_value NapiX509Crl::GetTBSCertList(napi_env env, napi_callback_info info)
     return returnBlob;
 }
 
+napi_value NapiX509Crl::ToString(napi_env env, napi_callback_info info)
+{
+    HcfX509Crl *x509Crl = GetX509Crl();
+    CfBlob blob = { 0, nullptr };
+    CfResult result = x509Crl->toString(x509Crl, &blob);
+    if (result != CF_SUCCESS) {
+        LOGE("toString failed!");
+        napi_throw(env, CertGenerateBusinessError(env, result, "toString failed"));
+        return nullptr;
+    }
+    napi_value returnBlob = nullptr;
+    napi_create_string_utf8(env, reinterpret_cast<char *>(blob.data), blob.size, &returnBlob);
+    CfBlobDataFree(&blob);
+    return returnBlob;
+}
+
+napi_value NapiX509Crl::HashCode(napi_env env, napi_callback_info info)
+{
+    HcfX509Crl *x509Crl = GetX509Crl();
+    CfBlob blob = { 0, nullptr };
+    CfResult result = x509Crl->hashCode(x509Crl, &blob);
+    if (result != CF_SUCCESS) {
+        LOGE("hashCode failed!");
+        napi_throw(env, CertGenerateBusinessError(env, result, "hashCode failed"));
+        return nullptr;
+    }
+    napi_value returnBlob = ConvertBlobToUint8ArrNapiValue(env, &blob);
+    CfBlobDataFree(&blob);
+    return returnBlob;
+}
+
+static napi_value CreateCertExtsJSInstance(napi_env env)
+{
+    napi_value constructor = nullptr;
+    napi_value instance = nullptr;
+    napi_get_reference_value(env, NapiCertExtension::classRef_, &constructor);
+    napi_new_instance(env, constructor, 0, nullptr, &instance);
+    return instance;
+}
+
+static napi_value BuildCertExtsObject(napi_env env, CfEncodingBlob *encodingBlob)
+{
+    CfObject *extsObj = nullptr;
+    int32_t res = CfCreate(CF_OBJ_TYPE_EXTENSION, encodingBlob, &extsObj);
+    if (res != CF_SUCCESS) {
+        LOGE("CfCreate error!");
+        return nullptr;
+    }
+    napi_value jsObject = CreateCertExtsJSInstance(env);
+    NapiCertExtension *napiObject = new (std::nothrow) NapiCertExtension(extsObj);
+    if (napiObject == nullptr) {
+        LOGE("Failed to create napi extension class");
+        if (extsObj != nullptr) {
+            extsObj->destroy(&(extsObj));
+        }
+        return nullptr;
+    }
+    napi_wrap(
+        env, jsObject, napiObject,
+        [](napi_env env, void *data, void *hint) {
+            NapiCertExtension *certExts = static_cast<NapiCertExtension *>(data);
+            delete certExts;
+            return;
+        }, nullptr, nullptr);
+    return jsObject;
+}
+
+napi_value NapiX509Crl::GetExtensionsObject(napi_env env, napi_callback_info info)
+{
+    HcfX509Crl *x509Crl = GetX509Crl();
+    CfBlob blob = { 0, nullptr };
+    CfResult result = x509Crl->getExtensionsObject(x509Crl, &blob);
+    if (result != CF_SUCCESS) {
+        LOGE("get Extensions Object failed!");
+        napi_throw(env, CertGenerateBusinessError(env, result, "get Extensions Object failed"));
+        return nullptr;
+    }
+
+    CfEncodingBlob *encodingBlob = static_cast<CfEncodingBlob *>(HcfMalloc(sizeof(CfEncodingBlob), 0));
+    if (encodingBlob == nullptr) {
+        LOGE("malloc encoding blob failed!");
+        CfBlobDataFree(&blob);
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "HcfMalloc failed"));
+        return nullptr;
+    }
+    if (!ConvertBlobToEncodingBlob(blob, encodingBlob)) {
+        LOGE("ConvertBlobToEncodingBlob failed!");
+        CfBlobDataFree(&blob);
+        CfFree(encodingBlob);
+        encodingBlob = nullptr;
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_CRYPTO_OPERATION, "ConvertBlobToEncodingBlob failed"));
+        return nullptr;
+    }
+    CfBlobDataFree(&blob);
+
+    napi_value object = BuildCertExtsObject(env, encodingBlob);
+    CfEncodingBlobDataFree(encodingBlob);
+    CfFree(encodingBlob);
+    encodingBlob = nullptr;
+    if (object == nullptr) {
+        LOGE("BuildCertExtsObject failed!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "BuildCertExtsObject failed"));
+        return nullptr;
+    }
+
+    return object;
+}
+
+napi_value NapiX509Crl::GetIssuerX500DistinguishedName(napi_env env, napi_callback_info info)
+{
+    HcfX509Crl *x509Crl = GetX509Crl();
+    CfBlob blob = { 0, nullptr };
+    CfResult ret = x509Crl->getIssuerName(x509Crl, &blob);
+    if (ret != CF_SUCCESS) {
+        LOGE("getIssuerName failed!");
+        napi_throw(env, CertGenerateBusinessError(env, ret, "get issuer name failed"));
+        return nullptr;
+    }
+    HcfX509DistinguishedName *x509Name = nullptr;
+    ret = HcfX509DistinguishedNameCreate(&blob, true, &x509Name);
+    CfBlobDataFree(&blob);
+    if (ret != CF_SUCCESS || x509Name == nullptr) {
+        LOGE("HcfX509DistinguishedNameCreate failed");
+        napi_throw(env, CertGenerateBusinessError(env, ret, "HcfX509DistinguishedNameCreate failed"));
+        return nullptr;
+    }
+    napi_value instance = NapiX509DistinguishedName::CreateX509DistinguishedName(env);
+    NapiX509DistinguishedName *x509NameClass = new (std::nothrow) NapiX509DistinguishedName(x509Name);
+    if (x509NameClass == nullptr) {
+        LOGE("Failed to create a NapiX509DistinguishedName class");
+        CfObjDestroy(x509Name);
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "NapiX509DistinguishedName new failed"));
+        return nullptr;
+    }
+    napi_wrap(
+        env, instance, x509NameClass,
+        [](napi_env env, void *data, void *hint) {
+            NapiX509DistinguishedName *nameClass = static_cast<NapiX509DistinguishedName *>(data);
+            delete nameClass;
+            return;
+        }, nullptr, nullptr);
+    return instance;
+}
+
 napi_value NapiX509Crl::GetSignature(napi_env env, napi_callback_info info)
 {
     HcfX509Crl *x509Crl = GetX509Crl();
@@ -1036,6 +1182,58 @@ static napi_value NapiCRLGetTBSCertList(napi_env env, napi_callback_info info)
     return x509Crl->GetTBSCertList(env, info);
 }
 
+static napi_value NapiToString(napi_env env, napi_callback_info info)
+{
+    napi_value thisVar = nullptr;
+    napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+    NapiX509Crl *x509Crl = nullptr;
+    napi_unwrap(env, thisVar, reinterpret_cast<void **>(&x509Crl));
+    if (x509Crl == nullptr) {
+        LOGE("x509Crl is nullptr!");
+        return nullptr;
+    }
+    return x509Crl->ToString(env, info);
+}
+
+static napi_value NapiHashCode(napi_env env, napi_callback_info info)
+{
+    napi_value thisVar = nullptr;
+    napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+    NapiX509Crl *x509Crl = nullptr;
+    napi_unwrap(env, thisVar, reinterpret_cast<void **>(&x509Crl));
+    if (x509Crl == nullptr) {
+        LOGE("x509Crl is nullptr!");
+        return nullptr;
+    }
+    return x509Crl->HashCode(env, info);
+}
+
+static napi_value NapiGetExtensionsObject(napi_env env, napi_callback_info info)
+{
+    napi_value thisVar = nullptr;
+    napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+    NapiX509Crl *x509Crl = nullptr;
+    napi_unwrap(env, thisVar, reinterpret_cast<void **>(&x509Crl));
+    if (x509Crl == nullptr) {
+        LOGE("x509Crl is nullptr!");
+        return nullptr;
+    }
+    return x509Crl->GetExtensionsObject(env, info);
+}
+
+static napi_value NapiGetIssuerX500DistinguishedName(napi_env env, napi_callback_info info)
+{
+    napi_value thisVar = nullptr;
+    napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+    NapiX509Crl *x509Crl = nullptr;
+    napi_unwrap(env, thisVar, reinterpret_cast<void **>(&x509Crl));
+    if (x509Crl == nullptr) {
+        LOGE("x509Crl is nullptr!");
+        return nullptr;
+    }
+    return x509Crl->GetIssuerX500DistinguishedName(env, info);
+}
+
 static napi_value NapiGetSignature(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
@@ -1235,6 +1433,10 @@ void NapiX509Crl::DefineX509CrlJS(napi_env env, napi_value exports, std::string 
         DECLARE_NAPI_FUNCTION("getRevokedCerts", NapiCrlGetRevokedCertificates),
         DECLARE_NAPI_FUNCTION("getRevokedCertWithCert", NapiCrlGetRevokedCertificateWithCert),
         DECLARE_NAPI_FUNCTION("getTbsInfo", NapiCrlGetTBSCertList),
+        DECLARE_NAPI_FUNCTION("toString", NapiToString),
+        DECLARE_NAPI_FUNCTION("hashCode", NapiHashCode),
+        DECLARE_NAPI_FUNCTION("getExtensionsObject", NapiGetExtensionsObject),
+        DECLARE_NAPI_FUNCTION("getIssuerX500DistinguishedName", NapiGetIssuerX500DistinguishedName),
     };
     napi_value constructor = nullptr;
     napi_define_class(env, className.c_str(), NAPI_AUTO_LENGTH, X509CrlConstructor, nullptr,
@@ -1269,6 +1471,10 @@ void NapiX509Crl::DefineX509CRLJS(napi_env env, napi_value exports, std::string 
         DECLARE_NAPI_FUNCTION("getRevokedCertWithCert", NapiCRLGetRevokedCertificateWithCert),
         DECLARE_NAPI_FUNCTION("getTBSInfo", NapiCRLGetTBSCertList),
         DECLARE_NAPI_FUNCTION("match", NapiMatch),
+        DECLARE_NAPI_FUNCTION("toString", NapiToString),
+        DECLARE_NAPI_FUNCTION("hashCode", NapiHashCode),
+        DECLARE_NAPI_FUNCTION("getExtensionsObject", NapiGetExtensionsObject),
+        DECLARE_NAPI_FUNCTION("getIssuerX500DistinguishedName", NapiGetIssuerX500DistinguishedName),
     };
     napi_value constructor = nullptr;
     napi_define_class(env, className.c_str(), NAPI_AUTO_LENGTH, X509CrlConstructor, nullptr,

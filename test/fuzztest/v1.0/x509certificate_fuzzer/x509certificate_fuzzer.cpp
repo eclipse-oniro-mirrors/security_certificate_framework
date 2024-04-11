@@ -121,6 +121,21 @@ namespace OHOS {
         CfArrayDataClearAndFree(&subjectAltName);
     }
 
+    static void TestQueryName(HcfX509Certificate *x509CertObj)
+    {
+        CfBlob toStringOut = { 0 };
+        (void)x509CertObj->toString(x509CertObj, &toStringOut);
+        CfBlobDataClearAndFree(&toStringOut);
+
+        CfBlob hashCodeOut = { 0 };
+        (void)x509CertObj->hashCode(x509CertObj, &hashCodeOut);
+        CfBlobDataClearAndFree(&hashCodeOut);
+
+        CfBlob extensionsObjectOut = { 0 };
+        (void)x509CertObj->getExtensionsObject(x509CertObj, &extensionsObjectOut);
+        CfBlobDataClearAndFree(&extensionsObjectOut);
+    }
+
     static void CreateOneCert(void)
     {
         CfEncodingBlob inStream = { 0 };
@@ -135,6 +150,7 @@ namespace OHOS {
         TestGetEncoded(x509CertObj);
         TestVerify(x509CertObj);
         TestQuery(x509CertObj);
+        TestQueryName(x509CertObj);
     }
 
     bool X509CertificateFuzzTest(const uint8_t* data, size_t size)

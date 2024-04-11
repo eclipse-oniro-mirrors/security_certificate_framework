@@ -369,28 +369,50 @@ static CfResult Match(HcfX509Certificate *self, const HcfX509CertMatchParams *ma
         ((HcfX509CertificateImpl *)self)->spiObj, matchParams, out);
 }
 
-CfResult HcfX509CertificateCreate(const CfEncodingBlob *inStream, HcfX509Certificate **returnObj)
+static CfResult ToString(HcfX509Certificate *self, CfBlob *out)
 {
-    CF_LOG_I("enter");
-    if ((inStream == NULL) || (inStream->len > HCF_MAX_BUFFER_LEN) || (returnObj == NULL)) {
+    if (self == NULL || out == NULL) {
+        LOGE("Invalid input parameter.");
         return CF_INVALID_PARAMS;
     }
-    const HcfX509CertificateFuncSet *funcSet = FindAbility("X509");
-    if (funcSet == NULL) {
-        return CF_NOT_SUPPORT;
+    if (!IsClassMatch((CfObjectBase *)self, GetX509CertificateClass())) {
+        LOGE("Class is not match.");
+        return CF_INVALID_PARAMS;
     }
-    HcfX509CertificateSpi *spiObj = NULL;
-    CfResult res = funcSet->createFunc(inStream, &spiObj);
-    if (res != CF_SUCCESS) {
-        LOGE("Failed to create spi object!");
-        return res;
+    return ((HcfX509CertificateImpl *)self)->spiObj->engineToString(
+        ((HcfX509CertificateImpl *)self)->spiObj, out);
+}
+
+static CfResult HashCode(HcfX509Certificate *self, CfBlob *out)
+{
+    if (self == NULL || out == NULL) {
+        LOGE("Invalid input parameter.");
+        return CF_INVALID_PARAMS;
     }
-    HcfX509CertificateImpl *x509CertImpl = (HcfX509CertificateImpl *)HcfMalloc(sizeof(HcfX509CertificateImpl), 0);
-    if (x509CertImpl == NULL) {
-        LOGE("Failed to allocate x509CertImpl memory!");
-        CfObjDestroy(spiObj);
-        return CF_ERR_MALLOC;
+    if (!IsClassMatch((CfObjectBase *)self, GetX509CertificateClass())) {
+        LOGE("Class is not match.");
+        return CF_INVALID_PARAMS;
     }
+    return ((HcfX509CertificateImpl *)self)->spiObj->engineHashCode(
+        ((HcfX509CertificateImpl *)self)->spiObj, out);
+}
+
+static CfResult GetExtensionsObject(HcfX509Certificate *self, CfBlob *out)
+{
+    if (self == NULL || out == NULL) {
+        LOGE("Invalid input parameter.");
+        return CF_INVALID_PARAMS;
+    }
+    if (!IsClassMatch((CfObjectBase *)self, GetX509CertificateClass())) {
+        LOGE("Class is not match.");
+        return CF_INVALID_PARAMS;
+    }
+    return ((HcfX509CertificateImpl *)self)->spiObj->engineGetExtensionsObject(
+        ((HcfX509CertificateImpl *)self)->spiObj, out);
+}
+
+static void HcfX509CertificateImplPack(HcfX509CertificateImpl *x509CertImpl, HcfX509CertificateSpi *spiObj)
+{
     x509CertImpl->base.base.base.getClass = GetX509CertificateClass;
     x509CertImpl->base.base.base.destroy = DestroyX509Certificate;
     x509CertImpl->base.base.verify = Verify;
@@ -414,7 +436,35 @@ CfResult HcfX509CertificateCreate(const CfEncodingBlob *inStream, HcfX509Certifi
     x509CertImpl->base.getIssuerAltNames = GetIssuerAltNames;
     x509CertImpl->base.getCRLDistributionPointsURI = GetCRLDistributionPointsURI;
     x509CertImpl->base.match = Match;
+    x509CertImpl->base.toString = ToString;
+    x509CertImpl->base.hashCode = HashCode;
+    x509CertImpl->base.getExtensionsObject = GetExtensionsObject;
     x509CertImpl->spiObj = spiObj;
+}
+
+CfResult HcfX509CertificateCreate(const CfEncodingBlob *inStream, HcfX509Certificate **returnObj)
+{
+    CF_LOG_I("enter");
+    if ((inStream == NULL) || (inStream->len > HCF_MAX_BUFFER_LEN) || (returnObj == NULL)) {
+        return CF_INVALID_PARAMS;
+    }
+    const HcfX509CertificateFuncSet *funcSet = FindAbility("X509");
+    if (funcSet == NULL) {
+        return CF_NOT_SUPPORT;
+    }
+    HcfX509CertificateSpi *spiObj = NULL;
+    CfResult res = funcSet->createFunc(inStream, &spiObj);
+    if (res != CF_SUCCESS) {
+        LOGE("Failed to create spi object!");
+        return res;
+    }
+    HcfX509CertificateImpl *x509CertImpl = (HcfX509CertificateImpl *)HcfMalloc(sizeof(HcfX509CertificateImpl), 0);
+    if (x509CertImpl == NULL) {
+        LOGE("Failed to allocate x509CertImpl memory!");
+        CfObjDestroy(spiObj);
+        return CF_ERR_MALLOC;
+    }
+    HcfX509CertificateImplPack(x509CertImpl, spiObj);
     *returnObj = (HcfX509Certificate *)x509CertImpl;
     return CF_SUCCESS;
 }

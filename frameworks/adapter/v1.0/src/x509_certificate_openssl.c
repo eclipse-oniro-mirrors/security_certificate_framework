@@ -1161,6 +1161,92 @@ static CfResult GetIssuerAltNamesX509Openssl(HcfX509CertificateSpi *self, CfArra
     return res;
 }
 
+static CfResult ToStringX509Openssl(HcfX509CertificateSpi *self, CfBlob *out)
+{
+    if ((self == NULL) || (out == NULL)) {
+        LOGE("The input data is null!");
+        return CF_INVALID_PARAMS;
+    }
+    if (!IsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
+        LOGE("Input wrong class type!");
+        return CF_INVALID_PARAMS;
+    }
+    HcfOpensslX509Cert *realCert = (HcfOpensslX509Cert *)self;
+    BIO *bio = BIO_new(BIO_s_mem());
+    if (bio == NULL) {
+        LOGE("BIO_new error");
+        return CF_ERR_MALLOC;
+    }
+
+    int len = X509_print(bio, realCert->x509);
+    if (len < 0) {
+        LOGE("X509_print error");
+        BIO_free(bio);
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    BUF_MEM *bufMem = NULL;
+    if (BIO_get_mem_ptr(bio, &bufMem) > 0 && bufMem != NULL) {
+        CfResult res = DeepCopyDataToOut(bufMem->data, bufMem->length, out);
+        BIO_free(bio);
+        return res;
+    }
+
+    BIO_free(bio);
+    LOGE("BIO_get_mem_ptr error");
+    return CF_ERR_CRYPTO_OPERATION;
+}
+
+static CfResult HashCodeX509Openssl(HcfX509CertificateSpi *self, CfBlob *out)
+{
+    if ((self == NULL) || (out == NULL)) {
+        LOGE("The input data is null!");
+        return CF_INVALID_PARAMS;
+    }
+    if (!IsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
+        LOGE("Input wrong class type!");
+        return CF_INVALID_PARAMS;
+    }
+    HcfOpensslX509Cert *realCert = (HcfOpensslX509Cert *)self;
+    X509 *x509 = realCert->x509;
+    unsigned char *buf = NULL;
+    int len = i2d_X509(x509, &buf);
+    if (len < 0 || buf == NULL) {
+        LOGE("i2d_X509 error");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    out->data = (uint8_t *)HcfMalloc(SHA256_DIGEST_LENGTH, 0);
+    if (out->data == NULL) {
+        LOGE("HcfMalloc error");
+        CfFree(buf);
+        return CF_ERR_MALLOC;
+    }
+    SHA256(buf, len, out->data);
+    out->size = SHA256_DIGEST_LENGTH;
+    CfFree(buf);
+    return CF_SUCCESS;
+}
+
+static CfResult GetExtensionsObjectX509Openssl(HcfX509CertificateSpi *self, CfBlob *out)
+{
+    if ((self == NULL) || (out == NULL)) {
+        LOGE("The input data is null!");
+        return CF_INVALID_PARAMS;
+    }
+    if (!IsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
+        LOGE("Input wrong class type!");
+        return CF_INVALID_PARAMS;
+    }
+    HcfOpensslX509Cert *realCert = (HcfOpensslX509Cert *)self;
+    int len = i2d_X509_EXTENSIONS(X509_get0_extensions(realCert->x509), &out->data);
+    if (len < 0) {
+        LOGE("i2d_X509_EXTENSIONS error");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    out->size = len;
+    return CF_SUCCESS;
+}
+
 static CfResult MatchPart1(HcfX509CertificateSpi *self, const HcfX509CertMatchParams *matchParams, bool *out)
 {
     CfResult res = CF_SUCCESS;
@@ -1976,6 +2062,9 @@ CfResult OpensslX509CertSpiCreate(const CfEncodingBlob *inStream, HcfX509Certifi
     realCert->base.engineGetIssuerAltNames = GetIssuerAltNamesX509Openssl;
     realCert->base.engineGetCRLDistributionPointsURI = GetCRLDistributionPointsURIX509Openssl;
     realCert->base.engineMatch = MatchX509Openssl;
+    realCert->base.engineToString = ToStringX509Openssl;
+    realCert->base.engineHashCode = HashCodeX509Openssl;
+    realCert->base.engineGetExtensionsObject = GetExtensionsObjectX509Openssl;
 
     *spi = (HcfX509CertificateSpi *)realCert;
     return CF_SUCCESS;

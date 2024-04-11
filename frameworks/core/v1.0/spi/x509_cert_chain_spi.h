@@ -30,6 +30,8 @@ struct HcfX509CertChainSpi {
     CfResult (*engineGetCertList)(HcfX509CertChainSpi *self, HcfX509CertificateArray *out);
     CfResult (*engineValidate)(HcfX509CertChainSpi *self, const HcfX509CertChainValidateParams *params,
         HcfX509CertChainValidateResult *result);
+    CfResult (*engineToString)(HcfX509CertChainSpi *self, CfBlob *out);
+    CfResult (*engineHashCode)(HcfX509CertChainSpi *self, CfBlob *out);
 };
 
 #endif // CF_X509_CERT_CHAIN_SPI_H

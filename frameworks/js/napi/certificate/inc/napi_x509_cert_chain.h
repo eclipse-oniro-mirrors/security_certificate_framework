@@ -34,6 +34,8 @@ public:
     static napi_value Constructor(napi_env env, napi_callback_info info);
     static void DefineX509CertChainJsClass(napi_env env, napi_value exports);
     napi_value Validate(napi_env env, napi_callback_info info);
+    napi_value ToString(napi_env env, napi_callback_info info);
+    napi_value HashCode(napi_env env, napi_callback_info info);
     napi_value ConvertToJsCertChain(napi_env env);
 
     HcfCertChain *GetCertChain()

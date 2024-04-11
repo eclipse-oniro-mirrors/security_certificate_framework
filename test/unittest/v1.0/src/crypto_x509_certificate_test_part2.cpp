@@ -14,19 +14,21 @@
  */
 
 #include <gtest/gtest.h>
-#include "securec.h"
-
-#include "x509_certificate.h"
-#include "cf_blob.h"
-#include "memory_mock.h"
 
 #include "certificate_openssl_common.h"
+#include "cf_blob.h"
+#include "cf_log.h"
+#include "memory_mock.h"
+#include "securec.h"
+#include "x509_certificate.h"
 #include "x509_certificate_openssl.h"
 
 using namespace std;
 using namespace testing::ext;
 
 namespace {
+HcfX509CertificateSpi *g_x509CertSpiObj = nullptr;
+
 class CryptoX509CertificateTestPart2 : public testing::Test {
 public:
     static void SetUpTestCase();
@@ -418,10 +420,14 @@ const CfEncodingBlob g_inStream = {
 
 void CryptoX509CertificateTestPart2::SetUpTestCase()
 {
+    CfResult ret = OpensslX509CertSpiCreate(&g_inStream, &g_x509CertSpiObj);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    ASSERT_NE(g_x509CertSpiObj, nullptr);
 }
 
 void CryptoX509CertificateTestPart2::TearDownTestCase()
 {
+    CfObjDestroy(g_x509CertSpiObj);
 }
 
 void CryptoX509CertificateTestPart2::SetUp()
@@ -850,5 +856,83 @@ HWTEST_F(CryptoX509CertificateTestPart2, CfCRLDpURIEngineTest005, TestSize.Level
 
     CfArrayDataClearAndFree(&outURI);
     CfObjDestroy(x509CertObj);
+}
+
+HWTEST_F(CryptoX509CertificateTestPart2, HcfX509CertificateSpiEngineToStringTest001, TestSize.Level0)
+{
+    CF_LOG_I("HcfX509CertificateSpiEngineToStringTest001");
+    ASSERT_NE(g_x509CertSpiObj, nullptr);
+
+    CfBlob blob = { 0, nullptr };
+    CfResult ret = g_x509CertSpiObj->engineToString(g_x509CertSpiObj, &blob);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    CfBlobDataFree(&blob);
+
+    HcfX509CertificateSpi invalidCertSpi;
+    invalidCertSpi.base.getClass = InvalidX509CertClass;
+
+    ret = g_x509CertSpiObj->engineToString(&invalidCertSpi, &blob);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+
+    ret = g_x509CertSpiObj->engineToString(NULL, &blob);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+
+    ret = g_x509CertSpiObj->engineToString(g_x509CertSpiObj, NULL);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+
+    ret = g_x509CertSpiObj->engineToString(NULL, NULL);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+}
+
+HWTEST_F(CryptoX509CertificateTestPart2, HcfX509CertificateSpiEngineHashCodeTest001, TestSize.Level0)
+{
+    CF_LOG_I("HcfX509CertificateSpiEngineHashCodeTest001");
+    ASSERT_NE(g_x509CertSpiObj, nullptr);
+
+    CfBlob blob = { 0, nullptr };
+    CfResult ret = g_x509CertSpiObj->engineHashCode(g_x509CertSpiObj, &blob);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    CfBlobDataFree(&blob);
+
+    HcfX509CertificateSpi invalidCertSpi;
+    invalidCertSpi.base.getClass = InvalidX509CertClass;
+
+    ret = g_x509CertSpiObj->engineHashCode(&invalidCertSpi, &blob);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+
+    ret = g_x509CertSpiObj->engineHashCode(NULL, &blob);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+
+    ret = g_x509CertSpiObj->engineHashCode(g_x509CertSpiObj, NULL);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+
+    ret = g_x509CertSpiObj->engineHashCode(NULL, NULL);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+}
+
+HWTEST_F(CryptoX509CertificateTestPart2, HcfX509CertificateSpiEngineGetExtensionsObjectTest001, TestSize.Level0)
+{
+    CF_LOG_I("HcfX509CertificateSpiEngineGetExtensionsObjectTest001");
+    ASSERT_NE(g_x509CertSpiObj, nullptr);
+
+    CfBlob blob = { 0, nullptr };
+    CfResult ret = g_x509CertSpiObj->engineGetExtensionsObject(g_x509CertSpiObj, &blob);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    CfBlobDataFree(&blob);
+
+    HcfX509CertificateSpi invalidCertSpi;
+    invalidCertSpi.base.getClass = InvalidX509CertClass;
+
+    ret = g_x509CertSpiObj->engineGetExtensionsObject(&invalidCertSpi, &blob);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+
+    ret = g_x509CertSpiObj->engineGetExtensionsObject(NULL, &blob);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+
+    ret = g_x509CertSpiObj->engineGetExtensionsObject(g_x509CertSpiObj, NULL);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+
+    ret = g_x509CertSpiObj->engineGetExtensionsObject(NULL, NULL);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
 }
 }

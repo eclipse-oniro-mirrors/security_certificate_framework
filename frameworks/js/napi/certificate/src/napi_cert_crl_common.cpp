@@ -69,7 +69,7 @@ napi_value ConvertCertToNapiValue(napi_env env, HcfX509Certificate *cert)
         return nullptr;
     }
     napi_value instance = NapiX509Certificate::CreateX509Cert(env);
-    napi_wrap(
+    napi_status status = napi_wrap(
         env, instance, x509Cert,
         [](napi_env env, void *data, void *hint) {
             NapiX509Certificate *certClass = static_cast<NapiX509Certificate *>(data);
@@ -77,7 +77,11 @@ napi_value ConvertCertToNapiValue(napi_env env, HcfX509Certificate *cert)
             return;
         },
         nullptr, nullptr);
-
+    if (status != napi_ok) {
+        LOGE("failed to wrap NapiX509Certificate obj!");
+        delete x509Cert;
+        return nullptr;
+    }
     return instance;
 }
 

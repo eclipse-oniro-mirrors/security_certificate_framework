@@ -20,6 +20,7 @@
 #include "cf_blob.h"
 #include "cf_object_base.h"
 #include "cf_result.h"
+#include "x509_distinguished_name.h"
 
 typedef struct HcfX509CrlEntry HcfX509CrlEntry;
 
@@ -44,6 +45,15 @@ struct HcfX509CrlEntry {
 
     /** Check If exists extensions in x509 CRL Entry.  */
     CfResult (*hasExtensions)(HcfX509CrlEntry *self, bool *out);
+
+    /** Get the string of x509 CRL Entry. */
+    CfResult (*toString)(HcfX509CrlEntry *self, CfBlob *out);
+
+    /** Get the hashCode of x509 CRL Entry. */
+    CfResult (*hashCode)(HcfX509CrlEntry *self, CfBlob *out);
+
+    /** Get the Entension Object of x509 CRL Entry. */
+    CfResult (*getExtensionsObject)(HcfX509CrlEntry *self, CfBlob *out);
 };
 
 #endif // CF_X509_CRL_ENTRY_H

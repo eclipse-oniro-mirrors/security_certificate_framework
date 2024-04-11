@@ -22,6 +22,7 @@
 #include "x509_certificate.h"
 #include "x509_crl_entry.h"
 #include "x509_crl_match_parameters.h"
+#include "x509_distinguished_name.h"
 
 typedef struct HcfX509Crl HcfX509Crl;
 
@@ -77,6 +78,15 @@ struct HcfX509Crl {
 
     /** Match the crl with X509CrlMatchParameters. */
     CfResult (*match)(HcfX509Crl *self, const HcfX509CrlMatchParams *matchParams, bool *out);
+
+    /** Get the string of crl. */
+    CfResult (*toString)(HcfX509Crl *self, CfBlob *out);
+
+    /** Get the hashCode of crl. */
+    CfResult (*hashCode)(HcfX509Crl *self, CfBlob *out);
+
+    /** Get the Entension Object of crl. */
+    CfResult (*getExtensionsObject)(HcfX509Crl *self, CfBlob *out);
 };
 
 typedef struct HcfX509CrlArray HcfX509CrlArray;

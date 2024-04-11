@@ -20,6 +20,7 @@
 #include "cf_blob.h"
 #include "cf_result.h"
 #include "x509_cert_match_parameters.h"
+#include "x509_distinguished_name.h"
 
 typedef struct HcfX509Certificate HcfX509Certificate;
 
@@ -90,6 +91,15 @@ struct HcfX509Certificate {
 
     /** Get CRL distribution points URI from certificate. */
     CfResult (*getCRLDistributionPointsURI)(HcfX509Certificate *self, CfArray *outURI);
+
+    /** Get the string of ceritificate. */
+    CfResult (*toString)(HcfX509Certificate *self, CfBlob *out);
+
+    /** Get the hashCode of ceritificate. */
+    CfResult (*hashCode)(HcfX509Certificate *self, CfBlob *out);
+
+    /** Get the Entension Object of ceritificate. */
+    CfResult (*getExtensionsObject)(HcfX509Certificate *self, CfBlob *out);
 };
 
 typedef struct HcfX509CertificateArray HcfX509CertificateArray;

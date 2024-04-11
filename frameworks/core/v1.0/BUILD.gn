@@ -37,6 +37,7 @@ ohos_static_library("libcertificate_framework_vesion1") {
     "certificate/x509_cert_chain.c",
     "certificate/x509_certificate.c",
     "certificate/x509_crl.c",
+    "certificate/x509_distinguished_name.c",
   ]
   cflags = [
     "-DHILOG_ENABLE",

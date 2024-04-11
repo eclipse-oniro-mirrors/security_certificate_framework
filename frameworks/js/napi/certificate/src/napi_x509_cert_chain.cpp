@@ -355,6 +355,38 @@ napi_value NapiX509CertChain::Validate(napi_env env, napi_callback_info info)
     return ValidateAsyncWork(env, context);
 }
 
+napi_value NapiX509CertChain::ToString(napi_env env, napi_callback_info info)
+{
+    HcfCertChain *certChain = GetCertChain();
+    CfBlob blob = { 0, nullptr };
+    CfResult result = certChain->toString(certChain, &blob);
+    if (result != CF_SUCCESS) {
+        LOGE("toString failed!");
+        napi_throw(env, CertGenerateBusinessError(env, result, "toString failed"));
+        return nullptr;
+    }
+
+    napi_value returnBlob = nullptr;
+    napi_create_string_utf8(env, reinterpret_cast<char *>(blob.data), blob.size, &returnBlob);
+    CfBlobDataFree(&blob);
+    return returnBlob;
+}
+
+napi_value NapiX509CertChain::HashCode(napi_env env, napi_callback_info info)
+{
+    HcfCertChain *certChain = GetCertChain();
+    CfBlob blob = { 0, nullptr };
+    CfResult result = certChain->hashCode(certChain, &blob);
+    if (result != CF_SUCCESS) {
+        LOGE("toString failed!");
+        napi_throw(env, CertGenerateBusinessError(env, result, "toString failed"));
+        return nullptr;
+    }
+    napi_value returnBlob = ConvertBlobToUint8ArrNapiValue(env, &blob);
+    CfBlobDataFree(&blob);
+    return returnBlob;
+}
+
 static napi_value CreateX509CertChainByArray(napi_env env, napi_value param)
 {
     HcfX509CertificateArray certs = { nullptr, 0 };
@@ -799,6 +831,34 @@ napi_value NapiValidate(napi_env env, napi_callback_info info)
     return napiCertChainObj->Validate(env, info);
 }
 
+napi_value NapiToString(napi_env env, napi_callback_info info)
+{
+    napi_value thisVar = nullptr;
+    napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+    NapiX509CertChain *napiCertChainObj = nullptr;
+    napi_unwrap(env, thisVar, reinterpret_cast<void **>(&napiCertChainObj));
+    if (napiCertChainObj == nullptr) {
+        LOGE("napi cert chain object is nullptr!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "napi cert chain object is nullptr!"));
+        return nullptr;
+    }
+    return napiCertChainObj->ToString(env, info);
+}
+
+napi_value NapiHashCode(napi_env env, napi_callback_info info)
+{
+    napi_value thisVar = nullptr;
+    napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+    NapiX509CertChain *napiCertChainObj = nullptr;
+    napi_unwrap(env, thisVar, reinterpret_cast<void **>(&napiCertChainObj));
+    if (napiCertChainObj == nullptr) {
+        LOGE("napi cert chain object is nullptr!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "napi cert chain object is nullptr!"));
+        return nullptr;
+    }
+    return napiCertChainObj->HashCode(env, info);
+}
+
 static napi_value CertChainConstructor(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
@@ -878,6 +938,8 @@ void NapiX509CertChain::DefineX509CertChainJsClass(napi_env env, napi_value expo
     napi_property_descriptor CertChainDesc[] = {
         DECLARE_NAPI_FUNCTION("getCertList", NapiGetCertList),
         DECLARE_NAPI_FUNCTION("validate", NapiValidate),
+        DECLARE_NAPI_FUNCTION("toString", NapiToString),
+        DECLARE_NAPI_FUNCTION("hashCode", NapiHashCode),
     };
 
     napi_value constructor = nullptr;

@@ -57,6 +57,7 @@ ohos_shared_library("cert") {
     "src/napi_x509_crl.cpp",
     "src/napi_x509_crl_entry.cpp",
     "src/napi_x509_crl_match_parameters.cpp",
+    "src/napi_x509_distinguished_name.cpp",
     "src/napi_x509_trust_anchor.cpp",
   ]
 

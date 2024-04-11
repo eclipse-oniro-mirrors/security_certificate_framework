@@ -19,6 +19,7 @@
 
 #include <openssl/bio.h>
 #include <openssl/x509.h>
+#include <openssl/x509v3.h>
 
 #include "certificate_openssl_common.h"
 #include "cf_log.h"
@@ -223,6 +224,97 @@ static CfResult HasExtensions(HcfX509CrlEntry *self, bool *out)
     return CF_SUCCESS;
 }
 
+static CfResult ToString(HcfX509CrlEntry *self, CfBlob *outBlob)
+{
+    if ((self == NULL) || (outBlob == NULL)) {
+        LOGE("Invalid Paramas!");
+        return CF_INVALID_PARAMS;
+    }
+    X509_REVOKED *rev = GetSelfRev(self);
+    if (rev == NULL) {
+        LOGE("Rev is null!");
+        return CF_INVALID_PARAMS;
+    }
+
+    BIO *out = BIO_new(BIO_s_mem());
+    if (out == NULL) {
+        LOGE("BIO_new error");
+        return CF_ERR_MALLOC;
+    }
+    BIO_printf(out, "    Serial Number: ");
+    i2a_ASN1_INTEGER(out, X509_REVOKED_get0_serialNumber(rev));
+    BIO_printf(out, "\n        Revocation Date: ");
+    ASN1_TIME_print(out, X509_REVOKED_get0_revocationDate(rev));
+    BIO_printf(out, "\n");
+    int len = X509V3_extensions_print(out, "CRL entry extensions", X509_REVOKED_get0_extensions(rev), 0, 8);
+    if (len < 0) {
+        LOGE("X509V3_extensions_print error");
+        BIO_free(out);
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    BUF_MEM *bufMem = NULL;
+    if (BIO_get_mem_ptr(out, &bufMem) > 0 && bufMem != NULL) {
+        CfResult res = DeepCopyDataToOut(bufMem->data, bufMem->length, outBlob);
+        BIO_free(out);
+        return res;
+    }
+    BIO_free(out);
+    LOGE("BIO_get_mem_ptr error");
+    return CF_ERR_CRYPTO_OPERATION;
+}
+
+static CfResult HashCode(HcfX509CrlEntry *self, CfBlob *outBlob)
+{
+    if ((self == NULL) || (outBlob == NULL)) {
+        LOGE("Invalid Paramas!");
+        return CF_INVALID_PARAMS;
+    }
+    X509_REVOKED *rev = GetSelfRev(self);
+    if (rev == NULL) {
+        LOGE("Rev is null!");
+        return CF_INVALID_PARAMS;
+    }
+
+    unsigned char *buf = NULL;
+    int len = i2d_X509_REVOKED(rev, &buf);
+    if (len < 0 || buf == NULL) {
+        LOGE("i2d_X509_REVOKED error");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    outBlob->data = (uint8_t *)HcfMalloc(SHA256_DIGEST_LENGTH, 0);
+    if (outBlob->data == NULL) {
+        LOGE("HcfMalloc error");
+        CfFree(buf);
+        return CF_ERR_MALLOC;
+    }
+    SHA256(buf, len, (unsigned char *)outBlob->data);
+    outBlob->size = SHA256_DIGEST_LENGTH;
+    CfFree(buf);
+    return CF_SUCCESS;
+}
+
+static CfResult GetExtensionsObject(HcfX509CrlEntry *self, CfBlob *outBlob)
+{
+    if ((self == NULL) || (outBlob == NULL)) {
+        LOGE("Invalid Paramas!");
+        return CF_INVALID_PARAMS;
+    }
+
+    X509_REVOKED *rev = GetSelfRev(self);
+    if (rev == NULL) {
+        LOGE("Rev is null!");
+        return CF_INVALID_PARAMS;
+    }
+    int len = i2d_X509_EXTENSIONS(X509_REVOKED_get0_extensions(rev), &outBlob->data);
+    if (len < 0) {
+        LOGE("i2d_X509_EXTENSIONS error");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    outBlob->size = len;
+    return CF_SUCCESS;
+}
+
 static CfResult DeepCopyCertIssuer(HcfX509CRLEntryOpensslImpl *returnCRLEntry, CfBlob *certIssuer)
 {
     returnCRLEntry->certIssuer = (CfBlob *)HcfMalloc(sizeof(CfBlob), 0);
@@ -294,6 +386,9 @@ CfResult HcfCX509CRLEntryCreate(X509_REVOKED *rev, HcfX509CrlEntry **crlEntryOut
     returnCRLEntry->base.getRevocationDate = GetRevocationDate;
     returnCRLEntry->base.getExtensions = GetExtensions;
     returnCRLEntry->base.hasExtensions = HasExtensions;
+    returnCRLEntry->base.toString = ToString;
+    returnCRLEntry->base.hashCode = HashCode;
+    returnCRLEntry->base.getExtensionsObject = GetExtensionsObject;
     if (DeepCopyCertIssuer(returnCRLEntry, certIssuer) != CF_SUCCESS) {
         LOGI("No cert issuer find or deep copy cert issuer fail!");
     }

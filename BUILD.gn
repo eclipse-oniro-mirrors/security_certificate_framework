@@ -34,6 +34,7 @@ group("certificate_framework_fuzztest") {
       "test/fuzztest/v1.0/x509certchain_fuzzer:fuzztest",
       "test/fuzztest/v1.0/x509certificate_fuzzer:fuzztest",
       "test/fuzztest/v1.0/x509crl_fuzzer:fuzztest",
+      "test/fuzztest/v1.0/x509distinguishedname_fuzzer:fuzztest",
     ]
   }
 }

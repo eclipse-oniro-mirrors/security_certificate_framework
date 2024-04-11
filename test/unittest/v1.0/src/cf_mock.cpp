@@ -76,6 +76,19 @@ X509_CRL *__real_X509_CRL_load_http(const char *url, BIO *bio, BIO *rbio, int ti
 struct stack_st_OPENSSL_STRING *__real_X509_get1_ocsp(X509 *x);
 int __real_OSSL_HTTP_parse_url(const char *url, int *pssl, char **puser, char **phost, char **pport, int *pport_num,
     char **ppath, char **pquery, char **pfrag);
+int __real_X509_NAME_get0_der(X509_NAME *nm, const unsigned char **pder, size_t *pderlen);
+const char *__real_OBJ_nid2sn(int n);
+int __real_ASN1_STRING_length(const ASN1_STRING *x);
+CfResult __real_DeepCopyDataToOut(const char *data, uint32_t len, CfBlob *out);
+char *__real_CRYPTO_strdup(const char *str, const char *file, int line);
+X509_NAME *__real_X509_NAME_new(void);
+int __real_OBJ_txt2nid(const char *s);
+int __real_X509_NAME_add_entry_by_NID(
+    X509_NAME *name, int nid, int type, const unsigned char *bytes, int len, int loc, int set);
+BIO *__real_BIO_new(const BIO_METHOD *type);
+int __real_X509_print(BIO *bp, X509 *x);
+long __real_BIO_ctrl(BIO *bp, int cmd, long larg, void *parg);
+int __real_i2d_X509_bio(BIO *bp, X509 *x509);
 
 #ifdef __cplusplus
 }
@@ -252,12 +265,53 @@ void X509OpensslMock::SetMockFunDefaultBehaviorPartThree(void)
     });
 
     ON_CALL(*this, X509_get1_ocsp).WillByDefault([this](X509 *x) { return __real_X509_get1_ocsp(x); });
+}
 
+void X509OpensslMock::SetMockFunDefaultBehaviorPartFour(void)
+{
     ON_CALL(*this, OSSL_HTTP_parse_url)
         .WillByDefault([this](const char *url, int *pssl, char **puser, char **phost, char **pport, int *pport_num,
                            char **ppath, char **pquery, char **pfrag) {
             return __real_OSSL_HTTP_parse_url(url, pssl, puser, phost, pport, pport_num, ppath, pquery, pfrag);
         });
+    ON_CALL(*this, X509_NAME_get0_der)
+        .WillByDefault([this](X509_NAME *nm, const unsigned char **pder, size_t *pderlen) {
+            return __real_X509_NAME_get0_der(nm, pder, pderlen);
+        });
+
+    ON_CALL(*this, OBJ_nid2sn).WillByDefault([this](int n) { return __real_OBJ_nid2sn(n); });
+
+    ON_CALL(*this, ASN1_STRING_length).WillByDefault([this](const ASN1_STRING *x) {
+        return __real_ASN1_STRING_length(x);
+    });
+
+    ON_CALL(*this, DeepCopyDataToOut).WillByDefault([this](const char *data, uint32_t len, CfBlob *out) {
+        return __real_DeepCopyDataToOut(data, len, out);
+    });
+
+    ON_CALL(*this, CRYPTO_strdup).WillByDefault([this](const char *str, const char *file, int line) {
+        return __real_CRYPTO_strdup(str, file, line);
+    });
+
+    ON_CALL(*this, X509_NAME_new).WillByDefault([this](void) { return __real_X509_NAME_new(); });
+
+    ON_CALL(*this, OBJ_txt2nid).WillByDefault([this](const char *s) { return __real_OBJ_txt2nid(s); });
+
+    ON_CALL(*this, X509_NAME_add_entry_by_NID)
+        .WillByDefault(
+        [this](X509_NAME *name, int nid, int type, const unsigned char *bytes, int len, int loc, int set) {
+            return __real_X509_NAME_add_entry_by_NID(name, nid, type, bytes, len, loc, set);
+        });
+
+    ON_CALL(*this, BIO_new).WillByDefault([this](const BIO_METHOD *type) { return __real_BIO_new(type); });
+
+    ON_CALL(*this, X509_print).WillByDefault([this](BIO *bp, X509 *x) { return __real_X509_print(bp, x); });
+
+    ON_CALL(*this, BIO_ctrl).WillByDefault([this](BIO *bp, int cmd, long larg, void *parg) {
+        return __real_BIO_ctrl(bp, cmd, larg, parg);
+    });
+
+    ON_CALL(*this, i2d_X509_bio).WillByDefault([this](BIO *bp, X509 *x509) { return __real_i2d_X509_bio(bp, x509); });
 }
 
 X509OpensslMock::X509OpensslMock()
@@ -265,6 +319,7 @@ X509OpensslMock::X509OpensslMock()
     SetMockFunDefaultBehaviorPartOne();
     SetMockFunDefaultBehaviorPartTwo();
     SetMockFunDefaultBehaviorPartThree();
+    SetMockFunDefaultBehaviorPartFour();
 }
 
 X509OpensslMock::~X509OpensslMock() {}
@@ -741,6 +796,115 @@ int __wrap_OSSL_HTTP_parse_url(const char *url, int *pssl, char **puser, char **
             url, pssl, puser, phost, pport, pport_num, ppath, pquery, pfrag);
     } else {
         return __real_OSSL_HTTP_parse_url(url, pssl, puser, phost, pport, pport_num, ppath, pquery, pfrag);
+    }
+}
+
+int __wrap_X509_NAME_get0_der(X509_NAME *nm, const unsigned char **pder, size_t *pderlen)
+{
+    if (g_mockTagX509Openssl) {
+        return X509OpensslMock::GetInstance().X509_NAME_get0_der(nm, pder, pderlen);
+    } else {
+        return __real_X509_NAME_get0_der(nm, pder, pderlen);
+    }
+}
+
+const char *__wrap_OBJ_nid2sn(int n)
+{
+    if (g_mockTagX509Openssl) {
+        return X509OpensslMock::GetInstance().OBJ_nid2sn(n);
+    } else {
+        return __real_OBJ_nid2sn(n);
+    }
+}
+
+int __wrap_ASN1_STRING_length(const ASN1_STRING *x)
+{
+    if (g_mockTagX509Openssl) {
+        return X509OpensslMock::GetInstance().ASN1_STRING_length(x);
+    } else {
+        return __real_ASN1_STRING_length(x);
+    }
+}
+
+CfResult __wrap_DeepCopyDataToOut(const char *data, uint32_t len, CfBlob *out)
+{
+    if (g_mockTagX509Openssl) {
+        return X509OpensslMock::GetInstance().DeepCopyDataToOut(data, len, out);
+    } else {
+        return __real_DeepCopyDataToOut(data, len, out);
+    }
+}
+
+char *__wrap_CRYPTO_strdup(const char *str, const char *file, int line)
+{
+    if (g_mockTagX509Openssl) {
+        return X509OpensslMock::GetInstance().CRYPTO_strdup(str, file, line);
+    } else {
+        return __real_CRYPTO_strdup(str, file, line);
+    }
+}
+
+X509_NAME *__wrap_X509_NAME_new(void)
+{
+    if (g_mockTagX509Openssl) {
+        return X509OpensslMock::GetInstance().X509_NAME_new();
+    } else {
+        return __real_X509_NAME_new();
+    }
+}
+
+int __wrap_OBJ_txt2nid(const char *s)
+{
+    if (g_mockTagX509Openssl) {
+        return X509OpensslMock::GetInstance().OBJ_txt2nid(s);
+    } else {
+        return __real_OBJ_txt2nid(s);
+    }
+}
+
+int __wrap_X509_NAME_add_entry_by_NID(
+    X509_NAME *name, int nid, int type, const unsigned char *bytes, int len, int loc, int set)
+{
+    if (g_mockTagX509Openssl) {
+        return X509OpensslMock::GetInstance().X509_NAME_add_entry_by_NID(name, nid, type, bytes, len, loc, set);
+    } else {
+        return __real_X509_NAME_add_entry_by_NID(name, nid, type, bytes, len, loc, set);
+    }
+}
+
+BIO *__wrap_BIO_new(const BIO_METHOD *type)
+{
+    if (g_mockTagX509Openssl) {
+        return X509OpensslMock::GetInstance().BIO_new(type);
+    } else {
+        return __real_BIO_new(type);
+    }
+}
+
+int __wrap_X509_print(BIO *bp, X509 *x)
+{
+    if (g_mockTagX509Openssl) {
+        return X509OpensslMock::GetInstance().X509_print(bp, x);
+    } else {
+        return __real_X509_print(bp, x);
+    }
+}
+
+long __wrap_BIO_ctrl(BIO *bp, int cmd, long larg, void *parg)
+{
+    if (g_mockTagX509Openssl) {
+        return X509OpensslMock::GetInstance().BIO_ctrl(bp, cmd, larg, parg);
+    } else {
+        return __real_BIO_ctrl(bp, cmd, larg, parg);
+    }
+}
+
+int __wrap_i2d_X509_bio(BIO *bp, X509 *x509)
+{
+    if (g_mockTagX509Openssl) {
+        return X509OpensslMock::GetInstance().i2d_X509_bio(bp, x509);
+    } else {
+        return __real_i2d_X509_bio(bp, x509);
     }
 }
 

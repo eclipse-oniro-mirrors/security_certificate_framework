@@ -1052,5 +1052,53 @@ napi_value ConvertBlobToInt64(napi_env env, const CfBlob &blob)
     napi_create_int64(env, static_cast<long>(serialNumber), &result);
     return result;
 }
+
+napi_value ConvertArrayStringToNapiValue(napi_env env, CfArray *array)
+{
+    if (array == nullptr) {
+        LOGE("array is null!");
+        return nullptr;
+    }
+    if (array->count == 0) {
+        LOGE("array count is 0!");
+        return nullptr;
+    }
+    napi_value returnArray = nullptr;
+    napi_create_array(env, &returnArray);
+    if (returnArray == nullptr) {
+        LOGE("create return array failed!");
+        return nullptr;
+    }
+    for (uint32_t i = 0; i < array->count; i++) {
+        CfBlob *blob = reinterpret_cast<CfBlob *>(array->data + i);
+        napi_value element = nullptr;
+        napi_create_string_utf8(env, reinterpret_cast<char *>(blob->data), blob->size, &element);
+        napi_set_element(env, returnArray, i, element);
+    }
+    return returnArray;
+}
+
+bool ConvertBlobToEncodingBlob(const CfBlob &blob, CfEncodingBlob *encodingBlob)
+{
+    if (blob.data == nullptr || blob.size == 0) {
+        LOGE("Invalid blob!");
+        return false;
+    }
+
+    encodingBlob->data = static_cast<uint8_t *>(HcfMalloc(blob.size, 0));
+    if (encodingBlob->data == nullptr) {
+        LOGE("malloc encoding blob data failed!");
+        return false;
+    }
+    if (memcpy_s(encodingBlob->data, blob.size, blob.data, blob.size) != EOK) {
+        LOGE("memcpy_s encoding blob data failed!");
+        CfFree(encodingBlob->data);
+        encodingBlob->data = nullptr;
+        return false;
+    }
+    encodingBlob->len = blob.size;
+    encodingBlob->encodingFormat = CF_FORMAT_DER;
+    return true;
+}
 }  // namespace CertFramework
 }  // namespace OHOS

@@ -329,7 +329,11 @@ CfResult DeepCopyDataToOut(const char *data, uint32_t len, CfBlob *out)
         LOGE("Failed to malloc for sig algorithm params!");
         return CF_ERR_MALLOC;
     }
-    (void)memcpy_s(out->data, len, data, len);
+    if (memcpy_s(out->data, len, data, len) != EOK) {
+        CF_LOG_E("Failed to memcpy_s");
+        CfFree(out->data);
+        return CF_ERR_COPY;
+    }
     out->size = len;
     return CF_SUCCESS;
 }

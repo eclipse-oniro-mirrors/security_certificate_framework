@@ -109,6 +109,34 @@ static CfResult GetCertList(HcfCertChain *self, HcfX509CertificateArray *out)
     return ((CertChainImpl *)self)->spiObj->engineGetCertList(((CertChainImpl *)self)->spiObj, out);
 }
 
+static CfResult ToString(HcfCertChain *self, CfBlob *out)
+{
+    if ((self == NULL) || (out == NULL)) {
+        LOGE("Invalid input parameter.");
+        return CF_INVALID_PARAMS;
+    }
+    if (!IsClassMatch((CfObjectBase *)self, GetCertChainClass())) {
+        LOGE("Class is not match.");
+        return CF_INVALID_PARAMS;
+    }
+
+    return ((CertChainImpl *)self)->spiObj->engineToString(((CertChainImpl *)self)->spiObj, out);
+}
+
+static CfResult HashCode(HcfCertChain *self, CfBlob *out)
+{
+    if ((self == NULL) || (out == NULL)) {
+        LOGE("Invalid input parameter.");
+        return CF_INVALID_PARAMS;
+    }
+    if (!IsClassMatch((CfObjectBase *)self, GetCertChainClass())) {
+        LOGE("Class is not match.");
+        return CF_INVALID_PARAMS;
+    }
+
+    return ((CertChainImpl *)self)->spiObj->engineHashCode(((CertChainImpl *)self)->spiObj, out);
+}
+
 static CfResult Validate(
     HcfCertChain *self, const HcfX509CertChainValidateParams *params, HcfX509CertChainValidateResult *result)
 {
@@ -160,6 +188,8 @@ CfResult HcfCertChainCreate(
     impl->base.base.getClass = GetCertChainClass;
     impl->base.getCertList = GetCertList;
     impl->base.validate = Validate;
+    impl->base.toString = ToString;
+    impl->base.hashCode = HashCode;
     impl->spiObj = spiObj;
 
     *returnObj = (HcfCertChain *)impl;

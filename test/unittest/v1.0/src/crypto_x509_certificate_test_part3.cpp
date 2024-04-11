@@ -51,6 +51,8 @@ void *__real_X509V3_EXT_d2i(X509_EXTENSION *ext);
 X509_EXTENSION *__real_X509_get_ext(const X509 *x, X509_EXTENSION *loc);
 void *__real_X509_get_ext_d2i(const X509 *x, int nid, int *crit, int *idx);
 CfResult __real_DeepCopyDataToBlob(const unsigned char *data, uint32_t len, CfBlob *outBlob);
+int __real_X509_print(BIO *bp, X509 *x);
+BIO *__real_BIO_new(const BIO_METHOD *type);
 
 #ifdef __cplusplus
 }
@@ -776,4 +778,128 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareSubjectKeyIdentifierTest001, Tes
     EXPECT_EQ(ret, CF_INVALID_PARAMS);
     X509OpensslMock::SetMockFlag(false);
 }
+
+HWTEST_F(CryptoX509CertificateTestPart3, ToStringTest001, TestSize.Level0)
+{
+    CF_LOG_I("CryptoX509CertificateTestPart3 - ToStringTest001");
+    ASSERT_NE(g_x509CertExtAttrObj, nullptr);
+
+    CfBlob blob = { 0, nullptr };
+    CfResult ret = g_x509CertExtAttrObj->toString(g_x509CertExtAttrObj, &blob);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    CfBlobDataFree(&blob);
+
+    HcfX509Certificate invalidCert;
+    invalidCert.base.base.getClass = GetInvalidCertClass;
+
+    ret = g_x509CertExtAttrObj->toString(&invalidCert, &blob);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+
+    ret = g_x509CertExtAttrObj->toString(NULL, &blob);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+
+    ret = g_x509CertExtAttrObj->toString(g_x509CertExtAttrObj, NULL);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+
+    ret = g_x509CertExtAttrObj->toString(NULL, NULL);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), BIO_new(_))
+        .WillOnce(Return(NULL))
+        .WillRepeatedly(Invoke(__real_BIO_new));
+    ret = g_x509CertExtAttrObj->toString(g_x509CertExtAttrObj, &blob);
+    EXPECT_EQ(ret, CF_ERR_MALLOC);
+    X509OpensslMock::SetMockFlag(false);
+
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_print(_, _))
+        .WillOnce(Return(-1))
+        .WillRepeatedly(Invoke(__real_X509_print));
+    ret = g_x509CertExtAttrObj->toString(g_x509CertExtAttrObj, &blob);
+    EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
+    X509OpensslMock::SetMockFlag(false);
+
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), BIO_ctrl(_, _, _, _)).Times(AnyNumber()).WillOnce(Return(0));
+    ret = g_x509CertExtAttrObj->toString(g_x509CertExtAttrObj, &blob);
+    EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
+    X509OpensslMock::SetMockFlag(false);
+}
+
+HWTEST_F(CryptoX509CertificateTestPart3, HashCodeTest001, TestSize.Level0)
+{
+    CF_LOG_I("CryptoX509CertificateTestPart3 - HashCodeTest001");
+    ASSERT_NE(g_x509CertExtAttrObj, nullptr);
+
+    CfBlob blob = { 0, nullptr };
+    CfResult ret = g_x509CertExtAttrObj->hashCode(g_x509CertExtAttrObj, &blob);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    CfBlobDataFree(&blob);
+
+    SetMockFlag(true);
+    ret = g_x509CertExtAttrObj->hashCode(g_x509CertExtAttrObj, &blob);
+    EXPECT_EQ(ret, CF_ERR_MALLOC);
+    SetMockFlag(false);
+
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), i2d_X509(_, _)).Times(AnyNumber()).WillOnce(Return(-1));
+    ret = g_x509CertExtAttrObj->hashCode(g_x509CertExtAttrObj, &blob);
+    EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
+    X509OpensslMock::SetMockFlag(false);
+
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), i2d_X509(_, _)).Times(AnyNumber()).WillOnce(Return(0));
+    ret = g_x509CertExtAttrObj->hashCode(g_x509CertExtAttrObj, &blob);
+    EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
+    X509OpensslMock::SetMockFlag(false);
+
+    HcfX509Certificate invalidCert;
+    invalidCert.base.base.getClass = GetInvalidCertClass;
+
+    ret = g_x509CertExtAttrObj->hashCode(&invalidCert, &blob);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+
+    ret = g_x509CertExtAttrObj->hashCode(NULL, &blob);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+
+    ret = g_x509CertExtAttrObj->hashCode(g_x509CertExtAttrObj, NULL);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+
+    ret = g_x509CertExtAttrObj->hashCode(NULL, NULL);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+}
+
+HWTEST_F(CryptoX509CertificateTestPart3, GetExtensionsObjectTest001, TestSize.Level0)
+{
+    CF_LOG_I("CryptoX509CertificateTestPart3 - GetExtensionsObjectTest001");
+    ASSERT_NE(g_x509CertExtAttrObj, nullptr);
+
+    CfBlob blob = { 0, nullptr };
+    CfResult ret = g_x509CertExtAttrObj->getExtensionsObject(g_x509CertExtAttrObj, &blob);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    CfBlobDataFree(&blob);
+
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), i2d_X509_EXTENSIONS(_, _)).Times(AnyNumber()).WillOnce(Return(-1));
+    ret = g_x509CertExtAttrObj->getExtensionsObject(g_x509CertExtAttrObj, &blob);
+    EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
+    X509OpensslMock::SetMockFlag(false);
+
+    HcfX509Certificate invalidCert;
+    invalidCert.base.base.getClass = GetInvalidCertClass;
+
+    ret = g_x509CertExtAttrObj->getExtensionsObject(&invalidCert, &blob);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+
+    ret = g_x509CertExtAttrObj->getExtensionsObject(NULL, &blob);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+
+    ret = g_x509CertExtAttrObj->getExtensionsObject(g_x509CertExtAttrObj, NULL);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+
+    ret = g_x509CertExtAttrObj->getExtensionsObject(NULL, NULL);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+}
+
 } // namespace
