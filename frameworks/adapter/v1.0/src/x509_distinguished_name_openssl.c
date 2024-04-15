@@ -194,60 +194,56 @@ static CfResult GetNameOpenssl(HcfX509DistinguishedNameSpi *self, CfBlob *type, 
     return GetNameTypeByOpenssl(realName, type, outArr);
 }
 
-static int CollectAndParseName(const char *cp, char *work, int chtype, int canmulti, X509_NAME *n)
+static int CollectAndParseName(const char *cp, char *work, int chtype, X509_NAME *name)
 {
-    int nextismulti = 0;
+    int multiFlag = 0;
     while (*cp != '\0') {
         char *bp = work;
         char *typestr = bp;
-        int ismulti = nextismulti;
-        nextismulti = 0;
-    
-        /* Collect the type */
+        int isMulti = multiFlag;
+        multiFlag = 0;
+
         while (*cp != '\0' && *cp != '=') {
             *bp++ = *cp++;
         }
         *bp++ = '\0';
         if (*cp == '\0') {
-            LOGE("Missing '=' after RDN type string");
+            LOGE("Not has RDN type string");
             return CF_INVALID_PARAMS;
         }
-        ++cp;
-    
-        /* Collect the value. */
+        cp++;
+
         unsigned char *valstr = (unsigned char *)bp;
-        for (; *cp != '\0' && *cp != '/'; *bp++ = *cp++) {
-            /* unescaped '+' symbol string signals further member of multiRDN */
-            if (canmulti && *cp == '+') {
-                nextismulti = 1;
+        while (*cp != '\0' && *cp != '/') {
+            if (*cp == '+') {
+                multiFlag = 1;
                 break;
             }
-            if (*cp == '\\' && *++cp == '\0') {
-                LOGE("Escape character at end of name string\n");
-                return CF_INVALID_PARAMS;
+            if (*cp == '\\') {
+                if (*++cp == '\0') {
+                    LOGE("Escape character at end of name string\n");
+                    return CF_INVALID_PARAMS;
+                }
             }
+            *bp++ = *cp++;
         }
         *bp++ = '\0';
-    
-        /* If not at EOS (must be + or /), move forward. */
         if (*cp != '\0') {
-            ++cp;
+            cp++;
         }
-    
-        /* Parse */
+
         int nid = OBJ_txt2nid(typestr);
         if (nid == NID_undef) {
-            LOGE("Skipping unknown name attribute");
-            if (ismulti) {
-                LOGE("Hint: '+' in value string use '\\' to escaped else expect new member of multi-valued RDN\n");
-            }
+            LOGE("Ignore unknown name attribute");
             continue;
         }
+
         if (*valstr == '\0') {
-            LOGE("No value provided for name attribute ");
+            LOGE("No value provided for name attribute");
             continue;
         }
-        if (!X509_NAME_add_entry_by_NID(n, nid, chtype, valstr, strlen((char *)valstr), -1, ismulti ? -1 : 0)) {
+
+        if (!X509_NAME_add_entry_by_NID(name, nid, chtype, valstr, strlen((char *)valstr), -1, isMulti ? -1 : 0)) {
             LOGE("Error adding name attribute");
             return CF_INVALID_PARAMS;
         }
@@ -255,21 +251,15 @@ static int CollectAndParseName(const char *cp, char *work, int chtype, int canmu
     return CF_SUCCESS;
 }
 
-/*
- * name is expected to be in the format /type0=value0/type1=value1/type2=...
- * where + can be used instead of / to form multi-valued RDNs if canmulti
- * and characters may be escaped by \
- */
-static X509_NAME *ParseName(const char *cp, int chtype, int canmulti,
-                            const char *desc)
+static X509_NAME *ParseName(const char *cp, int chtype, const char *desc)
 {
     if (*cp++ != '/') {
         LOGE("name is expected to be in the format");
         return NULL;
     }
 
-    X509_NAME *n = X509_NAME_new();
-    if (n == NULL) {
+    X509_NAME *name = X509_NAME_new();
+    if (name == NULL) {
         LOGE("Out of memory\n");
         return NULL;
     }
@@ -279,17 +269,16 @@ static X509_NAME *ParseName(const char *cp, int chtype, int canmulti,
         goto err;
     }
 
-    int res = CollectAndParseName(cp, work, chtype, canmulti, n);
-    if (res != CF_SUCCESS) {
+    if (CollectAndParseName(cp, work, chtype, name) != CF_SUCCESS) {
         LOGE("Error CollectAndParseName\n");
         goto err;
     }
 
     OPENSSL_free(work);
-    return n;
+    return name;
 
  err:
-    X509_NAME_free(n);
+    X509_NAME_free(name);
     OPENSSL_free(work);
     return NULL;
 }
@@ -303,7 +292,7 @@ CfResult OpensslX509DistinguishedNameSpiCreate(const CfBlob *inStream, const boo
     }
     X509_NAME *name = NULL;
     if (bString) {
-        name = ParseName((const char *)inStream->data, MBSTRING_UTF8, 1, "DistinguishedName");
+        name = ParseName((const char *)inStream->data, MBSTRING_UTF8, "DistinguishedName");
     } else {
         name = d2i_X509_NAME(NULL, (const unsigned char **)&inStream->data, inStream->size);
     }
