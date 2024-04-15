@@ -11,6 +11,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+declare_args() {
+  certificate_framework_enabled = true
+}
+
 group("certificate_framework_component") {
   if (os_level == "standard") {
     deps = [ "frameworks:certificate_framework_lib" ]
