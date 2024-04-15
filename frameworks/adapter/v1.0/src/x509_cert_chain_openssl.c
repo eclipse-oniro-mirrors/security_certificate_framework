@@ -1247,10 +1247,11 @@ static CfResult ValidateRevocationOnLine(const HcfX509CertChainValidateParams *p
             LOGI("Excute validate ocsp online success.");
             return res;
         }
-        if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_FALLBACK_NO_PREFER) &&
-            (res = ValidateCrlOnline(params, x509CertChain)) == CF_SUCCESS) {
-            LOGI("Excute validateCRLOnline success.");
-            return res;
+        if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_FALLBACK_NO_PREFER)) {
+            if ((res = ValidateCrlOnline(params, x509CertChain)) == CF_SUCCESS) {
+                LOGI("Excute validateCRLOnline success.");
+                return res;
+            }
         }
         if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_FALLBACK_LOCAL)) {
             if ((res = ValidateOcspLocal((OcspLocalParam) { .req = NULL, .resp = NULL, .certid = certId },
@@ -1266,10 +1267,11 @@ static CfResult ValidateRevocationOnLine(const HcfX509CertChainValidateParams *p
             LOGI("Excute validateCRLOnline success.");
             return res;
         }
-        if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_FALLBACK_NO_PREFER) &&
-            (res = ValidateOcspOnline(x509CertChain, certId, trustAnchor, params)) == CF_SUCCESS) {
-            LOGI("Excute validate ocsp online success.");
-            return res;
+        if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_FALLBACK_NO_PREFER)) {
+            if ((res = ValidateOcspOnline(x509CertChain, certId, trustAnchor, params)) == CF_SUCCESS) {
+                LOGI("Excute validate ocsp online success.");
+                return res;
+            }
         }
         if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_FALLBACK_LOCAL)) {
             if ((res = ValidateCrlLocal(params->certCRLCollections, x509CertChain)) == CF_SUCCESS) {
@@ -1413,7 +1415,7 @@ static CfResult ValidateUseage(const STACK_OF(X509) * x509CertChain, HcfKuArray 
         uint32_t count = 0;
         for (size_t i = 0; i < keyUsage->count; i++) {
             HcfKeyUsageType kuType = keyUsage->data[i];
-            int usageFlag = 0;
+            uint32_t usageFlag = 0;
             switch (kuType) {
                 case KEYUSAGE_DIGITAL_SIGNATURE:
                     usageFlag = X509v3_KU_DIGITAL_SIGNATURE;
