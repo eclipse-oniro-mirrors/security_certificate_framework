@@ -779,7 +779,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest009, TestSize.Level0)
 
     HcfX509CertChainValidateResult result = { 0 };
     CfResult ret = g_certChainPemSpi->engineValidate(g_certChainPemSpi, &pCertChainValidateParams, &result);
-    ASSERT_EQ(ret, CF_INVALID_PARAMS);
+    ASSERT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
 
     CfFree(trustAnchorArray.data);
 }
@@ -878,7 +878,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest012, TestSize.Level0)
 
     HcfX509CertChainValidateResult result = { 0 };
     CfResult ret = g_certChainPemSpi->engineValidate(g_certChainPemSpi, &pCertChainValidateParams, &result);
-    ASSERT_EQ(ret, CF_INVALID_PARAMS);
+    ASSERT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
 
     CfFree(trustAnchorArray.data);
 }
@@ -908,7 +908,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest013, TestSize.Level0)
 
     HcfX509CertChainValidateResult result = { 0 };
     CfResult ret = g_certChainPemSpi->engineValidate(g_certChainPemSpi, &pCertChainValidateParams, &result);
-    ASSERT_EQ(ret, CF_INVALID_PARAMS);
+    ASSERT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
 
     CfFree(trustAnchorArray.data);
 }
