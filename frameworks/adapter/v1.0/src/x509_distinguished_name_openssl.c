@@ -194,7 +194,27 @@ static CfResult GetNameOpenssl(HcfX509DistinguishedNameSpi *self, CfBlob *type, 
     return GetNameTypeByOpenssl(realName, type, outArr);
 }
 
-static int CollectAndParseName(const char *cp, char *work, int chtype, X509_NAME *name)
+static CfResult SetValueToX509Name(X509_NAME *name, int chtype, char *typestr, unsigned char *valstr, int isMulti)
+{
+    int nid = OBJ_txt2nid(typestr);
+    if (nid == NID_undef) {
+        LOGW("Ignore unknown name attribute");
+        return CF_SUCCESS;
+    }
+
+    if (*valstr == '\0') {
+        LOGW("No value provided for name attribute");
+        return CF_SUCCESS;
+    }
+
+    if (!X509_NAME_add_entry_by_NID(name, nid, chtype, valstr, strlen((char *)valstr), -1, isMulti ? -1 : 0)) {
+        LOGE("Error adding name attribute");
+        return CF_INVALID_PARAMS;
+    }
+    return CF_SUCCESS;
+}
+
+static CfResult CollectAndParseName(const char *cp, char *work, int chtype, X509_NAME *name)
 {
     int multiFlag = 0;
     while (*cp != '\0') {
@@ -219,11 +239,14 @@ static int CollectAndParseName(const char *cp, char *work, int chtype, X509_NAME
                 multiFlag = 1;
                 break;
             }
+            const char *t = cp;
+            t++;
+            if (*cp == '\\' && *t == '\0') {
+                LOGE("Escape character at end of name string\n");
+                return CF_INVALID_PARAMS;
+            }
             if (*cp == '\\') {
-                if (*++cp == '\0') {
-                    LOGE("Escape character at end of name string\n");
-                    return CF_INVALID_PARAMS;
-                }
+                cp++;
             }
             *bp++ = *cp++;
         }
@@ -232,20 +255,9 @@ static int CollectAndParseName(const char *cp, char *work, int chtype, X509_NAME
             cp++;
         }
 
-        int nid = OBJ_txt2nid(typestr);
-        if (nid == NID_undef) {
-            LOGE("Ignore unknown name attribute");
-            continue;
-        }
-
-        if (*valstr == '\0') {
-            LOGE("No value provided for name attribute");
-            continue;
-        }
-
-        if (!X509_NAME_add_entry_by_NID(name, nid, chtype, valstr, strlen((char *)valstr), -1, isMulti ? -1 : 0)) {
-            LOGE("Error adding name attribute");
-            return CF_INVALID_PARAMS;
+        int ret = SetValueToX509Name(name, chtype, typestr, valstr, isMulti);
+        if (ret != CF_SUCCESS) {
+            return ret;
         }
     }
     return CF_SUCCESS;
