@@ -1493,7 +1493,7 @@ static CfResult ValidateOther(const HcfX509CertChainValidateParams *params, STAC
     CfResult res = ValidateTrustAnchor(params->trustAnchors, rootCert, x509CertChain, trustAnchorResult);
     if (res != CF_SUCCESS) {
         LOGE("ValidateTrustAnchor failed!");
-        return CF_INVALID_PARAMS;
+        return res;
     }
     res = ValidateRevocation(x509CertChain, *trustAnchorResult, params);
     if (res != CF_SUCCESS) {
