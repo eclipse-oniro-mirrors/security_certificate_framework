@@ -1325,7 +1325,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest210, TestSize.Level0)
 HWTEST_F(CryptoX509CrlTest, X509CrlTest211, TestSize.Level0)
 {
     HcfX509Crl *x509Crl = nullptr;
-    int32_t nRet = HcfX509CrlCreate(&g_CrlWhichEntryWithExtInStream, &x509Crl);
+    int32_t nRet = HcfX509CrlCreate(&g_crlWhichEntryWithExtInStream, &x509Crl);
     ASSERT_EQ(nRet, 0);
 
     HcfX509CrlEntry *crlEntry = nullptr;
@@ -1401,7 +1401,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest214, TestSize.Level0)
 HWTEST_F(CryptoX509CrlTest, X509CrlTest215, TestSize.Level0)
 {
     HcfX509Crl *x509Crl = nullptr;
-    int32_t nRet = HcfX509CrlCreate(&g_CrlWhichEntryWithExtInStream, &x509Crl);
+    int32_t nRet = HcfX509CrlCreate(&g_crlWhichEntryWithExtInStream, &x509Crl);
     ASSERT_EQ(nRet, 0);
 
     HcfX509CrlEntry *crlEntry = nullptr;

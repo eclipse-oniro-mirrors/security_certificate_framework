@@ -44,6 +44,8 @@ thread_local napi_ref NapiX509CertChainBulidResult::classRef_ = nullptr;
 
 struct CfCtx {
     AsyncCtx async;
+    napi_ref cfRef = nullptr;
+    napi_ref certChainValidateParamsRef = nullptr;
     NapiX509CertChain *certChainClass = nullptr;
     HcfCertChain *certChain = nullptr;
     CfEncodingBlob *encodingBlob = nullptr;
@@ -99,6 +101,15 @@ static void DeleteCertChainContext(napi_env env, CfCtx *&context, bool freeCertF
     }
 
     FreeAsyncContext(env, context->async);
+
+    if (context->cfRef != nullptr) {
+        napi_delete_reference(env, context->cfRef);
+        context->cfRef = nullptr;
+    }
+    if (context->certChainValidateParamsRef != nullptr) {
+        napi_delete_reference(env, context->certChainValidateParamsRef);
+        context->certChainValidateParamsRef = nullptr;
+    }
 
     if (context->encodingBlob != nullptr) {
         CfEncodingBlobDataFree(context->encodingBlob);
@@ -349,6 +360,19 @@ napi_value NapiX509CertChain::Validate(napi_env env, napi_callback_info info)
         LOGE("BuildX509CertChainValidateParams failed!");
         DeleteCertChainContext(env, context);
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "BuildX509CertChainValidateParams failed!"));
+        return nullptr;
+    }
+
+    if (napi_create_reference(env, thisVar, 1, &context->cfRef) != napi_ok) {
+        LOGE("create reference failed!");
+        DeleteCertChainContext(env, context);
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Create reference failed!"));
+        return nullptr;
+    }
+    if (napi_create_reference(env, argv[PARAM0], 1, &context->certChainValidateParamsRef) != napi_ok) {
+        LOGE("create param ref failed!");
+        DeleteCertChainContext(env, context);
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "create param ref failed!"));
         return nullptr;
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -34,6 +34,7 @@ struct CfCtx {
     napi_ref callback = nullptr;
     napi_deferred deferred = nullptr;
     napi_async_work asyncWork = nullptr;
+    napi_ref cfRef = nullptr;
 
     NapiCertChainValidator *ccvClass = nullptr;
     HcfCertChainData *certChainData = nullptr;
@@ -64,6 +65,11 @@ static void FreeCryptoFwkCtx(napi_env env, CfCtx *context)
 
     if (context->callback != nullptr) {
         napi_delete_reference(env, context->callback);
+    }
+
+    if (context->cfRef != nullptr) {
+        napi_delete_reference(env, context->cfRef);
+        context->cfRef = nullptr;
     }
 
     if (context->certChainData != nullptr) {
@@ -152,6 +158,13 @@ napi_value NapiCertChainValidator::Validate(napi_env env, napi_callback_info inf
         FreeCryptoFwkCtx(env, context);
         return nullptr;
     }
+
+    if (napi_create_reference(env, thisVar, 1, &context->cfRef) != napi_ok) {
+        LOGE("create reference failed!");
+        FreeCryptoFwkCtx(env, context);
+        return nullptr;
+    }
+
     napi_value promise = nullptr;
     if (context->asyncType == ASYNC_TYPE_CALLBACK) {
         if (!CertGetCallbackFromJSParams(env, argv[PARAM1], &context->callback)) {

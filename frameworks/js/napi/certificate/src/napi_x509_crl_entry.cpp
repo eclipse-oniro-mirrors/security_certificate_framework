@@ -38,6 +38,7 @@ struct CfCtx {
     napi_ref callback = nullptr;
     napi_deferred deferred = nullptr;
     napi_async_work asyncWork = nullptr;
+    napi_ref cfRef = nullptr;
 
     NapiX509CrlEntry *crlEntryClass = nullptr;
 
@@ -59,6 +60,11 @@ static void FreeCryptoFwkCtx(napi_env env, CfCtx *context)
 
     if (context->callback != nullptr) {
         napi_delete_reference(env, context->callback);
+    }
+
+    if (context->cfRef != nullptr) {
+        napi_delete_reference(env, context->cfRef);
+        context->cfRef = nullptr;
     }
 
     CfEncodingBlobDataFree(context->encoded);
@@ -181,6 +187,13 @@ napi_value NapiX509CrlEntry::GetEncoded(napi_env env, napi_callback_info info)
         return nullptr;
     }
     context->crlEntryClass = this;
+
+    if (napi_create_reference(env, thisVar, 1, &context->cfRef) != napi_ok) {
+        LOGE("create reference failed!");
+        FreeCryptoFwkCtx(env, context);
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Create reference failed"));
+        return nullptr;
+    }
 
     if (!CreateCallbackAndPromise(env, context, argc, ARGS_SIZE_ONE, argv[PARAM0])) {
         FreeCryptoFwkCtx(env, context);

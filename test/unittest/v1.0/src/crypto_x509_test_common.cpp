@@ -199,7 +199,7 @@ const CfEncodingBlob g_crlWithBignumSerialInStream = { reinterpret_cast<uint8_t 
                                                            const_cast<char *>(g_testCrlWithBignumSerial)),
     sizeof(g_testCrlWithBignumSerial), CF_FORMAT_PEM };
 
-const CfEncodingBlob g_CrlWhichEntryWithExtInStream = { reinterpret_cast<uint8_t *>(
+const CfEncodingBlob g_crlWhichEntryWithExtInStream = { reinterpret_cast<uint8_t *>(
                                                             const_cast<char *>(g_testCrlWhichEntryWithExt)),
     sizeof(g_testCrlWhichEntryWithExt), CF_FORMAT_PEM };
 
