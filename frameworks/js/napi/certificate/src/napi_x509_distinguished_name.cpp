@@ -33,6 +33,7 @@ struct CfCtx {
     napi_value promise = nullptr;
     napi_deferred deferred = nullptr;
     napi_async_work asyncWork = nullptr;
+    napi_ref cfRef = nullptr;
 
     CfBlob *inPara = nullptr;
     bool paraIsString = true;
@@ -60,6 +61,11 @@ static void FreeCryptoFwkCtx(napi_env env, CfCtx *context)
 
     if (context->asyncWork != nullptr) {
         napi_delete_async_work(env, context->asyncWork);
+    }
+
+    if (context->cfRef != nullptr) {
+        napi_delete_reference(env, context->cfRef);
+        context->cfRef = nullptr;
     }
 
     if (context->inPara != nullptr) {
@@ -249,6 +255,13 @@ napi_value NapiX509DistinguishedName::NapiCreateX509DistinguishedName(napi_env e
         LOGI("NapiCreateX509DistinguishedName nameStr");
         context->inPara = CertGetBlobFromStringJSParams(env, argv[PARAM0]);
         context->paraIsString = true;
+    }
+
+    if (napi_create_reference(env, thisVar, 1, &context->cfRef) != napi_ok) {
+        LOGE("create reference failed!");
+        FreeCryptoFwkCtx(env, context);
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Create reference failed"));
+        return nullptr;
     }
 
     napi_create_async_work(env, nullptr, CertGetResourceName(env, "createX500DistinguishedName"),
