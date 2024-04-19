@@ -44,6 +44,8 @@ struct CfCtx {
     napi_ref callback = nullptr;
     napi_deferred deferred = nullptr;
     napi_async_work asyncWork = nullptr;
+    napi_ref cfRef = nullptr;
+    napi_ref pubKeyParamsRef = nullptr;
 
     CfEncodingBlob *encodingBlob = nullptr;
     NapiX509Crl *crlClass = nullptr;
@@ -74,6 +76,16 @@ static void FreeCryptoFwkCtx(napi_env env, CfCtx *context)
 
     if (context->callback != nullptr) {
         napi_delete_reference(env, context->callback);
+    }
+
+    if (context->cfRef != nullptr) {
+        napi_delete_reference(env, context->cfRef);
+        context->cfRef = nullptr;
+    }
+
+    if (context->pubKeyParamsRef != nullptr) {
+        napi_delete_reference(env, context->pubKeyParamsRef);
+        context->pubKeyParamsRef = nullptr;
     }
 
     CfEncodingBlobDataFree(context->encodingBlob);
@@ -328,6 +340,13 @@ napi_value NapiX509Crl::GetEncoded(napi_env env, napi_callback_info info)
     }
     context->crlClass = this;
 
+    if (napi_create_reference(env, thisVar, 1, &context->cfRef) != napi_ok) {
+        LOGE("create reference failed!");
+        FreeCryptoFwkCtx(env, context);
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Create reference failed"));
+        return nullptr;
+    }
+
     if (!CreateCallbackAndPromise(env, context, argc, ARGS_SIZE_ONE, argv[PARAM0])) {
         FreeCryptoFwkCtx(env, context);
         return nullptr;
@@ -369,6 +388,20 @@ __attribute__((no_sanitize("cfi"))) napi_value NapiX509Crl::Verify(napi_env env,
     }
     context->pubKey = pubKey->GetPubKey();
     context->crlClass = this;
+
+    if (napi_create_reference(env, thisVar, 1, &context->cfRef) != napi_ok) {
+        LOGE("create reference failed!");
+        FreeCryptoFwkCtx(env, context);
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Create reference failed"));
+        return nullptr;
+    }
+
+    if (napi_create_reference(env, argv[PARAM0], 1, &context->pubKeyParamsRef) != napi_ok) {
+        LOGE("create param ref failed!");
+        FreeCryptoFwkCtx(env, context);
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Create param ref failed"));
+        return nullptr;
+    }
 
     if (!CreateCallbackAndPromise(env, context, argc, ARGS_SIZE_TWO, argv[PARAM1])) {
         FreeCryptoFwkCtx(env, context);
@@ -622,6 +655,13 @@ napi_value NapiX509Crl::GetRevokedCertificates(napi_env env, napi_callback_info 
         return nullptr;
     }
     context->crlClass = this;
+
+    if (napi_create_reference(env, thisVar, 1, &context->cfRef) != napi_ok) {
+        LOGE("create reference failed!");
+        FreeCryptoFwkCtx(env, context);
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Create reference failed"));
+        return nullptr;
+    }
 
     if (!CreateCallbackAndPromise(env, context, argc, ARGS_SIZE_ONE, argv[PARAM0])) {
         FreeCryptoFwkCtx(env, context);
@@ -1371,6 +1411,13 @@ napi_value NapiX509Crl::NapiCreateX509CrlBase(napi_env env, napi_callback_info i
     if (!GetEncodingBlobFromValue(env, argv[PARAM0], &context->encodingBlob)) {
         LOGE("get encoding blob from data failed!");
         FreeCryptoFwkCtx(env, context);
+        return nullptr;
+    }
+
+    if (napi_create_reference(env, thisVar, 1, &context->cfRef) != napi_ok) {
+        LOGE("create reference failed!");
+        FreeCryptoFwkCtx(env, context);
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Create reference failed"));
         return nullptr;
     }
 

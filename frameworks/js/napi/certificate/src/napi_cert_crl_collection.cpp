@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -44,6 +44,9 @@ struct CfCertCRLColCtx {
     napi_ref callback = nullptr;
     napi_deferred deferred = nullptr;
     napi_async_work asyncWork = nullptr;
+    napi_ref cfCertCRLCollectionRef = nullptr;
+    napi_ref certMatchParamsRef = nullptr;
+    napi_ref crlMatchParamsRef = nullptr;
     CfResult errCode = CF_SUCCESS;
     const char *errMsg = nullptr;
 
@@ -66,6 +69,19 @@ static void FreeCryptoFwkCtx(napi_env env, CfCertCRLColCtx *&context)
 
     if (context->callback != nullptr) {
         napi_delete_reference(env, context->callback);
+    }
+
+    if (context->cfCertCRLCollectionRef != nullptr) {
+        napi_delete_reference(env, context->cfCertCRLCollectionRef);
+        context->cfCertCRLCollectionRef = nullptr;
+    }
+    if (context->certMatchParamsRef != nullptr) {
+        napi_delete_reference(env, context->certMatchParamsRef);
+        context->certMatchParamsRef = nullptr;
+    }
+    if (context->crlMatchParamsRef != nullptr) {
+        napi_delete_reference(env, context->crlMatchParamsRef);
+        context->crlMatchParamsRef = nullptr;
     }
 
     if (context->certMatchParam != nullptr) {
@@ -224,6 +240,24 @@ static napi_value NapiSelectCerts(napi_env env, napi_callback_info info)
     return certCrlCol->SelectCerts(env, info);
 }
 
+static bool GetCertMatchParams(napi_env env, napi_value arg, CfCertCRLColCtx *context)
+{
+    HcfX509CertMatchParams *param = static_cast<HcfX509CertMatchParams *>(HcfMalloc(sizeof(HcfX509CertMatchParams), 0));
+    if (param == nullptr) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Malloc matchParams failed"));
+        LOGE("malloc matchParams failed!");
+        return false;
+    }
+    if (!BuildX509CertMatchParams(env, arg, param)) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Build X509 cert match params failed"));
+        LOGE("build X509 cert match params failed!");
+        FreeX509CertMatchParams(param);
+        return false;
+    }
+    context->certMatchParam = param;
+    return true;
+}
+
 napi_value NapiCertCRLCollection::SelectCerts(napi_env env, napi_callback_info info)
 {
     size_t argc = ARGS_SIZE_TWO;
@@ -244,21 +278,23 @@ napi_value NapiCertCRLCollection::SelectCerts(napi_env env, napi_callback_info i
     }
     context->certCRLColClass = this;
 
-    HcfX509CertMatchParams *param = static_cast<HcfX509CertMatchParams *>(HcfMalloc(sizeof(HcfX509CertMatchParams), 0));
-    if (param == nullptr) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc matchParams failed"));
-        LOGE("malloc matchParams failed!");
+    if (!GetCertMatchParams(env, argv[PARAM0], context)) {
         CfFree(context);
         return nullptr;
     }
-    if (!BuildX509CertMatchParams(env, argv[PARAM0], param)) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "BuildX509CertMatchParams failed"));
-        LOGE("BuildX509CertMatchParams failed!");
-        CfFree(context);
-        FreeX509CertMatchParams(param);
+
+    if (napi_create_reference(env, thisVar, 1, &context->cfCertCRLCollectionRef) != napi_ok) {
+        LOGE("create reference failed!");
+        FreeCryptoFwkCtx(env, context);
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Create reference failed"));
         return nullptr;
     }
-    context->certMatchParam = param;
+    if (napi_create_reference(env, argv[PARAM0], 1, &context->certMatchParamsRef) != napi_ok) {
+        LOGE("create param ref failed!");
+        FreeCryptoFwkCtx(env, context);
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Create param ref failed"));
+        return nullptr;
+    }
     if (!CreateCallbackAndPromise(env, context, argc, ARGS_SIZE_TWO, argv[PARAM1])) {
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "CreateCallbackAndPromise failed"));
         LOGE("CreateCallbackAndPromise failed!");
@@ -271,9 +307,9 @@ napi_value NapiCertCRLCollection::SelectCerts(napi_env env, napi_callback_info i
     napi_queue_async_work(env, context->asyncWork);
     if (context->asyncType == ASYNC_TYPE_PROMISE) {
         return context->promise;
-    } else {
-        return CertNapiGetNull(env);
     }
+
+    return CertNapiGetNull(env);
 }
 
 static napi_value NapiSelectCRLs(napi_env env, napi_callback_info info)
@@ -323,6 +359,25 @@ static void SelectCRLComplete(napi_env env, napi_status status, void *data)
     FreeCryptoFwkCtx(env, context);
 }
 
+static bool GetCrlMatchParam(napi_env env, napi_value arg, CfCertCRLColCtx *context)
+{
+    HcfX509CrlMatchParams *param = static_cast<HcfX509CrlMatchParams *>(HcfMalloc(sizeof(HcfX509CrlMatchParams), 0));
+    if (param == nullptr) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Malloc matchParams failed"));
+        LOGE("malloc matchParams failed!");
+        return false;
+    }
+    if (!BuildX509CrlMatchParams(env, arg, param)) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Build X509 crl match params failed"));
+        LOGE("build X509 crl match params failed!");
+        FreeX509CrlMatchParams(param);
+        return false;
+    }
+    context->crlMatchParam = param;
+
+    return true;
+}
+
 napi_value NapiCertCRLCollection::SelectCRLs(napi_env env, napi_callback_info info)
 {
     size_t argc = ARGS_SIZE_TWO;
@@ -340,22 +395,24 @@ napi_value NapiCertCRLCollection::SelectCRLs(napi_env env, napi_callback_info in
         return nullptr;
     }
     context->certCRLColClass = this;
-    HcfX509CrlMatchParams *param = static_cast<HcfX509CrlMatchParams *>(HcfMalloc(sizeof(HcfX509CrlMatchParams), 0));
-    if (param == nullptr) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc matchParams failed"));
-        LOGE("malloc matchParams failed!");
-        CfFree(context);
-        return nullptr;
-    }
-    if (!BuildX509CrlMatchParams(env, argv[PARAM0], param)) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "BuildX509CrlMatchParams failed"));
-        LOGE("BuildX509CrlMatchParamss failed!");
-        CfFree(context);
-        FreeX509CrlMatchParams(param);
-        return nullptr;
-    }
-    context->crlMatchParam = param;
 
+    if (!GetCrlMatchParam(env, argv[PARAM0], context)) {
+        CfFree(context);
+        return nullptr;
+    }
+
+    if (napi_create_reference(env, thisVar, 1, &context->cfCertCRLCollectionRef) != napi_ok) {
+        LOGE("create reference failed!");
+        FreeCryptoFwkCtx(env, context);
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Create reference failed"));
+        return nullptr;
+    }
+    if (napi_create_reference(env, argv[PARAM0], 1, &context->crlMatchParamsRef) != napi_ok) {
+        LOGE("create param ref failed!");
+        FreeCryptoFwkCtx(env, context);
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Create param ref failed"));
+        return nullptr;
+    }
     if (!CreateCallbackAndPromise(env, context, argc, ARGS_SIZE_TWO, argv[PARAM1])) {
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "CreateCallbackAndPromise failed"));
         LOGE("BuildX509CrlMatchParamss failed!");
@@ -369,9 +426,9 @@ napi_value NapiCertCRLCollection::SelectCRLs(napi_env env, napi_callback_info in
     napi_queue_async_work(env, context->asyncWork);
     if (context->asyncType == ASYNC_TYPE_PROMISE) {
         return context->promise;
-    } else {
-        return CertNapiGetNull(env);
     }
+
+    return CertNapiGetNull(env);
 }
 
 static napi_value CertCRLColConstructor(napi_env env, napi_callback_info info)

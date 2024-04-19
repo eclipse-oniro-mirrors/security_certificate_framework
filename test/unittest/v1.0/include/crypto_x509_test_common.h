@@ -491,7 +491,7 @@ extern const CfEncodingBlob g_inStreamCrl;
 extern const CfEncodingBlob g_inStreamSelfSignedCaCert;
 extern const CfEncodingBlob g_crlWithoutExtPemInStream;
 extern const CfEncodingBlob g_crlWithBignumSerialInStream;
-extern const CfEncodingBlob g_CrlWhichEntryWithExtInStream;
+extern const CfEncodingBlob g_crlWhichEntryWithExtInStream;
 extern const CfEncodingBlob g_inStreamCert;
 extern const CfEncodingBlob g_inStreamIssuerCert;
 extern const CfEncodingBlob g_inStreamChainDataP7b;
