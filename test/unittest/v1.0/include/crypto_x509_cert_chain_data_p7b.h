@@ -16,7 +16,7 @@
 #ifndef CRYPTO_X509_CERT_CHAIN_DATA_P7B_H
 #define CRYPTO_X509_CERT_CHAIN_DATA_P7B_H
 
-#include <gtest/gtest.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {

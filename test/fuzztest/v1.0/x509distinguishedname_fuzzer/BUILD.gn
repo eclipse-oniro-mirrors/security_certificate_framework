@@ -21,6 +21,7 @@ ohos_fuzztest("X509DistinguishedNameFuzzTest") {
   module_out_path = module_output_path
   fuzz_config_file = "../x509distinguishedname_fuzzer"
   configs = [ "../../../../config/build:coverage_flag_cc" ]
+  include_dirs = [ "../../../../frameworks/common/v1.0/inc" ]
   cflags = [
     "-g",
     "-O0",

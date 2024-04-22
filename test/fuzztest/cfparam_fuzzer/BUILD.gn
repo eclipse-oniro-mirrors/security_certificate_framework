@@ -17,30 +17,29 @@ import("//build/test.gni")
 module_output_path = "certificate_framework/certificate_framework"
 
 ##############################fuzztest##########################################
-ohos_fuzztest("X509CertChainFuzzTest") {
+ohos_fuzztest("CfParamFuzzTest") {
   module_out_path = module_output_path
-  fuzz_config_file = "../x509certchain_fuzzer"
-  configs = [ "../../../../config/build:coverage_flag_cc" ]
+  fuzz_config_file = "../../../test/fuzztest/cfparam_fuzzer"
   include_dirs = [
     "include",
-    "../../../../interfaces/innerkits/certificate",
-    "../../../../interfaces/innerkits/common",
-    "../../../../frameworks/common/v1.0/inc",
-    "../../../../test/unittest/v1.0/include",
+    "../../../interfaces/innerkits/common",
+    "../../../interfaces/innerkits/include",
+    "../../../frameworks/common/v1.0/inc",
+    "../../../test/unittest/common/include",
   ]
+  configs = [ "../../../config/build:coverage_flag_cc" ]
   cflags = [
     "-g",
     "-O0",
     "-Wno-unused-variable",
     "-fno-omit-frame-pointer",
   ]
-  sources = [ "x509certchain_fuzzer.cpp" ]
+  sources = [ "cfparam_fuzzer.cpp" ]
+  deps = []
 
   external_deps = [
     "c_utils:utils",
     "certificate_framework:certificate_framework_core",
-    "crypto_framework:crypto_framework_lib",
-    "hilog:libhilog",
   ]
 }
 
@@ -50,7 +49,7 @@ group("fuzztest") {
   deps = []
   deps += [
     # deps file
-    ":X509CertChainFuzzTest",
+    ":CfParamFuzzTest",
   ]
 }
 ###############################################################################

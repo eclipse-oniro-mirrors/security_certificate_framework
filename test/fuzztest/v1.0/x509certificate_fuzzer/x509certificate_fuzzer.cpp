@@ -72,6 +72,10 @@ namespace OHOS {
         }
         (void)x509CertObj->base.verify(&(x509CertObj->base), keyOut);
         CfObjDestroy(keyOut);
+
+        const char *date = "231018162433Z";
+        // validatetime :2022/08/19 - 2032/08/16
+        x509CertObj->checkValidityWithDate(x509CertObj, date);
     }
 
     static void TestQuery(HcfX509Certificate *x509CertObj)
@@ -108,6 +112,10 @@ namespace OHOS {
         (void)x509CertObj->getSignatureAlgParams(x509CertObj, &sigAlgParamsOut);
         CfBlobDataClearAndFree(&sigAlgParamsOut);
 
+        CfBlob sigAlgName = { 0 };
+        (void)x509CertObj->getSignatureAlgName(x509CertObj, &sigAlgName);
+        CfBlobDataClearAndFree(&sigAlgName);
+
         CfArray keyUsageOut = { 0 };
         (void)x509CertObj->getExtKeyUsage(x509CertObj, &keyUsageOut);
         CfArrayDataClearAndFree(&keyUsageOut);
@@ -119,6 +127,18 @@ namespace OHOS {
         CfArray subjectAltName = { 0 };
         (void)x509CertObj->getSubjectAltNames(x509CertObj, &subjectAltName);
         CfArrayDataClearAndFree(&subjectAltName);
+
+        CfArray outName = { 0 };
+        (void)x509CertObj->getIssuerAltNames(x509CertObj, &outName);
+        CfArrayDataClearAndFree(&outName);
+
+        CfBlob out = { 0 };
+        (void)x509CertObj->getKeyUsage(x509CertObj, &out);
+        CfBlobDataClearAndFree(&out);
+
+        CfArray outURI = { nullptr, CF_FORMAT_DER, 0 };
+        (void)x509CertObj->getCRLDistributionPointsURI(x509CertObj, &outURI);
+        CfArrayDataClearAndFree(&outURI);
     }
 
     static void TestQueryName(HcfX509Certificate *x509CertObj)

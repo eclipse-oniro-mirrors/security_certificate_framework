@@ -35,6 +35,7 @@ group("certificate_framework_fuzztest") {
     deps += [
       "test/fuzztest/cfcreate_fuzzer:fuzztest",
       "test/fuzztest/cfgetandcheck_fuzzer:fuzztest",
+      "test/fuzztest/cfparam_fuzzer:fuzztest",
       "test/fuzztest/v1.0/x509certchain_fuzzer:fuzztest",
       "test/fuzztest/v1.0/x509certificate_fuzzer:fuzztest",
       "test/fuzztest/v1.0/x509crl_fuzzer:fuzztest",

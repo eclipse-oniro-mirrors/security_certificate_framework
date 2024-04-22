@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-#ifndef X509_CERT_CHAIN_FUZZER_H
-#define X509_CERT_CHAIN_FUZZER_H
+#ifndef CF_PARAM_FUZZER_H
+#define CF_PARAM_FUZZER_H
 
-#define FUZZ_PROJECT_NAME "x509cert_chain_fuzzer"
+#define FUZZ_PROJECT_NAME "cfparam_fuzzer"
 
 #endif

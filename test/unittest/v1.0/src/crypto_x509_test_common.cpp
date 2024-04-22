@@ -27,6 +27,7 @@
 #include "securec.h"
 #include "x509_certificate.h"
 #include "x509_certificate_openssl.h"
+#include "certificate_openssl_class.h"
 
 #define CONSTRUCT_CERTPOLICY_DATA_SIZE 1
 

@@ -28,6 +28,7 @@
 #include "x509_cert_chain.h"
 #include "x509_cert_chain_openssl.h"
 #include "x509_certificate_openssl.h"
+#include "crypto_x509_cert_chain_data_pem.h"
 #include "cert_crl_common.h"
 #include "fwk_class.h"
 
@@ -69,27 +70,6 @@ public:
     void SetUp();
     void TearDown();
 };
-
-static const char g_testSelfSignedCaCertValid[] =
-    "-----BEGIN CERTIFICATE-----\r\n"
-    "MIIDHTCCAgWgAwIBAgIBAjANBgkqhkiG9w0BAQsFADAXMRUwEwYDVQQDDAxUZXN0\r\n"
-    "IE5DIENBIDEwIBcNMjExMjAyMTcyNTAyWhgPMjEyMTEyMDMxNzI1MDJaMDwxIzAh\r\n"
-    "BgNVBAoMGkdvb2QgTkMgVGVzdCBDZXJ0aWZpY2F0ZSAxMRUwEwYDVQQDDAx3d3cu\r\n"
-    "Z29vZC5vcmcwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDqx1t7HiPe\r\n"
-    "kRAWdiGUt4pklKGZ7338An6R7/y0e/8Grx2jeUfyc19BAB7MW1p8L+zdMjbclNE0\r\n"
-    "UZ6RZZNexfgMksNI/nW+4Lzu8qu2wFx1MjbTpMT8w/vnsGBMthxLu6+2wdnpdD1B\r\n"
-    "0led8xu7PSBgVULqyHcUvoLeRGEsB14yGx7dbIsokYxno1nr4u3BK5ic9KTTSxJR\r\n"
-    "Ig93qwo2pAZR7mfnOo33B9alhzvSwmEKJ9v7pERDnIP5ED0HaWFAeXl7GFgoH2y9\r\n"
-    "QDyJVuwWsoSWIx4Mr8UIr0IbVJU6KsqEiqqc5P5rX/y4tYMkpHZd9U1EONd2uwmX\r\n"
-    "dwSp0LEmQb/DAgMBAAGjTTBLMB0GA1UdDgQWBBSfJPZqs1tk+xjjDrovr13ORDWn\r\n"
-    "ojAfBgNVHSMEGDAWgBQI0Zv55tVkcKDxaxqe7VLa3fVQQzAJBgNVHRMEAjAAMA0G\r\n"
-    "CSqGSIb3DQEBCwUAA4IBAQAEKXs56hB4DOO1vJe7pByfCHU33ij/ux7u68BdkDQ8\r\n"
-    "S9SNaoD7h1XNSmC8kKULvpoKctJzJxh1IH4wtvGGGXsUt1By0a6Y5SnKW9/mG4NM\r\n"
-    "D4fGea0G2AeI8BHFs6vl8voYK9wgx9Ygus3Kj/8h6V7t2zB8ZhhVqpZkAQEjj0C2\r\n"
-    "1IV273wD0VdZl7uB+MEKk+7eTjNMeo6JzlBBf5GhtA1WbLNdszMfI0ljo7HAX+9L\r\n"
-    "yco0xKSKkZQ+v7VdJBfC6odp+epPMZqfyHrkFzUr8XRJfriP1lydPK7AbXLVrLJg\r\n"
-    "fIXCvUdxQx4B1LaclUDORL5r2tRhRYdAEKtUz7RpQzJK\r\n"
-    "-----END CERTIFICATE-----\r\n";
 
 static HcfCertChain *g_certChainP7b = nullptr;
 static HcfX509Certificate *g_x509CertObj = nullptr;

@@ -16,12 +16,9 @@
 #ifndef CRYPTO_X509_TEST_COMMON_H
 #define CRYPTO_X509_TEST_COMMON_H
 
-#include <gtest/gtest.h>
-#include <openssl/x509.h>
 #include <stdbool.h>
 
 #include "asy_key_generator.h"
-#include "certificate_openssl_class.h"
 #include "cf_memory.h"
 #include "cipher.h"
 #include "crypto_x509_cert_chain_data_der.h"

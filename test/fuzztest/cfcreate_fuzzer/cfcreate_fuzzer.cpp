@@ -27,7 +27,6 @@ namespace OHOS {
         if (size < sizeof(CfObjectType) + sizeof(CfEncodingBlob)) {
             return false;
         }
-
         uint8_t *tmpData = const_cast<uint8_t *>(data);
         size_t usedSize = 0;
         CfObjectType objType = *(reinterpret_cast<CfObjectType *>(tmpData));
