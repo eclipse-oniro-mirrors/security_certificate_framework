@@ -1698,16 +1698,22 @@ static CfResult ComparePrivateKeyValidX509Openssl(HcfX509CertificateSpi *self, C
     PKEY_USAGE_PERIOD_free(pKeyValid);
     if (notBefore == NULL || notAfter == NULL) {
         LOGE("Get original data failed");
+        CfFree(notBefore);
+        CfFree(notAfter);
         return CF_SUCCESS;
     }
     if (privateKeyValid->size < DATETIME_LEN || strlen(notBefore) < DATETIME_LEN || strlen(notAfter) < DATETIME_LEN) {
         LOGE("Get private key valid date is not valid!");
+        CfFree(notBefore);
+        CfFree(notAfter);
         return CF_INVALID_PARAMS;
     }
     if (strncmp((const char *)privateKeyValid->data, (const char *)notBefore, DATETIME_LEN) >= 0 &&
         strncmp((const char *)privateKeyValid->data, (const char *)notAfter, DATETIME_LEN) <= 0) {
         *out = true;
     }
+    CfFree(notBefore);
+    CfFree(notAfter);
     return CF_SUCCESS;
 }
 
