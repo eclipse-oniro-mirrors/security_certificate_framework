@@ -19,7 +19,7 @@
 #include <cstdint>
 #include "cf_log.h"
 #include "napi/native_api.h"
-#include "napi/native_node_api.h"
+#include "napi/native_common.h"
 #include "pub_key.h"
 #include "napi_key.h"
 

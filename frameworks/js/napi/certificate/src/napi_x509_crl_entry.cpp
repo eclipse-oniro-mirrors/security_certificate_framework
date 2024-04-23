@@ -20,7 +20,7 @@
 #include "cf_object_base.h"
 #include "cf_result.h"
 #include "napi/native_api.h"
-#include "napi/native_node_api.h"
+#include "napi/native_common.h"
 #include "napi_cert_defines.h"
 #include "napi_cert_utils.h"
 #include "utils.h"
