@@ -26,6 +26,8 @@ ohos_fuzztest("X509CrlFuzzTest") {
     "../../../../frameworks/adapter/v1.0/inc",
     "../../../../frameworks/common/v1.0/inc",
     "../../../../frameworks/core/v1.0/spi",
+    "//third_party/openssl/include",
+    "../../../../test/unittest/v1.0/include",
   ]
   sources = [ "x509crl_fuzzer.cpp" ]
   cflags = [

@@ -19,6 +19,7 @@
 #include <cstdint>
 #include "securec.h"
 
+#include "cf_memory.h"
 #include "cf_blob.h"
 #include "cf_result.h"
 #include "x509_distinguished_name.h"
@@ -84,15 +85,20 @@ namespace OHOS {
             CreateOneDistinguishedName();
             g_testFlag = false;
         }
-        if (data == nullptr) {
+        if (data == nullptr || size < 1) {
+            return false;
+        }
+        uint8_t *testData = (uint8_t *)HcfMalloc(size + 1, sizeof(uint8_t));
+        if (testData == nullptr) {
             return false;
         }
         CfBlob inStream = { 0 };
-        inStream.data = const_cast<uint8_t *>(data);
-        inStream.size = size;
+        inStream.data = testData;
+        inStream.size = size + 1;
         HcfX509DistinguishedName *x509DistinguishedNameObj = nullptr;
         CfResult res = HcfX509DistinguishedNameCreate(&inStream, false, &x509DistinguishedNameObj);
         if (res != CF_SUCCESS) {
+            CfFree(testData);
             return false;
         }
         CfObjDestroy(x509DistinguishedNameObj);
@@ -101,10 +107,11 @@ namespace OHOS {
         x509DistinguishedNameObj = nullptr;
         res = HcfX509DistinguishedNameCreate(&inStream, true, &x509DistinguishedNameObj);
         if (res != CF_SUCCESS) {
+            CfFree(testData);
             return false;
         }
         CfObjDestroy(x509DistinguishedNameObj);
-
+        CfFree(testData);
         return true;
     }
 }

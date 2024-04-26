@@ -19,6 +19,8 @@
 
 #include "asy_key_generator.h"
 #include "certificate_openssl_class.h"
+#include "crypto_x509_test_common.h"
+#include "cf_log.h"
 #include "cf_blob.h"
 #include "cf_memory.h"
 #include "cf_result.h"
@@ -28,6 +30,7 @@
 #include "x509_certificate.h"
 #include "x509_crl.h"
 #include "x509_crl_entry.h"
+#include "cert_crl_collection.h"
 
 namespace OHOS {
     constexpr int TEST_VERSION = 3;
@@ -41,6 +44,7 @@ namespace OHOS {
     ASN1_TIME *g_lastUpdate = nullptr;
     ASN1_TIME *g_nextUpdate = nullptr;
     ASN1_TIME *g_rvTime = nullptr;
+    static bool g_testFlag = true;
 
     static char g_testCrl[] =
     "-----BEGIN X509 CRL-----\r\n"
@@ -78,6 +82,8 @@ namespace OHOS {
     "7zh6YU5JILHnrkjRGdNGmpz8SXJ+bh7u8ffHc4R9FO1q4c9/1YSsOXQj0KazyDIP\r\n"
     "IArlydFj8wK8sHvYC9WhPs+hiirrRb9Y2ApFzcYX5aYn46Y=\r\n"
     "-----END CERTIFICATE-----\r\n";
+    const CfEncodingBlob g_crlDerInStream = { const_cast<uint8_t *>(g_crlDerData),
+        sizeof(g_crlDerData), CF_FORMAT_DER };
 
     static void FreeCrlData()
     {
@@ -305,9 +311,6 @@ namespace OHOS {
 
     bool FuzzDoX509CrlTest(const uint8_t *data, size_t size)
     {
-        if ((data == nullptr) || (size < sizeof(long))) {
-            return false;
-        }
         HcfX509Crl *x509CrlDer = nullptr;
         CfEncodingBlob crlDerInStream = { 0 };
         unsigned char *crlStream = GetCrlStream();
@@ -350,6 +353,94 @@ namespace OHOS {
         }
         return true;
     }
+    void OneCrlCollectionTest()
+    {
+        CfEncodingBlob inStream = { 0 };
+        HcfX509Crl *x509Crl = nullptr;
+        HcfCertCrlCollection *x509CertCrlCollection = nullptr;
+        HcfX509Certificate *x509CertObj = nullptr;
+        HcfX509CertificateArray certArray = { 0 };
+        HcfX509CrlArray crlArray = { 0 };
+        inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testSelfSignedCaCert));
+        inStream.encodingFormat = CF_FORMAT_PEM;
+        inStream.len = strlen(g_testSelfSignedCaCert) + 1;
+        CfResult ret = HcfX509CertificateCreate(&inStream, &x509CertObj);
+        if (ret != CF_SUCCESS || x509CertObj == nullptr) {
+            goto Exit;
+        }
+        ret = HcfX509CrlCreate(&g_crlDerInStream, &x509Crl);
+        if (ret != CF_SUCCESS || x509Crl == nullptr) {
+            goto Exit;
+        }
+        certArray.data = static_cast<HcfX509Certificate **>(HcfMalloc(1 * sizeof(HcfX509Certificate *), 0));
+        if (certArray.data == nullptr) {
+            goto Exit;
+        }
+        certArray.data[0] = x509CertObj;
+        certArray.count = 1;
+
+        crlArray.data = static_cast<HcfX509Crl **>(HcfMalloc(1 * sizeof(HcfX509Crl *), 0));
+        if (crlArray.data == nullptr) {
+            goto Exit;
+        }
+        crlArray.data[0] = x509Crl;
+        crlArray.count = 1;
+
+        ret = HcfCertCrlCollectionCreate(&certArray, &crlArray, &x509CertCrlCollection);
+        if (ret != CF_SUCCESS || x509CertCrlCollection == nullptr) {
+            goto Exit;
+        }
+
+    Exit:
+        CfObjDestroy(x509CertObj);
+        CfObjDestroy(x509Crl);
+        CfFree(crlArray.data);
+        CfFree(certArray.data);
+        CfObjDestroy(x509CertCrlCollection);
+    }
+
+    void FuzzDoX509CrlCollectionTest(const uint8_t *data, size_t size, CfEncodingFormat format)
+    {
+        if (g_testFlag) {
+            OneCrlCollectionTest();
+            g_testFlag = false;
+        }
+        
+        if (data == nullptr || size < sizeof(HcfX509Certificate) || size < sizeof(HcfX509Crl)) {
+            return;
+        }
+
+        CfResult ret;
+        HcfX509CertificateArray certArray = { 0 };
+        HcfX509CrlArray crlArray = { 0 };
+        HcfCertCrlCollection *x509CertCrlCollection = nullptr;
+        certArray.data = static_cast<HcfX509Certificate **>(HcfMalloc(1 * sizeof(HcfX509Certificate *), 0));
+        if (certArray.data == nullptr) {
+            return;
+        }
+        certArray.data[0] = reinterpret_cast<HcfX509Certificate *>(const_cast<uint8_t *>(data));
+        certArray.count = 1;
+
+        crlArray.data = static_cast<HcfX509Crl **>(HcfMalloc(1 * sizeof(HcfX509Crl *), 0));
+        if (crlArray.data == nullptr) {
+            CfFree(certArray.data);
+            return;
+        }
+        crlArray.data[0] = reinterpret_cast<HcfX509Crl *>(const_cast<uint8_t *>(data));
+        crlArray.count = 1;
+
+        ret = HcfCertCrlCollectionCreate(&certArray, &crlArray, &x509CertCrlCollection);
+        if (ret != CF_SUCCESS || x509CertCrlCollection == nullptr) {
+            CfFree(certArray.data);
+            CfFree(crlArray.data);
+            return;
+        }
+
+        CfFree(certArray.data);
+        CfFree(crlArray.data);
+        CfObjDestroy(x509CertCrlCollection);
+        return;
+    }
 }
 
 /* Fuzzer entry point */
@@ -357,5 +448,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
     OHOS::FuzzDoX509CrlTest(data, size);
+    OHOS::FuzzDoX509CrlCollectionTest(data, size, CF_FORMAT_DER);
+    OHOS::FuzzDoX509CrlCollectionTest(data, size, CF_FORMAT_PEM);
+    OHOS::FuzzDoX509CrlCollectionTest(data, size, CF_FORMAT_PKCS7);
     return 0;
 }

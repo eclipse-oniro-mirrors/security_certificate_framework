@@ -25,6 +25,7 @@
 
 #include "certificate_openssl_common.h"
 #include "x509_certificate_openssl.h"
+#include "certificate_openssl_class.h"
 
 using namespace std;
 using namespace testing::ext;
