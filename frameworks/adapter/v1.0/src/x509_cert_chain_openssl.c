@@ -1313,8 +1313,8 @@ static CfResult ValidateRevocation(
         return CF_INVALID_PARAMS;
     }
 
-    CfResult res = CF_INVALID_PARAMS;
     if (params->revocationCheckParam && params->revocationCheckParam->options) {
+        CfResult res = CF_INVALID_PARAMS;
         OCSP_CERTID *certId = GetCertId(x509CertChain);
         if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_ACCESS_NETWORK)) {
             res = ValidateRevocationOnLine(params, x509CertChain, trustAnchor, certId);

@@ -181,12 +181,22 @@ static bool GetRevocationOptions(napi_env env, napi_value rckObj, HcfRevocationC
         return false;
     }
     out->options = static_cast<HcfRevChkOpArray *>(HcfMalloc(sizeof(HcfRevChkOpArray), 0));
+    if (out->options == nullptr) {
+        return false;
+    }
     out->options->count = length;
     out->options->data = static_cast<HcfRevChkOption *>(HcfMalloc(length * sizeof(HcfRevChkOption), 0));
+    if (out->options->data == nullptr) {
+        CfFree(out->options);
+        out->options = nullptr;
+        return false;
+    }
     for (uint32_t i = 0; i < length; i++) {
         napi_value element;
         if (napi_get_element(env, obj, i, &element) != napi_ok ||
             napi_get_value_int32(env, element, (int32_t *)&(out->options->data[i])) != napi_ok) {
+            CfFree(out->options->data);
+            CfFree(out->options);
             return false;
         }
         switch (out->options->data[i]) {
@@ -196,6 +206,10 @@ static bool GetRevocationOptions(napi_env env, napi_value rckObj, HcfRevocationC
             case REVOCATION_CHECK_OPTION_FALLBACK_LOCAL:
                 break;
             default:
+                CfFree(out->options->data);
+                out->options->data = nullptr;
+                CfFree(out->options);
+                out->options = nullptr;
                 return false;
         }
     }

@@ -42,7 +42,6 @@ CfResult ToString(HcfX509CertChainSpi *self, CfBlob *out)
         return CF_INVALID_PARAMS;
     }
 
-    CfResult res = CF_SUCCESS;
     HcfX509CertChainOpensslImpl *certChain = (HcfX509CertChainOpensslImpl *)self;
     STACK_OF(X509) *x509CertChain = certChain->x509CertChain;
 
@@ -63,7 +62,7 @@ CfResult ToString(HcfX509CertChainSpi *self, CfBlob *out)
     }
     BUF_MEM *bufMem = NULL;
     if (BIO_get_mem_ptr(bio, &bufMem) > 0 && bufMem != NULL) {
-        res = DeepCopyDataToOut(bufMem->data, bufMem->length, out);
+        CfResult res = DeepCopyDataToOut(bufMem->data, bufMem->length, out);
         BIO_free(bio);
         return res;
     }
