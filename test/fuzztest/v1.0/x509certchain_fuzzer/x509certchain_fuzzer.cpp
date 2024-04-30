@@ -200,7 +200,7 @@ namespace OHOS {
         uint32_t caCertLen = strlen(g_testCertChainValidatorCaCert) + 1;
         uint32_t secondCaCertLen = strlen(g_testCertChainValidatorSecondCaCert) + 1;
         certsData->dataLen = CERT_HEADER_LEN + secondCaCertLen + CERT_HEADER_LEN + caCertLen;
-        certsData->data = (uint8_t *)malloc(certsData->dataLen);
+        certsData->data = static_cast<uint8_t *>(malloc(certsData->dataLen));
         if (certsData->data == nullptr) {
             return CF_ERR_MALLOC;
         }
@@ -356,7 +356,7 @@ namespace OHOS {
     {
         HcfCertCRLCollectionArray *certCRLCollections = nullptr;
         CfResult ret = CF_ERR_MALLOC;
-        CfBlob *blob = (CfBlob *)HcfMalloc(sizeof(CfBlob), 0);
+        CfBlob *blob = static_cast<CfBlob *>(HcfMalloc(sizeof(CfBlob), 0));
         if (blob == nullptr) {
             return CF_ERR_MALLOC;
         }
@@ -365,7 +365,7 @@ namespace OHOS {
         params->date = blob;
 
         HcfX509TrustAnchorArray *trustAnchorArray =
-            (HcfX509TrustAnchorArray *)HcfMalloc(sizeof(HcfX509TrustAnchorArray), 0);
+            static_cast<HcfX509TrustAnchorArray *>(HcfMalloc(sizeof(HcfX509TrustAnchorArray), 0));
         if (trustAnchorArray == nullptr) {
             goto Exit;
         }
@@ -374,7 +374,7 @@ namespace OHOS {
             goto Exit;
         }
 
-        certCRLCollections = (HcfCertCRLCollectionArray *)HcfMalloc(sizeof(HcfCertCRLCollectionArray), 0);
+        certCRLCollections = static_cast<HcfCertCRLCollectionArray *>(HcfMalloc(sizeof(HcfCertCRLCollectionArray), 0));
         if (certCRLCollections == nullptr) {
             goto Exit;
         }
