@@ -22,7 +22,7 @@
 #include "cert_chain_validator.h"
 #include "cf_blob.h"
 #include "napi/native_api.h"
-#include "napi/native_node_api.h"
+#include "napi/native_common.h"
 #include "napi_cert_defines.h"
 #include "x509_cert_match_parameters.h"
 

@@ -20,7 +20,7 @@
 #include "cf_type.h"
 
 #include "napi/native_api.h"
-#include "napi/native_node_api.h"
+#include "napi/native_common.h"
 
 namespace OHOS {
 namespace CertFramework {
