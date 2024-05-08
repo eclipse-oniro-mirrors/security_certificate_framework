@@ -75,7 +75,7 @@ static void DestroyX509Certificate(CfObjectBase *self)
     CfFree(impl);
 }
 
-static CfResult Verify(HcfCertificate *self, HcfPubKey *key)
+static CfResult Verify(HcfCertificate *self, void *key)
 {
     if ((self == NULL) || (key == NULL)) {
         LOGE("Invalid input parameter.");
@@ -86,7 +86,7 @@ static CfResult Verify(HcfCertificate *self, HcfPubKey *key)
         return CF_INVALID_PARAMS;
     }
     return ((HcfX509CertificateImpl *)self)->spiObj->engineVerify(
-        ((HcfX509CertificateImpl *)self)->spiObj, key);
+        ((HcfX509CertificateImpl *)self)->spiObj, (HcfPubKey *)key);
 }
 
 static CfResult GetEncoded(HcfCertificate *self, CfEncodingBlob *encodedByte)
@@ -103,7 +103,7 @@ static CfResult GetEncoded(HcfCertificate *self, CfEncodingBlob *encodedByte)
         ((HcfX509CertificateImpl *)self)->spiObj, encodedByte);
 }
 
-static CfResult GetPublicKey(HcfCertificate *self, HcfPubKey **keyOut)
+static CfResult GetPublicKey(HcfCertificate *self, void **keyOut)
 {
     if ((self == NULL) || (keyOut == NULL)) {
         LOGE("Invalid input parameter.");
@@ -114,7 +114,7 @@ static CfResult GetPublicKey(HcfCertificate *self, HcfPubKey **keyOut)
         return CF_INVALID_PARAMS;
     }
     return ((HcfX509CertificateImpl *)self)->spiObj->engineGetPublicKey(
-        ((HcfX509CertificateImpl *)self)->spiObj, keyOut);
+        ((HcfX509CertificateImpl *)self)->spiObj, (HcfPubKey **)keyOut);
 }
 
 static CfResult CheckValidityWithDate(HcfX509Certificate *self, const char *date)

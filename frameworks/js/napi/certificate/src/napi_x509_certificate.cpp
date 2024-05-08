@@ -309,7 +309,7 @@ napi_value NapiX509Certificate::GetPublicKey(napi_env env, napi_callback_info in
 {
     HcfX509Certificate *cert = GetX509Cert();
     HcfPubKey *returnPubKey = nullptr;
-    CfResult ret = cert->base.getPublicKey(&(cert->base), &returnPubKey);
+    CfResult ret = cert->base.getPublicKey(&(cert->base), (void **)&returnPubKey);
     if (ret != CF_SUCCESS) {
         napi_throw(env, CertGenerateBusinessError(env, ret, "get cert public key failed!"));
         LOGE("get cert public key failed!");
@@ -912,6 +912,29 @@ napi_value NapiX509Certificate::GetSubjectX500DistinguishedName(napi_env env, na
     return instance;
 }
 
+napi_value NapiX509Certificate::GetCRLDistributionPointsURI(napi_env env, napi_callback_info info)
+{
+    CfArray *array = reinterpret_cast<CfArray *>(HcfMalloc(sizeof(CfArray), 0));
+    if (array == nullptr) {
+        LOGE("malloc array failed!");
+        return nullptr;
+    }
+    HcfX509Certificate *cert = GetX509Cert();
+    CfResult ret = cert->getCRLDistributionPointsURI(cert, array);
+    if (ret != CF_SUCCESS) {
+        napi_throw(env, CertGenerateBusinessError(env, ret, "get crl distribution points URI failed"));
+        LOGE("call get crl distribution points URI  failed!");
+        CfFree(array);
+        array = nullptr;
+        return nullptr;
+    }
+    napi_value returnValue = ConvertArrayToNapiValue(env, array);
+    CfArrayDataClearAndFree(array);
+    CfFree(array);
+    array = nullptr;
+    return returnValue;
+}
+
 CfResult NapiX509Certificate::MatchProc(HcfX509CertMatchParams *param, bool &boolFlag)
 {
     HcfX509Certificate *cert = GetX509Cert();
@@ -1197,6 +1220,19 @@ static napi_value NapiGetItem(napi_env env, napi_callback_info info)
     return CommonOperation(env, info, obj, OPERATION_TYPE_GET, CF_GET_TYPE_CERT_ITEM);
 }
 
+static napi_value NapiGetCRLDistributionPointsURI(napi_env env, napi_callback_info info)
+{
+    napi_value thisVar = nullptr;
+    napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+    NapiX509Certificate *x509Cert = nullptr;
+    napi_unwrap(env, thisVar, reinterpret_cast<void **>(&x509Cert));
+    if (x509Cert == nullptr) {
+        LOGE("x509Cert is nullptr!");
+        return nullptr;
+    }
+    return x509Cert->GetCRLDistributionPointsURI(env, info);
+}
+
 static napi_value NapiMatch(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
@@ -1415,6 +1451,7 @@ void NapiX509Certificate::DefineX509CertJSClass(napi_env env, napi_value exports
         DECLARE_NAPI_FUNCTION("getExtensionsObject", NapiGetExtensionsObject),
         DECLARE_NAPI_FUNCTION("getIssuerX500DistinguishedName", NapiGetIssuerX500DistinguishedName),
         DECLARE_NAPI_FUNCTION("getSubjectX500DistinguishedName", NapiGetSubjectX500DistinguishedName),
+        DECLARE_NAPI_FUNCTION("getCRLDistributionPoint", NapiGetCRLDistributionPointsURI),
     };
     napi_value constructor = nullptr;
     napi_define_class(env, "X509Cert", NAPI_AUTO_LENGTH, X509CertConstructor, nullptr,
