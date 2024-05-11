@@ -26,6 +26,8 @@ ohos_fuzztest("X509CertChainFuzzTest") {
     "../../../../interfaces/innerkits/certificate",
     "../../../../interfaces/innerkits/common",
     "../../../../frameworks/common/v1.0/inc",
+    "../../../../frameworks/core/v1.0/spi",
+    "../../../../frameworks/adapter/v1.0/inc",
     "../../../../test/unittest/v1.0/include",
   ]
   cflags = [
