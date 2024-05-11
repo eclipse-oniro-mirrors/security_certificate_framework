@@ -27,6 +27,7 @@
 #include "x509_cert_chain_validate_result.h"
 #include "crypto_x509_test_common.h"
 #include "x509_trust_anchor.h"
+#include "x509_cert_chain_openssl.h"
 
 #include "cf_blob.h"
 #include "cf_result.h"
@@ -137,6 +138,41 @@ namespace OHOS {
         return ret;
     }
 
+    static const char *GetInvalidCertChainClass(void)
+    {
+        return "HcfInvalidCertChain";
+    }
+
+    static CfResult TestToString(HcfCertChain *certChain)
+    {
+        CfBlob blob = { 0, nullptr };
+        CfResult ret = certChain->toString(certChain, &blob);
+        CfBlobDataFree(&blob);
+
+        HcfCertChain testCertChain = {};
+        testCertChain.base.getClass = GetInvalidCertChainClass;
+        ret = certChain->toString(&testCertChain, &blob);
+        ret = certChain->toString(nullptr, &blob);
+        ret = certChain->toString(certChain, nullptr);
+        ret = certChain->toString(nullptr, nullptr);
+        return ret;
+    }
+
+    static CfResult TestHashCode(HcfCertChain *certChain)
+    {
+        CfBlob blob = { 0, nullptr };
+        CfResult ret = certChain->hashCode(certChain, &blob);
+        CfBlobDataFree(&blob);
+
+        HcfCertChain testCertChain = {};
+        testCertChain.base.getClass = GetInvalidCertChainClass;
+        ret = certChain->hashCode(&testCertChain, &blob);
+        ret = certChain->hashCode(nullptr, &blob);
+        ret = certChain->hashCode(certChain, nullptr);
+        ret = certChain->hashCode(nullptr, nullptr);
+        return ret;
+    }
+
     static CfResult CreateOneCertChainCore(const CfEncodingBlob *inStream)
     {
         HcfCertChain *certChain = nullptr;
@@ -150,13 +186,213 @@ namespace OHOS {
             return ret;
         }
 
+        ret = TestToString(certChain);
+        ret = TestHashCode(certChain);
         ret = TestVerify(certChain);
         CfObjDestroy(certChain);
         return ret;
     }
 
+    static void CreateChainByArr()
+    {
+        HcfX509CertChainSpi *certChainSpi = nullptr;
+        HcfX509CertificateArray certArray;
+        HcfX509Certificate *x509CertObj = nullptr;
+
+        int certSize = sizeof(g_testSelfSignedCaCert);
+        const CfEncodingBlob cert = { reinterpret_cast<uint8_t *>(const_cast<char *>(g_testSelfSignedCaCert)),
+            certSize, CF_FORMAT_PEM };
+        (void)HcfX509CertificateCreate(&cert, &x509CertObj);
+
+        certArray.data = static_cast<HcfX509Certificate **>(HcfMalloc(1 * sizeof(HcfX509Certificate *), 0));
+        if (certArray.data == nullptr) {
+            return;
+        }
+        certArray.data[0] = x509CertObj;
+        certArray.count = 1;
+
+        (void)HcfX509CertChainByArrSpiCreate(nullptr, &certChainSpi);
+        (void)HcfX509CertChainByArrSpiCreate(&certArray, nullptr);
+        (void)HcfX509CertChainByArrSpiCreate(&certArray, &certChainSpi);
+
+        CfFree(certArray.data);
+        CfObjDestroy(x509CertObj);
+        CfObjDestroy(certChainSpi);
+    }
+
+    static void FreeHcfRevocationCheckParam1(HcfRevocationCheckParam *param)
+    {
+        if (param == nullptr) {
+            return;
+        }
+
+        if (param->options != nullptr) {
+            if (param->options->data != nullptr) {
+                CfFree(param->options->data);
+            }
+
+            CfFree(param->options);
+        }
+
+        if (param->ocspResponses != nullptr) {
+            CfFree(param->ocspResponses);
+        }
+
+        if (param->ocspResponderCert != nullptr) {
+            CfObjDestroy(param->ocspResponderCert);
+        }
+
+        CfFree(param);
+    }
+
+    static HcfRevocationCheckParam *ConstructHcfRevocationCheckParam1(HcfRevChkOption *data, size_t size,
+        CfBlob *ocspResponderURI = NULL, CfBlob *crlDownloadURI = NULL,
+        const CfEncodingBlob *ocspResponderCertStream = NULL)
+    {
+        HcfRevChkOpArray *revChkOpArray = (HcfRevChkOpArray *)HcfMalloc(sizeof(HcfRevChkOpArray), 0);
+        if (revChkOpArray == nullptr) {
+            return nullptr;
+        }
+
+        revChkOpArray->count = size;
+        revChkOpArray->data = (HcfRevChkOption *)HcfMalloc(revChkOpArray->count * sizeof(HcfRevChkOption), 0);
+        if (revChkOpArray->data == nullptr) {
+            CfFree(revChkOpArray);
+            return nullptr;
+        }
+
+        for (size_t i = 0; i < revChkOpArray->count; i++) {
+            revChkOpArray->data[i] = data[i];
+        }
+
+        CfBlob *resp = (CfBlob *)HcfMalloc(sizeof(CfBlob), 0);
+        if (resp == nullptr) {
+            CfFree(revChkOpArray->data);
+            CfFree(revChkOpArray);
+            return nullptr;
+        }
+        resp->data = (uint8_t *)(&g_testOcspResponses[0]);
+        resp->size = sizeof(g_testOcspResponses);
+
+        HcfRevocationCheckParam *param = (HcfRevocationCheckParam *)HcfMalloc(sizeof(HcfRevocationCheckParam), 0);
+        if (param == nullptr) {
+            CfFree(revChkOpArray->data);
+            CfFree(revChkOpArray);
+            return nullptr;
+        }
+
+        param->options = revChkOpArray;
+        param->ocspResponses = resp;
+        param->ocspResponderURI = ocspResponderURI;
+        param->crlDownloadURI = crlDownloadURI;
+
+        if (ocspResponderCertStream != NULL) {
+            (void)HcfX509CertificateCreate(&g_inStreamOcspResponderCert, &(param->ocspResponderCert));
+            if (param->ocspResponderCert == nullptr) {
+                FreeHcfRevocationCheckParam1(param);
+                return nullptr;
+            }
+        }
+
+        return param;
+    }
+
+    void FreeValidateResult1(HcfX509CertChainValidateResult &result)
+    {
+        if (result.entityCert != nullptr) {
+            CfObjDestroy(result.entityCert);
+            result.entityCert = nullptr;
+        }
+
+        if (result.trustAnchor != nullptr) {
+            FreeTrustAnchor1(result.trustAnchor);
+        }
+    }
+
+    static void TestEngineValidateInvalid(HcfX509CertChainSpi *spi, const CfEncodingBlob *inStream)
+    {
+        HcfX509TrustAnchorArray trustAnchorArray = { 0 };
+        if (BuildAnchorArr1(*inStream, trustAnchorArray) != CF_SUCCESS) {
+            return;
+        }
+        HcfX509CertChainValidateParams params = { 0 };
+        params.trustAnchors = &trustAnchorArray;
+        HcfX509CertChainValidateResult result = { 0 };
+
+        params.policy = (HcfValPolicyType)-1;
+        (void)spi->engineValidate(spi, &params, &result);
+
+        params.policy = VALIDATION_POLICY_TYPE_SSL;
+        (void)spi->engineValidate(spi, &params, &result);
+
+        FreeTrustAnchorArr1(trustAnchorArray);
+    }
+
+    static void TestEngineValidate(HcfX509CertChainSpi *spi, const CfEncodingBlob *inStream)
+    {
+        HcfX509TrustAnchorArray trustAnchorArray = { 0 };
+        if (BuildAnchorArr1(*inStream, trustAnchorArray) != CF_SUCCESS) {
+            return;
+        }
+        HcfX509CertChainValidateParams params = { 0 };
+        params.trustAnchors = &trustAnchorArray;
+
+        HcfRevChkOption data[] = { REVOCATION_CHECK_OPTION_PREFER_OCSP };
+        params.revocationCheckParam = ConstructHcfRevocationCheckParam1(data, sizeof(data) / sizeof(data[0]));
+        if (params.revocationCheckParam == nullptr) {
+            return;
+        }
+
+        HcfX509CertChainValidateResult result = { 0 };
+        spi->engineValidate(spi, &params, &result);
+
+        FreeValidateResult1(result);
+        FreeTrustAnchorArr1(trustAnchorArray);
+        FreeHcfRevocationCheckParam1(params.revocationCheckParam);
+    }
+
+    static void CreateChainByEnc()
+    {
+        int pemSize = sizeof(g_testCertChainPem) / sizeof(char);
+        int pem163Size = sizeof(g_testCertChainPem163) / sizeof(char);
+        const CfEncodingBlob pem = { reinterpret_cast<uint8_t *>(const_cast<char *>(g_testCertChainPem)),
+            pemSize, CF_FORMAT_PEM };
+        const CfEncodingBlob pem163 = { reinterpret_cast<uint8_t *>(const_cast<char *>(g_testCertChainPem163)),
+            pem163Size, CF_FORMAT_PEM };
+        HcfX509CertChainSpi *certChainSpi = nullptr;
+        CfResult ret = HcfX509CertChainByEncSpiCreate(&pem, &certChainSpi);
+        if (ret != CF_SUCCESS) {
+            return;
+        }
+        HcfX509CertChainSpi *certChainPemSpi = certChainSpi;
+
+        certChainSpi = nullptr;
+        ret = HcfX509CertChainByEncSpiCreate(&pem163, &certChainSpi);
+        if (ret != CF_SUCCESS) {
+            CfObjDestroy(certChainPemSpi);
+            return;
+        }
+        HcfX509CertChainSpi *certChainPemSpi163 = certChainSpi;
+
+        int pemRootSize = sizeof(g_testCertChainPemRoot) / sizeof(char);
+        int pemRoot163Size = sizeof(g_testCertChainPemRoot163) / sizeof(char);
+        const CfEncodingBlob inpemRoot = { reinterpret_cast<uint8_t *>(const_cast<char *>(g_testCertChainPemRoot)),
+            pemRootSize, CF_FORMAT_PEM };
+        const CfEncodingBlob inpemRoot163 = {
+            reinterpret_cast<uint8_t *>(const_cast<char *>(g_testCertChainPemRoot163)),
+            pemRoot163Size, CF_FORMAT_PEM };
+        TestEngineValidateInvalid(certChainPemSpi, &inpemRoot);
+        TestEngineValidateInvalid(certChainPemSpi163, &inpemRoot163);
+        TestEngineValidate(certChainPemSpi163, &inpemRoot163);
+
+        CfObjDestroy(certChainPemSpi);
+        CfObjDestroy(certChainPemSpi163);
+    }
+
     static CfResult CreateOneCertChain(CfEncodingFormat encodingFormat)
     {
+        CreateChainByArr();
+        CreateChainByEnc();
         switch (encodingFormat) {
             case CF_FORMAT_DER:
                 return CreateOneCertChainCore(&g_inStreamChainDataDer);
@@ -240,7 +476,9 @@ namespace OHOS {
         HcfCertChainData certsData = {};
         ConstructCertData(&certsData);
         HcfCertChainValidator *pathValidator = nullptr;
-        CfResult res = HcfCertChainValidatorCreate("PKIX", &pathValidator);
+        CfResult res = HcfCertChainValidatorCreate("invalidPKIX", &pathValidator);
+        res = HcfCertChainValidatorCreate("PKIX", nullptr);
+        res = HcfCertChainValidatorCreate("PKIX", &pathValidator);
         if (res != CF_SUCCESS) {
             goto OUT;
         }
@@ -248,6 +486,8 @@ namespace OHOS {
         if (res != CF_SUCCESS) {
             goto OUT;
         }
+        (void)pathValidator->getAlgorithm(pathValidator);
+        (void)pathValidator->getAlgorithm(nullptr);
     OUT:
         FreeCertData(&certsData);
         CfObjDestroy(pathValidator);
