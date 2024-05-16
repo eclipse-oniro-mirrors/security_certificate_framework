@@ -505,7 +505,6 @@ HWTEST_F(CryptoX509CertChainTestPart2, ValidateOpensslRevocationOnLineTest006, T
         .WillOnce(Invoke(__real_OPENSSL_sk_value))
         .WillOnce(Invoke(__real_OPENSSL_sk_value))
         .WillOnce(Invoke(__real_OPENSSL_sk_value))
-        .WillOnce(Invoke(__real_OPENSSL_sk_value))
         .WillOnce(Return(&dp))
         .WillRepeatedly(Invoke(__real_OPENSSL_sk_value));
     ret = g_certChainPemSpi163->engineValidate(g_certChainPemSpi163, &params, &result);
@@ -516,7 +515,6 @@ HWTEST_F(CryptoX509CertChainTestPart2, ValidateOpensslRevocationOnLineTest006, T
     dpn.type = GEN_URI;
     dp.distpoint = &dpn;
     EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_value(_, _))
-        .WillOnce(Invoke(__real_OPENSSL_sk_value))
         .WillOnce(Invoke(__real_OPENSSL_sk_value))
         .WillOnce(Invoke(__real_OPENSSL_sk_value))
         .WillOnce(Invoke(__real_OPENSSL_sk_value))
@@ -565,7 +563,6 @@ HWTEST_F(CryptoX509CertChainTestPart2, ValidateOpensslRevocationOnLineTest007, T
         .WillOnce(Invoke(__real_OPENSSL_sk_value))
         .WillOnce(Invoke(__real_OPENSSL_sk_value))
         .WillOnce(Invoke(__real_OPENSSL_sk_value))
-        .WillOnce(Invoke(__real_OPENSSL_sk_value))
         .WillOnce(Return(&dp))
         .WillRepeatedly(Invoke(__real_OPENSSL_sk_value));
     CfResult ret = g_certChainPemSpi163->engineValidate(g_certChainPemSpi163, &params, &result);
@@ -576,7 +573,7 @@ HWTEST_F(CryptoX509CertChainTestPart2, ValidateOpensslRevocationOnLineTest007, T
     X509OpensslMock::SetMockFlag(true);
     EXPECT_CALL(X509OpensslMock::GetInstance(), GENERAL_NAME_get0_value(_, _))
         .Times(AnyNumber())
-        .WillOnce(Return(NULL));
+        .WillRepeatedly(Return(NULL));
     ret = g_certChainPemSpi163->engineValidate(g_certChainPemSpi163, &params, &result);
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
     X509OpensslMock::SetMockFlag(false);
