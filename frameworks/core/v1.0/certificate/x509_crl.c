@@ -113,7 +113,7 @@ static bool IsRevoked(HcfCrl *self, const HcfCertificate *cert)
         ((HcfX509CrlImpl *)self)->spiObj, cert);
 }
 
-static CfResult Verify(HcfX509Crl *self, HcfPubKey *key)
+static CfResult Verify(HcfX509Crl *self, void *key)
 {
     if ((self == NULL) || (key == NULL)) {
         LOGE("Invalid input parameter.");
@@ -124,7 +124,7 @@ static CfResult Verify(HcfX509Crl *self, HcfPubKey *key)
         return CF_INVALID_PARAMS;
     }
     return ((HcfX509CrlImpl *)self)->spiObj->engineVerify(
-        ((HcfX509CrlImpl *)self)->spiObj, key);
+        ((HcfX509CrlImpl *)self)->spiObj, (HcfPubKey *)key);
 }
 
 static CfResult GetEncoded(HcfX509Crl *self, CfEncodingBlob *encodedByte)
