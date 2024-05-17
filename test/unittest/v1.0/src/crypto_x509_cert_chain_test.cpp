@@ -29,6 +29,7 @@
 #include "x509_cert_chain_openssl.h"
 #include "x509_certificate_openssl.h"
 #include "crypto_x509_cert_chain_data_pem.h"
+#include "crypto_x509_cert_chain_data_pem_added.h"
 #include "cert_crl_common.h"
 #include "fwk_class.h"
 

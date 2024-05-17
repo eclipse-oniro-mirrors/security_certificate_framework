@@ -22,6 +22,7 @@
 #include "crypto_x509_cert_chain_data_p7b.h"
 #include "crypto_x509_cert_chain_data_der.h"
 #include "crypto_x509_cert_chain_data_pem.h"
+#include "crypto_x509_cert_chain_data_pem_added.h"
 #include "crypto_x509_cert_chain_data_pem_ex.h"
 #include "x509_cert_chain_validate_params.h"
 #include "x509_cert_chain_validate_result.h"

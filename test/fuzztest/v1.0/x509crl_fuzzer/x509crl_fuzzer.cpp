@@ -410,15 +410,29 @@ namespace OHOS {
             return;
         }
 
-        CfResult ret;
         HcfX509CertificateArray certArray = { 0 };
         HcfX509CrlArray crlArray = { 0 };
         HcfCertCrlCollection *x509CertCrlCollection = nullptr;
+        HcfX509Crl *x509Crl = nullptr;
+        HcfX509Certificate *x509CertObj = nullptr;
+
+        const CfEncodingBlob inStream = { reinterpret_cast<uint8_t *>(const_cast<char *>(g_testSelfSignedCaCert)),
+            sizeof(g_testSelfSignedCaCert) + 1, CF_FORMAT_DER };
+        CfResult ret = HcfX509CertificateCreate(&inStream, &x509CertObj);
+        if (ret != CF_SUCCESS || x509CertObj == nullptr) {
+            return;
+        }
+
+        const CfEncodingBlob crlDerInStream = { const_cast<uint8_t *>(data), size, CF_FORMAT_DER };
+        ret = HcfX509CrlCreate(&crlDerInStream, &x509Crl);
+        if (ret != CF_SUCCESS || x509Crl == nullptr) {
+            return;
+        }
         certArray.data = static_cast<HcfX509Certificate **>(HcfMalloc(1 * sizeof(HcfX509Certificate *), 0));
         if (certArray.data == nullptr) {
             return;
         }
-        certArray.data[0] = reinterpret_cast<HcfX509Certificate *>(const_cast<uint8_t *>(data));
+        certArray.data[0] = x509CertObj;
         certArray.count = 1;
 
         crlArray.data = static_cast<HcfX509Crl **>(HcfMalloc(1 * sizeof(HcfX509Crl *), 0));
@@ -426,7 +440,7 @@ namespace OHOS {
             CfFree(certArray.data);
             return;
         }
-        crlArray.data[0] = reinterpret_cast<HcfX509Crl *>(const_cast<uint8_t *>(data));
+        crlArray.data[0] = x509Crl;
         crlArray.count = 1;
 
         ret = HcfCertCrlCollectionCreate(&certArray, &crlArray, &x509CertCrlCollection);
