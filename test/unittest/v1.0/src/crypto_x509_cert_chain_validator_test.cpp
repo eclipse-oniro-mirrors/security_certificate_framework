@@ -23,6 +23,7 @@
 #include "cf_object_base.h"
 #include "cf_result.h"
 #include "crypto_x509_cert_chain_data_pem.h"
+#include "crypto_x509_cert_chain_data_pem_added.h"
 #include "x509_cert_chain_validator_openssl.h"
 
 using namespace std;
