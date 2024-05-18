@@ -296,7 +296,7 @@ static CfResult GetLastUpdate(HcfX509CrlSpi *self, CfBlob *out)
         LOGE("ThisUpdate convert String fail, or thisUpdate is too long!");
         return CF_ERR_CRYPTO_OPERATION;
     }
-    uint32_t length = strlen(thisUpdate) + 1;
+    uint32_t length = strlen(thisUpdate);
     out->data = (uint8_t *)HcfMalloc(length, 0);
     if (out->data == NULL) {
         LOGE("Failed to malloc for thisUpdate!");
@@ -329,7 +329,7 @@ static CfResult GetNextUpdate(HcfX509CrlSpi *self, CfBlob *out)
         LOGE("Get next update time is null, or nextUpdate is too long!");
         return CF_ERR_CRYPTO_OPERATION;
     }
-    uint32_t length = strlen(nextUpdate) + 1;
+    uint32_t length = strlen(nextUpdate);
     out->data = (uint8_t *)HcfMalloc(length, 0);
     if (out->data == NULL) {
         LOGE("Failed to malloc for nextUpdate!");
@@ -596,7 +596,7 @@ static CfResult GetSignatureAlgOidInner(X509_CRL *crl, CfBlob *oidOut)
         CfFree(output);
         return CF_ERR_CRYPTO_OPERATION;
     }
-    uint32_t length = strlen(output) + 1;
+    uint32_t length = strlen(output);
     oidOut->data = (uint8_t *)HcfMalloc(length, 0);
     if (oidOut->data == NULL) {
         LOGE("Failed to malloc for oidOut!");
@@ -647,7 +647,7 @@ static CfResult GetSignatureAlgName(HcfX509CrlSpi *self, CfBlob *algNameOut)
         LOGE("Can not find algorithmName!");
         return CF_ERR_CRYPTO_OPERATION;
     }
-    uint32_t length = strlen(algName) + 1;
+    uint32_t length = strlen(algName);
     algNameOut->data = (uint8_t *)HcfMalloc(length, 0);
     if (algNameOut->data == NULL) {
         LOGE("Failed to malloc for algName!");
