@@ -734,6 +734,12 @@ static napi_value CreateX509CertChainExtReturn(napi_env env, size_t argc, napi_v
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Create Callback Promise failed!"));
         return nullptr;
     }
+    if (napi_create_reference(env, param, 1, &context->async->paramRef) != napi_ok) {
+        LOGE("create param ref failed!");
+        DeleteCertChainContext(env, context);
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Create param ref failed"));
+        return nullptr;
+    }
     if (!GetChainBuildParametersFromValue(env, param, &context->bulidParams)) {
         LOGE("Get Cert Chain Build Parameters failed!");
         DeleteCertChainContext(env, context);

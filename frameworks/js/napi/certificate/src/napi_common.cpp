@@ -183,6 +183,10 @@ void FreeAsyncContext(napi_env env, AsyncCtx &async)
         napi_delete_reference(env, async->callback);
         async->callback = nullptr;
     }
+    if (async->paramRef != nullptr) {
+        napi_delete_reference(env, async->paramRef);
+        async->paramRef = nullptr;
+    }
     CfFree(async);
     async = nullptr;
 }

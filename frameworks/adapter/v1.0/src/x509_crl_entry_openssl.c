@@ -168,7 +168,7 @@ static CfResult GetRevocationDate(HcfX509CrlEntry *self, CfBlob *out)
         LOGE("Get revocation date from ASN1_TIME fail!");
         return CF_ERR_CRYPTO_OPERATION;
     }
-    uint32_t length = strlen(revTime) + 1;
+    uint32_t length = strlen(revTime);
     out->data = (uint8_t *)HcfMalloc(length, 0);
     if (out->data == NULL) {
         LOGE("Failed to malloc for revTime!");
