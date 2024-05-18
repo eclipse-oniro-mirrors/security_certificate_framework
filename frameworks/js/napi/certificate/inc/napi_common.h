@@ -31,6 +31,7 @@ struct AsyncContext {
     napi_ref callback = nullptr;
     napi_deferred deferred = nullptr;
     napi_async_work asyncWork = nullptr;
+    napi_ref paramRef = nullptr;
     int32_t errCode = 0;
     const char *errMsg = nullptr;
 };

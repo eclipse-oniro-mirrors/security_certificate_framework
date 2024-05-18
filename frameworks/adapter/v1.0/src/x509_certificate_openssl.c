@@ -719,7 +719,7 @@ static CfResult GetNotBeforeX509Openssl(HcfX509CertificateSpi *self, CfBlob *out
         LOGE("Failed to get notBeforeDate data!");
         return CF_ERR_CRYPTO_OPERATION;
     }
-    uint32_t length = strlen(date) + 1;
+    uint32_t length = strlen(date);
     return DeepCopyDataToOut(date, length, outDate);
 }
 
@@ -751,7 +751,7 @@ static CfResult GetNotAfterX509Openssl(HcfX509CertificateSpi *self, CfBlob *outD
         LOGE("Failed to get notAfterDate data!");
         return CF_ERR_CRYPTO_OPERATION;
     }
-    uint32_t length = strlen(date) + 1;
+    uint32_t length = strlen(date);
     return DeepCopyDataToOut(date, length, outDate);
 }
 
@@ -811,7 +811,7 @@ static CfResult GetSigAlgNameX509Openssl(HcfX509CertificateSpi *self, CfBlob *ou
     if (algName == NULL) {
         return CF_ERR_CRYPTO_OPERATION;
     }
-    uint32_t len = strlen(algName) + 1;
+    uint32_t len = strlen(algName);
     return DeepCopyDataToOut(algName, len, outName);
 }
 
@@ -838,7 +838,7 @@ static CfResult GetSigAlgOidX509Openssl(HcfX509CertificateSpi *self, CfBlob *out
         CfPrintOpensslError();
         return CF_ERR_CRYPTO_OPERATION;
     }
-    uint32_t len = strlen(algOid) + 1;
+    uint32_t len = strlen(algOid);
     return DeepCopyDataToOut(algOid, len, out);
 }
 
