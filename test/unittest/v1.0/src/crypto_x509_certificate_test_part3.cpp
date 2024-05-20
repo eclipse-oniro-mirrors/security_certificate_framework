@@ -96,7 +96,7 @@ void CryptoX509CertificateTestPart3::TearDown() {}
 
 static CfArray *constructExtendedKeyUsageData()
 {
-    CfArray *newBlobArr = static_cast<CfArray *>(HcfMalloc(sizeof(CfArray), 0));
+    CfArray *newBlobArr = static_cast<CfArray *>(CfMalloc(sizeof(CfArray), 0));
     if (newBlobArr == nullptr) {
         CF_LOG_E("Failed to allocate newBlobArr memory!");
         return nullptr;
@@ -104,7 +104,7 @@ static CfArray *constructExtendedKeyUsageData()
 
     newBlobArr->count = CONSTRUCT_EXTENDED_KEY_USAGE_DATA_SIZE;
     newBlobArr->format = CF_FORMAT_DER;
-    newBlobArr->data = static_cast<CfBlob *>(HcfMalloc(newBlobArr->count * sizeof(CfBlob), 0));
+    newBlobArr->data = static_cast<CfBlob *>(CfMalloc(newBlobArr->count * sizeof(CfBlob), 0));
     if (newBlobArr->data == nullptr) {
         CF_LOG_E("Failed to allocate data memory!");
         CfFree(newBlobArr);
@@ -664,7 +664,7 @@ HWTEST_F(CryptoX509CertificateTestPart3, ComparePrivateKeyValidTest001, TestSize
 
     // test asn1TimeToStr failed case
     X509OpensslMock::SetMockFlag(true);
-    PKEY_USAGE_PERIOD *pKeyValid = reinterpret_cast<PKEY_USAGE_PERIOD *>(HcfMalloc(sizeof(PKEY_USAGE_PERIOD), 0));
+    PKEY_USAGE_PERIOD *pKeyValid = reinterpret_cast<PKEY_USAGE_PERIOD *>(CfMalloc(sizeof(PKEY_USAGE_PERIOD), 0));
     EXPECT_NE(pKeyValid, nullptr);
     EXPECT_CALL(X509OpensslMock::GetInstance(), X509_get_ext_d2i(_, _, _, _))
         .Times(AnyNumber())
@@ -675,9 +675,9 @@ HWTEST_F(CryptoX509CertificateTestPart3, ComparePrivateKeyValidTest001, TestSize
     X509OpensslMock::SetMockFlag(false);
 
     X509OpensslMock::SetMockFlag(true);
-    pKeyValid = reinterpret_cast<PKEY_USAGE_PERIOD *>(HcfMalloc(sizeof(PKEY_USAGE_PERIOD), 0));
+    pKeyValid = reinterpret_cast<PKEY_USAGE_PERIOD *>(CfMalloc(sizeof(PKEY_USAGE_PERIOD), 0));
     ASSERT_NE(pKeyValid, nullptr);
-    pKeyValid->notBefore = reinterpret_cast<ASN1_GENERALIZEDTIME *>(HcfMalloc(sizeof(ASN1_GENERALIZEDTIME), 0));
+    pKeyValid->notBefore = reinterpret_cast<ASN1_GENERALIZEDTIME *>(CfMalloc(sizeof(ASN1_GENERALIZEDTIME), 0));
     ASSERT_NE(pKeyValid->notBefore, nullptr);
     EXPECT_CALL(X509OpensslMock::GetInstance(), X509_get_ext_d2i(_, _, _, _))
         .Times(AnyNumber())
@@ -707,9 +707,9 @@ HWTEST_F(CryptoX509CertificateTestPart3, ComparePrivateKeyValidTest002, TestSize
     EXPECT_EQ(bResult, false);
 
     X509OpensslMock::SetMockFlag(true);
-    PKEY_USAGE_PERIOD *pKeyValid = reinterpret_cast<PKEY_USAGE_PERIOD *>(HcfMalloc(sizeof(PKEY_USAGE_PERIOD), 0));
+    PKEY_USAGE_PERIOD *pKeyValid = reinterpret_cast<PKEY_USAGE_PERIOD *>(CfMalloc(sizeof(PKEY_USAGE_PERIOD), 0));
     ASSERT_NE(pKeyValid, nullptr);
-    pKeyValid->notBefore = reinterpret_cast<ASN1_GENERALIZEDTIME *>(HcfMalloc(sizeof(ASN1_GENERALIZEDTIME), 0));
+    pKeyValid->notBefore = reinterpret_cast<ASN1_GENERALIZEDTIME *>(CfMalloc(sizeof(ASN1_GENERALIZEDTIME), 0));
     ASSERT_NE(pKeyValid->notBefore, nullptr);
     pKeyValid->notBefore->data = (unsigned char *)strdup(g_testPrivateKeyValid);
     ASSERT_NE(pKeyValid->notBefore->data, nullptr);

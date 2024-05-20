@@ -145,7 +145,7 @@ napi_value NapiCertChainValidator::Validate(napi_env env, napi_callback_info inf
     if (!CertCheckArgsCount(env, argc, ARGS_SIZE_TWO, false)) {
         return nullptr;
     }
-    CfCtx *context = static_cast<CfCtx *>(HcfMalloc(sizeof(CfCtx), 0));
+    CfCtx *context = static_cast<CfCtx *>(CfMalloc(sizeof(CfCtx), 0));
     if (context == nullptr) {
         LOGE("malloc context failed!");
         return nullptr;

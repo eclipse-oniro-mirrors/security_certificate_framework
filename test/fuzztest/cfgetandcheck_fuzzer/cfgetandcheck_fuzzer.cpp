@@ -152,7 +152,7 @@ namespace OHOS {
 
     bool CfObjectFuzzTest(const uint8_t* data, size_t size, CfObjectType objType)
     {
-        uint8_t *tmpData = static_cast<uint8_t *>(CfMalloc(size));
+        uint8_t *tmpData = static_cast<uint8_t *>(CfMalloc(size, 0));
         if (tmpData == nullptr) {
             return false;
         }

@@ -84,7 +84,7 @@ HWTEST_F(CfCommonTest, CfBlobDataFree002, TestSize.Level0)
 HWTEST_F(CfCommonTest, CfBlobDataFree003, TestSize.Level0)
 {
     CfBlob blob = { TEST_DEFAULT_SIZE, nullptr };
-    blob.data = static_cast<uint8_t *>(CfMalloc(blob.size));
+    blob.data = static_cast<uint8_t *>(CfMalloc(blob.size, 0));
     ASSERT_NE(blob.data, nullptr);
     CfBlobDataFree(&blob);
 }
@@ -121,7 +121,7 @@ HWTEST_F(CfCommonTest, CfBlobDataClearAndFree002, TestSize.Level0)
 HWTEST_F(CfCommonTest, CfBlobDataClearAndFree003, TestSize.Level0)
 {
     CfBlob blob = { TEST_DEFAULT_SIZE, nullptr };
-    blob.data = static_cast<uint8_t *>(CfMalloc(blob.size));
+    blob.data = static_cast<uint8_t *>(CfMalloc(blob.size, 0));
     ASSERT_NE(blob.data, nullptr);
     CfBlobDataClearAndFree(&blob);
 }
@@ -158,7 +158,7 @@ HWTEST_F(CfCommonTest, CfEncodingBlobDataFree002, TestSize.Level0)
 HWTEST_F(CfCommonTest, CfEncodingBlobDataFree003, TestSize.Level0)
 {
     CfEncodingBlob blob = { nullptr, TEST_DEFAULT_SIZE, CF_FORMAT_DER };
-    blob.data = static_cast<uint8_t *>(CfMalloc(blob.len));
+    blob.data = static_cast<uint8_t *>(CfMalloc(blob.len, 0));
     ASSERT_NE(blob.data, nullptr);
     CfEncodingBlobDataFree(&blob);
 }
@@ -183,12 +183,12 @@ HWTEST_F(CfCommonTest, CfArrayDataClearAndFree001, TestSize.Level0)
 HWTEST_F(CfCommonTest, CfArrayDataClearAndFree002, TestSize.Level0)
 {
     CfArray array = { nullptr, CF_FORMAT_DER, TEST_DEFAULT_COUNT };
-    array.data = static_cast<CfBlob *>(CfMalloc(array.count * sizeof(CfBlob)));
+    array.data = static_cast<CfBlob *>(CfMalloc(array.count * sizeof(CfBlob), 0));
     ASSERT_NE(array.data, nullptr);
 
     for (uint32_t i = 0; i < array.count; ++i) {
         array.data[i].size = TEST_DEFAULT_SIZE;
-        array.data[i].data = static_cast<uint8_t *>(CfMalloc(array.data[i].size));
+        array.data[i].data = static_cast<uint8_t *>(CfMalloc(array.data[i].size, 0));
         ASSERT_NE(array.data[i].data, nullptr);
     }
 
@@ -214,7 +214,7 @@ HWTEST_F(CfCommonTest, FreeCfBlobArray001, TestSize.Level0)
 */
 HWTEST_F(CfCommonTest, FreeCfBlobArray002, TestSize.Level0)
 {
-    CfBlob *array = static_cast<CfBlob *>(CfMalloc(TEST_DEFAULT_COUNT * sizeof(CfBlob)));
+    CfBlob *array = static_cast<CfBlob *>(CfMalloc(TEST_DEFAULT_COUNT * sizeof(CfBlob), 0));
     ASSERT_NE(array, nullptr);
 
     FreeCfBlobArray(array, TEST_DEFAULT_COUNT);
@@ -228,12 +228,12 @@ HWTEST_F(CfCommonTest, FreeCfBlobArray002, TestSize.Level0)
 */
 HWTEST_F(CfCommonTest, FreeCfBlobArray003, TestSize.Level0)
 {
-    CfBlob *array = static_cast<CfBlob *>(CfMalloc(TEST_DEFAULT_COUNT * sizeof(CfBlob)));
+    CfBlob *array = static_cast<CfBlob *>(CfMalloc(TEST_DEFAULT_COUNT * sizeof(CfBlob), 0));
     ASSERT_NE(array, nullptr);
 
     for (uint32_t i = 0; i < TEST_DEFAULT_COUNT; ++i) {
         array[i].size = TEST_DEFAULT_SIZE;
-        array[i].data = static_cast<uint8_t *>(CfMalloc(array[i].size));
+        array[i].data = static_cast<uint8_t *>(CfMalloc(array[i].size, 0));
         ASSERT_NE(array[i].data, nullptr);
     }
 
@@ -321,7 +321,7 @@ HWTEST_F(CfCommonTest, CfLogTest006, TestSize.Level0)
 */
 HWTEST_F(CfCommonTest, CfMemTest001, TestSize.Level0)
 {
-    uint8_t *buf = static_cast<uint8_t *>(CfMalloc(TEST_DEFAULT_SIZE));
+    uint8_t *buf = static_cast<uint8_t *>(CfMalloc(TEST_DEFAULT_SIZE, 0));
     ASSERT_NE(buf, nullptr);
     CfFree(buf);
 }
@@ -334,7 +334,7 @@ HWTEST_F(CfCommonTest, CfMemTest001, TestSize.Level0)
 */
 HWTEST_F(CfCommonTest, CfMemTest002, TestSize.Level0)
 {
-    uint8_t *buf = static_cast<uint8_t *>(CfMalloc(0));
+    uint8_t *buf = static_cast<uint8_t *>(CfMalloc(0, 0));
     ASSERT_EQ(buf, nullptr);
 }
 
@@ -346,7 +346,7 @@ HWTEST_F(CfCommonTest, CfMemTest002, TestSize.Level0)
 */
 HWTEST_F(CfCommonTest, CfMemTest003, TestSize.Level0)
 {
-    uint8_t *buf = static_cast<uint8_t *>(CfMalloc(MAX_MEMORY_SIZE + 1));
+    uint8_t *buf = static_cast<uint8_t *>(CfMalloc(MAX_MEMORY_SIZE + 1, 0));
     ASSERT_EQ(buf, nullptr);
 }
 

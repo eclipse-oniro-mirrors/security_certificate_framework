@@ -72,7 +72,7 @@ static CfResult GetEncodeOpenssl(HcfX509DistinguishedNameSpi *self, CfEncodingBl
     size_t len = 0;
     const unsigned char *p = NULL;
     if (X509_NAME_get0_der(realName->name, &p, &len) == 1) {
-        out->data = (uint8_t *)HcfMalloc((uint32_t)len, 0);
+        out->data = (uint8_t *)CfMalloc((uint32_t)len, 0);
         if (out->data == NULL) {
             LOGE("Failed to malloc for encoded data!");
             return CF_ERR_MALLOC;
@@ -99,9 +99,9 @@ static CfResult GetDataByEntryOpenssl(int32_t count, CfArray *outArr, X509_NAME_
         return CF_INVALID_PARAMS;
     }
 
-    outArr->data = (CfBlob *)HcfMalloc(count*sizeof(CfBlob), 0);
+    outArr->data = (CfBlob *)CfMalloc(count*sizeof(CfBlob), 0);
     if (outArr->data == NULL) {
-        LOGE("HcfMalloc error");
+        LOGE("CfMalloc error");
         return CF_ERR_MALLOC;
     }
     outArr->count = count;
@@ -136,10 +136,10 @@ static CfResult GetNameTypeByOpenssl(HcfX509DistinguishedNameOpensslImpl *realNa
         LOGE("The input type size is zero!");
         return CF_INVALID_PARAMS;
     }
-    X509_NAME_ENTRY **neArr = (X509_NAME_ENTRY **)HcfMalloc(
+    X509_NAME_ENTRY **neArr = (X509_NAME_ENTRY **)CfMalloc(
         X509_NAME_entry_count(realName->name) * sizeof(X509_NAME_ENTRY *), 0);
     if (neArr == NULL) {
-        LOGE("HcfMalloc error");
+        LOGE("CfMalloc error");
         return CF_ERR_MALLOC;
     }
 
@@ -314,10 +314,10 @@ CfResult OpensslX509DistinguishedNameSpiCreate(const CfBlob *inStream, const boo
         return CF_ERR_CRYPTO_OPERATION;
     }
 
-    HcfX509DistinguishedNameOpensslImpl *realName = (HcfX509DistinguishedNameOpensslImpl *)HcfMalloc(
+    HcfX509DistinguishedNameOpensslImpl *realName = (HcfX509DistinguishedNameOpensslImpl *)CfMalloc(
         sizeof(HcfX509DistinguishedNameOpensslImpl), 0);
     if (realName == NULL) {
-        LOGE("HcfMalloc error");
+        LOGE("CfMalloc error");
         return CF_ERR_MALLOC;
     }
 

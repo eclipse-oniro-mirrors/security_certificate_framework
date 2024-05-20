@@ -236,10 +236,10 @@ napi_value NapiX509DistinguishedName::NapiCreateX509DistinguishedName(napi_env e
         return nullptr;
     }
 
-    CfCtx *context = static_cast<CfCtx *>(HcfMalloc(sizeof(CfCtx), 0));
+    CfCtx *context = static_cast<CfCtx *>(CfMalloc(sizeof(CfCtx), 0));
     if (context == nullptr) {
         LOGE("malloc context failed!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "HcfMalloc failed"));
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "CfMalloc failed"));
         return nullptr;
     }
 

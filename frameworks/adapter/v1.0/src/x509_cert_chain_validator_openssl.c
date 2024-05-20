@@ -87,7 +87,7 @@ static void DestroyX509CertChainValidator(CfObjectBase *self)
 static CfResult InitX509Certs(const CfArray *certsList, CertsInfo **certs)
 {
     uint32_t certsInfoLen = sizeof(CertsInfo) * certsList->count;
-    CertsInfo *certsInfo = (CertsInfo *)HcfMalloc(certsInfoLen, 0);
+    CertsInfo *certsInfo = (CertsInfo *)CfMalloc(certsInfoLen, 0);
     if (certsInfo == NULL) {
         LOGE("Failed to new memory for cert info.");
         return CF_ERR_MALLOC;
@@ -230,7 +230,7 @@ CfResult HcfCertChainValidatorSpiCreate(HcfCertChainValidatorSpi **spi)
         LOGE("Invalid params, spi is null!");
         return CF_INVALID_PARAMS;
     }
-    HcfCertChainValidatorSpi *validator = (HcfCertChainValidatorSpi *)HcfMalloc(sizeof(HcfCertChainValidatorSpi), 0);
+    HcfCertChainValidatorSpi *validator = (HcfCertChainValidatorSpi *)CfMalloc(sizeof(HcfCertChainValidatorSpi), 0);
     if (validator == NULL) {
         LOGE("Failed to allocate certChain validator spi object memory!");
         return CF_ERR_MALLOC;

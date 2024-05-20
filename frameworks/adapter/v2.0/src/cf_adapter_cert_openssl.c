@@ -43,7 +43,7 @@ static void CfPrintOpensslError(void)
 
 static int32_t DeepCopyDataToBlob(const unsigned char *data, uint32_t len, CfBlob *outBlob)
 {
-    uint8_t *tmp = (uint8_t *)CfMalloc(len);
+    uint8_t *tmp = (uint8_t *)CfMalloc(len, 0);
     if (tmp == NULL) {
         CF_LOG_E("Failed to malloc");
         return CF_ERR_MALLOC;
@@ -87,7 +87,7 @@ int32_t CfOpensslCreateCert(const CfEncodingBlob *inData, CfBase **object)
         return CF_INVALID_PARAMS;
     }
 
-    CfOpensslCertObj *certObj = CfMalloc(sizeof(CfOpensslCertObj));
+    CfOpensslCertObj *certObj = CfMalloc(sizeof(CfOpensslCertObj), 0);
     if (certObj == NULL) {
         CF_LOG_E("malloc failed");
         return CF_ERR_MALLOC;

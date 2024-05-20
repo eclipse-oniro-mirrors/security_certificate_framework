@@ -148,7 +148,7 @@ bool BuildX509TrustAnchorObj(napi_env env, napi_value arg, HcfX509TrustAnchor *&
         LOGE("wrong argument type. expect string type. [Type]: %d", type);
         return false;
     }
-    trustAnchor = static_cast<HcfX509TrustAnchor *>(HcfMalloc(sizeof(HcfX509TrustAnchor), 0));
+    trustAnchor = static_cast<HcfX509TrustAnchor *>(CfMalloc(sizeof(HcfX509TrustAnchor), 0));
     if (trustAnchor == nullptr) {
         LOGE("Failed to allocate data memory!");
         return false;

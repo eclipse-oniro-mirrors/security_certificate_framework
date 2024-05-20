@@ -83,7 +83,7 @@ void CfPrintOpensslError(void)
 
 CfResult DeepCopyDataToBlob(const unsigned char *data, uint32_t len, CfBlob *outBlob)
 {
-    uint8_t *tmp = (uint8_t *)CfMalloc(len);
+    uint8_t *tmp = (uint8_t *)CfMalloc(len, 0);
     if (tmp == NULL) {
         CF_LOG_E("Failed to malloc");
         return CF_ERR_MALLOC;
@@ -101,7 +101,7 @@ CfResult DeepCopyBlobToBlob(const CfBlob *inBlob, CfBlob **outBlob)
         return CF_SUCCESS;
     }
 
-    CfBlob *tmp = (CfBlob *)HcfMalloc(sizeof(CfBlob), 0);
+    CfBlob *tmp = (CfBlob *)CfMalloc(sizeof(CfBlob), 0);
     if (tmp == NULL) {
         LOGE("malloc failed");
         return CF_ERR_MALLOC;
@@ -266,7 +266,7 @@ uint8_t *GetX509EncodedDataStream(const X509 *certificate, int *dataLength)
         CfPrintOpensslError();
         return NULL;
     }
-    uint8_t *data = (uint8_t *)HcfMalloc(length, 0);
+    uint8_t *data = (uint8_t *)CfMalloc(length, 0);
     if (data == NULL) {
         LOGE("Failed to malloc for x509 der data!");
         OPENSSL_free(der);
@@ -324,7 +324,7 @@ bool CfArrayContains(const CfArray *self, const CfArray *sub)
 
 CfResult DeepCopyDataToOut(const char *data, uint32_t len, CfBlob *out)
 {
-    out->data = (uint8_t *)HcfMalloc(len, 0);
+    out->data = (uint8_t *)CfMalloc(len, 0);
     if (out->data == NULL) {
         LOGE("Failed to malloc for sig algorithm params!");
         return CF_ERR_MALLOC;
