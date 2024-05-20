@@ -29,7 +29,7 @@ void SetMockFlag(bool flag)
     g_isMock = flag;
 }
 
-void *HcfMalloc(uint32_t size, char val)
+void *CfMalloc(uint32_t size, char val)
 {
     if (g_isMock) {
         return NULL;
@@ -46,11 +46,6 @@ void *HcfMalloc(uint32_t size, char val)
         (void)memset_s(addr, size, val, size);
     }
     return addr;
-}
-
-void *CfMalloc(uint32_t size)
-{
-    return HcfMalloc(size, 0);
 }
 
 void CfFree(void *addr)

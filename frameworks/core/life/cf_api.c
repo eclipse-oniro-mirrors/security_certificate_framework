@@ -88,7 +88,7 @@ CF_API_EXPORT int32_t CfCreate(CfObjectType objType, const CfEncodingBlob *in, C
         return CF_INVALID_PARAMS;
     }
 
-    CfLifeCtx *tmp = CfMalloc(sizeof(CfLifeCtx));
+    CfLifeCtx *tmp = CfMalloc(sizeof(CfLifeCtx), 0);
     if (tmp == NULL) {
         CF_LOG_E("malloc ctx failed");
         return CF_ERR_MALLOC;

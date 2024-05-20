@@ -161,7 +161,7 @@ HWTEST_F(CryptoX509CertChainTest, CertChainByEncSpiCreateTest004, TestSize.Level
 {
     HcfX509CertChainSpi *certChainSpi = nullptr;
     CfEncodingBlob inStream = { nullptr, 0, CF_FORMAT_PKCS7 };
-    inStream.data = static_cast<uint8_t *>(HcfMalloc(g_inStreamChainDataP7b.len, 0));
+    inStream.data = static_cast<uint8_t *>(CfMalloc(g_inStreamChainDataP7b.len, 0));
     ASSERT_NE(inStream.data, nullptr);
     memcpy_s(inStream.data, g_inStreamChainDataP7b.len, g_inStreamChainDataP7b.data, g_inStreamChainDataP7b.len);
     inStream.len = g_inStreamChainDataP7b.len;
@@ -178,7 +178,7 @@ HWTEST_F(CryptoX509CertChainTest, CertChainByEncSpiCreateTest005, TestSize.Level
 {
     HcfX509CertChainSpi *certChainSpi = nullptr;
     CfEncodingBlob inStream = { nullptr, 0, CF_FORMAT_PKCS7 };
-    inStream.data = static_cast<uint8_t *>(HcfMalloc(g_inStreamChainDataDer.len, 0));
+    inStream.data = static_cast<uint8_t *>(CfMalloc(g_inStreamChainDataDer.len, 0));
     ASSERT_NE(inStream.data, nullptr);
     memcpy_s(inStream.data, g_inStreamChainDataDer.len, g_inStreamChainDataDer.data, g_inStreamChainDataDer.len);
     inStream.len = g_inStreamChainDataDer.len;
@@ -214,7 +214,7 @@ HWTEST_F(CryptoX509CertChainTest, CertChainByEncSpiCreateTest008, TestSize.Level
 {
     HcfX509CertChainSpi *certChainSpi = nullptr;
     CfEncodingBlob inStream = { nullptr, 0, (CfEncodingFormat)(CF_FORMAT_PKCS7 + 1) };
-    inStream.data = static_cast<uint8_t *>(HcfMalloc(g_inStreamChainDataDer.len, 0));
+    inStream.data = static_cast<uint8_t *>(CfMalloc(g_inStreamChainDataDer.len, 0));
     memcpy_s(inStream.data, g_inStreamChainDataDer.len, g_inStreamChainDataDer.data, g_inStreamChainDataDer.len);
     inStream.len = g_inStreamChainDataDer.len;
 
@@ -228,7 +228,7 @@ HWTEST_F(CryptoX509CertChainTest, CertChainByEncSpiCreateTest009, TestSize.Level
 {
     HcfX509CertChainSpi *certChainSpi = nullptr;
     CfEncodingBlob inStream = { nullptr, 0, CF_FORMAT_PEM };
-    inStream.data = static_cast<uint8_t *>(HcfMalloc(g_inStreamChainDataPem.len, 0));
+    inStream.data = static_cast<uint8_t *>(CfMalloc(g_inStreamChainDataPem.len, 0));
     memcpy_s(inStream.data, g_inStreamChainDataDer.len, g_inStreamChainDataPem.data, g_inStreamChainDataPem.len);
     inStream.len = g_inStreamChainDataPem.len;
 
@@ -243,7 +243,7 @@ HWTEST_F(CryptoX509CertChainTest, CertChainByEncSpiCreateTest010, TestSize.Level
 {
     HcfX509CertChainSpi *certChainSpi = nullptr;
     CfEncodingBlob inStream = { nullptr, 0, CF_FORMAT_PKCS7 };
-    inStream.data = static_cast<uint8_t *>(HcfMalloc(g_inStreamChainDataDer.len, 0));
+    inStream.data = static_cast<uint8_t *>(CfMalloc(g_inStreamChainDataDer.len, 0));
     memcpy_s(inStream.data, g_inStreamChainDataDer.len, g_inStreamChainDataDer.data, g_inStreamChainDataDer.len);
     inStream.len = ~0;
 
@@ -266,7 +266,7 @@ HWTEST_F(CryptoX509CertChainTest, CertChainByEncSpiCreateTest012, TestSize.Level
 {
     HcfX509CertChainSpi *certChainSpi = nullptr;
     CfEncodingBlob inStream = { nullptr, 0, CF_FORMAT_DER };
-    inStream.data = static_cast<uint8_t *>(HcfMalloc(g_inStreamChainDataDer.len, 0));
+    inStream.data = static_cast<uint8_t *>(CfMalloc(g_inStreamChainDataDer.len, 0));
     memcpy_s(inStream.data, g_inStreamChainDataDer.len, g_inStreamChainDataDer.data, g_inStreamChainDataDer.len);
     inStream.len = g_inStreamChainDataDer.len;
     inStream.encodingFormat = g_inStreamChainDataDer.encodingFormat;
@@ -309,7 +309,7 @@ HWTEST_F(CryptoX509CertChainTest, CertChainByArrSpiCreateTest003, TestSize.Level
     HcfX509Certificate *x509CertObj = nullptr;
     (void)HcfX509CertificateCreate(&g_inStreamSelfSignedCaCert, &x509CertObj);
 
-    certArray.data = static_cast<HcfX509Certificate **>(HcfMalloc(1 * sizeof(HcfX509Certificate *), 0));
+    certArray.data = static_cast<HcfX509Certificate **>(CfMalloc(1 * sizeof(HcfX509Certificate *), 0));
     ASSERT_NE(certArray.data, nullptr);
     certArray.data[0] = x509CertObj;
     certArray.count = 1;
@@ -335,7 +335,7 @@ HWTEST_F(CryptoX509CertChainTest, CertChainByArrSpiCreateTest004, TestSize.Level
     inStream.len = strlen(g_testSelfSignedCaCert) + 1;
     (void)HcfX509CertificateCreate(&inStream, &x509CertObj);
 
-    certArray.data = static_cast<HcfX509Certificate **>(HcfMalloc(1 * sizeof(HcfX509Certificate *), 0));
+    certArray.data = static_cast<HcfX509Certificate **>(CfMalloc(1 * sizeof(HcfX509Certificate *), 0));
     ASSERT_NE(certArray.data, nullptr);
     certArray.data[0] = x509CertObj;
     certArray.count = 0;
@@ -357,7 +357,7 @@ HWTEST_F(CryptoX509CertChainTest, CertChainByArrSpiCreateTest005, TestSize.Level
     HcfX509Certificate *x509CertObj = nullptr;
     (void)HcfX509CertificateCreate(&g_inStreamSelfSignedCaCert, &x509CertObj);
 
-    certArray.data = static_cast<HcfX509Certificate **>(HcfMalloc(1 * sizeof(HcfX509Certificate *), 0));
+    certArray.data = static_cast<HcfX509Certificate **>(CfMalloc(1 * sizeof(HcfX509Certificate *), 0));
     ASSERT_NE(certArray.data, nullptr);
     certArray.data[0] = x509CertObj;
     certArray.count = TEST_MAX_CERT_NUM;
@@ -380,7 +380,7 @@ HWTEST_F(CryptoX509CertChainTest, CertChainByArrSpiCreateTest006, TestSize.Level
     HcfX509Certificate *x509CertObj = nullptr;
     (void)HcfX509CertificateCreate(&g_inStreamSelfSignedCaCert, &x509CertObj);
 
-    certArray.data = static_cast<HcfX509Certificate **>(HcfMalloc(1 * sizeof(HcfX509Certificate *), 0));
+    certArray.data = static_cast<HcfX509Certificate **>(CfMalloc(1 * sizeof(HcfX509Certificate *), 0));
     ASSERT_NE(certArray.data, nullptr);
     certArray.data[0] = x509CertObj;
     certArray.count = 1;
@@ -401,7 +401,7 @@ HWTEST_F(CryptoX509CertChainTest, CertChainByArrSpiCreateTest007, TestSize.Level
     HcfX509Certificate *x509CertObj = nullptr;
     (void)HcfX509CertificateCreate(&g_inStreamSelfSignedCaCert, &x509CertObj);
 
-    certArray.data = static_cast<HcfX509Certificate **>(HcfMalloc(1 * sizeof(HcfX509Certificate *), 0));
+    certArray.data = static_cast<HcfX509Certificate **>(CfMalloc(1 * sizeof(HcfX509Certificate *), 0));
     ASSERT_NE(certArray.data, nullptr);
     certArray.data[0] = x509CertObj;
     certArray.count = 1;
@@ -452,7 +452,7 @@ HWTEST_F(CryptoX509CertChainTest, CertChainCreateTest005, TestSize.Level0)
 {
     HcfCertChain *pCertChain = nullptr;
     CfEncodingBlob inStream = { nullptr, 0, (CfEncodingFormat)(CF_FORMAT_PKCS7 + 1) };
-    inStream.data = static_cast<uint8_t *>(HcfMalloc(g_inStreamChainDataDer.len, 0));
+    inStream.data = static_cast<uint8_t *>(CfMalloc(g_inStreamChainDataDer.len, 0));
     memcpy_s(inStream.data, g_inStreamChainDataDer.len, g_inStreamChainDataDer.data, g_inStreamChainDataDer.len);
     inStream.len = g_inStreamChainDataDer.len;
 
@@ -600,7 +600,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest003, TestSize.Level0)
     (void)HcfX509CertificateCreate(&inStream, &anchor.CACert);
 
     HcfX509TrustAnchorArray trustAnchorArray = { 0 };
-    trustAnchorArray.data = static_cast<HcfX509TrustAnchor **>(HcfMalloc(1 * sizeof(HcfX509TrustAnchor *), 0));
+    trustAnchorArray.data = static_cast<HcfX509TrustAnchor **>(CfMalloc(1 * sizeof(HcfX509TrustAnchor *), 0));
     ASSERT_NE(trustAnchorArray.data, nullptr);
     trustAnchorArray.data[0] = &anchor;
     trustAnchorArray.count = 1;
@@ -690,7 +690,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest007, TestSize.Level0)
     HcfX509TrustAnchor anchor = { 0 };
 
     HcfX509TrustAnchorArray trustAnchorArray = { 0 };
-    trustAnchorArray.data = static_cast<HcfX509TrustAnchor **>(HcfMalloc(1 * sizeof(HcfX509TrustAnchor *), 0));
+    trustAnchorArray.data = static_cast<HcfX509TrustAnchor **>(CfMalloc(1 * sizeof(HcfX509TrustAnchor *), 0));
     ASSERT_NE(trustAnchorArray.data, nullptr);
     trustAnchorArray.data[0] = &anchor;
     trustAnchorArray.count = 1;
@@ -719,7 +719,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest008, TestSize.Level0)
     anchor.CAPubKey = &pubkey;
 
     HcfX509TrustAnchorArray trustAnchorArray = { 0 };
-    trustAnchorArray.data = static_cast<HcfX509TrustAnchor **>(HcfMalloc(1 * sizeof(HcfX509TrustAnchor *), 0));
+    trustAnchorArray.data = static_cast<HcfX509TrustAnchor **>(CfMalloc(1 * sizeof(HcfX509TrustAnchor *), 0));
     ASSERT_NE(trustAnchorArray.data, nullptr);
     trustAnchorArray.data[0] = &anchor;
     trustAnchorArray.count = 1;
@@ -750,7 +750,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest009, TestSize.Level0)
     anchor.CAPubKey = &pubkey;
 
     HcfX509TrustAnchorArray trustAnchorArray = { 0 };
-    trustAnchorArray.data = static_cast<HcfX509TrustAnchor **>(HcfMalloc(1 * sizeof(HcfX509TrustAnchor *), 0));
+    trustAnchorArray.data = static_cast<HcfX509TrustAnchor **>(CfMalloc(1 * sizeof(HcfX509TrustAnchor *), 0));
     ASSERT_NE(trustAnchorArray.data, nullptr);
     trustAnchorArray.data[0] = &anchor;
     trustAnchorArray.count = 1;
@@ -783,7 +783,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest010, TestSize.Level0)
     anchor.CASubject = &subject;
 
     HcfX509TrustAnchorArray trustAnchorArray = { 0 };
-    trustAnchorArray.data = static_cast<HcfX509TrustAnchor **>(HcfMalloc(1 * sizeof(HcfX509TrustAnchor *), 0));
+    trustAnchorArray.data = static_cast<HcfX509TrustAnchor **>(CfMalloc(1 * sizeof(HcfX509TrustAnchor *), 0));
     ASSERT_NE(trustAnchorArray.data, nullptr);
     trustAnchorArray.data[0] = &anchor;
     trustAnchorArray.count = 1;
@@ -819,7 +819,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest011, TestSize.Level0)
     anchor.CASubject = &subject;
 
     HcfX509TrustAnchorArray trustAnchorArray = { 0 };
-    trustAnchorArray.data = static_cast<HcfX509TrustAnchor **>(HcfMalloc(1 * sizeof(HcfX509TrustAnchor *), 0));
+    trustAnchorArray.data = static_cast<HcfX509TrustAnchor **>(CfMalloc(1 * sizeof(HcfX509TrustAnchor *), 0));
     ASSERT_NE(trustAnchorArray.data, nullptr);
     trustAnchorArray.data[0] = &anchor;
     trustAnchorArray.count = 1;
@@ -849,7 +849,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest012, TestSize.Level0)
     anchor.CASubject = &pubkey;
 
     HcfX509TrustAnchorArray trustAnchorArray = { 0 };
-    trustAnchorArray.data = static_cast<HcfX509TrustAnchor **>(HcfMalloc(1 * sizeof(HcfX509TrustAnchor *), 0));
+    trustAnchorArray.data = static_cast<HcfX509TrustAnchor **>(CfMalloc(1 * sizeof(HcfX509TrustAnchor *), 0));
     ASSERT_NE(trustAnchorArray.data, nullptr);
     trustAnchorArray.data[0] = &anchor;
     trustAnchorArray.count = 1;
@@ -879,7 +879,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest013, TestSize.Level0)
     anchor.CASubject = &pubkey;
 
     HcfX509TrustAnchorArray trustAnchorArray = { 0 };
-    trustAnchorArray.data = static_cast<HcfX509TrustAnchor **>(HcfMalloc(1 * sizeof(HcfX509TrustAnchor *), 0));
+    trustAnchorArray.data = static_cast<HcfX509TrustAnchor **>(CfMalloc(1 * sizeof(HcfX509TrustAnchor *), 0));
     ASSERT_NE(trustAnchorArray.data, nullptr);
     trustAnchorArray.data[0] = &anchor;
     trustAnchorArray.count = 1;
@@ -935,7 +935,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest015, TestSize.Level0)
     anchor.CAPubKey = &pubkey;
 
     HcfX509TrustAnchorArray trustAnchorArray = { 0 };
-    trustAnchorArray.data = static_cast<HcfX509TrustAnchor **>(HcfMalloc(1 * sizeof(HcfX509TrustAnchor *), 0));
+    trustAnchorArray.data = static_cast<HcfX509TrustAnchor **>(CfMalloc(1 * sizeof(HcfX509TrustAnchor *), 0));
     ASSERT_NE(trustAnchorArray.data, nullptr);
     trustAnchorArray.data[0] = &anchor;
     trustAnchorArray.count = 1;
@@ -990,7 +990,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest017, TestSize.Level0)
     anchor.CAPubKey = &pubkey;
 
     HcfX509TrustAnchorArray trustAnchorArray = { 0 };
-    trustAnchorArray.data = static_cast<HcfX509TrustAnchor **>(HcfMalloc(1 * sizeof(HcfX509TrustAnchor *), 0));
+    trustAnchorArray.data = static_cast<HcfX509TrustAnchor **>(CfMalloc(1 * sizeof(HcfX509TrustAnchor *), 0));
     ASSERT_NE(trustAnchorArray.data, nullptr);
     trustAnchorArray.data[0] = &anchor;
     trustAnchorArray.count = 1;
@@ -1387,7 +1387,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest032, TestSize.Level0)
     anchor.CAPubKey = &pubkey;
 
     HcfX509TrustAnchorArray trustAnchorArray = { 0 };
-    trustAnchorArray.data = static_cast<HcfX509TrustAnchor **>(HcfMalloc(1 * sizeof(HcfX509TrustAnchor *), 0));
+    trustAnchorArray.data = static_cast<HcfX509TrustAnchor **>(CfMalloc(1 * sizeof(HcfX509TrustAnchor *), 0));
     ASSERT_NE(trustAnchorArray.data, nullptr);
     trustAnchorArray.data[0] = &anchor;
     trustAnchorArray.count = 1;
@@ -1427,7 +1427,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest033, TestSize.Level0)
     anchor.CASubject = &subject;
 
     HcfX509TrustAnchorArray trustAnchorArray = { 0 };
-    trustAnchorArray.data = static_cast<HcfX509TrustAnchor **>(HcfMalloc(1 * sizeof(HcfX509TrustAnchor *), 0));
+    trustAnchorArray.data = static_cast<HcfX509TrustAnchor **>(CfMalloc(1 * sizeof(HcfX509TrustAnchor *), 0));
     ASSERT_NE(trustAnchorArray.data, nullptr);
     trustAnchorArray.data[0] = &anchor;
     trustAnchorArray.count = 1;
@@ -1464,7 +1464,7 @@ HWTEST_F(CryptoX509CertChainTest, ValidateOpensslTest034, TestSize.Level0)
     anchor.CASubject = &subject;
 
     HcfX509TrustAnchorArray trustAnchorArray = { 0 };
-    trustAnchorArray.data = static_cast<HcfX509TrustAnchor **>(HcfMalloc(1 * sizeof(HcfX509TrustAnchor *), 0));
+    trustAnchorArray.data = static_cast<HcfX509TrustAnchor **>(CfMalloc(1 * sizeof(HcfX509TrustAnchor *), 0));
     ASSERT_NE(trustAnchorArray.data, nullptr);
     trustAnchorArray.data[0] = &anchor;
     trustAnchorArray.count = 1;
@@ -1571,19 +1571,19 @@ static void BuildX509CertMatchParamsData(
         return;
     }
 
-    CfBlob *blob = (CfBlob *)HcfMalloc(sizeof(CfBlob), 0);
+    CfBlob *blob = (CfBlob *)CfMalloc(sizeof(CfBlob), 0);
     ASSERT_NE(blob, nullptr);
     blob->data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testUpdateDateTime));
     blob->size = strlen(g_testUpdateDateTime) + 1;
     params->date = blob;
 
     HcfX509TrustAnchorArray *trustAnchorArray =
-        (HcfX509TrustAnchorArray *)HcfMalloc(sizeof(HcfX509TrustAnchorArray), 0);
+        (HcfX509TrustAnchorArray *)CfMalloc(sizeof(HcfX509TrustAnchorArray), 0);
     ASSERT_NE(trustAnchorArray, nullptr);
     BuildAnchorArr(*certInStream, *trustAnchorArray);
 
     HcfCertCRLCollectionArray *certCRLCollections =
-        (HcfCertCRLCollectionArray *)HcfMalloc(sizeof(HcfCertCRLCollectionArray), 0);
+        (HcfCertCRLCollectionArray *)CfMalloc(sizeof(HcfCertCRLCollectionArray), 0);
     ASSERT_NE(certCRLCollections, nullptr);
     BuildCollectionArr(certInStream, crlInStream, *certCRLCollections);
 
@@ -1715,7 +1715,7 @@ HWTEST_F(CryptoX509CertChainTest, HcfX509CertChainByParamsSpiCreateTest002, Test
     EXPECT_EQ(result, CF_ERR_CRYPTO_OPERATION);
     X509OpensslMock::SetMockFlag(false);
 
-    // test HcfMalloc failed case in HcfX509CertChainByParamsSpiCreate
+    // test CfMalloc failed case in HcfX509CertChainByParamsSpiCreate
     SetMockFlag(true);
     result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
     EXPECT_EQ(result, CF_ERR_MALLOC);

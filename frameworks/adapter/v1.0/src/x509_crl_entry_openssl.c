@@ -70,7 +70,7 @@ static CfResult GetEncoded(HcfX509CrlEntry *self, CfEncodingBlob *encodedOut)
         CfPrintOpensslError();
         return CF_ERR_CRYPTO_OPERATION;
     }
-    encodedOut->data = (uint8_t *)HcfMalloc(length, 0);
+    encodedOut->data = (uint8_t *)CfMalloc(length, 0);
     if (encodedOut->data == NULL) {
         LOGE("Failed to malloc for encodedOut!");
         OPENSSL_free(out);
@@ -109,7 +109,7 @@ static CfResult GetSerialNumber(HcfX509CrlEntry *self, CfBlob *out)
         return CF_ERR_CRYPTO_OPERATION;
     }
 
-    out->data = (uint8_t *)HcfMalloc(serialNumLen - SERIAL_NUMBER_HEDER_SIZE, 0);
+    out->data = (uint8_t *)CfMalloc(serialNumLen - SERIAL_NUMBER_HEDER_SIZE, 0);
     if (out->data == NULL) {
         OPENSSL_free(serialNumBytes);
         LOGE("Failed to malloc serial num");
@@ -137,7 +137,7 @@ static CfResult GetCertIssuer(HcfX509CrlEntry *self, CfBlob *encodedOut)
         return CF_NOT_SUPPORT;
     }
     uint32_t length = certIssuer->size;
-    encodedOut->data = (uint8_t *)HcfMalloc(length, 0);
+    encodedOut->data = (uint8_t *)CfMalloc(length, 0);
     if (encodedOut->data == NULL) {
         LOGE("Failed to malloc for encodedOut!");
         return CF_ERR_MALLOC;
@@ -170,7 +170,7 @@ static CfResult GetRevocationDate(HcfX509CrlEntry *self, CfBlob *out)
         return CF_ERR_CRYPTO_OPERATION;
     }
     uint32_t length = strlen(revTime);
-    out->data = (uint8_t *)HcfMalloc(length, 0);
+    out->data = (uint8_t *)CfMalloc(length, 0);
     if (out->data == NULL) {
         LOGE("Failed to malloc for revTime!");
         return CF_ERR_MALLOC;
@@ -282,9 +282,9 @@ static CfResult HashCode(HcfX509CrlEntry *self, CfBlob *outBlob)
         return CF_ERR_CRYPTO_OPERATION;
     }
 
-    outBlob->data = (uint8_t *)HcfMalloc(SHA256_DIGEST_LENGTH, 0);
+    outBlob->data = (uint8_t *)CfMalloc(SHA256_DIGEST_LENGTH, 0);
     if (outBlob->data == NULL) {
-        LOGE("HcfMalloc error");
+        LOGE("CfMalloc error");
         CfFree(buf);
         return CF_ERR_MALLOC;
     }
@@ -317,14 +317,14 @@ static CfResult GetExtensionsObject(HcfX509CrlEntry *self, CfBlob *outBlob)
 
 static CfResult DeepCopyCertIssuer(HcfX509CRLEntryOpensslImpl *returnCRLEntry, CfBlob *certIssuer)
 {
-    returnCRLEntry->certIssuer = (CfBlob *)HcfMalloc(sizeof(CfBlob), 0);
+    returnCRLEntry->certIssuer = (CfBlob *)CfMalloc(sizeof(CfBlob), 0);
     if (returnCRLEntry->certIssuer == NULL) {
         LOGE("Failed to malloc certIssuer!");
         return CF_ERR_MALLOC;
     }
     size_t len = certIssuer->size;
     returnCRLEntry->certIssuer->size = len;
-    returnCRLEntry->certIssuer->data = (uint8_t *)HcfMalloc(len, 0);
+    returnCRLEntry->certIssuer->data = (uint8_t *)CfMalloc(len, 0);
     if (returnCRLEntry->certIssuer->data == NULL) {
         LOGE("Failed to malloc certIssuer data!");
         return CF_ERR_MALLOC;
@@ -363,7 +363,7 @@ CfResult HcfCX509CRLEntryCreate(X509_REVOKED *rev, HcfX509CrlEntry **crlEntryOut
         LOGE("Invalid Paramas!");
         return CF_INVALID_PARAMS;
     }
-    HcfX509CRLEntryOpensslImpl *returnCRLEntry = (HcfX509CRLEntryOpensslImpl *)HcfMalloc(
+    HcfX509CRLEntryOpensslImpl *returnCRLEntry = (HcfX509CRLEntryOpensslImpl *)CfMalloc(
         sizeof(HcfX509CRLEntryOpensslImpl), 0);
     if (returnCRLEntry == NULL) {
         LOGE("Failed to malloc for x509 entry instance!");

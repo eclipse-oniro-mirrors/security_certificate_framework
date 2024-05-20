@@ -102,7 +102,7 @@ static CfResult ConvertCertBuffer2List(const HcfCertChainData *certChainData, Cf
             return CF_ERR_COPY;
         }
         msg = msg + LV_LENGTH_LEN;
-        certsList->data[index].data = (uint8_t *)HcfMalloc(entryLen, 0);
+        certsList->data[index].data = (uint8_t *)CfMalloc(entryLen, 0);
         if (certsList->data[index].data == NULL) {
             LOGE("Failed to malloc data for cert, index = %u.", index);
             res = CF_ERR_MALLOC;
@@ -139,7 +139,7 @@ static CfResult Validate(HcfCertChainValidator *self, const HcfCertChainData *ce
     certsList.format = certChainData->format;
     certsList.count = certChainData->count;
     uint32_t certsLen = sizeof(CfBlob) * certsList.count;
-    certsList.data = (CfBlob *)HcfMalloc(certsLen, 0);
+    certsList.data = (CfBlob *)CfMalloc(certsLen, 0);
     if (certsList.data == NULL) {
         LOGE("Failed to new memory for certs.");
         return CF_ERR_MALLOC;
@@ -188,7 +188,7 @@ CfResult HcfCertChainValidatorCreate(const char *algorithm, HcfCertChainValidato
         LOGE("Failed to create certChain validator spi object!");
         return res;
     }
-    CertChainValidatorImpl *returnValidator = (CertChainValidatorImpl *)HcfMalloc(sizeof(CertChainValidatorImpl), 0);
+    CertChainValidatorImpl *returnValidator = (CertChainValidatorImpl *)CfMalloc(sizeof(CertChainValidatorImpl), 0);
     if (returnValidator == NULL) {
         LOGE("Failed to allocate returnValidator memory!");
         CfObjDestroy(spiObj);
@@ -200,7 +200,7 @@ CfResult HcfCertChainValidatorCreate(const char *algorithm, HcfCertChainValidato
     returnValidator->base.base.getClass = GetCertChainValidatorClass;
     returnValidator->spiObj = spiObj;
     uint32_t algoNameLen = strlen(algorithm) + 1;
-    returnValidator->algorithm = (char *)HcfMalloc(algoNameLen, 0);
+    returnValidator->algorithm = (char *)CfMalloc(algoNameLen, 0);
     if (returnValidator->algorithm == NULL) {
         LOGE("Failed to allocate algorithm memory!");
         CfFree(returnValidator);

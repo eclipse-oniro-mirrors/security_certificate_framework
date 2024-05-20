@@ -372,14 +372,14 @@ namespace OHOS {
         if (ret != CF_SUCCESS || x509Crl == nullptr) {
             goto Exit;
         }
-        certArray.data = static_cast<HcfX509Certificate **>(HcfMalloc(1 * sizeof(HcfX509Certificate *), 0));
+        certArray.data = static_cast<HcfX509Certificate **>(CfMalloc(1 * sizeof(HcfX509Certificate *), 0));
         if (certArray.data == nullptr) {
             goto Exit;
         }
         certArray.data[0] = x509CertObj;
         certArray.count = 1;
 
-        crlArray.data = static_cast<HcfX509Crl **>(HcfMalloc(1 * sizeof(HcfX509Crl *), 0));
+        crlArray.data = static_cast<HcfX509Crl **>(CfMalloc(1 * sizeof(HcfX509Crl *), 0));
         if (crlArray.data == nullptr) {
             goto Exit;
         }
@@ -428,14 +428,14 @@ namespace OHOS {
         if (ret != CF_SUCCESS || x509Crl == nullptr) {
             return;
         }
-        certArray.data = static_cast<HcfX509Certificate **>(HcfMalloc(1 * sizeof(HcfX509Certificate *), 0));
+        certArray.data = static_cast<HcfX509Certificate **>(CfMalloc(1 * sizeof(HcfX509Certificate *), 0));
         if (certArray.data == nullptr) {
             return;
         }
         certArray.data[0] = x509CertObj;
         certArray.count = 1;
 
-        crlArray.data = static_cast<HcfX509Crl **>(HcfMalloc(1 * sizeof(HcfX509Crl *), 0));
+        crlArray.data = static_cast<HcfX509Crl **>(CfMalloc(1 * sizeof(HcfX509Crl *), 0));
         if (crlArray.data == nullptr) {
             CfFree(certArray.data);
             return;

@@ -458,7 +458,7 @@ CfResult HcfX509CertificateCreate(const CfEncodingBlob *inStream, HcfX509Certifi
         LOGE("Failed to create spi object!");
         return res;
     }
-    HcfX509CertificateImpl *x509CertImpl = (HcfX509CertificateImpl *)HcfMalloc(sizeof(HcfX509CertificateImpl), 0);
+    HcfX509CertificateImpl *x509CertImpl = (HcfX509CertificateImpl *)CfMalloc(sizeof(HcfX509CertificateImpl), 0);
     if (x509CertImpl == NULL) {
         LOGE("Failed to allocate x509CertImpl memory!");
         CfObjDestroy(spiObj);

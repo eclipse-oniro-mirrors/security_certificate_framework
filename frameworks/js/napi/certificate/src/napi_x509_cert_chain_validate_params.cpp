@@ -77,14 +77,14 @@ static bool GetX509TrustAnchorArray(napi_env env, napi_value arg, HcfX509TrustAn
         return false;
     }
 
-    out = static_cast<HcfX509TrustAnchorArray *>(HcfMalloc(sizeof(HcfX509TrustAnchorArray), 0));
+    out = static_cast<HcfX509TrustAnchorArray *>(CfMalloc(sizeof(HcfX509TrustAnchorArray), 0));
     if (out == nullptr) {
         LOGE("Failed to allocate out memory!");
         return false;
     }
 
     out->count = length;
-    out->data = static_cast<HcfX509TrustAnchor **>(HcfMalloc(length * sizeof(HcfX509TrustAnchor *), 0));
+    out->data = static_cast<HcfX509TrustAnchor **>(CfMalloc(length * sizeof(HcfX509TrustAnchor *), 0));
     if (out->data == nullptr) {
         LOGE("Failed to allocate data memory!");
         CfFree(out);
@@ -126,13 +126,13 @@ static bool GetCertCRLCollectionArray(napi_env env, napi_value arg, HcfCertCRLCo
         return false;
     }
 
-    out = static_cast<HcfCertCRLCollectionArray *>(HcfMalloc(sizeof(HcfCertCRLCollectionArray), 0));
+    out = static_cast<HcfCertCRLCollectionArray *>(CfMalloc(sizeof(HcfCertCRLCollectionArray), 0));
     if (out == nullptr) {
         LOGE("Failed to allocate out memory!");
         return false;
     }
     out->count = length;
-    out->data = static_cast<HcfCertCrlCollection **>(HcfMalloc(length * sizeof(HcfCertCrlCollection *), 0));
+    out->data = static_cast<HcfCertCrlCollection **>(CfMalloc(length * sizeof(HcfCertCrlCollection *), 0));
     if (out->data == nullptr) {
         LOGE("Failed to allocate data memory!");
         CfFree(out);
@@ -180,12 +180,12 @@ static bool GetRevocationOptions(napi_env env, napi_value rckObj, HcfRevocationC
     if (status != napi_ok || length == 0 || length > MAX_NAPI_ARRAY_OF_U8ARR) {
         return false;
     }
-    out->options = static_cast<HcfRevChkOpArray *>(HcfMalloc(sizeof(HcfRevChkOpArray), 0));
+    out->options = static_cast<HcfRevChkOpArray *>(CfMalloc(sizeof(HcfRevChkOpArray), 0));
     if (out->options == nullptr) {
         return false;
     }
     out->options->count = length;
-    out->options->data = static_cast<HcfRevChkOption *>(HcfMalloc(length * sizeof(HcfRevChkOption), 0));
+    out->options->data = static_cast<HcfRevChkOption *>(CfMalloc(length * sizeof(HcfRevChkOption), 0));
     if (out->options->data == nullptr) {
         CfFree(out->options);
         out->options = nullptr;
@@ -276,7 +276,7 @@ static bool GetRevocationCheckParam(napi_env env, napi_value arg, HcfRevocationC
         return false;
     }
 
-    out = static_cast<HcfRevocationCheckParam *>(HcfMalloc(sizeof(HcfRevocationCheckParam), 0));
+    out = static_cast<HcfRevocationCheckParam *>(CfMalloc(sizeof(HcfRevocationCheckParam), 0));
     if (out == nullptr) {
         LOGE("Failed to allocate out memory!");
         return false;
@@ -334,12 +334,12 @@ static bool GetKeyUsage(napi_env env, napi_value arg, HcfKuArray *&out)
     if (status != napi_ok || length == 0 || length > MAX_NAPI_ARRAY_OF_U8ARR) {
         return false;
     }
-    out = static_cast<HcfKuArray *>(HcfMalloc(sizeof(HcfKuArray), 0));
+    out = static_cast<HcfKuArray *>(CfMalloc(sizeof(HcfKuArray), 0));
     if (out == nullptr) {
         return false;
     }
     out->count = length;
-    out->data = static_cast<HcfKeyUsageType *>(HcfMalloc(length * sizeof(HcfKeyUsageType), 0));
+    out->data = static_cast<HcfKeyUsageType *>(CfMalloc(length * sizeof(HcfKeyUsageType), 0));
     if (out->data == nullptr) {
         CfFree(out);
         out = nullptr;

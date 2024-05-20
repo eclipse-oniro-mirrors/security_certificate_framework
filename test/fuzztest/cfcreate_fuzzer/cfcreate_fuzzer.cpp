@@ -40,7 +40,7 @@ namespace OHOS {
         if (inStream.len > size - usedSize) {
             return false;
         }
-        inStream.data = static_cast<uint8_t *>(CfMalloc(inStream.len));
+        inStream.data = static_cast<uint8_t *>(CfMalloc(inStream.len, 0));
         if (inStream.data == nullptr) {
             return false;
         }
