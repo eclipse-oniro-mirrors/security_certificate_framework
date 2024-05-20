@@ -62,7 +62,7 @@ static CfResult GetMatchCerts(const HcfX509CertificateArray *inCerts, const HcfX
     HcfX509CertificateArray tmpArr = { NULL, 0 };
     tmpArr.count = inCerts->count;
     /* inCerts is inner object, the size has been checked in function HcfCertCrlCollectionCreate */
-    tmpArr.data = (HcfX509Certificate **)HcfMalloc(inCerts->count * sizeof(HcfX509Certificate *), 0);
+    tmpArr.data = (HcfX509Certificate **)CfMalloc(inCerts->count * sizeof(HcfX509Certificate *), 0);
     if (tmpArr.data == NULL) {
         LOGE("Failed to allocate memory!");
         return CF_ERR_MALLOC;
@@ -93,7 +93,7 @@ static CfResult GetMatchCerts(const HcfX509CertificateArray *inCerts, const HcfX
         FreeCertArrayData(&tmpArr);
         return CF_SUCCESS;
     }
-    outCerts->data = (HcfX509Certificate **)HcfMalloc(outInd * sizeof(HcfX509Certificate *), 0);
+    outCerts->data = (HcfX509Certificate **)CfMalloc(outInd * sizeof(HcfX509Certificate *), 0);
     if (outCerts->data == NULL) {
         LOGE("Failed to allocate memory!");
         FreeCertArrayData(&tmpArr);
@@ -113,7 +113,7 @@ static CfResult GetMatchCRLs(
     HcfX509CrlArray tmpArr = { NULL, 0 };
     tmpArr.count = inCrls->count;
     /* inCrls is inner object, the size has been checked in function HcfCertCrlCollectionCreate */
-    tmpArr.data = (HcfX509Crl **)HcfMalloc(inCrls->count * sizeof(HcfX509Crl *), 0);
+    tmpArr.data = (HcfX509Crl **)CfMalloc(inCrls->count * sizeof(HcfX509Crl *), 0);
     if (tmpArr.data == NULL) {
         LOGE("Failed to allocate memory!");
         return CF_ERR_MALLOC;
@@ -144,7 +144,7 @@ static CfResult GetMatchCRLs(
         FreeCrlArrayData(&tmpArr);
         return CF_SUCCESS;
     }
-    outCrls->data = (HcfX509Crl **)HcfMalloc(outInd * sizeof(HcfX509Crl *), 0);
+    outCrls->data = (HcfX509Crl **)CfMalloc(outInd * sizeof(HcfX509Crl *), 0);
     if (outCrls->data == NULL) {
         LOGE("Failed to allocate memory!");
         FreeCrlArrayData(&tmpArr);
@@ -234,7 +234,7 @@ static CfResult CloneCertArray(const HcfX509CertificateArray *inCerts, HcfX509Ce
         return CF_INVALID_PARAMS;
     }
 
-    certs->data = (HcfX509Certificate **)HcfMalloc(inCerts->count * sizeof(HcfX509Certificate *), 0);
+    certs->data = (HcfX509Certificate **)CfMalloc(inCerts->count * sizeof(HcfX509Certificate *), 0);
     if (certs->data == NULL) {
         LOGE("Failed to allocate memory!");
         return CF_ERR_MALLOC;
@@ -267,7 +267,7 @@ static CfResult CloneCrlArray(const HcfX509CrlArray *inCrls, HcfX509CrlArray *cr
         return CF_INVALID_PARAMS;
     }
 
-    crls->data = (HcfX509Crl **)HcfMalloc(inCrls->count * sizeof(HcfX509Crl *), 0);
+    crls->data = (HcfX509Crl **)CfMalloc(inCrls->count * sizeof(HcfX509Crl *), 0);
     if (crls->data == NULL) {
         LOGE("Failed to allocate memory!");
         return CF_ERR_MALLOC;
@@ -298,7 +298,7 @@ CfResult HcfCertCrlCollectionCreate(
         return CF_INVALID_PARAMS;
     }
 
-    CertCrlCollectionImpl *ret = (CertCrlCollectionImpl *)HcfMalloc(sizeof(CertCrlCollectionImpl), 0);
+    CertCrlCollectionImpl *ret = (CertCrlCollectionImpl *)CfMalloc(sizeof(CertCrlCollectionImpl), 0);
     if (ret == NULL) {
         LOGE("Failed to allocate ret memory!");
         return CF_ERR_MALLOC;

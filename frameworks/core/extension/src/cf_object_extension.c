@@ -47,7 +47,7 @@ int32_t CfExtensionCreate(const CfEncodingBlob *in, CfBase **obj)
         return CF_INVALID_PARAMS;
     }
 
-    CfExtensionObjStruct *tmp = CfMalloc(sizeof(CfExtensionObjStruct));
+    CfExtensionObjStruct *tmp = CfMalloc(sizeof(CfExtensionObjStruct), 0);
     if (tmp == NULL) {
         CF_LOG_E("malloc cert obj failed");
         return CF_ERR_MALLOC;

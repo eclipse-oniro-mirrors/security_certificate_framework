@@ -18,7 +18,7 @@
 #include "cf_log.h"
 #include "securec.h"
 
-void *HcfMalloc(uint32_t size, char val)
+void *CfMalloc(uint32_t size, char val)
 {
     if ((size == 0) || (size > MAX_MEMORY_SIZE)) {
         LOGE("malloc size is invalid");
@@ -36,9 +36,4 @@ void CfFree(void *addr)
     if (addr != NULL) {
         free(addr);
     }
-}
-
-void *CfMalloc(uint32_t size)
-{
-    return HcfMalloc(size, 0);
 }

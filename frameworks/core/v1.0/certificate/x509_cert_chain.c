@@ -178,7 +178,7 @@ CfResult HcfCertChainCreate(
         LOGE("Failed to create certChain spi object!");
         return res;
     }
-    CertChainImpl *impl = (CertChainImpl *)HcfMalloc(sizeof(CertChainImpl), 0);
+    CertChainImpl *impl = (CertChainImpl *)CfMalloc(sizeof(CertChainImpl), 0);
     if (impl == NULL) {
         LOGE("Failed to allocate return memory!");
         CfObjDestroy(spiObj);
@@ -217,14 +217,14 @@ CfResult HcfCertChainBuildResultCreate(
         return res;
     }
 
-    CertChainBuildResultImpl *impl = (CertChainBuildResultImpl *)HcfMalloc(sizeof(CertChainBuildResultImpl), 0);
+    CertChainBuildResultImpl *impl = (CertChainBuildResultImpl *)CfMalloc(sizeof(CertChainBuildResultImpl), 0);
     if (impl == NULL) {
         LOGE("Failed to allocate CertChainBuildResultImpl return memory!");
         CfObjDestroy(spiObj);
         return CF_ERR_MALLOC;
     }
 
-    CertChainImpl *implCertChain = (CertChainImpl *)HcfMalloc(sizeof(CertChainImpl), 0);
+    CertChainImpl *implCertChain = (CertChainImpl *)CfMalloc(sizeof(CertChainImpl), 0);
     if (implCertChain == NULL) {
         LOGE("Failed to allocate CertChainImpl return memory!");
         CfObjDestroy(spiObj);

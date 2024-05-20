@@ -126,7 +126,7 @@ CfResult HcfX509DistinguishedNameCreate(const CfBlob *inStream, bool bString, Hc
         return res;
     }
     HcfX509DistinguishedNameImpl *x509NameImpl =
-        (HcfX509DistinguishedNameImpl *)HcfMalloc(sizeof(HcfX509DistinguishedNameImpl), 0);
+        (HcfX509DistinguishedNameImpl *)CfMalloc(sizeof(HcfX509DistinguishedNameImpl), 0);
     if (x509NameImpl == NULL) {
         LOGE("Failed to allocate x509DistinguishedNameImpl memory!");
         CfObjDestroy(spiObj);

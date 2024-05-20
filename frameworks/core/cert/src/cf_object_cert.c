@@ -47,7 +47,7 @@ int32_t CfCertCreate(const CfEncodingBlob *in, CfBase **obj)
         return CF_INVALID_PARAMS;
     }
 
-    CfCertObjStruct *tmp = CfMalloc(sizeof(CfCertObjStruct));
+    CfCertObjStruct *tmp = CfMalloc(sizeof(CfCertObjStruct), 0);
     if (tmp == NULL) {
         CF_LOG_E("malloc cert obj failed");
         return CF_ERR_MALLOC;

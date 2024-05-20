@@ -174,7 +174,7 @@ static void GetEncodedExecute(napi_env env, void *data)
 {
     CfCtx *context = static_cast<CfCtx *>(data);
     HcfX509Crl *x509Crl = context->crlClass->GetX509Crl();
-    CfEncodingBlob *encodingBlob = static_cast<CfEncodingBlob *>(HcfMalloc(sizeof(CfEncodingBlob), 0));
+    CfEncodingBlob *encodingBlob = static_cast<CfEncodingBlob *>(CfMalloc(sizeof(CfEncodingBlob), 0));
     if (encodingBlob == nullptr) {
         LOGE("malloc encoding blob failed!");
         context->errCode = CF_ERR_MALLOC;
@@ -224,7 +224,7 @@ void GetRevokedCertificatesExecute(napi_env env, void *data)
 {
     CfCtx *context = static_cast<CfCtx *>(data);
     HcfX509Crl *x509Crl = context->crlClass->GetX509Crl();
-    CfArray *array = reinterpret_cast<CfArray *>(HcfMalloc(sizeof(CfArray), 0));
+    CfArray *array = reinterpret_cast<CfArray *>(CfMalloc(sizeof(CfArray), 0));
     if (array == nullptr) {
         LOGE("malloc array failed!");
         context->errCode = CF_ERR_MALLOC;
@@ -333,7 +333,7 @@ napi_value NapiX509Crl::GetEncoded(napi_env env, napi_callback_info info)
         return nullptr;
     }
 
-    CfCtx *context = static_cast<CfCtx *>(HcfMalloc(sizeof(CfCtx), 0));
+    CfCtx *context = static_cast<CfCtx *>(CfMalloc(sizeof(CfCtx), 0));
     if (context == nullptr) {
         LOGE("malloc context failed!");
         return nullptr;
@@ -381,7 +381,7 @@ __attribute__((no_sanitize("cfi"))) napi_value NapiX509Crl::Verify(napi_env env,
         return nullptr;
     }
 
-    CfCtx *context = static_cast<CfCtx *>(HcfMalloc(sizeof(CfCtx), 0));
+    CfCtx *context = static_cast<CfCtx *>(CfMalloc(sizeof(CfCtx), 0));
     if (context == nullptr) {
         LOGE("malloc context failed!");
         return nullptr;
@@ -431,7 +431,7 @@ napi_value NapiX509Crl::GetVersion(napi_env env, napi_callback_info info)
 napi_value NapiX509Crl::GetIssuerDN(napi_env env, napi_callback_info info)
 {
     HcfX509Crl *x509Crl = GetX509Crl();
-    CfBlob *blob = reinterpret_cast<CfBlob *>(HcfMalloc(sizeof(CfBlob), 0));
+    CfBlob *blob = reinterpret_cast<CfBlob *>(CfMalloc(sizeof(CfBlob), 0));
     if (blob == nullptr) {
         LOGE("malloc blob failed!");
         return nullptr;
@@ -454,7 +454,7 @@ napi_value NapiX509Crl::GetIssuerDN(napi_env env, napi_callback_info info)
 napi_value NapiX509Crl::GetThisUpdate(napi_env env, napi_callback_info info)
 {
     HcfX509Crl *x509Crl = GetX509Crl();
-    CfBlob *blob = reinterpret_cast<CfBlob *>(HcfMalloc(sizeof(CfBlob), 0));
+    CfBlob *blob = reinterpret_cast<CfBlob *>(CfMalloc(sizeof(CfBlob), 0));
     if (blob == nullptr) {
         LOGE("malloc blob failed!");
         return nullptr;
@@ -478,7 +478,7 @@ napi_value NapiX509Crl::GetThisUpdate(napi_env env, napi_callback_info info)
 napi_value NapiX509Crl::GetNextUpdate(napi_env env, napi_callback_info info)
 {
     HcfX509Crl *x509Crl = GetX509Crl();
-    CfBlob *blob = reinterpret_cast<CfBlob *>(HcfMalloc(sizeof(CfBlob), 0));
+    CfBlob *blob = reinterpret_cast<CfBlob *>(CfMalloc(sizeof(CfBlob), 0));
     if (blob == nullptr) {
         LOGE("malloc blob failed!");
         return nullptr;
@@ -525,7 +525,7 @@ static bool GetCrlSerialNumberFromNapiValue(napi_env env, napi_value arg, CfBlob
     }
 
     outBlob.size = serialLen;
-    outBlob.data = static_cast<uint8_t *>(HcfMalloc(serialLen, 0));
+    outBlob.data = static_cast<uint8_t *>(CfMalloc(serialLen, 0));
     if (outBlob.data == nullptr) {
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc serialNum failed"));
         LOGE("malloc blob data failed!");
@@ -649,7 +649,7 @@ napi_value NapiX509Crl::GetRevokedCertificates(napi_env env, napi_callback_info 
         return nullptr;
     }
 
-    CfCtx *context = static_cast<CfCtx *>(HcfMalloc(sizeof(CfCtx), 0));
+    CfCtx *context = static_cast<CfCtx *>(CfMalloc(sizeof(CfCtx), 0));
     if (context == nullptr) {
         LOGE("malloc context failed!");
         return nullptr;
@@ -685,7 +685,7 @@ napi_value NapiX509Crl::GetRevokedCertificates(napi_env env, napi_callback_info 
 napi_value NapiX509Crl::GetTBSCertList(napi_env env, napi_callback_info info)
 {
     HcfX509Crl *x509Crl = GetX509Crl();
-    CfBlob *blob = reinterpret_cast<CfBlob *>(HcfMalloc(sizeof(CfBlob), 0));
+    CfBlob *blob = reinterpret_cast<CfBlob *>(CfMalloc(sizeof(CfBlob), 0));
     if (blob == nullptr) {
         LOGE("malloc blob failed!");
         return nullptr;
@@ -783,11 +783,11 @@ napi_value NapiX509Crl::GetExtensionsObject(napi_env env, napi_callback_info inf
         return nullptr;
     }
 
-    CfEncodingBlob *encodingBlob = static_cast<CfEncodingBlob *>(HcfMalloc(sizeof(CfEncodingBlob), 0));
+    CfEncodingBlob *encodingBlob = static_cast<CfEncodingBlob *>(CfMalloc(sizeof(CfEncodingBlob), 0));
     if (encodingBlob == nullptr) {
         LOGE("malloc encoding blob failed!");
         CfBlobDataFree(&blob);
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "HcfMalloc failed"));
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "CfMalloc failed"));
         return nullptr;
     }
     if (!ConvertBlobToEncodingBlob(blob, encodingBlob)) {
@@ -852,7 +852,7 @@ napi_value NapiX509Crl::GetIssuerX500DistinguishedName(napi_env env, napi_callba
 napi_value NapiX509Crl::GetSignature(napi_env env, napi_callback_info info)
 {
     HcfX509Crl *x509Crl = GetX509Crl();
-    CfBlob *blob = reinterpret_cast<CfBlob *>(HcfMalloc(sizeof(CfBlob), 0));
+    CfBlob *blob = reinterpret_cast<CfBlob *>(CfMalloc(sizeof(CfBlob), 0));
     if (blob == nullptr) {
         LOGE("malloc blob failed!");
         return nullptr;
@@ -875,7 +875,7 @@ napi_value NapiX509Crl::GetSignature(napi_env env, napi_callback_info info)
 napi_value NapiX509Crl::GetSigAlgName(napi_env env, napi_callback_info info)
 {
     HcfX509Crl *x509Crl = GetX509Crl();
-    CfBlob *blob = reinterpret_cast<CfBlob *>(HcfMalloc(sizeof(CfBlob), 0));
+    CfBlob *blob = reinterpret_cast<CfBlob *>(CfMalloc(sizeof(CfBlob), 0));
     if (blob == nullptr) {
         LOGE("malloc blob failed!");
         return nullptr;
@@ -899,7 +899,7 @@ napi_value NapiX509Crl::GetSigAlgName(napi_env env, napi_callback_info info)
 napi_value NapiX509Crl::GetSigAlgOID(napi_env env, napi_callback_info info)
 {
     HcfX509Crl *x509Crl = GetX509Crl();
-    CfBlob *blob = reinterpret_cast<CfBlob *>(HcfMalloc(sizeof(CfBlob), 0));
+    CfBlob *blob = reinterpret_cast<CfBlob *>(CfMalloc(sizeof(CfBlob), 0));
     if (blob == nullptr) {
         LOGE("malloc blob failed!");
         return nullptr;
@@ -923,7 +923,7 @@ napi_value NapiX509Crl::GetSigAlgOID(napi_env env, napi_callback_info info)
 napi_value NapiX509Crl::GetSigAlgParams(napi_env env, napi_callback_info info)
 {
     HcfX509Crl *x509Crl = GetX509Crl();
-    CfBlob *blob = reinterpret_cast<CfBlob *>(HcfMalloc(sizeof(CfBlob), 0));
+    CfBlob *blob = reinterpret_cast<CfBlob *>(CfMalloc(sizeof(CfBlob), 0));
     if (blob == nullptr) {
         LOGE("malloc blob failed!");
         return nullptr;
@@ -946,7 +946,7 @@ napi_value NapiX509Crl::GetSigAlgParams(napi_env env, napi_callback_info info)
 napi_value NapiX509Crl::GetExtensions(napi_env env, napi_callback_info info)
 {
     HcfX509Crl *x509Crl = GetX509Crl();
-    CfBlob *blob = reinterpret_cast<CfBlob *>(HcfMalloc(sizeof(CfBlob), 0));
+    CfBlob *blob = reinterpret_cast<CfBlob *>(CfMalloc(sizeof(CfBlob), 0));
     if (blob == nullptr) {
         LOGE("malloc blob failed!");
         return nullptr;
@@ -979,7 +979,7 @@ napi_value NapiX509Crl::Match(napi_env env, napi_callback_info info)
         return nullptr;
     }
 
-    HcfX509CrlMatchParams *param = static_cast<HcfX509CrlMatchParams *>(HcfMalloc(sizeof(HcfX509CrlMatchParams), 0));
+    HcfX509CrlMatchParams *param = static_cast<HcfX509CrlMatchParams *>(CfMalloc(sizeof(HcfX509CrlMatchParams), 0));
     if (param == nullptr) {
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc matchParams failed"));
         LOGE("malloc matchParams failed!");
@@ -1403,7 +1403,7 @@ napi_value NapiX509Crl::NapiCreateX509CrlBase(napi_env env, napi_callback_info i
         return nullptr;
     }
 
-    CfCtx *context = static_cast<CfCtx *>(HcfMalloc(sizeof(CfCtx), 0));
+    CfCtx *context = static_cast<CfCtx *>(CfMalloc(sizeof(CfCtx), 0));
     if (context == nullptr) {
         LOGE("malloc context failed!");
         return nullptr;

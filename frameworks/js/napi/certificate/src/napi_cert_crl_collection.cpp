@@ -242,7 +242,7 @@ static napi_value NapiSelectCerts(napi_env env, napi_callback_info info)
 
 static bool GetCertMatchParams(napi_env env, napi_value arg, CfCertCRLColCtx *context)
 {
-    HcfX509CertMatchParams *param = static_cast<HcfX509CertMatchParams *>(HcfMalloc(sizeof(HcfX509CertMatchParams), 0));
+    HcfX509CertMatchParams *param = static_cast<HcfX509CertMatchParams *>(CfMalloc(sizeof(HcfX509CertMatchParams), 0));
     if (param == nullptr) {
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Malloc matchParams failed"));
         LOGE("malloc matchParams failed!");
@@ -270,7 +270,7 @@ napi_value NapiCertCRLCollection::SelectCerts(napi_env env, napi_callback_info i
         return nullptr;
     }
 
-    CfCertCRLColCtx *context = static_cast<CfCertCRLColCtx *>(HcfMalloc(sizeof(CfCertCRLColCtx), 0));
+    CfCertCRLColCtx *context = static_cast<CfCertCRLColCtx *>(CfMalloc(sizeof(CfCertCRLColCtx), 0));
     if (context == nullptr) {
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc context failed"));
         LOGE("malloc context failed!");
@@ -361,7 +361,7 @@ static void SelectCRLComplete(napi_env env, napi_status status, void *data)
 
 static bool GetCrlMatchParam(napi_env env, napi_value arg, CfCertCRLColCtx *context)
 {
-    HcfX509CrlMatchParams *param = static_cast<HcfX509CrlMatchParams *>(HcfMalloc(sizeof(HcfX509CrlMatchParams), 0));
+    HcfX509CrlMatchParams *param = static_cast<HcfX509CrlMatchParams *>(CfMalloc(sizeof(HcfX509CrlMatchParams), 0));
     if (param == nullptr) {
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Malloc matchParams failed"));
         LOGE("malloc matchParams failed!");
@@ -388,7 +388,7 @@ napi_value NapiCertCRLCollection::SelectCRLs(napi_env env, napi_callback_info in
         return nullptr;
     }
 
-    CfCertCRLColCtx *context = static_cast<CfCertCRLColCtx *>(HcfMalloc(sizeof(CfCertCRLColCtx), 0));
+    CfCertCRLColCtx *context = static_cast<CfCertCRLColCtx *>(CfMalloc(sizeof(CfCertCRLColCtx), 0));
     if (context == nullptr) {
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc context failed"));
         LOGE("malloc context failed!");

@@ -76,7 +76,7 @@ int32_t CfOpensslCreateExtension(const CfEncodingBlob *inData, CfBase **object)
         return CF_INVALID_PARAMS;
     }
 
-    CfOpensslExtensionObj *extsObj = CfMalloc(sizeof(CfOpensslExtensionObj));
+    CfOpensslExtensionObj *extsObj = CfMalloc(sizeof(CfOpensslExtensionObj), 0);
     if (extsObj == NULL) {
         CF_LOG_E("malloc failed");
         return CF_ERR_MALLOC;
@@ -197,7 +197,7 @@ static int32_t GetExtensionIndexArray(const X509_EXTENSIONS *exts, CfExtensionOi
 
 static int32_t DeepCopyDataToOutblob(const char *data, uint32_t len, CfBlob *outBlob)
 {
-    outBlob->data = (uint8_t *)CfMalloc(len);
+    outBlob->data = (uint8_t *)CfMalloc(len, 0);
     if (outBlob->data == NULL) {
         CF_LOG_E("Failed to malloc");
         return CF_ERR_MALLOC;
@@ -211,7 +211,7 @@ static int32_t DeepCopyOidsToOut(const X509_EXTENSIONS *exts, const uint32_t *id
     CfBlobArray *out)
 {
     uint32_t memSize = sizeof(CfBlob) * arrayLen;
-    CfBlob *dataArray = (CfBlob *)CfMalloc(memSize);
+    CfBlob *dataArray = (CfBlob *)CfMalloc(memSize, 0);
     if (dataArray == NULL) {
         CF_LOG_E("Failed to malloc");
         return CF_ERR_MALLOC;
@@ -337,7 +337,7 @@ int32_t CfOpensslHasUnsupportedCriticalExtension(const CfBase *object, bool *out
 static int GetTargetNid(const CfBlob *oid)
 {
     uint32_t length = oid->size + 1; /* add '\0' in the end */
-    uint8_t *oidString = (uint8_t *)CfMalloc(length);
+    uint8_t *oidString = (uint8_t *)CfMalloc(length, 0);
     if (oidString == NULL) {
         CF_LOG_E("Failed to malloc oid string");
         return CF_ERR_MALLOC;
@@ -399,7 +399,7 @@ static int32_t GetEntry(const X509_EXTENSION *found, CfBlob *out)
 
 static int32_t GetEntryCritical(const X509_EXTENSION *found, CfBlob *out)
 {
-    out->data = (uint8_t *)CfMalloc(1); /* critical value is 0 or 1 */
+    out->data = (uint8_t *)CfMalloc(1, 0); /* critical value is 0 or 1 */
     if (out->data == NULL) {
         CF_LOG_E("Failed to malloc");
         return CF_ERR_MALLOC;

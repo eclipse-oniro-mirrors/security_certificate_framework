@@ -851,7 +851,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest018, TestSize.Level0)
     CfResult ret = g_x509CertObj->getKeyUsage(g_x509CertObj, &cfBlobDataSelf);
     EXPECT_EQ(ret, CF_SUCCESS);
 
-    uint8_t *data = static_cast<uint8_t *>(HcfMalloc(cfBlobDataSelf.size - 1, 0));
+    uint8_t *data = static_cast<uint8_t *>(CfMalloc(cfBlobDataSelf.size - 1, 0));
     for (uint32_t index = 0; index < cfBlobDataSelf.size - 1; index++) {
         data[index] = cfBlobDataSelf.data[index];
     }
@@ -877,7 +877,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest019, TestSize.Level0)
     CfResult ret = g_x509CertObj->getKeyUsage(g_x509CertObj, &cfBlobDataSelf);
     EXPECT_EQ(ret, CF_SUCCESS);
 
-    uint8_t *data = static_cast<uint8_t *>(HcfMalloc(cfBlobDataSelf.size + 1, 0));
+    uint8_t *data = static_cast<uint8_t *>(CfMalloc(cfBlobDataSelf.size + 1, 0));
     uint32_t index = 0;
     for (index = 0; index < cfBlobDataSelf.size; index++) {
         data[index] = cfBlobDataSelf.data[index];
@@ -906,7 +906,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest020, TestSize.Level0)
     CfResult ret = g_x509CertObj->getKeyUsage(g_x509CertObj, &cfBlobDataSelf);
     EXPECT_EQ(ret, CF_SUCCESS);
 
-    uint8_t *data = static_cast<uint8_t *>(HcfMalloc(cfBlobDataSelf.size + 1, 0));
+    uint8_t *data = static_cast<uint8_t *>(CfMalloc(cfBlobDataSelf.size + 1, 0));
     uint32_t index = 0;
     for (index = 0; index < cfBlobDataSelf.size; index++) {
         data[index] = cfBlobDataSelf.data[index];
@@ -935,7 +935,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest021, TestSize.Level0)
     CfResult ret = g_x509CertObj->getKeyUsage(g_x509CertObj, &cfBlobDataSelf);
     EXPECT_EQ(ret, CF_SUCCESS);
 
-    uint8_t *data = static_cast<uint8_t *>(HcfMalloc(cfBlobDataSelf.size, 0));
+    uint8_t *data = static_cast<uint8_t *>(CfMalloc(cfBlobDataSelf.size, 0));
     for (uint32_t index = 0; index < cfBlobDataSelf.size; index++) {
         data[index] = (cfBlobDataSelf.data[index]) ? 0 : 1;
     }
