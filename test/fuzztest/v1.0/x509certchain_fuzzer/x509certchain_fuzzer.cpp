@@ -144,34 +144,32 @@ namespace OHOS {
         return "HcfInvalidCertChain";
     }
 
-    static CfResult TestToString(HcfCertChain *certChain)
+    static void TestToString(HcfCertChain *certChain)
     {
         CfBlob blob = { 0, nullptr };
-        CfResult ret = certChain->toString(certChain, &blob);
+        (void)certChain->toString(certChain, &blob);
         CfBlobDataFree(&blob);
 
         HcfCertChain testCertChain = {};
         testCertChain.base.getClass = GetInvalidCertChainClass;
-        ret = certChain->toString(&testCertChain, &blob);
-        ret = certChain->toString(nullptr, &blob);
-        ret = certChain->toString(certChain, nullptr);
-        ret = certChain->toString(nullptr, nullptr);
-        return ret;
+        (void)certChain->toString(&testCertChain, &blob);
+        (void)certChain->toString(nullptr, &blob);
+        (void)certChain->toString(certChain, nullptr);
+        (void)certChain->toString(nullptr, nullptr);
     }
 
-    static CfResult TestHashCode(HcfCertChain *certChain)
+    static void TestHashCode(HcfCertChain *certChain)
     {
         CfBlob blob = { 0, nullptr };
-        CfResult ret = certChain->hashCode(certChain, &blob);
+        (void)certChain->hashCode(certChain, &blob);
         CfBlobDataFree(&blob);
 
         HcfCertChain testCertChain = {};
         testCertChain.base.getClass = GetInvalidCertChainClass;
-        ret = certChain->hashCode(&testCertChain, &blob);
-        ret = certChain->hashCode(nullptr, &blob);
-        ret = certChain->hashCode(certChain, nullptr);
-        ret = certChain->hashCode(nullptr, nullptr);
-        return ret;
+        (void)certChain->hashCode(&testCertChain, &blob);
+        (void)certChain->hashCode(nullptr, &blob);
+        (void)certChain->hashCode(certChain, nullptr);
+        (void)certChain->hashCode(nullptr, nullptr);
     }
 
     static CfResult CreateOneCertChainCore(const CfEncodingBlob *inStream)
@@ -187,9 +185,9 @@ namespace OHOS {
             return ret;
         }
 
-        ret = TestToString(certChain);
-        ret = TestHashCode(certChain);
-        ret = TestVerify(certChain);
+        (void)TestToString(certChain);
+        (void)TestHashCode(certChain);
+        (void)TestVerify(certChain);
         CfObjDestroy(certChain);
         return ret;
     }
@@ -246,17 +244,18 @@ namespace OHOS {
         CfFree(param);
     }
 
-    static HcfRevocationCheckParam *ConstructHcfRevocationCheckParam1(HcfRevChkOption *data, size_t size,
+    static HcfRevocationCheckParam *ConstructHcfRevocationCheckParam1(const HcfRevChkOption *data, size_t size,
         CfBlob *ocspResponderURI = NULL, CfBlob *crlDownloadURI = NULL,
         const CfEncodingBlob *ocspResponderCertStream = NULL)
     {
-        HcfRevChkOpArray *revChkOpArray = (HcfRevChkOpArray *)CfMalloc(sizeof(HcfRevChkOpArray), 0);
+        HcfRevChkOpArray *revChkOpArray = static_cast<HcfRevChkOpArray *>(CfMalloc(sizeof(HcfRevChkOpArray), 0));
         if (revChkOpArray == nullptr) {
             return nullptr;
         }
 
         revChkOpArray->count = size;
-        revChkOpArray->data = (HcfRevChkOption *)CfMalloc(revChkOpArray->count * sizeof(HcfRevChkOption), 0);
+        revChkOpArray->data =
+            static_cast<HcfRevChkOption *>(CfMalloc(revChkOpArray->count * sizeof(HcfRevChkOption), 0));
         if (revChkOpArray->data == nullptr) {
             CfFree(revChkOpArray);
             return nullptr;
@@ -266,7 +265,7 @@ namespace OHOS {
             revChkOpArray->data[i] = data[i];
         }
 
-        CfBlob *resp = (CfBlob *)CfMalloc(sizeof(CfBlob), 0);
+        CfBlob *resp = static_cast<CfBlob *>(CfMalloc(sizeof(CfBlob), 0));
         if (resp == nullptr) {
             CfFree(revChkOpArray->data);
             CfFree(revChkOpArray);
@@ -275,7 +274,8 @@ namespace OHOS {
         resp->data = (uint8_t *)(&g_testOcspResponses[0]);
         resp->size = sizeof(g_testOcspResponses);
 
-        HcfRevocationCheckParam *param = (HcfRevocationCheckParam *)CfMalloc(sizeof(HcfRevocationCheckParam), 0);
+        HcfRevocationCheckParam *param =
+            static_cast<HcfRevocationCheckParam *>(CfMalloc(sizeof(HcfRevocationCheckParam), 0));
         if (param == nullptr) {
             CfFree(revChkOpArray->data);
             CfFree(revChkOpArray);
@@ -477,9 +477,9 @@ namespace OHOS {
         HcfCertChainData certsData = {};
         ConstructCertData(&certsData);
         HcfCertChainValidator *pathValidator = nullptr;
-        CfResult res = HcfCertChainValidatorCreate("invalidPKIX", &pathValidator);
-        res = HcfCertChainValidatorCreate("PKIX", nullptr);
-        res = HcfCertChainValidatorCreate("PKIX", &pathValidator);
+        (void)HcfCertChainValidatorCreate("invalidPKIX", &pathValidator);
+        (void)HcfCertChainValidatorCreate("PKIX", nullptr);
+        CfResult res = HcfCertChainValidatorCreate("PKIX", &pathValidator);
         if (res != CF_SUCCESS) {
             goto OUT;
         }
