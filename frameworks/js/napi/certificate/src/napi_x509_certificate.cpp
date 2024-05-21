@@ -446,6 +446,21 @@ napi_value NapiX509Certificate::GetSubjectName(napi_env env, napi_callback_info 
     return returnValue;
 }
 
+napi_value NapiX509Certificate::GetSubjectNameEx(napi_env env, napi_callback_info info, CfEncodinigType encodingType)
+{
+    CfBlob blob = { 0, nullptr };
+    HcfX509Certificate *cert = GetX509Cert();
+    CfResult ret = cert->getSubjectNameEx(cert, encodingType, &blob);
+    if (ret != CF_SUCCESS) {
+        napi_throw(env, CertGenerateBusinessError(env, ret, "GetSubjectNameEx failed."));
+        LOGE("GetSubjectNameEx failed!");
+        return nullptr;
+    }
+    napi_value returnValue = CertConvertBlobToNapiValue(env, &blob);
+    CfBlobDataFree(&blob);
+    return returnValue;
+}
+
 napi_value NapiX509Certificate::GetNotBeforeTime(napi_env env, napi_callback_info info)
 {
     CfBlob *blob = reinterpret_cast<CfBlob *>(CfMalloc(sizeof(CfBlob), 0));
@@ -1047,13 +1062,29 @@ static napi_value NapiGetIssuerName(napi_env env, napi_callback_info info)
 
 static napi_value NapiGetSubjectName(napi_env env, napi_callback_info info)
 {
+    size_t argc = ARGS_SIZE_ONE;
     napi_value thisVar = nullptr;
-    napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+    napi_value argv[ARGS_SIZE_ONE] = { nullptr };
+    napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr);
+    if (argc != 0 && argc != ARGS_SIZE_ONE) {
+        LOGE("wrong argument num!");
+        return nullptr;
+    }
+
     NapiX509Certificate *x509Cert = nullptr;
     napi_unwrap(env, thisVar, reinterpret_cast<void **>(&x509Cert));
     if (x509Cert == nullptr) {
         LOGE("x509Cert is nullptr!");
         return nullptr;
+    }
+
+    if (argc == ARGS_SIZE_ONE) {
+        CfEncodinigType encodingType;
+        if (napi_get_value_uint32(env, argv[PARAM0], reinterpret_cast<uint32_t *>(&encodingType)) != napi_ok) {
+            LOGE("napi_get_value_uint32 failed!");
+            return nullptr;
+        }
+        return x509Cert->GetSubjectNameEx(env, info, encodingType);
     }
     return x509Cert->GetSubjectName(env, info);
 }

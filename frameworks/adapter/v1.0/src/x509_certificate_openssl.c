@@ -16,6 +16,8 @@
 #include "x509_certificate_openssl.h"
 
 #include <securec.h>
+#include <openssl/asn1.h>
+#include <openssl/bio.h>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
 #include <openssl/evp.h>
@@ -688,6 +690,76 @@ static CfResult GetSubjectDNX509Openssl(HcfX509CertificateSpi *self, CfBlob *out
         res = DeepCopyDataToOut(subject, length, out);
     } while (0);
     CfFree(subject);
+    return res;
+}
+
+static CfResult CopyMemFromBIO(BIO *bio, CfBlob *outBlob)
+{
+    if (bio == NULL || outBlob == NULL) {
+        LOGE("Invalid input.");
+        return CF_INVALID_PARAMS;
+    }
+    int len = BIO_pending(bio);
+    if (len <= 0) {
+        LOGE("Bio len less than or equal to 0.");
+        return CF_INVALID_PARAMS;
+    }
+    uint8_t *buff = (uint8_t *)CfMalloc(len, 0);
+    if (buff == NULL) {
+        LOGE("Malloc mem for buff fail.");
+        return CF_ERR_MALLOC;
+    }
+    if (BIO_read(bio, buff, len) <= 0) {
+        LOGE("Bio read fail.");
+        CfPrintOpensslError();
+        CfFree(buff);
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    outBlob->size = len;
+    outBlob->data = buff;
+    return CF_SUCCESS;
+}
+
+static CfResult GetSubjectDNX509OpensslEx(HcfX509CertificateSpi *self, CfEncodinigType encodingType, CfBlob *out)
+{
+    if ((self == NULL) || (out == NULL) || (encodingType != CF_ENCODING_UTF8)) {
+        LOGE("[Get utf8 subjectDN openssl]The input data is null or encodingType is not utf8!");
+        return CF_INVALID_PARAMS;
+    }
+    if (!IsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
+        LOGE("Input wrong class type!");
+        return CF_INVALID_PARAMS;
+    }
+    HcfOpensslX509Cert *realCert = (HcfOpensslX509Cert *)self;
+    X509 *x509 = realCert->x509;
+    X509_NAME *subjectName = X509_get_subject_name(x509);
+    if (subjectName == NULL) {
+        LOGE("Failed to get x509 subjectName in openssl!");
+        CfPrintOpensslError();
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    CfResult res = CF_SUCCESS;
+    BIO *bio = BIO_new(BIO_s_mem());
+    if (bio == NULL) {
+        LOGE("BIO new fail.");
+        CfPrintOpensslError();
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    do {
+        int ret = X509_NAME_print_ex(bio, subjectName, 0, XN_FLAG_SEP_COMMA_PLUS | ASN1_STRFLGS_UTF8_CONVERT);
+        if (ret <= 0) {
+            LOGE("Failed to X509_NAME_print_ex in openssl!");
+            CfPrintOpensslError();
+            res = CF_ERR_CRYPTO_OPERATION;
+            break;
+        }
+        res = CopyMemFromBIO(bio, out);
+        if (res != CF_SUCCESS) {
+            LOGE("CopyMemFromBIO failed!");
+            break;
+        }
+    } while (0);
+    BIO_free(bio);
     return res;
 }
 
@@ -2055,6 +2127,7 @@ CfResult OpensslX509CertSpiCreate(const CfEncodingBlob *inStream, HcfX509Certifi
     realCert->base.engineGetSerialNumber = GetSerialNumberX509Openssl;
     realCert->base.engineGetIssuerName = GetIssuerDNX509Openssl;
     realCert->base.engineGetSubjectName = GetSubjectDNX509Openssl;
+    realCert->base.engineGetSubjectNameEx = GetSubjectDNX509OpensslEx;
     realCert->base.engineGetNotBeforeTime = GetNotBeforeX509Openssl;
     realCert->base.engineGetNotAfterTime = GetNotAfterX509Openssl;
     realCert->base.engineGetSignature = GetSignatureX509Openssl;

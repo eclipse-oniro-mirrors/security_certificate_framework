@@ -66,6 +66,7 @@ public:
     napi_value GetIssuerX500DistinguishedName(napi_env env, napi_callback_info info);
     napi_value GetSubjectX500DistinguishedName(napi_env env, napi_callback_info info);
     napi_value GetCRLDistributionPointsURI(napi_env env, napi_callback_info info);
+    napi_value GetSubjectNameEx(napi_env env, napi_callback_info info, CfEncodinigType encodingType);
     CfResult MatchProc(HcfX509CertMatchParams *param, bool &boolFlag);
 
     HcfX509Certificate *GetX509Cert()

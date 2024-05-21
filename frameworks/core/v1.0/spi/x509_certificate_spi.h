@@ -74,6 +74,8 @@ struct HcfX509CertificateSpi {
     CfResult (*engineGetExtensionsObject)(HcfX509CertificateSpi *self, CfBlob *out);
 
     CfResult (*engineGetCRLDistributionPointsURI)(HcfX509CertificateSpi *self, CfArray *outURI);
+
+    CfResult (*engineGetSubjectNameEx)(HcfX509CertificateSpi *self, CfEncodinigType encodingType, CfBlob *out);
 };
 
 #endif // CF_X509_CERTIFICATE_SPI_H
