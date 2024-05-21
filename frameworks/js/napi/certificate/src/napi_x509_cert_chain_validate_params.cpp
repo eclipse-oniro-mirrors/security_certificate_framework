@@ -216,6 +216,40 @@ static bool GetRevocationOptions(napi_env env, napi_value rckObj, HcfRevocationC
     return true;
 }
 
+static bool GetRevocationocspDigest(napi_env env, napi_value rckObj, HcfRevocationCheckParam *&out)
+{
+    napi_value obj = GetProp(env, rckObj, CERT_CHAIN_VALIDATE_TAG_OCSP_DIGEST.c_str());
+    if (obj == nullptr) {
+        return true;
+    }
+
+    out->ocspDigest = CertGetBlobFromStringJSParams(env, obj);
+    if (out->ocspDigest == nullptr) {
+        return false;
+    }
+
+    char *mdName = (char *)out->ocspDigest->data;
+    if (strcmp(mdName, "SHA1") == 0) {
+        return true;
+    } else if (strcmp(mdName, "SHA224") == 0) {
+        return true;
+    } else if (strcmp(mdName, "SHA256") == 0) {
+        return true;
+    } else if (strcmp(mdName, "SHA384") == 0) {
+        return true;
+    } else if (strcmp(mdName, "SHA512") == 0) {
+        return true;
+    } else if (strcmp(mdName, "MD5") == 0) {
+        return true;
+    }
+
+    CfFree(out->ocspDigest->data);
+    out->ocspDigest->data = nullptr;
+    CfFree(out->ocspDigest);
+    out->ocspDigest = nullptr;
+    return false;
+}
+
 static bool GetRevocationDetail(napi_env env, napi_value rckObj, HcfRevocationCheckParam *&out)
 {
     napi_value obj = GetProp(env, rckObj, CERT_CHAIN_VALIDATE_TAG_OCSP_REQ_EXTENSION.c_str());
@@ -258,6 +292,9 @@ static bool GetRevocationDetail(napi_env env, napi_value rckObj, HcfRevocationCh
         if (out->crlDownloadURI == nullptr) {
             return false;
         }
+    }
+    if (!GetRevocationocspDigest(env, rckObj, out)) {
+        return false;
     }
     return GetRevocationOptions(env, rckObj, out);
 }

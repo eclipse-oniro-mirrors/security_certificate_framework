@@ -66,6 +66,7 @@ struct HcfRevocationCheckParam {
     CfBlob *ocspResponses;
     CfBlob *crlDownloadURI;
     HcfRevChkOpArray *options;
+    CfBlob *ocspDigest;
 };
 
 typedef struct HcfX509CertChainValidateParams HcfX509CertChainValidateParams;
