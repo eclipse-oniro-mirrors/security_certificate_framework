@@ -83,6 +83,9 @@ static CfBlob g_blobDownloadURIHttpsInvalid2 = { .data = reinterpret_cast<uint8_
                                                      const_cast<char *>(g_crlDownloadURIHttpsInvalid)),
     .size = strlen(g_crlDownloadURIHttpsInvalid) + 1 };
 
+static CfBlob g_ocspDigest = { .data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_digest)),
+    .size = strlen(g_digest) + 1 };
+
 static void FreeHcfRevocationCheckParam(HcfRevocationCheckParam *param)
 {
     if (param == nullptr) {
@@ -148,6 +151,7 @@ static HcfRevocationCheckParam *ConstructHcfRevocationCheckParam(HcfRevChkOption
     param->ocspResponses = resp;
     param->ocspResponderURI = ocspResponderURI;
     param->crlDownloadURI = crlDownloadURI;
+    param->ocspDigest = &g_ocspDigest;
 
     if (ocspResponderCertStream != NULL) {
         (void)HcfX509CertificateCreate(&g_inStreamOcspResponderCert, &(param->ocspResponderCert));

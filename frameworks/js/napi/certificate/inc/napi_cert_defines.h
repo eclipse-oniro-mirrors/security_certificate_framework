@@ -107,6 +107,7 @@ const std::string CERT_CHAIN_VALIDATE_TAG_OCSP_RESP_CERT = "ocspResponderCert";
 const std::string CERT_CHAIN_VALIDATE_TAG_OCSP_RESPS = "ocspResponses";
 const std::string CERT_CHAIN_VALIDATE_TAG_CRL_DOWNLOAD_URI = "crlDownloadURI";
 const std::string CERT_CHAIN_VALIDATE_TAG_OPTIONS = "options";
+const std::string CERT_CHAIN_VALIDATE_TAG_OCSP_DIGEST = "ocspDigest";
 const std::string CERT_CHAIN_VALIDATE_TAG_POLICY = "policy";
 const std::string CERT_CHAIN_VALIDATE_TAG_SSLHOSTNAME = "sslHostname";
 const std::string CERT_CHAIN_VALIDATE_TAG_KEYUSAGE = "keyUsage";

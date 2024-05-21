@@ -1185,7 +1185,29 @@ static CfResult ValidateOcspOnline(STACK_OF(X509) * x509CertChain, OCSP_CERTID *
     return res;
 }
 
-static OCSP_CERTID *GetCertId(STACK_OF(X509) * x509CertChain)
+static const EVP_MD *GetHashDigest(const CfBlob *ocspDigest)
+{
+    if (ocspDigest == NULL || ocspDigest->data == NULL) {
+        return EVP_sha256();
+    }
+    char *mdName = (char *)ocspDigest->data;
+    if (strcmp(mdName, "SHA1") == 0) {
+        return EVP_sha1();
+    } else if (strcmp(mdName, "SHA224") == 0) {
+        return EVP_sha224();
+    } else if (strcmp(mdName, "SHA256") == 0) {
+        return EVP_sha256();
+    } else if (strcmp(mdName, "SHA384") == 0) {
+        return EVP_sha384();
+    } else if (strcmp(mdName, "SHA512") == 0) {
+        return EVP_sha512();
+    } else if (strcmp(mdName, "MD5") == 0) {
+        return EVP_md5();
+    }
+    return EVP_sha256();
+}
+
+static OCSP_CERTID *GetCertId(STACK_OF(X509) * x509CertChain, const CfBlob *ocspDigest)
 {
     X509 *issuerCert = NULL;
     X509 *leafCert = NULL;
@@ -1225,7 +1247,7 @@ static OCSP_CERTID *GetCertId(STACK_OF(X509) * x509CertChain)
             LOGE("Unable to get issuer.");
             break;
         }
-        ret = OCSP_cert_to_id(NULL, leafCert, issuerCert);
+        ret = OCSP_cert_to_id(GetHashDigest(ocspDigest), leafCert, issuerCert);
     } while (0);
 
     if (store != NULL) {
@@ -1315,7 +1337,7 @@ static CfResult ValidateRevocation(
 
     if (params->revocationCheckParam && params->revocationCheckParam->options) {
         CfResult res = CF_INVALID_PARAMS;
-        OCSP_CERTID *certId = GetCertId(x509CertChain);
+        OCSP_CERTID *certId = GetCertId(x509CertChain, params->revocationCheckParam->ocspDigest);
         if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_ACCESS_NETWORK)) {
             res = ValidateRevocationOnLine(params, x509CertChain, trustAnchor, certId);
             if (res != CF_SUCCESS) {
