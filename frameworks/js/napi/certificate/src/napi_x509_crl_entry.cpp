@@ -284,7 +284,8 @@ napi_value NapiX509CrlEntry::GetRevocationDate(napi_env env, napi_callback_info 
         return nullptr;
     }
     napi_value returnDate = nullptr;
-    napi_create_string_utf8(env, reinterpret_cast<char *>(blob->data), blob->size, &returnDate);
+    uint32_t size = blob->data[blob->size - 1] == '\0' ? blob->size - 1 : blob->size;
+    napi_create_string_utf8(env, reinterpret_cast<char *>(blob->data), size, &returnDate);
     CfBlobDataFree(blob);
     CfFree(blob);
     blob = nullptr;
