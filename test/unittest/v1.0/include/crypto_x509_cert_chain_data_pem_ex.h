@@ -436,6 +436,8 @@ static const uint8_t g_testOcspResponses[] = {
 static const char g_crlDownloadURI[] =
     "http://crl3.digicert.com/GeoTrustGlobalTLSRSA4096SHA2562022CA1.crl";
 
+static const char g_digest[] = "SHA1";
+
 static const char g_crlDownloadURIHttps[] = "https://ocsp.digicert.cn";
 
 static const char g_crlDownloadURIHttpsInvalid[] = "https://www.123.com";
