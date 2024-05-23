@@ -463,7 +463,8 @@ napi_value NapiX509Certificate::GetNotBeforeTime(napi_env env, napi_callback_inf
         return nullptr;
     }
     napi_value result = nullptr;
-    napi_create_string_utf8(env, reinterpret_cast<char *>(blob->data), blob->size, &result);
+    uint32_t size = blob->data[blob->size - 1] == '\0' ? blob->size - 1 : blob->size;
+    napi_create_string_utf8(env, reinterpret_cast<char *>(blob->data), size, &result);
     CfBlobDataFree(blob);
     CfFree(blob);
     blob = nullptr;
@@ -487,7 +488,8 @@ napi_value NapiX509Certificate::GetNotAfterTime(napi_env env, napi_callback_info
         return nullptr;
     }
     napi_value result = nullptr;
-    napi_create_string_utf8(env, reinterpret_cast<char *>(blob->data), blob->size, &result);
+    uint32_t size = blob->data[blob->size - 1] == '\0' ? blob->size - 1 : blob->size;
+    napi_create_string_utf8(env, reinterpret_cast<char *>(blob->data), size, &result);
     CfBlobDataFree(blob);
     CfFree(blob);
     blob = nullptr;
@@ -534,7 +536,8 @@ napi_value NapiX509Certificate::GetSigAlgName(napi_env env, napi_callback_info i
         return nullptr;
     }
     napi_value result = nullptr;
-    napi_create_string_utf8(env, reinterpret_cast<char *>(blob->data), blob->size, &result);
+    uint32_t size = blob->data[blob->size - 1] == '\0' ? blob->size - 1 : blob->size;
+    napi_create_string_utf8(env, reinterpret_cast<char *>(blob->data), size, &result);
     CfBlobDataFree(blob);
     CfFree(blob);
     blob = nullptr;
@@ -558,7 +561,8 @@ napi_value NapiX509Certificate::GetSigAlgOID(napi_env env, napi_callback_info in
         return nullptr;
     }
     napi_value result = nullptr;
-    napi_create_string_utf8(env, reinterpret_cast<char *>(blob->data), blob->size, &result);
+    uint32_t size = blob->data[blob->size - 1] == '\0' ? blob->size - 1 : blob->size;
+    napi_create_string_utf8(env, reinterpret_cast<char *>(blob->data), size, &result);
     CfBlobDataFree(blob);
     CfFree(blob);
     blob = nullptr;
