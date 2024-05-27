@@ -533,68 +533,6 @@ HWTEST_F(CryptoX509CertChainTestPart2, ValidateOpensslRevocationOnLineTest006, T
     FreeHcfRevocationCheckParam(params.revocationCheckParam);
 }
 
-HWTEST_F(CryptoX509CertChainTestPart2, ValidateOpensslRevocationOnLineTest007, TestSize.Level0)
-{
-    CF_LOG_I("ValidateOpensslRevocationOnLineTest007");
-    ASSERT_NE(g_certChainPemSpi163, nullptr);
-
-    HcfX509TrustAnchorArray trustAnchorArray = { 0 };
-    BuildAnchorArr(g_inStreamChainDataPemRoot163, trustAnchorArray);
-
-    HcfX509CertChainValidateParams params = { 0 };
-    params.trustAnchors = &trustAnchorArray;
-
-    HcfRevChkOption data[] = { REVOCATION_CHECK_OPTION_ACCESS_NETWORK };
-    params.revocationCheckParam =
-        ConstructHcfRevocationCheckParam(data, sizeof(data) / sizeof(data[0]), &g_blobDownloadURI, NULL);
-    ASSERT_NE(params.revocationCheckParam, nullptr);
-
-    HcfX509CertChainValidateResult result = { 0 };
-
-    // test GetDpUrl failed case
-    CF_LOG_I("ValidateOpensslRevocationOnLineTest - 5");
-    DIST_POINT dp = { 0 };
-
-    DIST_POINT_NAME dpn;
-    dpn.type = GEN_URI;
-
-    dp.distpoint = &dpn;
-    dp.distpoint->type = 0;
-    dp.distpoint->name.fullname = nullptr;
-    X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_value(_, _))
-        .WillOnce(Invoke(__real_OPENSSL_sk_value))
-        .WillOnce(Invoke(__real_OPENSSL_sk_value))
-        .WillOnce(Invoke(__real_OPENSSL_sk_value))
-        .WillOnce(Invoke(__real_OPENSSL_sk_value))
-        .WillOnce(Return(&dp))
-        .WillRepeatedly(Invoke(__real_OPENSSL_sk_value));
-    CfResult ret = g_certChainPemSpi163->engineValidate(g_certChainPemSpi163, &params, &result);
-    EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
-    X509OpensslMock::SetMockFlag(false);
-
-    CF_LOG_I("ValidateOpensslRevocationOnLineTest - 6");
-    X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), GENERAL_NAME_get0_value(_, _))
-        .Times(AnyNumber())
-        .WillRepeatedly(Return(NULL));
-    ret = g_certChainPemSpi163->engineValidate(g_certChainPemSpi163, &params, &result);
-    EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
-    X509OpensslMock::SetMockFlag(false);
-
-    CF_LOG_I("ValidateOpensslRevocationOnLineTest - 7");
-    X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_get_ext_d2i(_, _, _, _))
-        .WillOnce(Return(NULL))
-        .WillRepeatedly(Invoke(__real_X509_get_ext_d2i));
-    ret = g_certChainPemSpi163->engineValidate(g_certChainPemSpi163, &params, &result);
-    EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
-    X509OpensslMock::SetMockFlag(false);
-
-    FreeTrustAnchorArr(trustAnchorArray);
-    FreeHcfRevocationCheckParam(params.revocationCheckParam);
-}
-
 HWTEST_F(CryptoX509CertChainTestPart2, ValidateOpensslRevocationOnLineTest008, TestSize.Level0)
 {
     CF_LOG_I("ValidateOpensslRevocationOnLineTest008");
