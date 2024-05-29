@@ -228,7 +228,7 @@ static bool GetRevocationocspDigest(napi_env env, napi_value rckObj, HcfRevocati
         return false;
     }
 
-    char *mdName = (char *)out->ocspDigest->data;
+    char *mdName = reinterpret_cast<char *>(out->ocspDigest->data);
     if (strcmp(mdName, "SHA1") == 0) {
         return true;
     } else if (strcmp(mdName, "SHA224") == 0) {
