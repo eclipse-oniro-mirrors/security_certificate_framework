@@ -149,6 +149,10 @@ typedef enum {
     CF_TAG_PARAM4_INT32 = CF_TAG_TYPE_INT | 30010,
 } CfTag;
 
+typedef enum {
+    CF_ENCODING_UTF8 = 0,
+} CfEncodinigType;
+
 typedef struct {
     uint32_t tag;
     union {

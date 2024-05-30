@@ -241,6 +241,24 @@ static void DefineValidationKeyUsageTypeProperties(napi_env env, napi_value expo
     napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
 }
 
+static napi_value CreateEncodingType(napi_env env)
+{
+    napi_value encodingType = nullptr;
+    napi_create_object(env, &encodingType);
+
+    CertAddUint32Property(env, encodingType, "ENCODING_UTF8", CF_ENCODING_UTF8);
+
+    return encodingType;
+}
+
+static void DefineEncodingTypeProperties(napi_env env, napi_value exports)
+{
+    napi_property_descriptor desc[] = {
+        DECLARE_NAPI_PROPERTY("EncodingType", CreateEncodingType(env)),
+    };
+    napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
+}
+
 /***********************************************
  * Module export and register
  ***********************************************/
@@ -256,6 +274,7 @@ static napi_value CertModuleExport(napi_env env, napi_value exports)
     DefineOcspCheckOptionTypeProperties(env, exports);
     DefineValidationPolicyTypeProperties(env, exports);
     DefineValidationKeyUsageTypeProperties(env, exports);
+    DefineEncodingTypeProperties(env, exports);
 
     NapiKey::DefineHcfKeyJSClass(env);
     NapiPubKey::DefinePubKeyJSClass(env);

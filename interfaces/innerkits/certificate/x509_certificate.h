@@ -100,6 +100,9 @@ struct HcfX509Certificate {
 
     /** Get the Entension Object of ceritificate. */
     CfResult (*getExtensionsObject)(HcfX509Certificate *self, CfBlob *out);
+
+    /** Get subject distinguished name utf8 type from certificate. */
+    CfResult (*getSubjectNameEx)(HcfX509Certificate *self, CfEncodinigType encodingType, CfBlob *out);
 };
 
 typedef struct HcfX509CertificateArray HcfX509CertificateArray;

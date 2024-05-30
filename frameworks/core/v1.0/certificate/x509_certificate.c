@@ -187,6 +187,20 @@ static CfResult GetSubjectName(HcfX509Certificate *self, CfBlob *out)
         ((HcfX509CertificateImpl *)self)->spiObj, out);
 }
 
+static CfResult GetSubjectNameEx(HcfX509Certificate *self, CfEncodinigType encodingType, CfBlob *out)
+{
+    if ((self == NULL) || (out == NULL) || encodingType != CF_ENCODING_UTF8) {
+        LOGE("Invalid input parameter.");
+        return CF_INVALID_PARAMS;
+    }
+    if (!IsClassMatch((CfObjectBase *)self, GetX509CertificateClass())) {
+        LOGE("Class is not match.");
+        return CF_INVALID_PARAMS;
+    }
+    return ((HcfX509CertificateImpl *)self)->spiObj->engineGetSubjectNameEx(
+        ((HcfX509CertificateImpl *)self)->spiObj, encodingType, out);
+}
+
 static CfResult GetNotBeforeTime(HcfX509Certificate *self, CfBlob *outDate)
 {
     if ((self == NULL) || (outDate == NULL)) {
@@ -423,6 +437,7 @@ static void HcfX509CertificateImplPack(HcfX509CertificateImpl *x509CertImpl, Hcf
     x509CertImpl->base.getSerialNumber = GetSerialNumber;
     x509CertImpl->base.getIssuerName = GetIssuerName;
     x509CertImpl->base.getSubjectName = GetSubjectName;
+    x509CertImpl->base.getSubjectNameEx = GetSubjectNameEx;
     x509CertImpl->base.getNotBeforeTime = GetNotBeforeTime;
     x509CertImpl->base.getNotAfterTime = GetNotAfterTime;
     x509CertImpl->base.getSignature = GetSignature;

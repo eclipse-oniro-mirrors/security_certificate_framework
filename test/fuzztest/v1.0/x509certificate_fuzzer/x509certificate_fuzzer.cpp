@@ -91,6 +91,7 @@ namespace OHOS {
 
         CfBlob subjectName = { 0 };
         (void)x509CertObj->getSubjectName(x509CertObj, &subjectName);
+        (void)x509CertObj->getSubjectNameEx(x509CertObj, CF_ENCODING_UTF8, &subjectName);
         CfBlobDataClearAndFree(&subjectName);
 
         CfBlob notBeforeTime = { 0 };
