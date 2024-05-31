@@ -80,12 +80,12 @@ NapiX509CertChainBulidResult::~NapiX509CertChainBulidResult()
 
 static CfCtx *BuildCertChainContext()
 {
-    CfCtx *context = static_cast<CfCtx *>(HcfMalloc(sizeof(CfCtx), 0));
+    CfCtx *context = static_cast<CfCtx *>(CfMalloc(sizeof(CfCtx), 0));
     if (context == nullptr) {
         LOGE("malloc context failed!");
         return nullptr;
     }
-    context->async = static_cast<AsyncCtx>(HcfMalloc(sizeof(AsyncContext), 0));
+    context->async = static_cast<AsyncCtx>(CfMalloc(sizeof(AsyncContext), 0));
     if (context->async == nullptr) {
         LOGE("malloc context failed!");
         CfFree(context);
@@ -549,7 +549,7 @@ static napi_value ConvertCfBlobToNapiValue(napi_env env, CfBlob *blob)
         LOGE("ConvertCfBlobToNapiValue:blob is nullptr.");
         return nullptr;
     }
-    uint8_t *buffer = static_cast<uint8_t *>(HcfMalloc(blob->size, 0));
+    uint8_t *buffer = static_cast<uint8_t *>(CfMalloc(blob->size, 0));
     if (buffer == nullptr) {
         LOGE("malloc uint8 array buffer failed!");
         return nullptr;
@@ -743,7 +743,7 @@ bool GetValidateParameters(napi_env env, napi_value obj, HcfX509CertChainBuildPa
 bool GetChainBuildParametersFromValue(napi_env env, napi_value obj, HcfX509CertChainBuildParameters **bulidParams)
 {
     HcfX509CertChainBuildParameters *buildParam =
-        static_cast<HcfX509CertChainBuildParameters *>(HcfMalloc(sizeof(HcfX509CertChainBuildParameters), 0));
+        static_cast<HcfX509CertChainBuildParameters *>(CfMalloc(sizeof(HcfX509CertChainBuildParameters), 0));
     if (buildParam == nullptr) {
         LOGE("malloc cert chain build parameters failed!");
         return false;
@@ -788,6 +788,12 @@ static napi_value CreateX509CertChainExtReturn(napi_env env, size_t argc, napi_v
         LOGE("Create Callback Promise failed");
         DeleteCertChainContext(env, context);
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Create Callback Promise failed!"));
+        return nullptr;
+    }
+    if (napi_create_reference(env, param, 1, &context->async->paramRef) != napi_ok) {
+        LOGE("create param ref failed!");
+        DeleteCertChainContext(env, context);
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Create param ref failed"));
         return nullptr;
     }
     if (!GetChainBuildParametersFromValue(env, param, &context->bulidParams)) {

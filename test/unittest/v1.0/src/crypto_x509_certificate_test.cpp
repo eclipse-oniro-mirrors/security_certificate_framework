@@ -133,7 +133,8 @@ HWTEST_F(CryptoX509CertificateTest, GenerateCert004, TestSize.Level0)
 HWTEST_F(CryptoX509CertificateTest, Verify001, TestSize.Level0)
 {
     HcfPubKey *keyOut = nullptr;
-    CfResult ret = g_x509CertObj->base.getPublicKey(reinterpret_cast<HcfCertificate *>(g_x509CertObj), &keyOut);
+    CfResult ret = g_x509CertObj->base.getPublicKey(reinterpret_cast<HcfCertificate *>(g_x509CertObj),
+        (void **)&keyOut);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(keyOut, nullptr);
     ret = g_x509CertObj->base.verify(reinterpret_cast<HcfCertificate *>(g_x509CertObj), keyOut);
@@ -153,7 +154,7 @@ HWTEST_F(CryptoX509CertificateTest, Verify002, TestSize.Level0)
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(rootCert, nullptr);
     HcfPubKey *rootkeyOut = nullptr;
-    ret = rootCert->base.getPublicKey(reinterpret_cast<HcfCertificate *>(rootCert), &rootkeyOut);
+    ret = rootCert->base.getPublicKey(reinterpret_cast<HcfCertificate *>(rootCert), (void **)&rootkeyOut);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(rootkeyOut, nullptr);
 
@@ -184,7 +185,7 @@ HWTEST_F(CryptoX509CertificateTest, Verify003, TestSize.Level0)
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(rootCert, nullptr);
     HcfPubKey *rootkeyOut = nullptr;
-    ret = rootCert->base.getPublicKey(reinterpret_cast<HcfCertificate *>(rootCert), &rootkeyOut);
+    ret = rootCert->base.getPublicKey(reinterpret_cast<HcfCertificate *>(rootCert), (void **)&rootkeyOut);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(rootkeyOut, nullptr);
 
@@ -221,7 +222,8 @@ HWTEST_F(CryptoX509CertificateTest, GetEncoded002, TestSize.Level0)
 HWTEST_F(CryptoX509CertificateTest, GetPublicKey, TestSize.Level0)
 {
     HcfPubKey *keyOut = nullptr;
-    CfResult ret = g_x509CertObj->base.getPublicKey(reinterpret_cast<HcfCertificate *>(g_x509CertObj), &keyOut);
+    CfResult ret = g_x509CertObj->base.getPublicKey(reinterpret_cast<HcfCertificate *>(g_x509CertObj),
+        (void **)&keyOut);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(keyOut, nullptr);
     CfObjDestroy(keyOut);
@@ -849,7 +851,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest018, TestSize.Level0)
     CfResult ret = g_x509CertObj->getKeyUsage(g_x509CertObj, &cfBlobDataSelf);
     EXPECT_EQ(ret, CF_SUCCESS);
 
-    uint8_t *data = static_cast<uint8_t *>(HcfMalloc(cfBlobDataSelf.size - 1, 0));
+    uint8_t *data = static_cast<uint8_t *>(CfMalloc(cfBlobDataSelf.size - 1, 0));
     for (uint32_t index = 0; index < cfBlobDataSelf.size - 1; index++) {
         data[index] = cfBlobDataSelf.data[index];
     }
@@ -875,7 +877,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest019, TestSize.Level0)
     CfResult ret = g_x509CertObj->getKeyUsage(g_x509CertObj, &cfBlobDataSelf);
     EXPECT_EQ(ret, CF_SUCCESS);
 
-    uint8_t *data = static_cast<uint8_t *>(HcfMalloc(cfBlobDataSelf.size + 1, 0));
+    uint8_t *data = static_cast<uint8_t *>(CfMalloc(cfBlobDataSelf.size + 1, 0));
     uint32_t index = 0;
     for (index = 0; index < cfBlobDataSelf.size; index++) {
         data[index] = cfBlobDataSelf.data[index];
@@ -904,7 +906,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest020, TestSize.Level0)
     CfResult ret = g_x509CertObj->getKeyUsage(g_x509CertObj, &cfBlobDataSelf);
     EXPECT_EQ(ret, CF_SUCCESS);
 
-    uint8_t *data = static_cast<uint8_t *>(HcfMalloc(cfBlobDataSelf.size + 1, 0));
+    uint8_t *data = static_cast<uint8_t *>(CfMalloc(cfBlobDataSelf.size + 1, 0));
     uint32_t index = 0;
     for (index = 0; index < cfBlobDataSelf.size; index++) {
         data[index] = cfBlobDataSelf.data[index];
@@ -933,7 +935,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest021, TestSize.Level0)
     CfResult ret = g_x509CertObj->getKeyUsage(g_x509CertObj, &cfBlobDataSelf);
     EXPECT_EQ(ret, CF_SUCCESS);
 
-    uint8_t *data = static_cast<uint8_t *>(HcfMalloc(cfBlobDataSelf.size, 0));
+    uint8_t *data = static_cast<uint8_t *>(CfMalloc(cfBlobDataSelf.size, 0));
     for (uint32_t index = 0; index < cfBlobDataSelf.size; index++) {
         data[index] = (cfBlobDataSelf.data[index]) ? 0 : 1;
     }
@@ -1409,7 +1411,8 @@ HWTEST_F(CryptoX509CertificateTest, NullInput, TestSize.Level0)
 {
     (void)HcfX509CertificateCreate(nullptr, nullptr);
     HcfPubKey *keyOut = nullptr;
-    CfResult ret = g_x509CertObj->base.getPublicKey(reinterpret_cast<HcfCertificate *>(g_x509CertObj), &keyOut);
+    CfResult ret = g_x509CertObj->base.getPublicKey(reinterpret_cast<HcfCertificate *>(g_x509CertObj),
+        (void **)&keyOut);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(keyOut, nullptr);
     (void)g_x509CertObj->base.base.destroy(nullptr);
@@ -1654,7 +1657,7 @@ HWTEST_F(CryptoX509CertificateTest, InvalidCertClass, TestSize.Level0)
     ret = g_x509CertObj->base.getEncoded(&(invalidCert.base), &inStream);
     EXPECT_NE(ret, CF_SUCCESS);
     HcfPubKey *pubKeyOut = nullptr;
-    ret = g_x509CertObj->base.getPublicKey(&(invalidCert.base), &pubKeyOut);
+    ret = g_x509CertObj->base.getPublicKey(&(invalidCert.base), (void **)&pubKeyOut);
     EXPECT_NE(ret, CF_SUCCESS);
     const char *date = "2020";
     ret = g_x509CertObj->checkValidityWithDate(&invalidCert, date);
@@ -1694,7 +1697,7 @@ HWTEST_F(CryptoX509CertificateTest, InvalidMalloc, TestSize.Level0)
     ret = g_x509CertObj->base.getEncoded(&(g_x509CertObj->base), &inStream);
     EXPECT_NE(ret, CF_SUCCESS);
     HcfPubKey *pubKeyOut = nullptr;
-    ret = g_x509CertObj->base.getPublicKey(&(g_x509CertObj->base), &pubKeyOut);
+    ret = g_x509CertObj->base.getPublicKey(&(g_x509CertObj->base), (void **)&pubKeyOut);
     EXPECT_NE(ret, CF_SUCCESS);
     const char *date = "2020";
     ret = g_x509CertObj->checkValidityWithDate(g_x509CertObj, date);

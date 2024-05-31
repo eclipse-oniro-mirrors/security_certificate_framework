@@ -159,7 +159,7 @@ static CfResult GetCertlist(HcfX509CertChainSpi *self, HcfX509CertificateArray *
         return CF_ERR_CRYPTO_OPERATION;
     }
     /* the list count has checked when create cert chain */
-    certsList->data = (HcfX509Certificate **)HcfMalloc(certsNum * sizeof(HcfX509Certificate *), 0);
+    certsList->data = (HcfX509Certificate **)CfMalloc(certsNum * sizeof(HcfX509Certificate *), 0);
     if (certsList->data == NULL) {
         LOGE("malloc failed");
         return CF_ERR_MALLOC;
@@ -505,7 +505,7 @@ static CfResult FillValidateResult(HcfX509TrustAnchor *inputAnchor, X509 *cert, 
         return CF_INVALID_PARAMS;
     }
     CfResult res = CF_SUCCESS;
-    HcfX509TrustAnchor *validateTrustAnchors = (HcfX509TrustAnchor *)HcfMalloc(sizeof(HcfX509TrustAnchor), 0);
+    HcfX509TrustAnchor *validateTrustAnchors = (HcfX509TrustAnchor *)CfMalloc(sizeof(HcfX509TrustAnchor), 0);
     if (validateTrustAnchors == NULL) {
         LOGE("FillValidateResult() malloc failed");
         return CF_ERR_MALLOC;
@@ -1185,7 +1185,29 @@ static CfResult ValidateOcspOnline(STACK_OF(X509) * x509CertChain, OCSP_CERTID *
     return res;
 }
 
-static OCSP_CERTID *GetCertId(STACK_OF(X509) * x509CertChain)
+static const EVP_MD *GetHashDigest(const CfBlob *ocspDigest)
+{
+    if (ocspDigest == NULL || ocspDigest->data == NULL) {
+        return EVP_sha256();
+    }
+    char *mdName = (char *)ocspDigest->data;
+    if (strcmp(mdName, "SHA1") == 0) {
+        return EVP_sha1();
+    } else if (strcmp(mdName, "SHA224") == 0) {
+        return EVP_sha224();
+    } else if (strcmp(mdName, "SHA256") == 0) {
+        return EVP_sha256();
+    } else if (strcmp(mdName, "SHA384") == 0) {
+        return EVP_sha384();
+    } else if (strcmp(mdName, "SHA512") == 0) {
+        return EVP_sha512();
+    } else if (strcmp(mdName, "MD5") == 0) {
+        return EVP_md5();
+    }
+    return EVP_sha256();
+}
+
+static OCSP_CERTID *GetCertId(STACK_OF(X509) * x509CertChain, const CfBlob *ocspDigest)
 {
     X509 *issuerCert = NULL;
     X509 *leafCert = NULL;
@@ -1225,7 +1247,7 @@ static OCSP_CERTID *GetCertId(STACK_OF(X509) * x509CertChain)
             LOGE("Unable to get issuer.");
             break;
         }
-        ret = OCSP_cert_to_id(NULL, leafCert, issuerCert);
+        ret = OCSP_cert_to_id(GetHashDigest(ocspDigest), leafCert, issuerCert);
     } while (0);
 
     if (store != NULL) {
@@ -1315,7 +1337,7 @@ static CfResult ValidateRevocation(
 
     if (params->revocationCheckParam && params->revocationCheckParam->options) {
         CfResult res = CF_INVALID_PARAMS;
-        OCSP_CERTID *certId = GetCertId(x509CertChain);
+        OCSP_CERTID *certId = GetCertId(x509CertChain, params->revocationCheckParam->ocspDigest);
         if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_ACCESS_NETWORK)) {
             res = ValidateRevocationOnLine(params, x509CertChain, trustAnchor, certId);
             if (res != CF_SUCCESS) {
@@ -1733,7 +1755,7 @@ CfResult HcfX509CertChainByEncSpiCreate(const CfEncodingBlob *inStream, HcfX509C
         return CF_INVALID_PARAMS;
     }
     HcfX509CertChainOpensslImpl *certChain =
-        (HcfX509CertChainOpensslImpl *)HcfMalloc(sizeof(HcfX509CertChainOpensslImpl), 0);
+        (HcfX509CertChainOpensslImpl *)CfMalloc(sizeof(HcfX509CertChainOpensslImpl), 0);
     if (certChain == NULL) {
         LOGE("Failed to allocate certChain spi object memory!");
         return CF_ERR_MALLOC;
@@ -1799,7 +1821,7 @@ CfResult HcfX509CertChainByArrSpiCreate(const HcfX509CertificateArray *inCerts, 
     }
 
     HcfX509CertChainOpensslImpl *certChain =
-        (HcfX509CertChainOpensslImpl *)HcfMalloc(sizeof(HcfX509CertChainOpensslImpl), 0);
+        (HcfX509CertChainOpensslImpl *)CfMalloc(sizeof(HcfX509CertChainOpensslImpl), 0);
     if (certChain == NULL) {
         LOGE("Failed to allocate certChain spi object memory!");
         return CF_ERR_MALLOC;
@@ -1993,7 +2015,7 @@ CfResult HcfX509CertChainByParamsSpiCreate(const HcfX509CertChainBuildParameters
         return CF_INVALID_PARAMS;
     }
     HcfX509CertChainOpensslImpl *certChain =
-        (HcfX509CertChainOpensslImpl *)HcfMalloc(sizeof(HcfX509CertChainOpensslImpl), 0);
+        (HcfX509CertChainOpensslImpl *)CfMalloc(sizeof(HcfX509CertChainOpensslImpl), 0);
     if (certChain == NULL) {
         LOGE("Failed to allocate certChain spi object memory!");
         return CF_ERR_MALLOC;
@@ -2041,7 +2063,7 @@ CfResult HcfX509CertChainByParamsSpiCreate(const HcfX509CertChainBuildParameters
 
 static CfResult GetPubFromP12(EVP_PKEY *pkey, CfBlob **pub)
 {
-    *pub = (CfBlob *)HcfMalloc(sizeof(CfBlob), 0);
+    *pub = (CfBlob *)CfMalloc(sizeof(CfBlob), 0);
     if (*pub == NULL) {
         LOGE("Failed to malloc pub key!");
         return CF_ERR_MALLOC;
@@ -2064,7 +2086,7 @@ static CfResult GetSubjectFromP12(X509 *cert, CfBlob **sub)
         LOGE("Failed to get subject name!");
         return CF_INVALID_PARAMS;
     }
-    *sub = (CfBlob *)HcfMalloc(sizeof(CfBlob), 0);
+    *sub = (CfBlob *)CfMalloc(sizeof(CfBlob), 0);
     if (*sub == NULL) {
         LOGE("Failed to malloc pub key!");
         return CF_ERR_MALLOC;
@@ -2088,7 +2110,7 @@ static CfResult GetNameConstraintsFromP12(X509 *cert, CfBlob **name)
         LOGE("No nameConstraints found in certificate");
         return CF_INVALID_PARAMS;
     }
-    *name = (CfBlob *)HcfMalloc(sizeof(CfBlob), 0);
+    *name = (CfBlob *)CfMalloc(sizeof(CfBlob), 0);
     if (*name == NULL) {
         LOGE("Failed to malloc pub key!");
         return CF_ERR_MALLOC;
@@ -2181,21 +2203,21 @@ CfResult HcfX509CreateTrustAnchorWithKeyStoreFunc(
     }
     PKCS12_free(p12);
 
-    HcfX509TrustAnchorArray *anchor = (HcfX509TrustAnchorArray *)(HcfMalloc(sizeof(HcfX509TrustAnchorArray), 0));
+    HcfX509TrustAnchorArray *anchor = (HcfX509TrustAnchorArray *)(CfMalloc(sizeof(HcfX509TrustAnchorArray), 0));
     if (anchor == NULL) {
         LOGE("Failed to allocate trustAnchorArray memory!");
         return CF_ERR_MALLOC;
     }
     int32_t count = sk_X509_num(ca);
     anchor->count = (uint32_t)(count < 0 ? 0 : count);
-    anchor->data = (HcfX509TrustAnchor **)(HcfMalloc(anchor->count * sizeof(HcfX509TrustAnchor *), 0));
+    anchor->data = (HcfX509TrustAnchor **)(CfMalloc(anchor->count * sizeof(HcfX509TrustAnchor *), 0));
     if (anchor->data == NULL) {
         LOGE("Failed to allocate data memory!");
         CfFree(anchor);
         return CF_ERR_MALLOC;
     }
     for (uint32_t i = 0; i < anchor->count; i++) {
-        anchor->data[i] = (HcfX509TrustAnchor *)(HcfMalloc(sizeof(HcfX509TrustAnchor), 0));
+        anchor->data[i] = (HcfX509TrustAnchor *)(CfMalloc(sizeof(HcfX509TrustAnchor), 0));
         if (anchor->data[i] == NULL) {
             LOGE("Failed to allocate data memory!");
             FreeHcfX509TrustAnchorArray(anchor, true);

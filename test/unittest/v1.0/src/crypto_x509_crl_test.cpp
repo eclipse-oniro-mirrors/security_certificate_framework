@@ -333,7 +333,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest041, TestSize.Level0)
     ASSERT_NE(x509CertObj, nullptr);
 
     HcfPubKey *keyOut = nullptr;
-    ret = x509CertObj->base.getPublicKey((HcfCertificate *)x509CertObj, &keyOut);
+    ret = x509CertObj->base.getPublicKey((HcfCertificate *)x509CertObj, (void **)&keyOut);
     ASSERT_EQ(ret, CF_SUCCESS);
     ASSERT_NE(keyOut, nullptr);
 

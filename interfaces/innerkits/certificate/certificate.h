@@ -18,7 +18,6 @@
 
 #include "cf_blob.h"
 #include "cf_object_base.h"
-#include "pub_key.h"
 #include "cf_result.h"
 
 typedef struct HcfCertificate HcfCertificate;
@@ -27,13 +26,13 @@ struct HcfCertificate {
     struct CfObjectBase base;
 
     /** Verify that this certificate corresponding to the specified public key. */
-    CfResult (*verify)(HcfCertificate *self, HcfPubKey *key);
+    CfResult (*verify)(HcfCertificate *self, void *key);
 
     /** Get the serialized cert data.*/
     CfResult (*getEncoded)(HcfCertificate *self, CfEncodingBlob *encodedByte);
 
     /** Get the public key from this certificate. */
-    CfResult (*getPublicKey)(HcfCertificate *self, HcfPubKey **keyOut);
+    CfResult (*getPublicKey)(HcfCertificate *self, void **keyOut);
 };
 
 #endif // CF_CERTIFICATE_H

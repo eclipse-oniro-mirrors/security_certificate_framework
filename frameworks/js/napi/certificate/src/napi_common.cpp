@@ -125,7 +125,7 @@ int32_t GetBlobArrayFromParamSet(const CfParamSet *paramSet, CfArray *outArray)
     }
 
     uint32_t oidsCnt = paramSet->paramsCnt - 1;
-    CfBlob *blobs = reinterpret_cast<CfBlob *>(CfMalloc(sizeof(CfBlob) * oidsCnt));
+    CfBlob *blobs = reinterpret_cast<CfBlob *>(CfMalloc(sizeof(CfBlob) * oidsCnt, 0));
     if (blobs == nullptr) {
         CF_LOG_E("Failed to malloc blobs");
         return CF_ERR_MALLOC;
@@ -139,7 +139,7 @@ int32_t GetBlobArrayFromParamSet(const CfParamSet *paramSet, CfArray *outArray)
         }
 
         uint32_t size = paramSet->params[i + 1].blob.size;
-        blobs[i].data = static_cast<uint8_t *>(CfMalloc(size));
+        blobs[i].data = static_cast<uint8_t *>(CfMalloc(size, 0));
         if (blobs[i].data == nullptr) {
             CF_LOG_E("Failed to malloc blob[%u].data", i);
             FreeCfBlobArray(blobs, i);
@@ -182,6 +182,10 @@ void FreeAsyncContext(napi_env env, AsyncCtx &async)
     if (async->callback != nullptr) {
         napi_delete_reference(env, async->callback);
         async->callback = nullptr;
+    }
+    if (async->paramRef != nullptr) {
+        napi_delete_reference(env, async->paramRef);
+        async->paramRef = nullptr;
     }
     CfFree(async);
     async = nullptr;

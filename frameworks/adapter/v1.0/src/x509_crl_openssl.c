@@ -140,7 +140,7 @@ static CfResult GetEncoded(HcfX509CrlSpi *self, CfEncodingBlob *encodedOut)
         CfPrintOpensslError();
         return CF_ERR_CRYPTO_OPERATION;
     }
-    encodedOut->data = (uint8_t *)HcfMalloc(length, 0);
+    encodedOut->data = (uint8_t *)CfMalloc(length, 0);
     if (encodedOut->data == NULL) {
         LOGE("Failed to malloc for crl encoded data!");
         OPENSSL_free(out);
@@ -247,7 +247,7 @@ static CfResult GetIssuerName(HcfX509CrlSpi *self, CfBlob *out)
         return CF_ERR_CRYPTO_OPERATION;
     }
     uint32_t length = strlen(issuer) + 1;
-    out->data = (uint8_t *)HcfMalloc(length, 0);
+    out->data = (uint8_t *)CfMalloc(length, 0);
     if (out->data == NULL) {
         LOGE("Failed to malloc for crl issuer data!");
         OPENSSL_free(issuer);
@@ -261,7 +261,7 @@ static CfResult GetIssuerName(HcfX509CrlSpi *self, CfBlob *out)
 
 static CfResult SetCertIssuer(HcfX509CrlSpi *self)
 {
-    ((HcfX509CRLOpensslImpl *)self)->certIssuer = (CfBlob *)HcfMalloc(sizeof(CfBlob), 0);
+    ((HcfX509CRLOpensslImpl *)self)->certIssuer = (CfBlob *)CfMalloc(sizeof(CfBlob), 0);
     if (((HcfX509CRLOpensslImpl *)self)->certIssuer == NULL) {
         LOGE("Failed to malloc for certIssuer!");
         return CF_ERR_MALLOC;
@@ -297,7 +297,7 @@ static CfResult GetLastUpdate(HcfX509CrlSpi *self, CfBlob *out)
         return CF_ERR_CRYPTO_OPERATION;
     }
     uint32_t length = strlen(thisUpdate) + 1;
-    out->data = (uint8_t *)HcfMalloc(length, 0);
+    out->data = (uint8_t *)CfMalloc(length, 0);
     if (out->data == NULL) {
         LOGE("Failed to malloc for thisUpdate!");
         return CF_ERR_MALLOC;
@@ -330,7 +330,7 @@ static CfResult GetNextUpdate(HcfX509CrlSpi *self, CfBlob *out)
         return CF_ERR_CRYPTO_OPERATION;
     }
     uint32_t length = strlen(nextUpdate) + 1;
-    out->data = (uint8_t *)HcfMalloc(length, 0);
+    out->data = (uint8_t *)CfMalloc(length, 0);
     if (out->data == NULL) {
         LOGE("Failed to malloc for nextUpdate!");
         return CF_ERR_MALLOC;
@@ -482,7 +482,7 @@ static CfResult GetRevokedCerts(HcfX509CrlSpi *self, CfArray *entrysOut)
         return CF_ERR_CRYPTO_OPERATION;
     }
     uint32_t blobSize = sizeof(CfBlob) * revokedNum;
-    entrysOut->data = (CfBlob *)HcfMalloc(blobSize, 0);
+    entrysOut->data = (CfBlob *)CfMalloc(blobSize, 0);
     if (entrysOut->data == NULL) {
         LOGE("Failed to malloc for entrysOut array!");
         return CF_ERR_MALLOC;
@@ -516,7 +516,7 @@ static CfResult GetTbsList(HcfX509CrlSpi *self, CfBlob *tbsCertListOut)
         CfPrintOpensslError();
         return CF_ERR_CRYPTO_OPERATION;
     }
-    tbsCertListOut->data = (uint8_t *)HcfMalloc(length, 0);
+    tbsCertListOut->data = (uint8_t *)CfMalloc(length, 0);
     if (tbsCertListOut->data == NULL) {
         LOGE("Failed to malloc for tbs!");
         OPENSSL_free(tbs);
@@ -558,7 +558,7 @@ static CfResult GetSignature(HcfX509CrlSpi *self, CfBlob *signature)
         CfPrintOpensslError();
         return CF_ERR_CRYPTO_OPERATION;
     }
-    signature->data = (uint8_t *)HcfMalloc(signatureLen, 0);
+    signature->data = (uint8_t *)CfMalloc(signatureLen, 0);
     if (signature->data == NULL) {
         LOGE("Failed to malloc for signature!");
         return CF_ERR_MALLOC;
@@ -584,7 +584,7 @@ static CfResult GetSignatureAlgOidInner(X509_CRL *crl, CfBlob *oidOut)
         CfPrintOpensslError();
         return CF_ERR_CRYPTO_OPERATION;
     }
-    char *output = (char *)HcfMalloc(OID_LENGTH, 0);
+    char *output = (char *)CfMalloc(OID_LENGTH, 0);
     if (output == NULL) {
         LOGE("Failed to malloc the output!");
         return CF_ERR_MALLOC;
@@ -597,7 +597,7 @@ static CfResult GetSignatureAlgOidInner(X509_CRL *crl, CfBlob *oidOut)
         return CF_ERR_CRYPTO_OPERATION;
     }
     uint32_t length = strlen(output) + 1;
-    oidOut->data = (uint8_t *)HcfMalloc(length, 0);
+    oidOut->data = (uint8_t *)CfMalloc(length, 0);
     if (oidOut->data == NULL) {
         LOGE("Failed to malloc for oidOut!");
         CfFree(output);
@@ -633,7 +633,7 @@ static CfResult GetSignatureAlgName(HcfX509CrlSpi *self, CfBlob *algNameOut)
         LOGE("Input wrong class type!");
         return CF_INVALID_PARAMS;
     }
-    CfBlob *oidOut = (CfBlob *)HcfMalloc(sizeof(CfBlob), 0);
+    CfBlob *oidOut = (CfBlob *)CfMalloc(sizeof(CfBlob), 0);
     CfResult res = GetSignatureAlgOid(self, oidOut);
     if (res != CF_SUCCESS) {
         LOGE("Get signature algor oid failed!");
@@ -648,7 +648,7 @@ static CfResult GetSignatureAlgName(HcfX509CrlSpi *self, CfBlob *algNameOut)
         return CF_ERR_CRYPTO_OPERATION;
     }
     uint32_t length = strlen(algName) + 1;
-    algNameOut->data = (uint8_t *)HcfMalloc(length, 0);
+    algNameOut->data = (uint8_t *)CfMalloc(length, 0);
     if (algNameOut->data == NULL) {
         LOGE("Failed to malloc for algName!");
         return CF_ERR_MALLOC;
@@ -690,7 +690,7 @@ static CfResult GetSignatureAlgParamsInner(X509_CRL *crl, CfBlob *sigAlgParamOut
         CfPrintOpensslError();
         return CF_ERR_CRYPTO_OPERATION;
     }
-    sigAlgParamOut->data = (uint8_t *)HcfMalloc(length, 0);
+    sigAlgParamOut->data = (uint8_t *)CfMalloc(length, 0);
     if (sigAlgParamOut->data == NULL) {
         LOGE("Failed to malloc for sigAlgParam!");
         OPENSSL_free(outParams);
@@ -797,9 +797,9 @@ static CfResult HashCode(HcfX509CrlSpi *self, CfBlob *out)
         return CF_ERR_CRYPTO_OPERATION;
     }
 
-    out->data = (uint8_t *)HcfMalloc(SHA256_DIGEST_LENGTH, 0);
+    out->data = (uint8_t *)CfMalloc(SHA256_DIGEST_LENGTH, 0);
     if (out->data == NULL) {
-        LOGE("HcfMalloc error");
+        LOGE("CfMalloc error");
         CfFree(buf);
         return CF_ERR_MALLOC;
     }
@@ -847,7 +847,7 @@ static CfResult GetNumOfCRL(HcfX509CrlSpi *self, CfBlob *outBlob)
         LOGE("Crl number is null!");
         return CF_INVALID_PARAMS;
     }
-    outBlob->data = (uint8_t *)HcfMalloc(crlNumber->length, 0);
+    outBlob->data = (uint8_t *)CfMalloc(crlNumber->length, 0);
     if (!outBlob->data) {
         ASN1_INTEGER_free(crlNumber);
         LOGE("Malloc failed!");
@@ -1115,7 +1115,7 @@ CfResult HcfCX509CrlSpiCreate(const CfEncodingBlob *inStream, HcfX509CrlSpi **sp
         LOGE("Invalid Paramas!");
         return CF_INVALID_PARAMS;
     }
-    HcfX509CRLOpensslImpl *returnCRL = (HcfX509CRLOpensslImpl *)HcfMalloc(sizeof(HcfX509CRLOpensslImpl), 0);
+    HcfX509CRLOpensslImpl *returnCRL = (HcfX509CRLOpensslImpl *)CfMalloc(sizeof(HcfX509CRLOpensslImpl), 0);
     if (returnCRL == NULL) {
         LOGE("Failed to malloc for x509 instance!");
         return CF_ERR_MALLOC;

@@ -83,6 +83,9 @@ static CfBlob g_blobDownloadURIHttpsInvalid2 = { .data = reinterpret_cast<uint8_
                                                      const_cast<char *>(g_crlDownloadURIHttpsInvalid)),
     .size = strlen(g_crlDownloadURIHttpsInvalid) + 1 };
 
+static CfBlob g_ocspDigest = { .data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_digest)),
+    .size = strlen(g_digest) + 1 };
+
 static void FreeHcfRevocationCheckParam(HcfRevocationCheckParam *param)
 {
     if (param == nullptr) {
@@ -112,13 +115,13 @@ static HcfRevocationCheckParam *ConstructHcfRevocationCheckParam(HcfRevChkOption
     CfBlob *ocspResponderURI = NULL, CfBlob *crlDownloadURI = NULL,
     const CfEncodingBlob *ocspResponderCertStream = NULL)
 {
-    HcfRevChkOpArray *revChkOpArray = (HcfRevChkOpArray *)HcfMalloc(sizeof(HcfRevChkOpArray), 0);
+    HcfRevChkOpArray *revChkOpArray = (HcfRevChkOpArray *)CfMalloc(sizeof(HcfRevChkOpArray), 0);
     if (revChkOpArray == nullptr) {
         return nullptr;
     }
 
     revChkOpArray->count = size;
-    revChkOpArray->data = (HcfRevChkOption *)HcfMalloc(revChkOpArray->count * sizeof(HcfRevChkOption), 0);
+    revChkOpArray->data = (HcfRevChkOption *)CfMalloc(revChkOpArray->count * sizeof(HcfRevChkOption), 0);
     if (revChkOpArray->data == nullptr) {
         CfFree(revChkOpArray);
         return nullptr;
@@ -128,7 +131,7 @@ static HcfRevocationCheckParam *ConstructHcfRevocationCheckParam(HcfRevChkOption
         revChkOpArray->data[i] = data[i];
     }
 
-    CfBlob *resp = (CfBlob *)HcfMalloc(sizeof(CfBlob), 0);
+    CfBlob *resp = (CfBlob *)CfMalloc(sizeof(CfBlob), 0);
     if (resp == nullptr) {
         CfFree(revChkOpArray->data);
         CfFree(revChkOpArray);
@@ -137,7 +140,7 @@ static HcfRevocationCheckParam *ConstructHcfRevocationCheckParam(HcfRevChkOption
     resp->data = (uint8_t *)(&g_testOcspResponses[0]);
     resp->size = sizeof(g_testOcspResponses);
 
-    HcfRevocationCheckParam *param = (HcfRevocationCheckParam *)HcfMalloc(sizeof(HcfRevocationCheckParam), 0);
+    HcfRevocationCheckParam *param = (HcfRevocationCheckParam *)CfMalloc(sizeof(HcfRevocationCheckParam), 0);
     if (param == nullptr) {
         CfFree(revChkOpArray->data);
         CfFree(revChkOpArray);
@@ -148,6 +151,7 @@ static HcfRevocationCheckParam *ConstructHcfRevocationCheckParam(HcfRevChkOption
     param->ocspResponses = resp;
     param->ocspResponderURI = ocspResponderURI;
     param->crlDownloadURI = crlDownloadURI;
+    param->ocspDigest = &g_ocspDigest;
 
     if (ocspResponderCertStream != NULL) {
         (void)HcfX509CertificateCreate(&g_inStreamOcspResponderCert, &(param->ocspResponderCert));
@@ -234,7 +238,7 @@ HWTEST_F(CryptoX509CertChainTestPart2, ValidateOpensslUseageTest001, TestSize.Le
 
     HcfKuArray kuArray = { 0 };
     kuArray.count = 9;
-    kuArray.data = (HcfKeyUsageType *)HcfMalloc(kuArray.count * sizeof(HcfKeyUsageType), 0);
+    kuArray.data = (HcfKeyUsageType *)CfMalloc(kuArray.count * sizeof(HcfKeyUsageType), 0);
     kuArray.data[0] = KEYUSAGE_DIGITAL_SIGNATURE;
     kuArray.data[1] = KEYUSAGE_NON_REPUDIATION;
     kuArray.data[2] = KEYUSAGE_KEY_ENCIPHERMENT;
@@ -333,7 +337,7 @@ HWTEST_F(CryptoX509CertChainTestPart2, ValidateOpensslInvaidCertId, TestSize.Lev
 
     HcfRevChkOpArray revChkOpArray = { 0 };
     revChkOpArray.count = 1;
-    revChkOpArray.data = (HcfRevChkOption *)HcfMalloc(revChkOpArray.count * sizeof(HcfRevChkOption), 0);
+    revChkOpArray.data = (HcfRevChkOption *)CfMalloc(revChkOpArray.count * sizeof(HcfRevChkOption), 0);
     ASSERT_NE(revChkOpArray.data, nullptr);
     revChkOpArray.data[0] = REVOCATION_CHECK_OPTION_PREFER_OCSP;
 

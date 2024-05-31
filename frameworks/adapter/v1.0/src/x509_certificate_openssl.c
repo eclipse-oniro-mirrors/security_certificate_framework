@@ -120,7 +120,7 @@ static HcfResult GetPubKeyEncoded(HcfKey *self, HcfBlob *returnBlob)
         return HCF_ERR_CRYPTO_OPERATION;
     }
 
-    returnBlob->data = (uint8_t *)HcfMalloc(pkLen, 0);
+    returnBlob->data = (uint8_t *)CfMalloc(pkLen, 0);
     if (returnBlob->data == NULL) {
         LOGE("Failed to malloc for sig algorithm params!");
         OPENSSL_free(pkBytes);
@@ -183,7 +183,7 @@ static CfResult GetEncodedX509Openssl(HcfX509CertificateSpi *self, CfEncodingBlo
     }
     unsigned char *der = NULL;
     (void)i2d_X509(x509, &der);
-    encodedByte->data = (uint8_t *)HcfMalloc(length, 0);
+    encodedByte->data = (uint8_t *)CfMalloc(length, 0);
     if (encodedByte->data == NULL) {
         LOGE("Failed to malloc for x509 der data!");
         OPENSSL_free(der);
@@ -214,7 +214,7 @@ static CfResult GetPublicKeyX509Openssl(HcfX509CertificateSpi *self, HcfPubKey *
         CfPrintOpensslError();
         return CF_ERR_CRYPTO_OPERATION;
     }
-    X509PubKeyOpensslImpl *keyImpl = (X509PubKeyOpensslImpl *)HcfMalloc(sizeof(X509PubKeyOpensslImpl), 0);
+    X509PubKeyOpensslImpl *keyImpl = (X509PubKeyOpensslImpl *)CfMalloc(sizeof(X509PubKeyOpensslImpl), 0);
     if (keyImpl == NULL) {
         LOGE("Failed to malloc for public key obj!");
         EVP_PKEY_free(pubKey);
@@ -629,7 +629,7 @@ static CfResult GetIssuerDNX509Openssl(HcfX509CertificateSpi *self, CfBlob *out)
         CfPrintOpensslError();
         return CF_ERR_CRYPTO_OPERATION;
     }
-    char *issuer = (char *)HcfMalloc(HCF_MAX_STR_LEN + 1, 0);
+    char *issuer = (char *)CfMalloc(HCF_MAX_STR_LEN + 1, 0);
     if (issuer == NULL) {
         LOGE("Failed to malloc for issuer buffer!");
         return CF_ERR_MALLOC;
@@ -669,7 +669,7 @@ static CfResult GetSubjectDNX509Openssl(HcfX509CertificateSpi *self, CfBlob *out
         CfPrintOpensslError();
         return CF_ERR_CRYPTO_OPERATION;
     }
-    char *subject = (char *)HcfMalloc(HCF_MAX_STR_LEN + 1, 0);
+    char *subject = (char *)CfMalloc(HCF_MAX_STR_LEN + 1, 0);
     if (subject == NULL) {
         LOGE("Failed to malloc for subject buffer!");
         return CF_ERR_MALLOC;
@@ -774,7 +774,7 @@ static CfResult GetSignatureX509Openssl(HcfX509CertificateSpi *self, CfBlob *sig
         CfPrintOpensslError();
         return CF_ERR_CRYPTO_OPERATION;
     }
-    sigOut->data = (uint8_t *)HcfMalloc(signature->length, 0);
+    sigOut->data = (uint8_t *)CfMalloc(signature->length, 0);
     if (sigOut->data == NULL) {
         LOGE("Failed to malloc for signature data!");
         return CF_ERR_MALLOC;
@@ -895,7 +895,7 @@ static CfResult ConvertAsn1String2BoolArray(const ASN1_BIT_STRING *string, CfBlo
     if (string->flags & ASN1_STRING_FLAG_BITS_LEFT) {
         length -= string->flags & FLAG_BIT_LEFT_NUM;
     }
-    boolArr->data = (uint8_t *)HcfMalloc(length, 0);
+    boolArr->data = (uint8_t *)CfMalloc(length, 0);
     if (boolArr->data == NULL) {
         LOGE("Failed to malloc for bit array data!");
         return CF_ERR_MALLOC;
@@ -942,7 +942,7 @@ static CfResult DeepCopyExtendedKeyUsage(const STACK_OF(ASN1_OBJECT) *extUsage,
         return CF_ERR_CRYPTO_OPERATION;
     }
     uint32_t len = strlen(usage) + 1;
-    keyUsageOut->data[i].data = (uint8_t *)HcfMalloc(len, 0);
+    keyUsageOut->data[i].data = (uint8_t *)CfMalloc(len, 0);
     if (keyUsageOut->data[i].data == NULL) {
         LOGE("Failed to malloc for key usage!");
         return CF_ERR_MALLOC;
@@ -979,7 +979,7 @@ static CfResult GetExtendedKeyUsageX509Openssl(HcfX509CertificateSpi *self, CfAr
             break;
         }
         int32_t blobSize = sizeof(CfBlob) * size;
-        keyUsageOut->data = (CfBlob *)HcfMalloc(blobSize, 0);
+        keyUsageOut->data = (CfBlob *)CfMalloc(blobSize, 0);
         if (keyUsageOut->data == NULL) {
             LOGE("Failed to malloc for keyUsageOut array!");
             res = CF_ERR_MALLOC;
@@ -1051,7 +1051,7 @@ static CfResult DeepCopyAlternativeNames(const STACK_OF(GENERAL_NAME) *altNames,
         return CF_ERR_CRYPTO_OPERATION;
     }
     uint32_t nameLen = strlen(str) + 1;
-    outName->data[i].data = (uint8_t *)HcfMalloc(nameLen, 0);
+    outName->data[i].data = (uint8_t *)CfMalloc(nameLen, 0);
     if (outName->data[i].data == NULL) {
         LOGE("Failed to malloc for outName!");
         return CF_ERR_MALLOC;
@@ -1089,7 +1089,7 @@ static CfResult GetSubjectAltNamesX509Openssl(HcfX509CertificateSpi *self, CfArr
             break;
         }
         int32_t blobSize = sizeof(CfBlob) * size;
-        outName->data = (CfBlob *)HcfMalloc(blobSize, 0);
+        outName->data = (CfBlob *)CfMalloc(blobSize, 0);
         if (outName->data == NULL) {
             LOGE("Failed to malloc for subjectAltName array!");
             res = CF_ERR_MALLOC;
@@ -1139,7 +1139,7 @@ static CfResult GetIssuerAltNamesX509Openssl(HcfX509CertificateSpi *self, CfArra
             break;
         }
         int32_t blobSize = sizeof(CfBlob) * size;
-        outName->data = (CfBlob *)HcfMalloc(blobSize, 0);
+        outName->data = (CfBlob *)CfMalloc(blobSize, 0);
         if (outName->data == NULL) {
             LOGE("Failed to malloc for issuerAltName array!");
             res = CF_ERR_MALLOC;
@@ -1215,9 +1215,9 @@ static CfResult HashCodeX509Openssl(HcfX509CertificateSpi *self, CfBlob *out)
         return CF_ERR_CRYPTO_OPERATION;
     }
 
-    out->data = (uint8_t *)HcfMalloc(SHA256_DIGEST_LENGTH, 0);
+    out->data = (uint8_t *)CfMalloc(SHA256_DIGEST_LENGTH, 0);
     if (out->data == NULL) {
-        LOGE("HcfMalloc error");
+        LOGE("CfMalloc error");
         CfFree(buf);
         return CF_ERR_MALLOC;
     }
@@ -1332,7 +1332,7 @@ static CfResult DeepCopySubAltName(
         return CF_ERR_CRYPTO_OPERATION;
     }
 
-    unsigned char *derData = (unsigned char *)CfMalloc(derLength);
+    unsigned char *derData = (unsigned char *)CfMalloc(derLength, 0);
     unsigned char *p = derData;
     derLength = i2d_GENERAL_NAME(generalName, &p);
     if (derData == NULL) {
@@ -1340,7 +1340,7 @@ static CfResult DeepCopySubAltName(
         return CF_ERR_CRYPTO_OPERATION;
     }
     SubjectAlternaiveNameData *subAltNameData = &(subAltNameArrayOut->data[i]);
-    subAltNameData->name.data = HcfMalloc(derLength, 0);
+    subAltNameData->name.data = CfMalloc(derLength, 0);
     if (subAltNameData->name.data == NULL) {
         LOGE("Failed to malloc for sub alt name data!");
         CfFree(derData);
@@ -1508,7 +1508,7 @@ static CfResult CompareSubAltNameX509Openssl(
             break;
         }
         int32_t blobSize = sizeof(SubjectAlternaiveNameData) * size;
-        subAltNameArrayOut.data = (SubjectAlternaiveNameData *)HcfMalloc(blobSize, 0);
+        subAltNameArrayOut.data = (SubjectAlternaiveNameData *)CfMalloc(blobSize, 0);
         if (subAltNameArrayOut.data == NULL) {
             LOGE("Failed to malloc for subject alternative name array!");
             res = CF_ERR_MALLOC;
@@ -1614,7 +1614,7 @@ static CfResult DeepCopyCertPolices(const CERTIFICATEPOLICIES *certPolicesIn, in
         return CF_ERR_CRYPTO_OPERATION;
     }
     uint32_t len = strlen(policyBuff) + 1;
-    certPolices->data[i].data = (uint8_t *)HcfMalloc(len, 0);
+    certPolices->data[i].data = (uint8_t *)CfMalloc(len, 0);
     if (certPolices->data[i].data == NULL) {
         LOGE("Failed to malloc for cert policies!");
         return CF_ERR_MALLOC;
@@ -1653,7 +1653,7 @@ static CfResult CompareCertPolicesX509Openssl(HcfX509CertificateSpi *self, CfArr
             break;
         }
         int32_t blobSize = sizeof(CfBlob) * size;
-        certPolicesOut.data = (CfBlob *)HcfMalloc(blobSize, 0);
+        certPolicesOut.data = (CfBlob *)CfMalloc(blobSize, 0);
         if (certPolicesOut.data == NULL) {
             LOGE("Failed to malloc for certPolicesOut array!");
             res = CF_ERR_MALLOC;
@@ -1821,7 +1821,7 @@ static CfResult DeepCopyURIs(ASN1_STRING *uri, uint32_t index, CfArray *outURI)
     }
 
     uint32_t uriLen = strlen(str) + 1;
-    outURI->data[index].data = (uint8_t *)HcfMalloc(uriLen, 0);
+    outURI->data[index].data = (uint8_t *)CfMalloc(uriLen, 0);
     if (outURI->data[index].data == NULL) {
         LOGE("Failed to malloc for outURI[%u]!", index);
         return CF_ERR_MALLOC;
@@ -1929,7 +1929,7 @@ static CfResult GetCRLDpURI(STACK_OF(DIST_POINT) *crlDp, CfArray *outURI)
 
     /* 2. malloc outArray buffer */
     int32_t blobSize = (int32_t)(sizeof(CfBlob) * uriCount);
-    outURI->data = (CfBlob *)HcfMalloc(blobSize, 0);
+    outURI->data = (CfBlob *)CfMalloc(blobSize, 0);
     if (outURI->data == NULL) {
         LOGE("Failed to malloc for outURI array!");
         return CF_ERR_MALLOC;
@@ -2034,7 +2034,7 @@ CfResult OpensslX509CertSpiCreate(const CfEncodingBlob *inStream, HcfX509Certifi
         LOGE("The input data blob is null!");
         return CF_INVALID_PARAMS;
     }
-    HcfOpensslX509Cert *realCert = (HcfOpensslX509Cert *)HcfMalloc(sizeof(HcfOpensslX509Cert), 0);
+    HcfOpensslX509Cert *realCert = (HcfOpensslX509Cert *)CfMalloc(sizeof(HcfOpensslX509Cert), 0);
     if (realCert == NULL) {
         LOGE("Failed to malloc for x509 instance!");
         return CF_ERR_MALLOC;

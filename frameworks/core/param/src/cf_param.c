@@ -37,7 +37,7 @@ int32_t CfInitParamSet(CfParamSet **paramSet)
         return CF_NULL_POINTER;
     }
 
-    *paramSet = (CfParamSet *)CfMalloc(CF_DEFAULT_PARAM_SET_SIZE);
+    *paramSet = (CfParamSet *)CfMalloc(CF_DEFAULT_PARAM_SET_SIZE, 0);
     if (*paramSet == NULL) {
         CF_LOG_E("malloc init param set failed!");
         return CF_ERR_MALLOC;
@@ -104,7 +104,7 @@ static int32_t BuildParamSet(CfParamSet **paramSet)
     uint32_t offset = sizeof(CfParamSet) + sizeof(CfParam) * freshParamSet->paramsCnt;
 
     if (size > CF_DEFAULT_PARAM_SET_SIZE) {
-        freshParamSet = (CfParamSet *)CfMalloc(size);
+        freshParamSet = (CfParamSet *)CfMalloc(size, 0);
         if (freshParamSet == NULL) {
             CF_LOG_E("malloc params failed!");
             return CF_ERR_MALLOC;

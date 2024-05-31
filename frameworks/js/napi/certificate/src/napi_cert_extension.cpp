@@ -55,13 +55,13 @@ NapiCertExtension::~NapiCertExtension()
 
 static ExtsAsyncContext NewExtsAsyncContext(void)
 {
-    ExtsAsyncContext extsAsyncCtx = static_cast<ExtsAsyncContext>(CfMalloc(sizeof(CfExtensionAsyncContext)));
+    ExtsAsyncContext extsAsyncCtx = static_cast<ExtsAsyncContext>(CfMalloc(sizeof(CfExtensionAsyncContext), 0));
     if (extsAsyncCtx == nullptr) {
         CF_LOG_E("Failed to malloc extension async context");
         return nullptr;
     }
 
-    AsyncCtx asyncCtx = static_cast<AsyncCtx>(CfMalloc(sizeof(AsyncContext)));
+    AsyncCtx asyncCtx = static_cast<AsyncCtx>(CfMalloc(sizeof(AsyncContext), 0));
     if (asyncCtx == nullptr) {
         CF_LOG_E("Failed to malloc async context");
         CfFree(extsAsyncCtx);

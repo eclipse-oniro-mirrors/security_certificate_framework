@@ -18,7 +18,6 @@
 
 #include "cf_blob.h"
 #include "crl.h"
-#include "pub_key.h"
 #include "x509_certificate.h"
 #include "x509_crl_entry.h"
 #include "x509_crl_match_parameters.h"
@@ -34,7 +33,7 @@ struct HcfX509Crl {
     CfResult (*getEncoded)(HcfX509Crl *self, CfEncodingBlob *encodedOut);
 
     /** Use the public key to verify the signature of CRL. */
-    CfResult (*verify)(HcfX509Crl *self, HcfPubKey *key);
+    CfResult (*verify)(HcfX509Crl *self, void *key);
 
     /** Get version number from CRL. */
     long (*getVersion)(HcfX509Crl *self);

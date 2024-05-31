@@ -275,7 +275,7 @@ const char *GetInvalidCrlClass(void)
 
 SubAltNameArray *ConstructSubAltNameArrayData()
 {
-    SubAltNameArray *newSANArr = static_cast<SubAltNameArray *>(HcfMalloc(sizeof(SubAltNameArray), 0));
+    SubAltNameArray *newSANArr = static_cast<SubAltNameArray *>(CfMalloc(sizeof(SubAltNameArray), 0));
     if (newSANArr == nullptr) {
         CF_LOG_E("Failed to allocate newSANArr memory!");
         return nullptr;
@@ -283,7 +283,7 @@ SubAltNameArray *ConstructSubAltNameArrayData()
 
     newSANArr->count = TEST_SUBJECT_ALTERNATIVE_NAMES_SIZE;
     newSANArr->data =
-        static_cast<SubjectAlternaiveNameData *>(HcfMalloc(newSANArr->count * sizeof(SubjectAlternaiveNameData), 0));
+        static_cast<SubjectAlternaiveNameData *>(CfMalloc(newSANArr->count * sizeof(SubjectAlternaiveNameData), 0));
     if (newSANArr->data == nullptr) {
         CF_LOG_E("Failed to allocate data memory!");
         CfFree(newSANArr);
@@ -301,7 +301,7 @@ SubAltNameArray *ConstructSubAltNameArrayData()
 
 CfArray *ConstructCertPolicyData()
 {
-    CfArray *newBlobArr = static_cast<CfArray *>(HcfMalloc(sizeof(CfArray), 0));
+    CfArray *newBlobArr = static_cast<CfArray *>(CfMalloc(sizeof(CfArray), 0));
     if (newBlobArr == nullptr) {
         CF_LOG_E("Failed to allocate newBlobArr memory!");
         return nullptr;
@@ -309,7 +309,7 @@ CfArray *ConstructCertPolicyData()
 
     newBlobArr->count = CONSTRUCT_CERTPOLICY_DATA_SIZE;
     newBlobArr->format = CF_FORMAT_DER;
-    newBlobArr->data = static_cast<CfBlob *>(HcfMalloc(newBlobArr->count * sizeof(CfBlob), 0));
+    newBlobArr->data = static_cast<CfBlob *>(CfMalloc(newBlobArr->count * sizeof(CfBlob), 0));
     if (newBlobArr->data == nullptr) {
         CF_LOG_E("Failed to allocate data memory!");
         CfFree(newBlobArr);
@@ -347,11 +347,11 @@ void FreeTrustAnchor(HcfX509TrustAnchor *&trustAnchor)
 
 void BuildAnchorArr(const CfEncodingBlob &certInStream, HcfX509TrustAnchorArray &trustAnchorArray)
 {
-    HcfX509TrustAnchor *anchor = static_cast<HcfX509TrustAnchor *>(HcfMalloc(sizeof(HcfX509TrustAnchor), 0));
+    HcfX509TrustAnchor *anchor = static_cast<HcfX509TrustAnchor *>(CfMalloc(sizeof(HcfX509TrustAnchor), 0));
     ASSERT_NE(anchor, nullptr);
 
     (void)HcfX509CertificateCreate(&certInStream, &anchor->CACert);
-    trustAnchorArray.data = static_cast<HcfX509TrustAnchor **>(HcfMalloc(1 * sizeof(HcfX509TrustAnchor *), 0));
+    trustAnchorArray.data = static_cast<HcfX509TrustAnchor **>(CfMalloc(1 * sizeof(HcfX509TrustAnchor *), 0));
     ASSERT_NE(trustAnchorArray.data, nullptr);
     trustAnchorArray.data[0] = anchor;
     trustAnchorArray.count = 1;
@@ -374,14 +374,14 @@ void BuildCollectionArr(const CfEncodingBlob *certInStream, const CfEncodingBlob
     CfResult ret = CF_SUCCESS;
     HcfX509CertificateArray *certArray = nullptr;
     if (certInStream != nullptr) {
-        certArray = static_cast<HcfX509CertificateArray *>(HcfMalloc(sizeof(HcfX509CertificateArray), 0));
+        certArray = static_cast<HcfX509CertificateArray *>(CfMalloc(sizeof(HcfX509CertificateArray), 0));
         ASSERT_NE(certArray, nullptr);
 
         HcfX509Certificate *x509CertObj = nullptr;
         (void)HcfX509CertificateCreate(certInStream, &x509CertObj);
         ASSERT_NE(x509CertObj, nullptr);
 
-        certArray->data = static_cast<HcfX509Certificate **>(HcfMalloc(1 * sizeof(HcfX509Certificate *), 0));
+        certArray->data = static_cast<HcfX509Certificate **>(CfMalloc(1 * sizeof(HcfX509Certificate *), 0));
         ASSERT_NE(certArray->data, nullptr);
         certArray->data[0] = x509CertObj;
         certArray->count = 1;
@@ -389,7 +389,7 @@ void BuildCollectionArr(const CfEncodingBlob *certInStream, const CfEncodingBlob
 
     HcfX509CrlArray *crlArray = nullptr;
     if (crlInStream != nullptr) {
-        crlArray = static_cast<HcfX509CrlArray *>(HcfMalloc(sizeof(HcfX509CrlArray), 0));
+        crlArray = static_cast<HcfX509CrlArray *>(CfMalloc(sizeof(HcfX509CrlArray), 0));
         ASSERT_NE(crlArray, nullptr);
 
         HcfX509Crl *x509Crl = nullptr;
@@ -397,7 +397,7 @@ void BuildCollectionArr(const CfEncodingBlob *certInStream, const CfEncodingBlob
         ASSERT_EQ(ret, CF_SUCCESS);
         ASSERT_NE(x509Crl, nullptr);
 
-        crlArray->data = static_cast<HcfX509Crl **>(HcfMalloc(1 * sizeof(HcfX509Crl *), 0));
+        crlArray->data = static_cast<HcfX509Crl **>(CfMalloc(1 * sizeof(HcfX509Crl *), 0));
         ASSERT_NE(crlArray->data, nullptr);
         crlArray->data[0] = x509Crl;
         crlArray->count = 1;
@@ -408,7 +408,7 @@ void BuildCollectionArr(const CfEncodingBlob *certInStream, const CfEncodingBlob
     ASSERT_EQ(ret, CF_SUCCESS);
     ASSERT_NE(x509CertCrlCollection, nullptr);
 
-    certCRLCollections.data = static_cast<HcfCertCrlCollection **>(HcfMalloc(1 * sizeof(HcfCertCrlCollection *), 0));
+    certCRLCollections.data = static_cast<HcfCertCrlCollection **>(CfMalloc(1 * sizeof(HcfCertCrlCollection *), 0));
     ASSERT_NE(certCRLCollections.data, nullptr);
     certCRLCollections.data[0] = x509CertCrlCollection;
     certCRLCollections.count = 1;

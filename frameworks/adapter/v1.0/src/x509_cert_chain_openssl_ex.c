@@ -101,9 +101,9 @@ CfResult HashCode(HcfX509CertChainSpi *self, CfBlob *out)
         }
     }
 
-    out->data = (uint8_t *)HcfMalloc(SHA256_DIGEST_LENGTH, 0);
+    out->data = (uint8_t *)CfMalloc(SHA256_DIGEST_LENGTH, 0);
     if (out->data == NULL) {
-        LOGE("HcfMalloc error");
+        LOGE("CfMalloc error");
         BIO_free(bio);
         return CF_ERR_MALLOC;
     }

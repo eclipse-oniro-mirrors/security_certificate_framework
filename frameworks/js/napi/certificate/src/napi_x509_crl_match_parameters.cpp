@@ -92,7 +92,7 @@ static bool GetCRLNum(napi_env env, napi_value arg, const std::string nameTag, C
         LOGE("out is nullptr");
         return false;
     }
-    out = static_cast<CfBlob *>(HcfMalloc(sizeof(CfBlob), 0));
+    out = static_cast<CfBlob *>(CfMalloc(sizeof(CfBlob), 0));
     if (out == nullptr) {
         LOGE("Failed to allocate newBlob memory!");
         CfBlobDataFree(&outBlob);

@@ -91,7 +91,7 @@ napi_value ConvertArrayToNapiValue(napi_env env, CfArray *array)
 
 napi_value GenerateArrayBuffer(napi_env env, uint8_t *data, uint32_t size)
 {
-    uint8_t *buffer = static_cast<uint8_t *>(HcfMalloc(size, 0));
+    uint8_t *buffer = static_cast<uint8_t *>(CfMalloc(size, 0));
     if (buffer == nullptr) {
         LOGE("malloc uint8 array buffer failed!");
         return nullptr;
@@ -140,7 +140,7 @@ static bool GetDataOfEncodingBlob(napi_env env, napi_value data, CfEncodingBlob 
         LOGE("input data length is 0");
         return false;
     }
-    encodingBlob->data = static_cast<uint8_t *>(HcfMalloc(length, 0));
+    encodingBlob->data = static_cast<uint8_t *>(CfMalloc(length, 0));
     if (encodingBlob->data == nullptr) {
         LOGE("malloc encoding blob data failed!");
         return false;
@@ -157,7 +157,7 @@ static bool GetDataOfEncodingBlob(napi_env env, napi_value data, CfEncodingBlob 
 
 bool GetEncodingBlobFromValue(napi_env env, napi_value obj, CfEncodingBlob **encodingBlob)
 {
-    *encodingBlob = static_cast<CfEncodingBlob *>(HcfMalloc(sizeof(CfEncodingBlob), 0));
+    *encodingBlob = static_cast<CfEncodingBlob *>(CfMalloc(sizeof(CfEncodingBlob), 0));
     if (*encodingBlob == nullptr) {
         LOGE("malloc encoding blob failed!");
         return false;
@@ -245,7 +245,7 @@ napi_value ConvertBlobToUint8ArrNapiValue(napi_env env, CfBlob *blob)
         return nullptr;
     }
     /* free in napi_create_external_arraybuffer, not in this scope. */
-    uint8_t *buffer = static_cast<uint8_t *>(HcfMalloc(blob->size, 0));
+    uint8_t *buffer = static_cast<uint8_t *>(CfMalloc(blob->size, 0));
     if (buffer == nullptr) {
         LOGE("malloc uint8 array buffer failed!");
         return nullptr;
@@ -298,7 +298,7 @@ static bool GetDataOfCertChain(napi_env env, napi_value data, HcfCertChainData *
         LOGE("input data length is 0");
         return false;
     }
-    certChain->data = static_cast<uint8_t *>(HcfMalloc(length, 0));
+    certChain->data = static_cast<uint8_t *>(CfMalloc(length, 0));
     if (certChain->data == nullptr) {
         LOGE("malloc cert chain data failed!");
         return false;
@@ -315,7 +315,7 @@ static bool GetDataOfCertChain(napi_env env, napi_value data, HcfCertChainData *
 
 bool GetCertChainFromValue(napi_env env, napi_value obj, HcfCertChainData **certChainData)
 {
-    *certChainData = static_cast<HcfCertChainData *>(HcfMalloc(sizeof(HcfCertChainData), 0));
+    *certChainData = static_cast<HcfCertChainData *>(CfMalloc(sizeof(HcfCertChainData), 0));
     if (*certChainData == nullptr) {
         LOGE("malloc certChainData failed!");
         return false;
@@ -390,7 +390,7 @@ CfBlob *CertGetBlobFromUint8ArrJSParams(napi_env env, napi_value arg)
         return nullptr;
     }
 
-    CfBlob *newBlob = static_cast<CfBlob *>(HcfMalloc(sizeof(CfBlob), 0));
+    CfBlob *newBlob = static_cast<CfBlob *>(CfMalloc(sizeof(CfBlob), 0));
     if (newBlob == nullptr) {
         LOGE("Failed to allocate newBlob memory!");
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed!"));
@@ -398,7 +398,7 @@ CfBlob *CertGetBlobFromUint8ArrJSParams(napi_env env, napi_value arg)
     }
 
     newBlob->size = length;
-    newBlob->data = static_cast<uint8_t *>(HcfMalloc(length, 0));
+    newBlob->data = static_cast<uint8_t *>(CfMalloc(length, 0));
     if (newBlob->data == nullptr) {
         LOGE("malloc blob data failed!");
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed!"));
@@ -439,7 +439,7 @@ CfBlob *CertGetBlobFromStringJSParams(napi_env env, napi_value arg)
         return nullptr;
     }
 
-    CfBlob *newBlob = static_cast<CfBlob *>(HcfMalloc(sizeof(CfBlob), 0));
+    CfBlob *newBlob = static_cast<CfBlob *>(CfMalloc(sizeof(CfBlob), 0));
     if (newBlob == nullptr) {
         LOGE("Failed to allocate newBlob memory!");
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed!"));
@@ -447,7 +447,7 @@ CfBlob *CertGetBlobFromStringJSParams(napi_env env, napi_value arg)
     }
 
     newBlob->size = length + 1;
-    newBlob->data = static_cast<uint8_t *>(HcfMalloc(newBlob->size, 0));
+    newBlob->data = static_cast<uint8_t *>(CfMalloc(newBlob->size, 0));
     if (newBlob->data == nullptr) {
         LOGE("malloc blob data failed!");
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed"));
@@ -509,7 +509,7 @@ CfBlobArray *CertGetBlobArrFromArrUarrJSParams(napi_env env, napi_value arg)
         return nullptr;
     }
 
-    CfBlobArray *newBlobArr = static_cast<CfBlobArray *>(HcfMalloc(sizeof(CfBlobArray), 0));
+    CfBlobArray *newBlobArr = static_cast<CfBlobArray *>(CfMalloc(sizeof(CfBlobArray), 0));
     if (newBlobArr == nullptr) {
         LOGE("Failed to allocate newBlobArr memory!");
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed"));
@@ -517,7 +517,7 @@ CfBlobArray *CertGetBlobArrFromArrUarrJSParams(napi_env env, napi_value arg)
     }
 
     newBlobArr->count = length;
-    newBlobArr->data = static_cast<CfBlob *>(HcfMalloc(length * sizeof(CfBlob), 0));
+    newBlobArr->data = static_cast<CfBlob *>(CfMalloc(length * sizeof(CfBlob), 0));
     if (newBlobArr->data == nullptr) {
         LOGE("Failed to allocate data memory!");
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed"));
@@ -570,7 +570,7 @@ CfBlob *CertGetBlobFromArrBoolJSParams(napi_env env, napi_value arg)
         return nullptr;
     }
 
-    CfBlob *newBlob = static_cast<CfBlob *>(HcfMalloc(sizeof(CfBlob), 0));
+    CfBlob *newBlob = static_cast<CfBlob *>(CfMalloc(sizeof(CfBlob), 0));
     if (newBlob == nullptr) {
         LOGE("Failed to allocate newBlob memory!");
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed"));
@@ -578,7 +578,7 @@ CfBlob *CertGetBlobFromArrBoolJSParams(napi_env env, napi_value arg)
     }
 
     newBlob->size = length;
-    newBlob->data = static_cast<uint8_t *>(HcfMalloc(length, 0));
+    newBlob->data = static_cast<uint8_t *>(CfMalloc(length, 0));
     if (newBlob->data == nullptr) {
         LOGE("Failed to allocate data memory!");
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed"));
@@ -653,7 +653,7 @@ SubAltNameArray *CertGetSANArrFromArrUarrJSParams(napi_env env, napi_value arg)
         return nullptr;
     }
 
-    SubAltNameArray *newSANArr = static_cast<SubAltNameArray *>(HcfMalloc(sizeof(SubAltNameArray), 0));
+    SubAltNameArray *newSANArr = static_cast<SubAltNameArray *>(CfMalloc(sizeof(SubAltNameArray), 0));
     if (newSANArr == nullptr) {
         LOGE("Failed to allocate newSANArr memory!");
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed"));
@@ -662,7 +662,7 @@ SubAltNameArray *CertGetSANArrFromArrUarrJSParams(napi_env env, napi_value arg)
 
     newSANArr->count = length;
     newSANArr->data =
-        static_cast<SubjectAlternaiveNameData *>(HcfMalloc(length * sizeof(SubjectAlternaiveNameData), 0));
+        static_cast<SubjectAlternaiveNameData *>(CfMalloc(length * sizeof(SubjectAlternaiveNameData), 0));
     if (newSANArr->data == nullptr) {
         LOGE("Failed to allocate data memory!");
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed"));
@@ -713,7 +713,7 @@ CfArray *CertGetArrFromArrUarrJSParams(napi_env env, napi_value arg)
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "length is invalid!"));
         return nullptr;
     }
-    CfArray *newBlobArr = static_cast<CfArray *>(HcfMalloc(sizeof(CfArray), 0));
+    CfArray *newBlobArr = static_cast<CfArray *>(CfMalloc(sizeof(CfArray), 0));
     if (newBlobArr == nullptr) {
         LOGE("Failed to allocate newBlobArr memory!");
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed"));
@@ -721,7 +721,7 @@ CfArray *CertGetArrFromArrUarrJSParams(napi_env env, napi_value arg)
     }
     newBlobArr->count = length;
     newBlobArr->format = CF_FORMAT_DER;
-    newBlobArr->data = static_cast<CfBlob *>(HcfMalloc(length * sizeof(CfBlob), 0));
+    newBlobArr->data = static_cast<CfBlob *>(CfMalloc(length * sizeof(CfBlob), 0));
     if (newBlobArr->data == nullptr) {
         LOGE("Failed to allocate data memory!");
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed"));
@@ -766,7 +766,7 @@ bool CertGetBlobFromBigIntJSParams(napi_env env, napi_value arg, CfBlob &outBlob
         return false;
     }
     int length = wordCount * sizeof(uint64_t);
-    uint8_t *retArr = reinterpret_cast<uint8_t *>(HcfMalloc(length, 0));
+    uint8_t *retArr = reinterpret_cast<uint8_t *>(CfMalloc(length, 0));
     if (retArr == nullptr) {
         LOGE("Malloc blob data failed!");
         return false;
@@ -818,7 +818,7 @@ bool CertGetSerialNumberFromBigIntJSParams(napi_env env, napi_value arg, CfBlob 
         LOGE("can not get bigint value, sign = %d", sign); // sign 0 : positive, sign 1 : negative
         return false;
     }
-    outBlob.data = static_cast<uint8_t *>(HcfMalloc(serialLen, 0));
+    outBlob.data = static_cast<uint8_t *>(CfMalloc(serialLen, 0));
     if (outBlob.data == nullptr) {
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc serialNum failed"));
         LOGE("malloc blob data failed!");
@@ -963,7 +963,7 @@ napi_value ConvertBlobToNapiValue(napi_env env, const CfBlob *blob)
         LOGE("Invalid blob!");
         return nullptr;
     }
-    uint8_t *buffer = static_cast<uint8_t *>(HcfMalloc(blob->size, 0));
+    uint8_t *buffer = static_cast<uint8_t *>(CfMalloc(blob->size, 0));
     if (buffer == nullptr) {
         LOGE("malloc uint8 array buffer failed!");
         return nullptr;
@@ -998,7 +998,7 @@ static CfResult ConvertBlobToWords(const CfBlob &blob, uint64_t *&words, uint32_
 {
     uint32_t blockSize = sizeof(uint64_t);
     uint32_t convertDataSize = ((blob.size + (blockSize - 1)) >> QUAD_WORD_ALIGN_UP) << QUAD_WORD_ALIGN_UP;
-    uint8_t *convertData = static_cast<uint8_t *>(CfMalloc(convertDataSize));
+    uint8_t *convertData = static_cast<uint8_t *>(CfMalloc(convertDataSize, 0));
     if (convertData == nullptr) {
         LOGE("malloc convert data failed");
         return CF_ERR_MALLOC;
@@ -1085,7 +1085,7 @@ bool ConvertBlobToEncodingBlob(const CfBlob &blob, CfEncodingBlob *encodingBlob)
         return false;
     }
 
-    encodingBlob->data = static_cast<uint8_t *>(HcfMalloc(blob.size, 0));
+    encodingBlob->data = static_cast<uint8_t *>(CfMalloc(blob.size, 0));
     if (encodingBlob->data == nullptr) {
         LOGE("malloc encoding blob data failed!");
         return false;

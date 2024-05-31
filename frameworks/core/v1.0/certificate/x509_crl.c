@@ -113,7 +113,7 @@ static bool IsRevoked(HcfCrl *self, const HcfCertificate *cert)
         ((HcfX509CrlImpl *)self)->spiObj, cert);
 }
 
-static CfResult Verify(HcfX509Crl *self, HcfPubKey *key)
+static CfResult Verify(HcfX509Crl *self, void *key)
 {
     if ((self == NULL) || (key == NULL)) {
         LOGE("Invalid input parameter.");
@@ -124,7 +124,7 @@ static CfResult Verify(HcfX509Crl *self, HcfPubKey *key)
         return CF_INVALID_PARAMS;
     }
     return ((HcfX509CrlImpl *)self)->spiObj->engineVerify(
-        ((HcfX509CrlImpl *)self)->spiObj, key);
+        ((HcfX509CrlImpl *)self)->spiObj, (HcfPubKey *)key);
 }
 
 static CfResult GetEncoded(HcfX509Crl *self, CfEncodingBlob *encodedByte)
@@ -396,7 +396,7 @@ CfResult HcfX509CrlCreate(const CfEncodingBlob *inStream, HcfX509Crl **returnObj
         LOGE("Failed to create spi object!");
         return res;
     }
-    HcfX509CrlImpl *x509CertImpl = (HcfX509CrlImpl *)HcfMalloc(sizeof(HcfX509CrlImpl), 0);
+    HcfX509CrlImpl *x509CertImpl = (HcfX509CrlImpl *)CfMalloc(sizeof(HcfX509CrlImpl), 0);
     if (x509CertImpl == NULL) {
         LOGE("Failed to allocate x509CertImpl memory!");
         CfObjDestroy(spiObj);

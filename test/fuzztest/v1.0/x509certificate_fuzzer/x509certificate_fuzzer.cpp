@@ -19,6 +19,7 @@
 #include <cstdint>
 #include "securec.h"
 
+#include "pub_key.h"
 #include "cf_blob.h"
 #include "cf_result.h"
 #include "x509_certificate.h"
@@ -66,7 +67,7 @@ namespace OHOS {
     static void TestVerify(HcfX509Certificate *x509CertObj)
     {
         HcfPubKey *keyOut = nullptr;
-        CfResult res = x509CertObj->base.getPublicKey(&(x509CertObj->base), &keyOut);
+        CfResult res = x509CertObj->base.getPublicKey(&(x509CertObj->base), (void **)&keyOut);
         if (res != CF_SUCCESS) {
             return;
         }

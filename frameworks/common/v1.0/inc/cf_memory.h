@@ -22,10 +22,8 @@
 extern "C" {
 #endif
 
-void* HcfMalloc(uint32_t size, char val);
+void *CfMalloc(uint32_t size, char val);
 void CfFree(void* addr);
-
-void *CfMalloc(uint32_t size);
 
 #define MAX_MEMORY_SIZE (5 * 1024 * 1024)
 

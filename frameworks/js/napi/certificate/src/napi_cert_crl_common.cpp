@@ -104,7 +104,7 @@ bool GetArrayCertFromNapiValue(napi_env env, napi_value object, HcfX509Certifica
         return false;
     }
 
-    certs->data = static_cast<HcfX509Certificate **>(HcfMalloc(length * sizeof(HcfX509Certificate *), 0));
+    certs->data = static_cast<HcfX509Certificate **>(CfMalloc(length * sizeof(HcfX509Certificate *), 0));
     if (certs->data == nullptr) {
         LOGE("malloc failed");
         return false;
@@ -154,7 +154,7 @@ bool GetArrayCRLFromNapiValue(napi_env env, napi_value object, HcfX509CrlArray *
         LOGE("array length is invalid!");
         return false;
     }
-    crls->data = static_cast<HcfX509Crl **>(HcfMalloc(length * sizeof(HcfX509Crl *), 0));
+    crls->data = static_cast<HcfX509Crl **>(CfMalloc(length * sizeof(HcfX509Crl *), 0));
     if (crls->data == nullptr) {
         LOGE("malloc failed");
         return false;
