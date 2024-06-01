@@ -423,6 +423,7 @@ void FreeTrustAnchorArray(HcfX509TrustAnchorArray *trustAnchorArray, bool freeCe
                 CfObjDestroy(trustAnchorArray->data[i]->CACert);
             }
             trustAnchorArray->data[i]->CACert = NULL;
+            CfBlobFree(&trustAnchorArray->data[i]->CAPubKey);
             CfBlobFree(&trustAnchorArray->data[i]->CASubject);
             CfBlobFree(&trustAnchorArray->data[i]->nameConstraints);
             CfFree(trustAnchorArray->data[i]);
