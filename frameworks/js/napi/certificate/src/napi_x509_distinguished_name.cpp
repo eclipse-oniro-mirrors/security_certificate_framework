@@ -69,8 +69,7 @@ static void FreeCryptoFwkCtx(napi_env env, CfCtx *context)
     }
 
     if (context->inPara != nullptr) {
-        CfFree(context->inPara);
-        context->inPara = nullptr;
+        CfBlobFree(&(context->inPara));
     }
 
     CfFree(context);
