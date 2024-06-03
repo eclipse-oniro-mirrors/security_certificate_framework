@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include <vector>
 #include "napi_object.h"
 
 #include "securec.h"
