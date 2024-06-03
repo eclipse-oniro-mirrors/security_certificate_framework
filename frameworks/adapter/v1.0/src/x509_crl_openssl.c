@@ -62,7 +62,7 @@ static const char *GetType(HcfX509CrlSpi *self)
         LOGE("Invalid Paramas!");
         return NULL;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetClass())) {
         LOGE("Input wrong class type!");
         return NULL;
     }
@@ -71,7 +71,7 @@ static const char *GetType(HcfX509CrlSpi *self)
 
 static X509_CRL *GetCrl(HcfX509CrlSpi *self)
 {
-    if (!IsClassMatch((CfObjectBase *)self, GetClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetClass())) {
         LOGE("Input wrong class type!");
         return NULL;
     }
@@ -80,12 +80,12 @@ static X509_CRL *GetCrl(HcfX509CrlSpi *self)
 
 static X509 *GetX509FromCertificate(const HcfCertificate *cert)
 {
-    if (!IsClassMatch((CfObjectBase *)cert, HCF_X509_CERTIFICATE_CLASS)) {
+    if (!CfIsClassMatch((CfObjectBase *)cert, HCF_X509_CERTIFICATE_CLASS)) {
         LOGE("Input wrong openssl class type!");
         return NULL;
     }
     HcfX509CertificateImpl *impl = (HcfX509CertificateImpl *)cert;
-    if (!IsClassMatch((CfObjectBase *)(impl->spiObj), X509_CERT_OPENSSL_CLASS)) {
+    if (!CfIsClassMatch((CfObjectBase *)(impl->spiObj), X509_CERT_OPENSSL_CLASS)) {
         LOGE("Input wrong openssl class type!");
         return NULL;
     }
@@ -99,7 +99,7 @@ static bool IsRevoked(HcfX509CrlSpi *self, const HcfCertificate *cert)
         LOGE("Invalid Paramas!");
         return false;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetClass())) {
         LOGE("Input wrong class type!");
         return false;
     }
@@ -124,7 +124,7 @@ static CfResult GetEncoded(HcfX509CrlSpi *self, CfEncodingBlob *encodedOut)
         LOGE("Invalid Paramas!");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetClass())) {
         LOGE("Input wrong class type!");
         return CF_INVALID_PARAMS;
     }
@@ -159,8 +159,8 @@ static CfResult Verify(HcfX509CrlSpi *self, HcfPubKey *key)
         LOGE("Invalid Paramas!");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetClass()) ||
-        (!IsPubKeyClassMatch((HcfObjectBase *)key, OPENSSL_RSA_PUBKEY_CLASS))) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetClass()) ||
+        (!CfIsPubKeyClassMatch((HcfObjectBase *)key, OPENSSL_RSA_PUBKEY_CLASS))) {
         LOGE("Input wrong class type!");
         return CF_INVALID_PARAMS;
     }
@@ -211,7 +211,7 @@ static long GetVersion(HcfX509CrlSpi *self)
         LOGE("Invalid Paramas!");
         return OPENSSL_INVALID_VERSION;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetClass())) {
         LOGE("Input wrong class type!");
         return OPENSSL_INVALID_VERSION;
     }
@@ -390,7 +390,7 @@ static CfResult GetRevokedCertWithCert(HcfX509CrlSpi *self, HcfX509Certificate *
         LOGE("Invalid Paramas!");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetClass())) {
         LOGE("Input wrong class type!");
         return CF_INVALID_PARAMS;
     }
@@ -629,7 +629,7 @@ static CfResult GetSignatureAlgName(HcfX509CrlSpi *self, CfBlob *algNameOut)
         LOGE("Invalid Paramas!");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetClass())) {
         LOGE("Input wrong class type!");
         return CF_INVALID_PARAMS;
     }
@@ -743,7 +743,7 @@ static CfResult ToString(HcfX509CrlSpi *self, CfBlob *out)
         LOGE("The input data is null!");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetClass())) {
         LOGE("Input wrong class type!");
         return CF_INVALID_PARAMS;
     }
@@ -781,7 +781,7 @@ static CfResult HashCode(HcfX509CrlSpi *self, CfBlob *out)
         LOGE("The input data is null!");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetClass())) {
         LOGE("Input wrong class type!");
         return CF_INVALID_PARAMS;
     }
@@ -815,7 +815,7 @@ static CfResult GetExtensionsObject(HcfX509CrlSpi *self, CfBlob *out)
         LOGE("The input data is null!");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetClass())) {
         LOGE("Input wrong class type!");
         return CF_INVALID_PARAMS;
     }
@@ -1027,7 +1027,7 @@ static CfResult MatchX509CRLOpenssl(HcfX509CrlSpi *self, const HcfX509CrlMatchPa
         LOGE("The input data is null!");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetClass())) {
         LOGE("Input wrong class type!");
         return CF_INVALID_PARAMS;
     }
@@ -1061,7 +1061,7 @@ static void Destroy(CfObjectBase *self)
     if (self == NULL) {
         return;
     }
-    if (!IsClassMatch(self, GetClass())) {
+    if (!CfIsClassMatch(self, GetClass())) {
         LOGE("Input wrong class type!");
         return;
     }

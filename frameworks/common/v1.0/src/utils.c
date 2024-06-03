@@ -24,7 +24,7 @@
 #define HTTP_URL_LEN 7
 #define HTTPS_URL_LEN 8
 
-bool IsStrValid(const char *str, uint32_t maxLen)
+bool CfIsStrValid(const char *str, uint32_t maxLen)
 {
     if (str == NULL) {
         LOGE("input string is NULL ptr");
@@ -38,12 +38,12 @@ bool IsStrValid(const char *str, uint32_t maxLen)
     return true;
 }
 
-bool IsBlobValid(const CfBlob *blob)
+bool CfIsBlobValid(const CfBlob *blob)
 {
     return ((blob != NULL) && (blob->data != NULL) && (blob->size > 0));
 }
 
-bool IsClassMatch(const CfObjectBase *obj, const char *className)
+bool CfIsClassMatch(const CfObjectBase *obj, const char *className)
 {
     if ((obj == NULL) || (obj->getClass() == NULL) || (className == NULL)) {
         return false;
@@ -56,7 +56,7 @@ bool IsClassMatch(const CfObjectBase *obj, const char *className)
     }
 }
 
-bool IsPubKeyClassMatch(const HcfObjectBase *obj, const char *className)
+bool CfIsPubKeyClassMatch(const HcfObjectBase *obj, const char *className)
 {
     if ((obj == NULL) || (obj->getClass() == NULL) || (className == NULL)) {
         return false;
@@ -69,7 +69,7 @@ bool IsPubKeyClassMatch(const HcfObjectBase *obj, const char *className)
     }
 }
 
-bool IsUrlValid(const char *url)
+bool CfIsUrlValid(const char *url)
 {
     if (url == NULL) {
         return false;
@@ -107,7 +107,7 @@ bool IsUrlValid(const char *url)
     return false;
 }
 
-bool IsHttp(const char *url)
+bool CfIsHttp(const char *url)
 {
     if (url != NULL && strncmp(url, "http://", strlen("http://")) == 0) {
         return true;

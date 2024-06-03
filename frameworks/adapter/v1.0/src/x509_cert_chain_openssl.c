@@ -96,7 +96,7 @@ static CfResult ConvertOpensslErrorMsg(int32_t errCode)
 
 static void DestroyX509CertChain(CfObjectBase *self)
 {
-    if (self == NULL || !IsClassMatch(self, GetX509CertChainClass())) {
+    if (self == NULL || !CfIsClassMatch(self, GetX509CertChainClass())) {
         LOGE("Invalid params!");
         return;
     }
@@ -143,7 +143,7 @@ static CfResult GetCertlist(HcfX509CertChainSpi *self, HcfX509CertificateArray *
         LOGE("[GetCertlist openssl] The input data is null!");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CertChainClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertChainClass())) {
         LOGE("[GetCertlist openssl] Input wrong class type!");
         return CF_INVALID_PARAMS;
     }
@@ -188,12 +188,12 @@ static CfResult GetCertlist(HcfX509CertChainSpi *self, HcfX509CertificateArray *
 
 static X509 *GetX509FromHcfX509Certificate(const HcfCertificate *cert)
 {
-    if (!IsClassMatch((CfObjectBase *)cert, HCF_X509_CERTIFICATE_CLASS)) {
+    if (!CfIsClassMatch((CfObjectBase *)cert, HCF_X509_CERTIFICATE_CLASS)) {
         LOGE("Input wrong openssl class type!");
         return NULL;
     }
     HcfX509CertificateImpl *impl = (HcfX509CertificateImpl *)cert;
-    if (!IsClassMatch((CfObjectBase *)(impl->spiObj), X509_CERT_OPENSSL_CLASS)) {
+    if (!CfIsClassMatch((CfObjectBase *)(impl->spiObj), X509_CERT_OPENSSL_CLASS)) {
         LOGE("Input wrong openssl class type!");
         return NULL;
     }
@@ -770,7 +770,7 @@ static const char *GetDpUrl(DIST_POINT *dp)
         }
         if (gtype == GEN_URI && ASN1_STRING_length(url) > GEN_URI) {
             const char *uptr = (const char *)ASN1_STRING_get0_data(url);
-            if (IsHttp(uptr)) {
+            if (CfIsHttp(uptr)) {
                 // can/should not use HTTPS here
                 return uptr;
             }
@@ -806,7 +806,7 @@ static X509_CRL *GetCrlFromCert(const HcfX509CertChainValidateParams *params, X5
     if (params->revocationCheckParam->crlDownloadURI != NULL &&
         params->revocationCheckParam->crlDownloadURI->data != NULL) {
         char *url = (char *)params->revocationCheckParam->crlDownloadURI->data;
-        if (IsUrlValid(url)) {
+        if (CfIsUrlValid(url)) {
             return X509_CRL_load_http(url, NULL, NULL, HTTP_TIMEOUT);
         }
     }
@@ -1043,7 +1043,7 @@ static CfResult GetOcspUrl(GetOcspUrlParams *params)
         }
     }
     char *urlValiable = (url == NULL) ? (char *)(params->revo->ocspResponderURI->data) : url;
-    if (!IsUrlValid(urlValiable)) {
+    if (!CfIsUrlValid(urlValiable)) {
         LOGE("Invalid url.");
         return CF_INVALID_PARAMS;
     }
@@ -1536,7 +1536,7 @@ static CfResult Validate(
         LOGE("The input data is null!");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CertChainClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertChainClass())) {
         LOGE("Input wrong class type!");
         return CF_INVALID_PARAMS;
     }
@@ -1785,8 +1785,8 @@ CfResult HcfX509CertChainByEncSpiCreate(const CfEncodingBlob *inStream, HcfX509C
     certChain->base.base.destroy = DestroyX509CertChain;
     certChain->base.engineGetCertList = GetCertlist;
     certChain->base.engineValidate = Validate;
-    certChain->base.engineToString = ToString;
-    certChain->base.engineHashCode = HashCode;
+    certChain->base.engineToString = CfToString;
+    certChain->base.engineHashCode = CfHashCode;
     *spi = (HcfX509CertChainSpi *)certChain;
     return CF_SUCCESS;
 }
@@ -1861,8 +1861,8 @@ CfResult HcfX509CertChainByArrSpiCreate(const HcfX509CertificateArray *inCerts, 
     certChain->base.base.destroy = DestroyX509CertChain;
     certChain->base.engineGetCertList = GetCertlist;
     certChain->base.engineValidate = Validate;
-    certChain->base.engineToString = ToString;
-    certChain->base.engineHashCode = HashCode;
+    certChain->base.engineToString = CfToString;
+    certChain->base.engineHashCode = CfHashCode;
     *spi = (HcfX509CertChainSpi *)certChain;
 
     return CF_SUCCESS;

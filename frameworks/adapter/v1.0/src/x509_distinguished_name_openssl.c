@@ -48,7 +48,7 @@ static void DestroyX509DistinguishedNameOpenssl(CfObjectBase *self)
     if (self == NULL) {
         return;
     }
-    if (!IsClassMatch(self, GetX509DistinguishedNameClass())) {
+    if (!CfIsClassMatch(self, GetX509DistinguishedNameClass())) {
         LOGE("Input wrong class type!");
         return;
     }
@@ -64,7 +64,7 @@ static CfResult GetEncodeOpenssl(HcfX509DistinguishedNameSpi *self, CfEncodingBl
         LOGE("The input data is null!");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509DistinguishedNameClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509DistinguishedNameClass())) {
         LOGE("Input wrong class type!");
         return CF_INVALID_PARAMS;
     }
@@ -179,7 +179,7 @@ static CfResult GetNameOpenssl(HcfX509DistinguishedNameSpi *self, CfBlob *type, 
         LOGE("The input data is null!");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509DistinguishedNameClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509DistinguishedNameClass())) {
         LOGE("Input wrong class type!");
         return CF_INVALID_PARAMS;
     }

@@ -77,7 +77,7 @@ static void DestroyX509CertChainValidator(CfObjectBase *self)
         LOGE("Invalid params!");
         return;
     }
-    if (!IsClassMatch(self, GetX509CertChainValidatorClass())) {
+    if (!CfIsClassMatch(self, GetX509CertChainValidatorClass())) {
         LOGE("Class is not match.");
         return;
     }
@@ -206,7 +206,7 @@ static CfResult Validate(HcfCertChainValidatorSpi *self, const CfArray *certsLis
         LOGE("Invalid input parameter.");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CertChainValidatorClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertChainValidatorClass())) {
         LOGE("Class is not match.");
         return CF_INVALID_PARAMS;
     }

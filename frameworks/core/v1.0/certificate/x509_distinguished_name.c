@@ -72,7 +72,7 @@ static void DestroyX509DistinguishedName(CfObjectBase *self)
         LOGE("Invalid input parameter.");
         return;
     }
-    if (!IsClassMatch(self, GetX509DistinguishedNameClass())) {
+    if (!CfIsClassMatch(self, GetX509DistinguishedNameClass())) {
         LOGE("Class is not match.");
         return;
     }
@@ -87,7 +87,7 @@ static CfResult GetEncoded(HcfX509DistinguishedName *self, CfEncodingBlob *out)
         LOGE("Invalid input parameter.");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509DistinguishedNameClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509DistinguishedNameClass())) {
         LOGE("Class is not match.");
         return CF_INVALID_PARAMS;
     }
@@ -101,7 +101,7 @@ static CfResult GetName(HcfX509DistinguishedName *self, CfBlob *type, CfBlob *ou
         LOGE("Invalid input parameter.");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509DistinguishedNameClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509DistinguishedNameClass())) {
         LOGE("Class is not match.");
         return CF_INVALID_PARAMS;
     }

@@ -73,7 +73,7 @@ static void DestroyCertChainValidator(CfObjectBase *self)
         LOGE("Invalid input parameter.");
         return;
     }
-    if (!IsClassMatch(self, GetCertChainValidatorClass())) {
+    if (!CfIsClassMatch(self, GetCertChainValidatorClass())) {
         LOGE("Class is not match.");
         return;
     }
@@ -130,7 +130,7 @@ static CfResult Validate(HcfCertChainValidator *self, const HcfCertChainData *ce
         LOGE("Invalid input parameter.");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetCertChainValidatorClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetCertChainValidatorClass())) {
         LOGE("Class is not match.");
         return CF_INVALID_PARAMS;
     }
@@ -161,7 +161,7 @@ static const char *GetAlgorithm(HcfCertChainValidator *self)
         LOGE("Invalid input parameter.");
         return NULL;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetCertChainValidatorClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetCertChainValidatorClass())) {
         LOGE("Class is not match.");
         return NULL;
     }
@@ -173,7 +173,7 @@ static const char *GetAlgorithm(HcfCertChainValidator *self)
 CfResult HcfCertChainValidatorCreate(const char *algorithm, HcfCertChainValidator **pathValidator)
 {
     CF_LOG_I("enter");
-    if (!IsStrValid(algorithm, HCF_MAX_STR_LEN) || (pathValidator == NULL)) {
+    if (!CfIsStrValid(algorithm, HCF_MAX_STR_LEN) || (pathValidator == NULL)) {
         return CF_INVALID_PARAMS;
     }
     const HcfCertChainValidatorFuncSet *func = FindAbility(algorithm);

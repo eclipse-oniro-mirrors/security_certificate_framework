@@ -86,7 +86,7 @@ static void DestroyCertChain(CfObjectBase *self)
         LOGE("Invalid input parameter.");
         return;
     }
-    if (!IsClassMatch(self, GetCertChainClass())) {
+    if (!CfIsClassMatch(self, GetCertChainClass())) {
         LOGE("Class is not match.");
         return;
     }
@@ -101,7 +101,7 @@ static CfResult GetCertList(HcfCertChain *self, HcfX509CertificateArray *out)
         LOGE("Invalid input parameter.");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetCertChainClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetCertChainClass())) {
         LOGE("Class is not match.");
         return CF_INVALID_PARAMS;
     }
@@ -115,7 +115,7 @@ static CfResult ToString(HcfCertChain *self, CfBlob *out)
         LOGE("Invalid input parameter.");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetCertChainClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetCertChainClass())) {
         LOGE("Class is not match.");
         return CF_INVALID_PARAMS;
     }
@@ -129,7 +129,7 @@ static CfResult HashCode(HcfCertChain *self, CfBlob *out)
         LOGE("Invalid input parameter.");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetCertChainClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetCertChainClass())) {
         LOGE("Class is not match.");
         return CF_INVALID_PARAMS;
     }
@@ -144,7 +144,7 @@ static CfResult Validate(
         LOGE("Invalid input parameter.");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetCertChainClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetCertChainClass())) {
         LOGE("Class is not match.");
         return CF_INVALID_PARAMS;
     }

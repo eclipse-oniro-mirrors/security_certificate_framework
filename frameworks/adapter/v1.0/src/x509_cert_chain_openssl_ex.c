@@ -31,13 +31,13 @@ const char *GetX509CertChainClass(void)
     return X509_CERT_CHAIN_OPENSSL_CLASS;
 }
 
-CfResult ToString(HcfX509CertChainSpi *self, CfBlob *out)
+CfResult CfToString(HcfX509CertChainSpi *self, CfBlob *out)
 {
     if ((self == NULL) || (out == NULL)) {
         LOGE("The input data is null!");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CertChainClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertChainClass())) {
         LOGE("Input wrong class type!");
         return CF_INVALID_PARAMS;
     }
@@ -72,13 +72,13 @@ CfResult ToString(HcfX509CertChainSpi *self, CfBlob *out)
     return CF_ERR_CRYPTO_OPERATION;
 }
 
-CfResult HashCode(HcfX509CertChainSpi *self, CfBlob *out)
+CfResult CfHashCode(HcfX509CertChainSpi *self, CfBlob *out)
 {
     if ((self == NULL) || (out == NULL)) {
         LOGE("The input data is null!");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CertChainClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertChainClass())) {
         LOGE("Input wrong class type!");
         return CF_INVALID_PARAMS;
     }

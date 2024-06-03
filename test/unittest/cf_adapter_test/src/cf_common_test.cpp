@@ -369,7 +369,7 @@ HWTEST_F(CfCommonTest, CfMemTest004, TestSize.Level0)
 */
 HWTEST_F(CfCommonTest, IsStrValid001, TestSize.Level0)
 {
-    bool checkRes = IsStrValid(nullptr, 0);
+    bool checkRes = CfIsStrValid(nullptr, 0);
     EXPECT_EQ(checkRes, false);
 }
 
@@ -382,7 +382,7 @@ HWTEST_F(CfCommonTest, IsStrValid001, TestSize.Level0)
 HWTEST_F(CfCommonTest, IsStrValid002, TestSize.Level0)
 {
     char str[] = "this is test for beyond max length.";
-    bool checkRes = IsStrValid(str, TEST_DEFAULT_SIZE);
+    bool checkRes = CfIsStrValid(str, TEST_DEFAULT_SIZE);
     EXPECT_EQ(checkRes, false);
 }
 
@@ -395,7 +395,7 @@ HWTEST_F(CfCommonTest, IsStrValid002, TestSize.Level0)
 HWTEST_F(CfCommonTest, IsStrValid003, TestSize.Level0)
 {
     char str[] = "123456789";
-    bool checkRes = IsStrValid(str, TEST_DEFAULT_SIZE);
+    bool checkRes = CfIsStrValid(str, TEST_DEFAULT_SIZE);
     EXPECT_EQ(checkRes, true);
 }
 
@@ -409,7 +409,7 @@ HWTEST_F(CfCommonTest, IsBlobValid001, TestSize.Level0)
 {
     uint8_t blobData[] = "normal case";
     CfBlob blob = { sizeof(blobData), blobData };
-    bool checkRes = IsBlobValid(&blob);
+    bool checkRes = CfIsBlobValid(&blob);
     EXPECT_EQ(checkRes, true);
 }
 
@@ -421,7 +421,7 @@ HWTEST_F(CfCommonTest, IsBlobValid001, TestSize.Level0)
 */
 HWTEST_F(CfCommonTest, IsBlobValid002, TestSize.Level0)
 {
-    bool checkRes = IsBlobValid(nullptr);
+    bool checkRes = CfIsBlobValid(nullptr);
     EXPECT_EQ(checkRes, false);
 }
 
@@ -434,7 +434,7 @@ HWTEST_F(CfCommonTest, IsBlobValid002, TestSize.Level0)
 HWTEST_F(CfCommonTest, IsBlobValid003, TestSize.Level0)
 {
     CfBlob blob = { TEST_DEFAULT_SIZE, nullptr };
-    bool checkRes = IsBlobValid(&blob);
+    bool checkRes = CfIsBlobValid(&blob);
     EXPECT_EQ(checkRes, false);
 }
 
@@ -448,7 +448,7 @@ HWTEST_F(CfCommonTest, IsBlobValid004, TestSize.Level0)
 {
     uint8_t blobData[] = "invalid blob size is 0";
     CfBlob blob = { 0, blobData };
-    bool checkRes = IsBlobValid(&blob);
+    bool checkRes = CfIsBlobValid(&blob);
     EXPECT_EQ(checkRes, false);
 }
 
@@ -470,7 +470,7 @@ static const char *GetClassNull(void)
 */
 HWTEST_F(CfCommonTest, IsClassMatch001, TestSize.Level0)
 {
-    bool checkRes = IsClassMatch(nullptr, "TEST_FOR_GET_CLASS");
+    bool checkRes = CfIsClassMatch(nullptr, "TEST_FOR_GET_CLASS");
     EXPECT_EQ(checkRes, false);
 }
 
@@ -483,7 +483,7 @@ HWTEST_F(CfCommonTest, IsClassMatch001, TestSize.Level0)
 HWTEST_F(CfCommonTest, IsClassMatch002, TestSize.Level0)
 {
     CfObjectBase obj = { GetClassNull, nullptr };
-    bool checkRes = IsClassMatch(&obj, "TEST_FOR_GET_CLASS");
+    bool checkRes = CfIsClassMatch(&obj, "TEST_FOR_GET_CLASS");
     EXPECT_EQ(checkRes, false);
 }
 
@@ -496,7 +496,7 @@ HWTEST_F(CfCommonTest, IsClassMatch002, TestSize.Level0)
 HWTEST_F(CfCommonTest, IsClassMatch003, TestSize.Level0)
 {
     CfObjectBase obj = { GetClass, nullptr };
-    bool checkRes = IsClassMatch(&obj, nullptr);
+    bool checkRes = CfIsClassMatch(&obj, nullptr);
     EXPECT_EQ(checkRes, false);
 }
 
@@ -509,7 +509,7 @@ HWTEST_F(CfCommonTest, IsClassMatch003, TestSize.Level0)
 HWTEST_F(CfCommonTest, IsClassMatch004, TestSize.Level0)
 {
     CfObjectBase obj = { GetClass, nullptr };
-    bool checkRes = IsClassMatch(&obj, "TEST_FOR_GET_CLASS");
+    bool checkRes = CfIsClassMatch(&obj, "TEST_FOR_GET_CLASS");
     EXPECT_EQ(checkRes, true);
 }
 
@@ -522,7 +522,7 @@ HWTEST_F(CfCommonTest, IsClassMatch004, TestSize.Level0)
 HWTEST_F(CfCommonTest, IsClassMatch005, TestSize.Level0)
 {
     CfObjectBase obj = { GetClass, nullptr };
-    bool checkRes = IsClassMatch(&obj, "TEST_FOR_GET_CLASS123");
+    bool checkRes = CfIsClassMatch(&obj, "TEST_FOR_GET_CLASS123");
     EXPECT_EQ(checkRes, false);
 }
 
@@ -535,7 +535,7 @@ HWTEST_F(CfCommonTest, IsClassMatch005, TestSize.Level0)
 HWTEST_F(CfCommonTest, IsPubKeyClassMatch001, TestSize.Level0)
 {
     HcfObjectBase obj = { GetClass, nullptr };
-    bool checkRes = IsPubKeyClassMatch(&obj, "TEST_FOR_GET_CLASS");
+    bool checkRes = CfIsPubKeyClassMatch(&obj, "TEST_FOR_GET_CLASS");
     EXPECT_EQ(checkRes, true);
 }
 
@@ -548,7 +548,7 @@ HWTEST_F(CfCommonTest, IsPubKeyClassMatch001, TestSize.Level0)
 HWTEST_F(CfCommonTest, IsPubKeyClassMatch002, TestSize.Level0)
 {
     HcfObjectBase obj = { GetClass, nullptr };
-    bool checkRes = IsPubKeyClassMatch(&obj, "TEST_FOR_GET_CLASS000");
+    bool checkRes = CfIsPubKeyClassMatch(&obj, "TEST_FOR_GET_CLASS000");
     EXPECT_EQ(checkRes, false);
 }
 
@@ -560,7 +560,7 @@ HWTEST_F(CfCommonTest, IsPubKeyClassMatch002, TestSize.Level0)
 */
 HWTEST_F(CfCommonTest, IsPubKeyClassMatch003, TestSize.Level0)
 {
-    bool checkRes = IsPubKeyClassMatch(nullptr, "TEST_FOR_GET_CLASS");
+    bool checkRes = CfIsPubKeyClassMatch(nullptr, "TEST_FOR_GET_CLASS");
     EXPECT_EQ(checkRes, false);
 }
 
@@ -573,7 +573,7 @@ HWTEST_F(CfCommonTest, IsPubKeyClassMatch003, TestSize.Level0)
 HWTEST_F(CfCommonTest, IsPubKeyClassMatch004, TestSize.Level0)
 {
     HcfObjectBase obj = { GetClassNull, nullptr };
-    bool checkRes = IsPubKeyClassMatch(&obj, "TEST_FOR_GET_CLASS");
+    bool checkRes = CfIsPubKeyClassMatch(&obj, "TEST_FOR_GET_CLASS");
     EXPECT_EQ(checkRes, false);
 }
 
@@ -586,7 +586,7 @@ HWTEST_F(CfCommonTest, IsPubKeyClassMatch004, TestSize.Level0)
 HWTEST_F(CfCommonTest, IsPubKeyClassMatch005, TestSize.Level0)
 {
     HcfObjectBase obj = { GetClass, nullptr };
-    bool checkRes = IsPubKeyClassMatch(&obj, nullptr);
+    bool checkRes = CfIsPubKeyClassMatch(&obj, nullptr);
     EXPECT_EQ(checkRes, false);
 }
 } // end of namespace
