@@ -120,8 +120,6 @@ static CfResult GetDataByEntryOpenssl(int32_t count, CfArray *outArr, X509_NAME_
             CfFree(outArr->data);
             outArr->data = NULL;
             outArr->count = 0;
-            CfFree(outArr);
-            outArr = NULL;
             return res;
         }
     }
