@@ -633,7 +633,7 @@ static void CreateTrustAnchorsWithKeyStoreComplete(napi_env env, napi_status sta
     CfCtx *context = static_cast<CfCtx *>(data);
     if (context->async->errCode != CF_SUCCESS) {
         ReturnJSResult(env, context->async, nullptr);
-        DeleteCertChainContext(env, context, false);
+        DeleteCertChainContext(env, context, true);
         return;
     }
     napi_value instance = BuildCreateInstanceByTrustAnchorArray(env, context->trustAnchorArray);
@@ -674,17 +674,16 @@ static napi_value CreateTrustAnchorsWithKeyStore(napi_env env, size_t argc, napi
         return nullptr;
     }
 
-    if (!CreateCallbackAndPromise(env, context, argc, ARGS_SIZE_TWO, nullptr)) {
-        LOGE("CreateCallbackAndPromise failed!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "CreateCallbackAndPromise failed!"));
-        return nullptr;
-    }
+    napi_create_promise(env, &context->async->deferred, &context->async->promise);
+
     context->keyStore = CertGetBlobFromUint8ArrJSParams(env, param1);
     if (context->keyStore == nullptr) {
+        DeleteCertChainContext(env, context);
         return nullptr;
     }
     context->pwd = CertGetBlobFromStringJSParams(env, param2);
     if (context->pwd == nullptr) {
+        DeleteCertChainContext(env, context);
         return nullptr;
     }
 

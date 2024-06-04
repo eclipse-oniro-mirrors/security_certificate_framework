@@ -117,7 +117,11 @@ static CfResult GetDataByEntryOpenssl(int32_t count, CfArray *outArr, X509_NAME_
         CfResult res = DeepCopyDataToOut((const char *)p, len, &(outArr->data[i]));
         if (res != CF_SUCCESS) {
             LOGE("DeepCopyDataToOut error");
-            CfArrayDataClearAndFree(outArr);
+            CfFree(outArr->data);
+            outArr->data = NULL;
+            outArr->count = 0;
+            CfFree(outArr);
+            outArr = NULL;
             return res;
         }
     }
