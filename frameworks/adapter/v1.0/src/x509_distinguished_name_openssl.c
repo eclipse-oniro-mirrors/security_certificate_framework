@@ -114,7 +114,6 @@ static CfResult GetDataByEntryOpenssl(int32_t count, CfArray *outArr, X509_NAME_
             CfArrayDataClearAndFree(outArr);
             return CF_ERR_CRYPTO_OPERATION;
         }
-        LOGI("i2d_ASN1_OBJECT %s, %d", (const char *)p, len);
         CfResult res = DeepCopyDataToOut((const char *)p, len, &(outArr->data[i]));
         if (res != CF_SUCCESS) {
             LOGE("DeepCopyDataToOut error");
@@ -242,7 +241,7 @@ static CfResult CollectAndParseName(const char *cp, char *work, int chtype, X509
             const char *t = cp;
             t++;
             if (*cp == '\\' && *t == '\0') {
-                LOGE("Escape character at end of name string\n");
+                LOGE("Escape character at end of name string");
                 return CF_INVALID_PARAMS;
             }
             if (*cp == '\\') {
@@ -272,17 +271,17 @@ static X509_NAME *ParseName(const char *cp, int chtype, const char *desc)
 
     X509_NAME *name = X509_NAME_new();
     if (name == NULL) {
-        LOGE("Out of memory\n");
+        LOGE("Out of memory");
         return NULL;
     }
     char *work = OPENSSL_strdup(cp);
     if (work == NULL) {
-        LOGE("Error copying name input\n");
+        LOGE("Error copying name input");
         goto err;
     }
 
     if (CollectAndParseName(cp, work, chtype, name) != CF_SUCCESS) {
-        LOGE("Error CollectAndParseName\n");
+        LOGE("Error CollectAndParseName");
         goto err;
     }
 

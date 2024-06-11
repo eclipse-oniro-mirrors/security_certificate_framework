@@ -864,8 +864,9 @@ static CfResult Comparex509CertX509Openssl(HcfX509CrlSpi *self, const HcfCertifi
     bool bRet = IsRevoked(self, x509Cert);
     if (!bRet) {
         *out = false;
+        LOGI("Crl revoked is false!");
     }
-    LOGI("x509Crl match x509Cert %d!", *out);
+    LOGI("x509Crl match x509Cert!");
     return CF_SUCCESS;
 }
 
