@@ -322,7 +322,6 @@ static EVP_PKEY *ConvertByteArrayToPubKey(const uint8_t *pubKeyBytes, size_t len
         LOGE("ConvertByteArrayToPubkey invalid params.");
         return NULL;
     }
-    LOGI("pubkeyBytes  len: %d .", len);
     EVP_PKEY *pubKey = d2i_PUBKEY(NULL, &pubKeyBytes, len); // pubkey DER format.
     if (pubKey == NULL) {
         LOGE("d2i_PUBKEY() failed!");
@@ -1097,7 +1096,7 @@ static BIO *CreateConnectBio(char *host, char *port, int ssl)
         }
         bio = BIO_new_ssl_connect(sslCtx);
         if (BIO_set_conn_hostname(bio, host) != 1) {
-            LOGE("Set host name %s failed.", host);
+            LOGE("Set host name failed.");
             return NULL;
         }
     } else {
@@ -1111,17 +1110,17 @@ static BIO *CreateConnectBio(char *host, char *port, int ssl)
 
     if (port != NULL) {
         if (BIO_set_conn_port(bio, port) != 1) {
-            LOGE("Set port %s failed.", port);
+            LOGE("Set port failed.");
             return NULL;
         }
     } else if (ssl) {
         if (BIO_set_conn_port(bio, HTTPS_PORT) != 1) {
-            LOGE("Set port %s failed.", HTTPS_PORT);
+            LOGE("Set port failed.");
             return NULL;
         }
     } else {
         if (BIO_set_conn_port(bio, HTTP_PORT) != 1) {
-            LOGE("Set port %s failed.", HTTP_PORT);
+            LOGE("Set port failed.");
             return NULL;
         }
     }
