@@ -503,7 +503,7 @@ static void CreateTrustAnchorsWithKeyStoreExecute(napi_env env, void *data)
     context->async->errCode =
         HcfCreateTrustAnchorWithKeyStore(context->keyStore, context->pwd, &context->trustAnchorArray);
     if (context->async->errCode != CF_SUCCESS) {
-        context->async->errMsg = "KeyStore and Password mismatch!";
+        context->async->errMsg = "Failed to create trust anchor from p12!";
     }
 }
 

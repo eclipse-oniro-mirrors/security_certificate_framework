@@ -356,7 +356,7 @@ bool CheckIsSelfSigned(const X509 *cert)
     }
 
     ret = (X509_NAME_cmp(issuer, subject) == 0);
-    LOGI("CheckIsSelfSigned() ret: %d .", ret);
+    LOGI("The ret of whether the cert is self signed is %d.", ret);
     return ret;
 }
 
