@@ -44,7 +44,6 @@ const std::string CERT_TAG_CERT_MATCH_PARAMS = "certMatchParameters";
 const std::string CERT_TAG_MAX_LENGTH = "maxLength";
 const std::string CERT_TAG_VALIDATE_PARAMS = "validationParameters";
 const std::string CERT_TAG_KEYSTORE = "keystore";
-const std::string CERT_TAG_PWD = "pwd";
 
 enum ResultCode {
     JS_SUCCESS = 0,
