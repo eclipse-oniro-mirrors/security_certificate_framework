@@ -22,7 +22,6 @@ config("cert_framework_config") {
 }
 
 ohos_shared_library("certificate_framework_core") {
-  branch_protector_ret = "pac_ret"
   sanitize = {
     cfi = true
     cfi_cross_dso = true
