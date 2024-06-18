@@ -2060,71 +2060,6 @@ CfResult HcfX509CertChainByParamsSpiCreate(const HcfX509CertChainBuildParameters
     return res;
 }
 
-static CfResult GetPubFromP12(EVP_PKEY *pkey, CfBlob **pub)
-{
-    *pub = (CfBlob *)CfMalloc(sizeof(CfBlob), 0);
-    if (*pub == NULL) {
-        LOGE("Failed to malloc pub key!");
-        return CF_ERR_MALLOC;
-    }
-    int32_t size = i2d_PUBKEY(pkey, &((*pub)->data));
-    if (size < 0) {
-        LOGE("Failed to convert public key to DER format");
-        CfFree(*pub);
-        *pub = NULL;
-        return CF_INVALID_PARAMS;
-    }
-    (*pub)->size = (uint32_t)size;
-    return CF_SUCCESS;
-}
-
-static CfResult GetSubjectFromP12(X509 *cert, CfBlob **sub)
-{
-    X509_NAME *name = X509_get_subject_name(cert);
-    if (!name) {
-        LOGE("Failed to get subject name!");
-        return CF_INVALID_PARAMS;
-    }
-    *sub = (CfBlob *)CfMalloc(sizeof(CfBlob), 0);
-    if (*sub == NULL) {
-        LOGE("Failed to malloc pub key!");
-        return CF_ERR_MALLOC;
-    }
-
-    int32_t size = i2d_X509_NAME(name, &((*sub)->data));
-    if (size <= 0) {
-        LOGE("Failed to get subject DER data!");
-        CfFree(*sub);
-        *sub = NULL;
-        return CF_ERR_CRYPTO_OPERATION;
-    }
-    (*sub)->size = (uint32_t)size;
-    return CF_SUCCESS;
-}
-
-static CfResult GetNameConstraintsFromP12(X509 *cert, CfBlob **name)
-{
-    ASN1_BIT_STRING *nc = X509_get_ext_d2i(cert, NID_name_constraints, NULL, NULL);
-    if (!nc) {
-        LOGE("No nameConstraints found in certificate");
-        return CF_INVALID_PARAMS;
-    }
-    *name = (CfBlob *)CfMalloc(sizeof(CfBlob), 0);
-    if (*name == NULL) {
-        LOGE("Failed to malloc pub key!");
-        return CF_ERR_MALLOC;
-    }
-    int32_t size = i2d_ASN1_BIT_STRING(nc, &((*name)->data));
-    if (size < 0) {
-        LOGE("Failed to get name DER data!");
-        CfFree(*name);
-        *name = NULL;
-        return CF_ERR_CRYPTO_OPERATION;
-    }
-    (*name)->size = (uint32_t)size;
-    return CF_SUCCESS;
-}
-
 static CfResult ProcessP12Data(STACK_OF(X509) *ca, HcfX509TrustAnchorArray *result)
 {
     CfResult ret = CF_SUCCESS;
@@ -2137,19 +2072,19 @@ static CfResult ProcessP12Data(STACK_OF(X509) *ca, HcfX509TrustAnchorArray *resu
         }
 
         // CAPubKey
-        ret = GetPubFromP12(X509_get0_pubkey(x509), &(result->data[i]->CAPubKey));
+        ret = GetPubKeyDataFromX509(x509, &(result->data[i]->CAPubKey));
         if (ret != CF_SUCCESS) {
             LOGD("Failed to get %d CAPubKey!", i);
         }
 
         // CASubject
-        ret = GetSubjectFromP12(x509, &(result->data[i]->CASubject));
+        ret = GetSubjectNameFromX509(x509, &(result->data[i]->CASubject));
         if (ret != CF_SUCCESS) {
             LOGD("Failed to get %d CASubject!", i);
         }
 
         // nameConstraints
-        ret = GetNameConstraintsFromP12(x509, &(result->data[i]->nameConstraints));
+        ret = GetNameConstraintsFromX509(x509, &(result->data[i]->nameConstraints));
         if (ret != CF_SUCCESS) {
             LOGD("Failed to get %d nameConstraints!", i);
         }
