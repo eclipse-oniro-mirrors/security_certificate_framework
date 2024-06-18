@@ -410,6 +410,13 @@ void FreeX509CertChainValidateParams(HcfX509CertChainValidateParams &param)
         CfFree(param.certCRLCollections);
         param.certCRLCollections = nullptr;
     }
+
+    CfBlobFree(&(param.sslHostname));
+    if (param.keyUsage != nullptr) {
+        CfFree(param.keyUsage->data);
+        CfFree(param.keyUsage);
+        param.keyUsage = nullptr;
+    }
 }
 
 void FreeTrustAnchorArray(HcfX509TrustAnchorArray *trustAnchorArray, bool freeCertFlag)
@@ -423,6 +430,7 @@ void FreeTrustAnchorArray(HcfX509TrustAnchorArray *trustAnchorArray, bool freeCe
                 CfObjDestroy(trustAnchorArray->data[i]->CACert);
             }
             trustAnchorArray->data[i]->CACert = NULL;
+            CfBlobFree(&trustAnchorArray->data[i]->CAPubKey);
             CfBlobFree(&trustAnchorArray->data[i]->CASubject);
             CfBlobFree(&trustAnchorArray->data[i]->nameConstraints);
             CfFree(trustAnchorArray->data[i]);

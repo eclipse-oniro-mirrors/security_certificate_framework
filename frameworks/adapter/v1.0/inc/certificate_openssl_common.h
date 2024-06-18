@@ -56,6 +56,9 @@ bool CheckIsLeafCert(X509 *cert);
 CfResult IsOrderCertChain(STACK_OF(X509) * certsChain, bool *isOrder);
 CfResult CheckSelfPubkey(X509 *cert, const EVP_PKEY *pubKey);
 X509 *FindCertificateBySubject(STACK_OF(X509) * certs, X509_NAME *subjectName);
+CfResult GetPubKeyDataFromX509(X509 *x509, CfBlob **pub);
+CfResult GetSubjectNameFromX509(X509 *cert, CfBlob **sub);
+CfResult GetNameConstraintsFromX509(X509 *cert, CfBlob **name);
 #ifdef __cplusplus
 }
 #endif

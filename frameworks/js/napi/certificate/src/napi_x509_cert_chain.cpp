@@ -120,6 +120,10 @@ static void DeleteCertChainContext(napi_env env, CfCtx *&context, bool freeCertF
     FreeX509CertChainValidateParams(context->params);
     FreeX509CertChainValidateResult(context->result, freeCertFlag);
 
+    CfBlobFree(&(context->keyStore));
+    CfBlobDataClearAndFree(context->pwd);
+    CfFree(context->pwd);
+
     CF_FREE_PTR(context);
 }
 
@@ -543,7 +547,7 @@ static napi_value ConvertX509CertToNapiValue(napi_env env, HcfX509Certificate *c
     return instance;
 }
 
-static napi_value ConvertCfBlobToNapiValue(napi_env env, CfBlob *blob)
+static napi_value ConvertBlobToUint8ArrayNapiValue(napi_env env, CfBlob *blob)
 {
     if (blob == NULL) {
         LOGE("ConvertCfBlobToNapiValue:blob is nullptr.");
@@ -570,7 +574,10 @@ static napi_value ConvertCfBlobToNapiValue(napi_env env, CfBlob *blob)
         return nullptr;
     }
     buffer = nullptr;
-    return outBuffer;
+
+    napi_value outData = nullptr;
+    napi_create_typedarray(env, napi_uint8_array, blob->size, outBuffer, 0, &outData);
+    return outData;
 }
 
 static napi_value BuildCreateInstanceByTrustAnchorArray(napi_env env, HcfX509TrustAnchorArray *trustAnchorArray)
@@ -591,22 +598,24 @@ static napi_value BuildCreateInstanceByTrustAnchorArray(napi_env env, HcfX509Tru
         napi_value valueCACert = ConvertX509CertToNapiValue(env, trustAnchorArray->data[i]->CACert);
         if (valueCACert == nullptr) {
             LOGI("The CACert value is null, return to js is an enpty object!");
+        } else {
+            trustAnchorArray->data[i]->CACert = nullptr;
         }
         napi_set_named_property(env, element, CERT_CHAIN_TRUSTANCHOR_TAG_CACERT.c_str(), valueCACert);
 
-        napi_value valuePubKey = ConvertCfBlobToNapiValue(env, trustAnchorArray->data[i]->CAPubKey);
+        napi_value valuePubKey = ConvertBlobToUint8ArrayNapiValue(env, trustAnchorArray->data[i]->CAPubKey);
         if (valuePubKey == nullptr) {
             LOGI("The PubKey value is null, return to js is an enpty object!");
         }
         napi_set_named_property(env, element, CERT_CHAIN_TRUSTANCHOR_TAG_CAPUBKEY.c_str(), valuePubKey);
 
-        napi_value valueSub = ConvertCfBlobToNapiValue(env, trustAnchorArray->data[i]->CASubject);
+        napi_value valueSub = ConvertBlobToUint8ArrayNapiValue(env, trustAnchorArray->data[i]->CASubject);
         if (valueSub == nullptr) {
             LOGI("The CASubject value is null, return to js is an enpty object!");
         }
         napi_set_named_property(env, element, CERT_CHAIN_TRUSTANCHOR_TAG_CASUBJECT.c_str(), valueSub);
 
-        napi_value valueName = ConvertCfBlobToNapiValue(env, trustAnchorArray->data[i]->nameConstraints);
+        napi_value valueName = ConvertBlobToUint8ArrayNapiValue(env, trustAnchorArray->data[i]->nameConstraints);
         if (valueName == nullptr) {
             LOGI("The nameConsteaints value is null, return to js is an enpty object!");
         }
@@ -634,7 +643,7 @@ static void CreateTrustAnchorsWithKeyStoreComplete(napi_env env, napi_status sta
         LOGE("Failed to create trust anchor with KeyStore");
     }
     ReturnJSResult(env, context->async, instance);
-    DeleteCertChainContext(env, context);
+    DeleteCertChainContext(env, context, true);
 }
 
 static napi_value CreateTrustAnchorsWithKeyStoreAsyncWork(napi_env env, CfCtx *context)

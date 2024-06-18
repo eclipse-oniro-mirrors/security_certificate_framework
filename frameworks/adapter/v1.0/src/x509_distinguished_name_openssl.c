@@ -305,7 +305,8 @@ CfResult OpensslX509DistinguishedNameSpiCreate(const CfBlob *inStream, const boo
     if (bString) {
         name = ParseName((const char *)inStream->data, MBSTRING_UTF8, "DistinguishedName");
     } else {
-        name = d2i_X509_NAME(NULL, (const unsigned char **)&inStream->data, inStream->size);
+        const unsigned char *in = inStream->data;
+        name = d2i_X509_NAME(NULL, &in, inStream->size);
     }
 
     if (name == NULL) {
@@ -317,6 +318,7 @@ CfResult OpensslX509DistinguishedNameSpiCreate(const CfBlob *inStream, const boo
         sizeof(HcfX509DistinguishedNameOpensslImpl), 0);
     if (realName == NULL) {
         LOGE("CfMalloc error");
+        X509_NAME_free(name);
         return CF_ERR_MALLOC;
     }
 
