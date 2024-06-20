@@ -217,7 +217,7 @@ HWTEST_F(CryptoX509CertChainTestPart2, ValidateOpensslPolicyTest001, TestSize.Le
     CfBlob sslHostname = { 0 };
     params.sslHostname = &sslHostname;
     X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_check_host(_, _, _, _, _)).Times(AnyNumber()).WillOnce(Return(0));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_check_host(_, _, _, _, _)).WillRepeatedly(Return(0));
     ret = g_certChainPemSpi->engineValidate(g_certChainPemSpi, &params, &result);
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
     X509OpensslMock::SetMockFlag(false);
@@ -589,14 +589,15 @@ HWTEST_F(CryptoX509CertChainTestPart2, ValidateOpensslRevocationOnLineHttpsTest0
     HcfX509CertChainValidateResult result = { 0 };
     CfResult ret;
 
-    X509OpensslMock::SetMockFlag(true);
+    X509OpensslMock::SetHcfMockFlag(true);
     EXPECT_CALL(X509OpensslMock::GetInstance(), X509_get1_ocsp(_))
         .WillOnce(Return(NULL))
-        .WillRepeatedly(Invoke(__real_X509_get1_ocsp));
+        .WillRepeatedly(Invoke(__real_X509_get1_ocsp))
+        .RetiresOnSaturation();
     ret = g_certChainPemSpi163->engineValidate(g_certChainPemSpi163, &params, &result);
     EXPECT_EQ(ret, CF_SUCCESS);
     FreeValidateResult(result);
-    X509OpensslMock::SetMockFlag(false);
+    X509OpensslMock::SetHcfMockFlag(false);
 
     // test Unable to parse url.
     X509OpensslMock::SetMockFlag(true);
@@ -648,37 +649,37 @@ HWTEST_F(CryptoX509CertChainTestPart2, ValidateOpensslRevocationOnLineHttpsTest0
     CfResult ret;
 
     // test GetOCSPUrl failed case
-    X509OpensslMock::SetMockFlag(true);
+    X509OpensslMock::SetHcfMockFlag(true);
     params.revocationCheckParam->ocspResponderURI->data = NULL;
-    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_get1_ocsp(_)).Times(AnyNumber()).WillOnce(Return(NULL));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_get1_ocsp(_)).WillRepeatedly(Return(NULL)).RetiresOnSaturation();
     ret = g_certChainPemSpi163->engineValidate(g_certChainPemSpi163, &params, &result);
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
     FreeValidateResult(result);
-    X509OpensslMock::SetMockFlag(false);
+    X509OpensslMock::SetHcfMockFlag(false);
 
-    X509OpensslMock::SetMockFlag(true);
+    X509OpensslMock::SetHcfMockFlag(true);
     params.revocationCheckParam->ocspResponderURI = NULL;
-    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_get1_ocsp(_)).Times(AnyNumber()).WillOnce(Return(NULL));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_get1_ocsp(_)).WillRepeatedly(Return(NULL)).RetiresOnSaturation();
     ret = g_certChainPemSpi163->engineValidate(g_certChainPemSpi163, &params, &result);
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
     FreeValidateResult(result);
-    X509OpensslMock::SetMockFlag(false);
+    X509OpensslMock::SetHcfMockFlag(false);
 
-    X509OpensslMock::SetMockFlag(true);
+    X509OpensslMock::SetHcfMockFlag(true);
     params.revocationCheckParam->ocspResponderURI = &g_blobDownloadURIHttpsInvalid;
-    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_get1_ocsp(_)).Times(AnyNumber()).WillOnce(Return(NULL));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_get1_ocsp(_)).WillRepeatedly(Return(NULL)).RetiresOnSaturation();
     ret = g_certChainPemSpi163->engineValidate(g_certChainPemSpi163, &params, &result);
     EXPECT_EQ(ret, CF_INVALID_PARAMS);
     FreeValidateResult(result);
-    X509OpensslMock::SetMockFlag(false);
+    X509OpensslMock::SetHcfMockFlag(false);
 
-    X509OpensslMock::SetMockFlag(true);
+    X509OpensslMock::SetHcfMockFlag(true);
     params.revocationCheckParam->ocspResponderURI = &g_blobDownloadURIHttpsInvalid2;
-    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_get1_ocsp(_)).Times(AnyNumber()).WillOnce(Return(NULL));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_get1_ocsp(_)).WillRepeatedly(Return(NULL)).RetiresOnSaturation();
     ret = g_certChainPemSpi163->engineValidate(g_certChainPemSpi163, &params, &result);
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
     FreeValidateResult(result);
-    X509OpensslMock::SetMockFlag(false);
+    X509OpensslMock::SetHcfMockFlag(false);
 
     FreeTrustAnchorArr(trustAnchorArray);
     FreeHcfRevocationCheckParam(params.revocationCheckParam);

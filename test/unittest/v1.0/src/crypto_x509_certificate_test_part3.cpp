@@ -151,7 +151,7 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareSubjectAlternativeNamesTest002, 
 
     // test DeepCopySubAltName failed case
     X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), i2d_GENERAL_NAME(_, _)).Times(AnyNumber()).WillOnce(Return(-1));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), i2d_GENERAL_NAME(_, _)).WillRepeatedly(Return(-1));
     CfResult ret = g_x509CertExtAttrObj->match(g_x509CertExtAttrObj, &matchParams, &bResult);
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
     X509OpensslMock::SetMockFlag(false);
@@ -240,7 +240,7 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareAuthorityKeyIdentifierTest001, T
 
     // test GetAuKeyIdDNX509Openssl failed case
     X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), i2d_AUTHORITY_KEYID(_, _)).Times(AnyNumber()).WillOnce(Return(-1));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), i2d_AUTHORITY_KEYID(_, _)).WillRepeatedly(Return(-1));
     ret = g_x509CertExtAttrObj->match(g_x509CertExtAttrObj, &certMatchParameters, &bResult);
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
     X509OpensslMock::SetMockFlag(false);
@@ -276,7 +276,7 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareMinPathLenConstraintTest001, Tes
     EXPECT_NE(constraints, nullptr);
     constraints->ca = 1;
     X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), X509V3_EXT_d2i(_)).Times(AnyNumber()).WillOnce(Return(constraints));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509V3_EXT_d2i(_)).WillRepeatedly(Return(constraints));
     ret = g_x509CertExtAttrObj->match(g_x509CertExtAttrObj, &certMatchParameters, &bResult);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_EQ(bResult, false);
@@ -301,7 +301,7 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareMinPathLenConstraintTest002, Tes
     constraints->ca = 0;
     constraints->pathlen = pathlen;
     X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), X509V3_EXT_d2i(_)).Times(AnyNumber()).WillOnce(Return(constraints));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509V3_EXT_d2i(_)).WillRepeatedly(Return(constraints));
     EXPECT_CALL(X509OpensslMock::GetInstance(), ASN1_INTEGER_get(_))
         .WillOnce(Return(10))
         .WillRepeatedly(Invoke(__real_ASN1_INTEGER_get));
@@ -320,7 +320,7 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareMinPathLenConstraintTest002, Tes
     X509OpensslMock::SetMockFlag(false);
 
     X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_get_ext(_, _)).Times(AnyNumber()).WillOnce(Return(NULL));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_get_ext(_, _)).WillRepeatedly(Return(NULL));
     ret = g_x509CertExtAttrObj->match(g_x509CertExtAttrObj, &certMatchParameters, &bResult);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_EQ(bResult, false);
@@ -451,7 +451,7 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareNameConstraintsTest002, TestSize
     blob.size = sizeof(g_testNameConstraintsIPADDR);
 
     X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_value(_, _)).Times(AnyNumber()).WillOnce(Return(tree));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_value(_, _)).WillRepeatedly(Return(tree));
     CfResult ret = g_x509CertExtAttrObj->match(g_x509CertExtAttrObj, &certMatchParameters, &bResult);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_EQ(bResult, false);
@@ -479,7 +479,7 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareNameConstraintsTest003, TestSize
     tree->base->d.ediPartyName = EDIPARTYNAME_new();
 
     X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_value(_, _)).Times(AnyNumber()).WillOnce(Return(tree));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_value(_, _)).WillRepeatedly(Return(tree));
     CfResult ret = g_x509CertExtAttrObj->match(g_x509CertExtAttrObj, &certMatchParameters, &bResult);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_EQ(bResult, false);
@@ -495,7 +495,7 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareNameConstraintsTest003, TestSize
     blob.size = sizeof(g_testNameConstraintsEDIPartyInvalid);
 
     X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_value(_, _)).Times(AnyNumber()).WillOnce(Return(tree));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_value(_, _)).WillRepeatedly(Return(tree));
     ret = g_x509CertExtAttrObj->match(g_x509CertExtAttrObj, &certMatchParameters, &bResult);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_EQ(bResult, false);
@@ -525,7 +525,7 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareNameConstraintsTest004, TestSize
     tree->base->d.directoryName = X509_NAME_new();
 
     X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_value(_, _)).Times(AnyNumber()).WillOnce(Return(tree));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_value(_, _)).WillRepeatedly(Return(tree));
     ret = g_x509CertExtAttrObj->match(g_x509CertExtAttrObj, &certMatchParameters, &bResult);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_EQ(bResult, false);
@@ -564,7 +564,7 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareNameConstraintsTest005, TestSize
     CfResult ret;
 
     X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_get_ext_d2i(_, _, _, _)).Times(AnyNumber()).WillOnce(Return(NULL));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_get_ext_d2i(_, _, _, _)).WillRepeatedly(Return(NULL));
     ret = g_x509CertExtAttrObj->match(g_x509CertExtAttrObj, &certMatchParameters, &bResult);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_EQ(bResult, false);
@@ -573,7 +573,7 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareNameConstraintsTest005, TestSize
     NAME_CONSTRAINTS *nc = NAME_CONSTRAINTS_new();
     EXPECT_NE(nc, nullptr);
     X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_get_ext_d2i(_, _, _, _)).Times(AnyNumber()).WillOnce(Return(nc));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_get_ext_d2i(_, _, _, _)).WillRepeatedly(Return(nc));
     ret = g_x509CertExtAttrObj->match(g_x509CertExtAttrObj, &certMatchParameters, &bResult);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_EQ(bResult, false);
@@ -726,7 +726,7 @@ HWTEST_F(CryptoX509CertificateTestPart3, ComparePrivateKeyValidTest002, TestSize
 
     // test ComparePrivateKeyValidX509Openssl failed case
     X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_get_ext_d2i(_, _, _, _)).Times(AnyNumber()).WillOnce(Return(NULL));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_get_ext_d2i(_, _, _, _)).WillRepeatedly(Return(NULL));
     ret = g_x509CertExtAttrObj->match(g_x509CertExtAttrObj, &certMatchParameters, &bResult);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_EQ(bResult, false);
@@ -759,13 +759,13 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareSubjectKeyIdentifierTest001, Tes
 
     // test GetSubKeyIdDNX509Openssl failed case
     X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), i2d_ASN1_OCTET_STRING(_, _)).Times(AnyNumber()).WillOnce(Return(-1));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), i2d_ASN1_OCTET_STRING(_, _)).WillRepeatedly(Return(-1));
     ret = g_x509CertExtAttrObj->match(g_x509CertExtAttrObj, &certMatchParameters, &bResult);
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
     X509OpensslMock::SetMockFlag(false);
 
     X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_get_ext_d2i(_, _, _, _)).Times(AnyNumber()).WillOnce(Return(NULL));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_get_ext_d2i(_, _, _, _)).WillRepeatedly(Return(NULL));
     ret = g_x509CertExtAttrObj->match(g_x509CertExtAttrObj, &certMatchParameters, &bResult);
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
     X509OpensslMock::SetMockFlag(false);
@@ -821,7 +821,7 @@ HWTEST_F(CryptoX509CertificateTestPart3, ToStringTest001, TestSize.Level0)
     X509OpensslMock::SetMockFlag(false);
 
     X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), BIO_ctrl(_, _, _, _)).Times(AnyNumber()).WillOnce(Return(0));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), BIO_ctrl(_, _, _, _)).WillRepeatedly(Return(0));
     ret = g_x509CertExtAttrObj->toString(g_x509CertExtAttrObj, &blob);
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
     X509OpensslMock::SetMockFlag(false);
@@ -843,13 +843,13 @@ HWTEST_F(CryptoX509CertificateTestPart3, HashCodeTest001, TestSize.Level0)
     SetMockFlag(false);
 
     X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), i2d_X509(_, _)).Times(AnyNumber()).WillOnce(Return(-1));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), i2d_X509(_, _)).WillRepeatedly(Return(-1));
     ret = g_x509CertExtAttrObj->hashCode(g_x509CertExtAttrObj, &blob);
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
     X509OpensslMock::SetMockFlag(false);
 
     X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), i2d_X509(_, _)).Times(AnyNumber()).WillOnce(Return(0));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), i2d_X509(_, _)).WillRepeatedly(Return(0));
     ret = g_x509CertExtAttrObj->hashCode(g_x509CertExtAttrObj, &blob);
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
     X509OpensslMock::SetMockFlag(false);
@@ -881,7 +881,7 @@ HWTEST_F(CryptoX509CertificateTestPart3, GetExtensionsObjectTest001, TestSize.Le
     CfBlobDataFree(&blob);
 
     X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), i2d_X509_EXTENSIONS(_, _)).Times(AnyNumber()).WillOnce(Return(-1));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), i2d_X509_EXTENSIONS(_, _)).WillRepeatedly(Return(-1));
     ret = g_x509CertExtAttrObj->getExtensionsObject(g_x509CertExtAttrObj, &blob);
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
     X509OpensslMock::SetMockFlag(false);

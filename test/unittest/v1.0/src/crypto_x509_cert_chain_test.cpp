@@ -52,12 +52,238 @@ extern "C" {
 
 int __real_OPENSSL_sk_num(const OPENSSL_STACK *st);
 void *__real_OPENSSL_sk_value(const OPENSSL_STACK *st, int i);
-CfResult __real_DeepCopyBlobToBlob(const CfBlob *inBlob, CfBlob **outBlob);
+BIO *__real_BIO_new_mem_buf(const void *buf, int len);
 CfResult __real_HcfX509CertificateCreate(const CfEncodingBlob *inStream, HcfX509Certificate **returnObj);
-int __real_OPENSSL_sk_push(OPENSSL_STACK *st, const int data);
 OPENSSL_STACK *__real_OPENSSL_sk_new_null(void);
+int __real_i2d_X509(X509 *a, unsigned char **out);
+int __real_X509_STORE_add_cert(X509_STORE *ctx, X509 *x);
+X509_STORE_CTX *__real_X509_STORE_CTX_new(void);
+X509_STORE *__real_X509_STORE_new(void);
+int __real_X509_STORE_CTX_init(X509_STORE_CTX *ctx, X509_STORE *store, X509 *x509, STACK_OF(X509) * chain);
+int __real_X509_verify_cert(X509_STORE_CTX *ctx);
+int __real_i2d_PUBKEY(EVP_PKEY *a, unsigned char **pp);
+void *__real_X509_get_ext_d2i(const X509 *x, int nid, int *crit, int *idx);
+int __real_i2d_ASN1_OCTET_STRING(ASN1_OCTET_STRING *a, unsigned char **out);
+int __real_i2d_AUTHORITY_KEYID(AUTHORITY_KEYID *a, unsigned char **out);
+CfResult __real_DeepCopyDataToBlob(const unsigned char *data, uint32_t len, CfBlob *outBlob);
+ASN1_TIME *__real_ASN1_TIME_new(void);
+EVP_PKEY *__real_X509_get_pubkey(X509 *x);
+ASN1_OBJECT *__real_OBJ_nid2obj(int n);
+int __real_OBJ_obj2txt(char *buf, int buf_len, const ASN1_OBJECT *a, int no_name);
+BIGNUM *__real_BN_bin2bn(const unsigned char *s, int len, BIGNUM *ret);
+const ASN1_INTEGER *__real_X509_get0_serialNumber(const X509 *x);
+int __real_i2d_ASN1_INTEGER(ASN1_INTEGER *a, unsigned char **out);
+int __real_ASN1_TIME_normalize(ASN1_TIME *s);
+ASN1_TIME *__real_X509_getm_notBefore(const X509 *x);
+ASN1_TIME *__real_X509_getm_notAfter(const X509 *x);
+void __real_X509_ALGOR_get0(const ASN1_OBJECT **paobj, int *pptype, const void **ppval, const X509_ALGOR *algor);
+ASN1_TYPE *__real_ASN1_TYPE_new(void);
+int __real_ASN1_TYPE_set1(ASN1_TYPE *a, int type, const void *value);
+int __real_i2d_ASN1_TYPE(ASN1_TYPE *a, unsigned char **out);
+long __real_ASN1_INTEGER_get(const ASN1_INTEGER *a);
+const unsigned char *__real_ASN1_STRING_get0_data(const ASN1_STRING *x);
+int __real_i2d_GENERAL_NAME(GENERAL_NAME *a, unsigned char **out);
+X509_EXTENSION *__real_X509_get_ext(const X509 *x, X509_EXTENSION *loc);
+void *__real_X509V3_EXT_d2i(X509_EXTENSION *ext);
+void *__real_GENERAL_NAME_get0_value(const GENERAL_NAME *a, int *ptype);
+int __real_X509_verify(X509 *a, EVP_PKEY *r);
+CfResult __real_DeepCopyBlobToBlob(const CfBlob *inBlob, CfBlob **outBlob);
+char *__real_X509_NAME_oneline(const X509_NAME *a, char *buf, int size);
 int __real_OPENSSL_sk_push(OPENSSL_STACK *st, const int data);
+int __real_i2d_X509_REVOKED(X509_REVOKED *a, unsigned char **out);
+int __real_i2d_X509_CRL(X509_CRL *a, unsigned char **out);
+OPENSSL_STACK *__real_OPENSSL_sk_deep_copy(const OPENSSL_STACK *, OPENSSL_sk_copyfunc c, OPENSSL_sk_freefunc f);
+int __real_OBJ_obj2nid(const ASN1_OBJECT *o);
 X509 *__real_X509_dup(X509 *x509);
+int __real_i2d_X509_EXTENSIONS(X509_EXTENSIONS *a, unsigned char **out);
+int __real_X509_check_host(X509 *x, const char *chk, size_t chklen, unsigned int flags, char **peername);
+OCSP_REQUEST *__real_OCSP_REQUEST_new(void);
+X509_CRL *__real_X509_CRL_load_http(const char *url, BIO *bio, BIO *rbio, int timeout);
+struct stack_st_OPENSSL_STRING *__real_X509_get1_ocsp(X509 *x);
+int __real_OSSL_HTTP_parse_url(const char *url, int *pssl, char **puser, char **phost, char **pport, int *pport_num,
+    char **ppath, char **pquery, char **pfrag);
+int __real_X509_NAME_get0_der(X509_NAME *nm, const unsigned char **pder, size_t *pderlen);
+const char *__real_OBJ_nid2sn(int n);
+int __real_ASN1_STRING_length(const ASN1_STRING *x);
+CfResult __real_DeepCopyDataToOut(const char *data, uint32_t len, CfBlob *out);
+char *__real_CRYPTO_strdup(const char *str, const char *file, int line);
+X509_NAME *__real_X509_NAME_new(void);
+int __real_OBJ_txt2nid(const char *s);
+int __real_X509_NAME_add_entry_by_NID(
+    X509_NAME *name, int nid, int type, const unsigned char *bytes, int len, int loc, int set);
+BIO *__real_BIO_new(const BIO_METHOD *type);
+int __real_X509_print(BIO *bp, X509 *x);
+long __real_BIO_ctrl(BIO *bp, int cmd, long larg, void *parg);
+int __real_i2d_X509_bio(BIO *bp, X509 *x509);
+int __real_PKCS12_parse(PKCS12 *p12, const char *pass, EVP_PKEY **pkey, X509 **cert, STACK_OF(X509) **ca);
+bool __real_CheckIsSelfSigned(const X509 *cert);
+
+int PKCS12_parse_mock(PKCS12 *p12, const char *pass, EVP_PKEY **pkey, X509 **cert, STACK_OF(X509) **ca) {
+    CF_LOG_I("PKCS12_parse_mock");
+    *cert = static_cast<X509 *>(malloc(sizeof(X509 *)));
+    if (*cert == nullptr) {
+        CF_LOG_E("Failed to malloc cert.");
+        return 0;
+    }
+    return 1;
+}
+
+void ResetMockFunctionPartOne(void)
+{
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        OPENSSL_sk_num(_)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_OPENSSL_sk_num));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        OPENSSL_sk_value(_, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_OPENSSL_sk_value));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        BIO_new_mem_buf(_, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_BIO_new_mem_buf));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        HcfX509CertificateCreate(_, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_HcfX509CertificateCreate));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        OPENSSL_sk_new_null()).Times(AnyNumber()).WillRepeatedly(Invoke(__real_OPENSSL_sk_new_null));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        i2d_X509(_, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_i2d_X509));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        X509_STORE_add_cert(_, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_X509_STORE_add_cert));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        X509_STORE_CTX_new()).Times(AnyNumber()).WillRepeatedly(Invoke(__real_X509_STORE_CTX_new));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        X509_STORE_new()).Times(AnyNumber()).WillRepeatedly(Invoke(__real_X509_STORE_new));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        X509_STORE_CTX_init(_, _, _, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_X509_STORE_CTX_init));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        X509_verify_cert(_)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_X509_verify_cert));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        i2d_PUBKEY(_, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_i2d_PUBKEY));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        X509_get_ext_d2i(_, _, _, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_X509_get_ext_d2i));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        i2d_ASN1_OCTET_STRING(_, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_i2d_ASN1_OCTET_STRING));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        i2d_AUTHORITY_KEYID(_, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_i2d_AUTHORITY_KEYID));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        DeepCopyDataToBlob(_, _, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_DeepCopyDataToBlob));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        ASN1_TIME_new()).Times(AnyNumber()).WillRepeatedly(Invoke(__real_ASN1_TIME_new));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        X509_get_pubkey(_)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_X509_get_pubkey));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        OBJ_nid2obj(_)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_OBJ_nid2obj));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        OBJ_obj2txt(_, _, _, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_OBJ_obj2txt));
+}
+
+void ResetMockFunctionPartTwo(void)
+{
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        BN_bin2bn(_, _, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_BN_bin2bn));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        X509_get0_serialNumber(_)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_X509_get0_serialNumber));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        i2d_ASN1_INTEGER(_, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_i2d_ASN1_INTEGER));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        ASN1_TIME_normalize(_)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_ASN1_TIME_normalize));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        X509_getm_notBefore(_)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_X509_getm_notBefore));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        X509_getm_notAfter(_)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_X509_getm_notAfter));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        X509_ALGOR_get0(_, _, _, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_X509_ALGOR_get0));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        ASN1_TYPE_new()).Times(AnyNumber()).WillRepeatedly(Invoke(__real_ASN1_TYPE_new));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        ASN1_TYPE_set1(_, _, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_ASN1_TYPE_set1));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        i2d_ASN1_TYPE(_, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_i2d_ASN1_TYPE));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        ASN1_INTEGER_get(_)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_ASN1_INTEGER_get));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        ASN1_STRING_get0_data(_)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_ASN1_STRING_get0_data));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        i2d_GENERAL_NAME(_, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_i2d_GENERAL_NAME));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        X509_get_ext(_, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_X509_get_ext));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        X509V3_EXT_d2i(_)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_X509V3_EXT_d2i));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        GENERAL_NAME_get0_value(_, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_GENERAL_NAME_get0_value));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        X509_verify(_, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_X509_verify));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        DeepCopyBlobToBlob(_, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_DeepCopyBlobToBlob));
+}
+
+void ResetMockFunctionPartThree(void)
+{
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        X509_NAME_oneline(_, _, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_X509_NAME_oneline));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        OPENSSL_sk_push(_, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_OPENSSL_sk_push));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        i2d_X509_REVOKED(_, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_i2d_X509_REVOKED));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        i2d_X509_CRL(_, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_i2d_X509_CRL));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        OPENSSL_sk_deep_copy(_, _, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_OPENSSL_sk_deep_copy));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        OBJ_obj2nid(_)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_OBJ_obj2nid));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        X509_dup(_)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_X509_dup));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        i2d_X509_EXTENSIONS(_, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_i2d_X509_EXTENSIONS));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        X509_check_host(_, _, _, _, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_X509_check_host));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        OCSP_REQUEST_new()).Times(AnyNumber()).WillRepeatedly(Invoke(__real_OCSP_REQUEST_new));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        X509_CRL_load_http(_, _, _, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_X509_CRL_load_http));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        X509_get1_ocsp(_)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_X509_get1_ocsp));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        OSSL_HTTP_parse_url(_, _, _, _, _, _, _, _, _)).
+        Times(AnyNumber()).WillRepeatedly(Invoke(__real_OSSL_HTTP_parse_url));
+}
+
+void ResetMockFunctionPartFour(void)
+{
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        X509_NAME_get0_der(_, _, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_X509_NAME_get0_der));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        OBJ_nid2sn(_)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_OBJ_nid2sn));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        ASN1_STRING_length(_)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_ASN1_STRING_length));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        DeepCopyDataToOut(_, _, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_DeepCopyDataToOut));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        CRYPTO_strdup(_, _, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_CRYPTO_strdup));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        X509_NAME_new()).Times(AnyNumber()).WillRepeatedly(Invoke(__real_X509_NAME_new));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        OBJ_txt2nid(_)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_OBJ_txt2nid));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        X509_NAME_add_entry_by_NID(_, _, _, _, _, _, _)).
+        Times(AnyNumber()).WillRepeatedly(Invoke(__real_X509_NAME_add_entry_by_NID));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        BIO_new(_)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_BIO_new));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        X509_print(_, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_X509_print));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        BIO_ctrl(_, _, _, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_BIO_ctrl));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        i2d_X509_bio(_, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_i2d_X509_bio));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        PKCS12_parse(_, _, _, _, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_PKCS12_parse));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        CheckIsSelfSigned(_)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_CheckIsSelfSigned));
+}
+
+
+void ResetMockFunction(void)
+{
+    ResetMockFunctionPartOne();
+    ResetMockFunctionPartTwo();
+    ResetMockFunctionPartThree();
+    ResetMockFunctionPartFour();
+}
 
 #ifdef __cplusplus
 }
@@ -1700,17 +1926,20 @@ HWTEST_F(CryptoX509CertChainTest, HcfX509CertChainByParamsSpiCreateTest002, Test
     X509OpensslMock::SetMockFlag(false);
 
     X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_dup(_))
+    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_new_null())
+        .WillOnce(Invoke(__real_OPENSSL_sk_new_null))
         .WillOnce(Return(NULL))
-        .WillRepeatedly(Invoke(__real_X509_dup));
+        .WillRepeatedly(Invoke(__real_OPENSSL_sk_new_null));
     result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
-    EXPECT_EQ(result, CF_ERR_MALLOC);
+    EXPECT_EQ(result, CF_ERR_CRYPTO_OPERATION);
     X509OpensslMock::SetMockFlag(false);
 
     X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_push(_, _))
-        .WillOnce(Return(-1))
-        .WillRepeatedly(Invoke(__real_OPENSSL_sk_push));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_new_null())
+        .WillOnce(Invoke(__real_OPENSSL_sk_new_null))
+        .WillOnce(Invoke(__real_OPENSSL_sk_new_null))
+        .WillOnce(Return(NULL))
+        .WillRepeatedly(Invoke(__real_OPENSSL_sk_new_null));
     result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
     EXPECT_EQ(result, CF_ERR_CRYPTO_OPERATION);
     X509OpensslMock::SetMockFlag(false);
@@ -1720,6 +1949,57 @@ HWTEST_F(CryptoX509CertChainTest, HcfX509CertChainByParamsSpiCreateTest002, Test
     result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
     EXPECT_EQ(result, CF_ERR_MALLOC);
     SetMockFlag(false);
+
+    FreeX509CertMatchParamsData(&inParams.validateParameters);
+}
+
+HWTEST_F(CryptoX509CertChainTest, HcfX509CertChainByParamsSpiCreateTest003, TestSize.Level0)
+{
+    CF_LOG_I("HcfX509CertChainByParamsSpiCreateTest003");
+    HcfX509CertChainBuildParameters inParams;
+    HcfX509CertChainSpi *spi = nullptr;
+
+    CfResult result;
+
+    inParams.maxlength = -1;
+
+    CfEncodingBlob inStream = { 0 };
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testSelfSignedCaCertValid));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testSelfSignedCaCertValid) + 1;
+
+    BuildX509CertMatchParamsData(&inStream, NULL, &inParams.validateParameters);
+
+    CfBlob issue;
+    issue.data = const_cast<uint8_t *>(g_testIssuerValid);
+    issue.size = sizeof(g_testIssuerValid);
+    inParams.certMatchParameters.issuer = &issue;
+    inParams.certMatchParameters.minPathLenConstraint = -1;
+
+    X509OpensslMock::SetMockFlag(true);
+    ResetMockFunction();
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_dup(_))
+        .WillOnce(Return(NULL))
+        .WillRepeatedly(Invoke(__real_X509_dup));
+    result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
+    EXPECT_EQ(result, CF_ERR_MALLOC);
+
+    ResetMockFunction();
+    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_push(_, _))
+        .WillOnce(Return(-1))
+        .WillRepeatedly(Invoke(__real_OPENSSL_sk_push));
+    result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
+    EXPECT_EQ(result, CF_ERR_CRYPTO_OPERATION);
+    X509OpensslMock::SetMockFlag(false);
+
+
+    X509OpensslMock::SetHcfMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), CheckIsSelfSigned(_))
+        .WillRepeatedly(Return(true))
+        .RetiresOnSaturation();
+    result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
+    EXPECT_EQ(result, CF_INVALID_PARAMS);
+    X509OpensslMock::SetHcfMockFlag(false);
 
     FreeX509CertMatchParamsData(&inParams.validateParameters);
 }
@@ -1814,6 +2094,135 @@ HWTEST_F(CryptoX509CertChainTest, HcfX509CreateTrustAnchorWithKeyStoreFuncTest00
 
     result = HcfX509CreateTrustAnchorWithKeyStoreFunc(&keyStore, &pwd, &trustAnchorArray);
     EXPECT_EQ(result, CF_ERR_CRYPTO_OPERATION);
+}
+
+HWTEST_F(CryptoX509CertChainTest, HcfX509CreateTrustAnchorWithKeyStoreFuncTest002, TestSize.Level0)
+{
+    CF_LOG_I("HcfX509CreateTrustAnchorWithKeyStoreFuncTest002");
+    CfBlob keyStore;
+    CfBlob pwd;
+    HcfX509TrustAnchorArray *trustAnchorArray = NULL;
+
+    keyStore.data = const_cast<uint8_t *>(g_testChainKeystore);
+    keyStore.size = sizeof(g_testChainKeystore);
+    pwd.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testKeystorePwd));
+    pwd.size = strlen(g_testKeystorePwd) + 1;
+
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), PKCS12_parse(_, _, _, _, _))
+        .WillOnce(Return(0))
+        .WillRepeatedly(Invoke(__real_PKCS12_parse));
+    CfResult result = HcfX509CreateTrustAnchorWithKeyStoreFunc(&keyStore, &pwd, &trustAnchorArray);
+    EXPECT_EQ(result, CF_ERR_CRYPTO_OPERATION);
+    X509OpensslMock::SetMockFlag(false);
+
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), PKCS12_parse(_, _, _, _, _))
+        .WillOnce(Return(1))
+        .WillRepeatedly(Invoke(__real_PKCS12_parse));
+    result = HcfX509CreateTrustAnchorWithKeyStoreFunc(&keyStore, &pwd, &trustAnchorArray);
+    EXPECT_EQ(result, CF_ERR_CRYPTO_OPERATION);
+    X509OpensslMock::SetMockFlag(false);
+
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), PKCS12_parse(_, _, _, _, _))
+        .WillOnce(Return(1))
+        .WillRepeatedly(Invoke(__real_PKCS12_parse));
+    result = HcfX509CreateTrustAnchorWithKeyStoreFunc(&keyStore, &pwd, &trustAnchorArray);
+    EXPECT_EQ(result, CF_ERR_CRYPTO_OPERATION);
+    X509OpensslMock::SetMockFlag(false);
+
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), PKCS12_parse(_, _, _, _, _))
+        .WillOnce(Invoke(PKCS12_parse_mock))
+        .WillRepeatedly(Invoke(__real_PKCS12_parse));
+    result = HcfX509CreateTrustAnchorWithKeyStoreFunc(&keyStore, &pwd, &trustAnchorArray);
+    EXPECT_EQ(result, CF_ERR_CRYPTO_OPERATION);
+    X509OpensslMock::SetMockFlag(false);
+}
+
+HWTEST_F(CryptoX509CertChainTest, HcfX509CreateTrustAnchorWithKeyStoreFuncTest003, TestSize.Level0)
+{
+    CF_LOG_I("HcfX509CreateTrustAnchorWithKeyStoreFuncTest003");
+    CfBlob keyStore;
+    CfBlob pwd;
+    HcfX509TrustAnchorArray *trustAnchorArray = NULL;
+
+    keyStore.data = const_cast<uint8_t *>(g_testChainKeystore);
+    keyStore.size = sizeof(g_testChainKeystore);
+    pwd.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testKeystorePwd));
+    pwd.size = strlen(g_testKeystorePwd) + 1;
+
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_num(_))
+        .WillOnce(Return(-1))
+        .WillRepeatedly(Invoke(__real_OPENSSL_sk_num));
+    CfResult result = HcfX509CreateTrustAnchorWithKeyStoreFunc(&keyStore, &pwd, &trustAnchorArray);
+    EXPECT_EQ(result, CF_ERR_CRYPTO_OPERATION);
+    X509OpensslMock::SetMockFlag(false);
+
+    SetMockFlag(true);
+    result = HcfX509CreateTrustAnchorWithKeyStoreFunc(&keyStore, &pwd, &trustAnchorArray);
+    EXPECT_EQ(result, CF_ERR_MALLOC);
+    SetMockFlag(false);
+
+    StartRecordMallocNum();
+    SetMockMallocIndex(1);
+    result = HcfX509CreateTrustAnchorWithKeyStoreFunc(&keyStore, &pwd, &trustAnchorArray);
+    EXPECT_EQ(result, CF_ERR_MALLOC);
+    EndRecordMallocNum();
+
+    StartRecordMallocNum();
+    SetMockMallocIndex(2);
+    result = HcfX509CreateTrustAnchorWithKeyStoreFunc(&keyStore, &pwd, &trustAnchorArray);
+    EXPECT_EQ(result, CF_ERR_MALLOC);
+    EndRecordMallocNum();
+}
+
+HWTEST_F(CryptoX509CertChainTest, HcfX509CreateTrustAnchorWithKeyStoreFuncTest004, TestSize.Level0)
+{
+    CF_LOG_I("HcfX509CreateTrustAnchorWithKeyStoreFuncTest004");
+    CfBlob keyStore;
+    CfBlob pwd;
+    HcfX509TrustAnchorArray *trustAnchorArray = NULL;
+
+    keyStore.data = const_cast<uint8_t *>(g_testChainKeystore);
+    keyStore.size = sizeof(g_testChainKeystore);
+    pwd.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testKeystorePwd));
+    pwd.size = strlen(g_testKeystorePwd) + 1;
+
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_num(_))
+        .WillOnce(Invoke(__real_OPENSSL_sk_num))
+        .WillOnce(Return(-1))
+        .WillRepeatedly(Invoke(__real_OPENSSL_sk_num));
+    CfResult result = HcfX509CreateTrustAnchorWithKeyStoreFunc(&keyStore, &pwd, &trustAnchorArray);
+    EXPECT_EQ(result, CF_SUCCESS);
+    X509OpensslMock::SetMockFlag(false);
+
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_value(_, _))
+        .WillOnce(Return(NULL))
+        .WillRepeatedly(Invoke(__real_OPENSSL_sk_value));
+    result = HcfX509CreateTrustAnchorWithKeyStoreFunc(&keyStore, &pwd, &trustAnchorArray);
+    EXPECT_EQ(result, CF_SUCCESS);
+    X509OpensslMock::SetMockFlag(false);
+
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), i2d_X509(_, _))
+        .WillOnce(Return(-1))
+        .WillRepeatedly(Invoke(__real_i2d_X509));
+    result = HcfX509CreateTrustAnchorWithKeyStoreFunc(&keyStore, &pwd, &trustAnchorArray);
+    EXPECT_EQ(result, CF_SUCCESS);
+    X509OpensslMock::SetMockFlag(false);
+
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), HcfX509CertificateCreate(_, _))
+        .WillOnce(Return(CF_INVALID_PARAMS))
+        .WillRepeatedly(Invoke(__real_HcfX509CertificateCreate));
+    result = HcfX509CreateTrustAnchorWithKeyStoreFunc(&keyStore, &pwd, &trustAnchorArray);
+    EXPECT_EQ(result, CF_SUCCESS);
+    X509OpensslMock::SetMockFlag(false);
 }
 
 HWTEST_F(CryptoX509CertChainTest, HcfCreateTrustAnchorWithKeyStoreTest001, TestSize.Level0)

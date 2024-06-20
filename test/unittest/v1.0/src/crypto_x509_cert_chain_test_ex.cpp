@@ -134,7 +134,7 @@ HWTEST_F(CryptoX509CertChainTestEx, ToStringTest001, TestSize.Level0)
     X509OpensslMock::SetMockFlag(false);
 
     X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), BIO_ctrl(_, _, _, _)).Times(AnyNumber()).WillOnce(Return(0));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), BIO_ctrl(_, _, _, _)).WillRepeatedly(Return(0));
     ret = g_certChainP7b->toString(g_certChainP7b, &blob);
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
     X509OpensslMock::SetMockFlag(false);
@@ -187,7 +187,7 @@ HWTEST_F(CryptoX509CertChainTestEx, HashCodeTest001, TestSize.Level0)
     X509OpensslMock::SetMockFlag(false);
 
     X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), BIO_ctrl(_, _, _, _)).Times(AnyNumber()).WillOnce(Return(0));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), BIO_ctrl(_, _, _, _)).WillRepeatedly(Return(0));
     ret = g_certChainP7b->hashCode(g_certChainP7b, &blob);
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
     X509OpensslMock::SetMockFlag(false);

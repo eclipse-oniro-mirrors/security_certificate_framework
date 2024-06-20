@@ -91,7 +91,6 @@ ohos_unittest("cf_version1_test") {
     "-Wl,--wrap=ASN1_TYPE_new",
     "-Wl,--wrap=ASN1_TYPE_set1",
     "-Wl,--wrap=BIO_ctrl",
-    "-Wl,--wrap=BIO_get_mem_ptr",
     "-Wl,--wrap=BIO_new",
     "-Wl,--wrap=BIO_new_mem_buf",
     "-Wl,--wrap=BN_bin2bn",
@@ -147,6 +146,8 @@ ohos_unittest("cf_version1_test") {
     "-Wl,--wrap=X509_verify",
     "-Wl,--wrap=X509_verify_cert",
     "-Wl,--wrap=X509V3_EXT_d2i",
+    "-Wl,--wrap=PKCS12_parse",
+    "-Wl,--wrap=CheckIsSelfSigned",
   ]
 
   if (target_cpu == "arm") {

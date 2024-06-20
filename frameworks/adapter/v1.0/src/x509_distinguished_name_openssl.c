@@ -297,7 +297,7 @@ static X509_NAME *ParseName(const char *cp, int chtype, const char *desc)
 CfResult OpensslX509DistinguishedNameSpiCreate(const CfBlob *inStream, const bool bString,
                                                HcfX509DistinguishedNameSpi **spi)
 {
-    if ((inStream == NULL) || (spi == NULL)) {
+    if ((inStream == NULL) || inStream->data == NULL || (spi == NULL)) {
         LOGE("The input data blob is null!");
         return CF_INVALID_PARAMS;
     }

@@ -278,7 +278,7 @@ HWTEST_F(X509DistinguishedNameTest, OpensslX509DistinguishedNameSpiCreateTest002
 
     // test ParseName failed case
     X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), CRYPTO_strdup(_, _, _)).Times(AnyNumber()).WillOnce(Return(NULL));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), CRYPTO_strdup(_, _, _)).WillRepeatedly(Return(NULL));
     ret = OpensslX509DistinguishedNameSpiCreate(&out, true, &spi);
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
     X509OpensslMock::SetMockFlag(false);
@@ -322,7 +322,7 @@ HWTEST_F(X509DistinguishedNameTest, GetEncodeTest001, TestSize.Level0)
     SetMockFlag(false);
 
     X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_NAME_get0_der(_, _, _)).Times(AnyNumber()).WillOnce(Return(-1));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_NAME_get0_der(_, _, _)).WillRepeatedly(Return(-1));
     ret = g_x509Name->getEncode(g_x509Name, &blob);
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
     X509OpensslMock::SetMockFlag(false);
@@ -410,8 +410,7 @@ HWTEST_F(X509DistinguishedNameTest, GetNameTest002, TestSize.Level0)
 
     X509OpensslMock::SetMockFlag(true);
     EXPECT_CALL(X509OpensslMock::GetInstance(), DeepCopyDataToOut(_, _, _))
-        .Times(AnyNumber())
-        .WillOnce(Return(CF_ERR_CRYPTO_OPERATION));
+        .WillRepeatedly(Return(CF_ERR_CRYPTO_OPERATION));
     ret = g_x509Name->getName(g_x509Name, &inPara, NULL, &outArr);
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
     X509OpensslMock::SetMockFlag(false);

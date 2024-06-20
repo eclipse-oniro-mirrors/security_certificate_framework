@@ -524,6 +524,10 @@ CfResult GetPubKeyDataFromX509(X509 *x509, CfBlob **pub)
 
 CfResult GetSubjectNameFromX509(X509 *cert, CfBlob **sub)
 {
+    if (cert == NULL) {
+        LOGE("No certificate found in when get subject name");
+        return CF_INVALID_PARAMS;
+    }
     X509_NAME *name = X509_get_subject_name(cert);
     if (!name) {
         LOGE("Failed to get subject name!");
@@ -548,6 +552,10 @@ CfResult GetSubjectNameFromX509(X509 *cert, CfBlob **sub)
 
 CfResult GetNameConstraintsFromX509(X509 *cert, CfBlob **name)
 {
+    if (cert == NULL) {
+        LOGE("No certificate found in when get name constraints");
+        return CF_INVALID_PARAMS;
+    }
     ASN1_BIT_STRING *nc = X509_get_ext_d2i(cert, NID_name_constraints, NULL, NULL);
     if (!nc) {
         LOGE("No nameConstraints found in certificate");
