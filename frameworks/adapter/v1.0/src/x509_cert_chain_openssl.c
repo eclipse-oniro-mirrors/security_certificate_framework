@@ -1095,12 +1095,15 @@ static BIO *CreateConnectBio(char *host, char *port, int ssl)
             return NULL;
         }
         bio = BIO_new_ssl_connect(sslCtx);
-        if (BIO_set_conn_hostname(bio, host) != 1) {
-            LOGE("Set host name failed.");
-            SSL_CTX_free(sslCtx);
+        if (bio == NULL) {
+            LOGE("bio is null.");
             return NULL;
         }
-        SSL_CTX_free(sslCtx);
+        if (BIO_set_conn_hostname(bio, host) != 1) {
+            LOGE("Set host name failed.");
+            BIO_free_all(bio);
+            return NULL;
+        }
     } else {
         bio = BIO_new_connect(host);
     }

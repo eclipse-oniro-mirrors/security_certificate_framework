@@ -305,32 +305,22 @@ static void FreeHcfRevocationCheckParam(HcfRevocationCheckParam *param)
         return;
     }
     if (param->ocspRequestExtension != nullptr) {
-        if (param->ocspRequestExtension->data != nullptr) {
-            CfFree(param->ocspRequestExtension->data);
-        }
+        FreeCfBlobArray(param->ocspRequestExtension->data, param->ocspRequestExtension->count);
         CfFree(param->ocspRequestExtension);
     }
-    if (param->ocspResponderURI != nullptr) {
-        CfFree(param->ocspResponderURI);
-    }
+    CfBlobFree(&param->ocspResponderURI);
     if (param->ocspResponderCert != nullptr) {
         CfObjDestroy(param->ocspResponderCert);
     }
-    if (param->ocspResponses != nullptr) {
-        CfFree(param->ocspResponses);
-    }
-    if (param->crlDownloadURI != nullptr) {
-        CfFree(param->crlDownloadURI);
-    }
+    CfBlobFree(&param->ocspResponses);
+    CfBlobFree(&param->crlDownloadURI);
     if (param->options != nullptr) {
         if (param->options->data != nullptr) {
             CfFree(param->options->data);
         }
         CfFree(param->options);
     }
-    if (param->ocspDigest != nullptr) {
-        CfFree(param->ocspDigest);
-    }
+    CfBlobFree(&param->ocspDigest);
     CfFree(param);
 }
 

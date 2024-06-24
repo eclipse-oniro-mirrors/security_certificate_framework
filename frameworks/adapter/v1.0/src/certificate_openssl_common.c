@@ -332,6 +332,7 @@ CfResult DeepCopyDataToOut(const char *data, uint32_t len, CfBlob *out)
     if (memcpy_s(out->data, len, data, len) != EOK) {
         CF_LOG_E("Failed to memcpy_s");
         CfFree(out->data);
+        out->data = NULL;
         return CF_ERR_COPY;
     }
     out->size = len;
