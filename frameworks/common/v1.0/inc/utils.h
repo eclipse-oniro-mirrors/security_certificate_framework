@@ -27,12 +27,12 @@
 extern "C" {
 #endif
 
-bool IsStrValid(const char *str, uint32_t maxLen);
-bool IsBlobValid(const CfBlob *blob);
-bool IsClassMatch(const CfObjectBase *obj, const char *className);
-bool IsPubKeyClassMatch(const HcfObjectBase *obj, const char *className);
-bool IsUrlValid(const char *url);
-bool IsHttp(const char *url);
+bool CfIsStrValid(const char *str, uint32_t maxLen);
+bool CfIsBlobValid(const CfBlob *blob);
+bool CfIsClassMatch(const CfObjectBase *obj, const char *className);
+bool CfIsPubKeyClassMatch(const HcfObjectBase *obj, const char *className);
+bool CfIsUrlValid(const char *url);
+bool CfIsHttp(const char *url);
 
 #ifdef __cplusplus
 }

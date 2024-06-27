@@ -299,6 +299,31 @@ static bool GetRevocationDetail(napi_env env, napi_value rckObj, HcfRevocationCh
     return GetRevocationOptions(env, rckObj, out);
 }
 
+static void FreeHcfRevocationCheckParam(HcfRevocationCheckParam *param)
+{
+    if (param == nullptr) {
+        return;
+    }
+    if (param->ocspRequestExtension != nullptr) {
+        FreeCfBlobArray(param->ocspRequestExtension->data, param->ocspRequestExtension->count);
+        CfFree(param->ocspRequestExtension);
+    }
+    CfBlobFree(&param->ocspResponderURI);
+    if (param->ocspResponderCert != nullptr) {
+        CfObjDestroy(param->ocspResponderCert);
+    }
+    CfBlobFree(&param->ocspResponses);
+    CfBlobFree(&param->crlDownloadURI);
+    if (param->options != nullptr) {
+        if (param->options->data != nullptr) {
+            CfFree(param->options->data);
+        }
+        CfFree(param->options);
+    }
+    CfBlobFree(&param->ocspDigest);
+    CfFree(param);
+}
+
 static bool GetRevocationCheckParam(napi_env env, napi_value arg, HcfRevocationCheckParam *&out)
 {
     napi_value rckObj = GetProp(env, arg, CERT_CHAIN_VALIDATE_TAG_REVOCATIONCHECKPARAM.c_str());
@@ -320,7 +345,7 @@ static bool GetRevocationCheckParam(napi_env env, napi_value arg, HcfRevocationC
     }
     if (!GetRevocationDetail(env, rckObj, out)) {
         LOGE("Failed to get revocation detail!");
-        CfFree(out);
+        FreeHcfRevocationCheckParam(out);
         return false;
     }
 

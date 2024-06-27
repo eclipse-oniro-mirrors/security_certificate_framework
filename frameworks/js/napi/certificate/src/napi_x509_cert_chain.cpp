@@ -674,17 +674,22 @@ static napi_value CreateTrustAnchorsWithKeyStore(napi_env env, size_t argc, napi
         return nullptr;
     }
 
-    if (!CreateCallbackAndPromise(env, context, argc, ARGS_SIZE_TWO, nullptr)) {
-        LOGE("CreateCallbackAndPromise failed!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "CreateCallbackAndPromise failed!"));
+    context->async->asyncType = GetAsyncType(env, argc, ARGS_SIZE_TWO, nullptr);
+    if (context->async->asyncType == ASYNC_TYPE_CALLBACK) {
+        LOGE("ASYNC_TYPE_CALLBACK is not supported.");
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "ASYNC_TYPE_CALLBACK is not supported."));
         return nullptr;
     }
+    napi_create_promise(env, &context->async->deferred, &context->async->promise);
+
     context->keyStore = CertGetBlobFromUint8ArrJSParams(env, param1);
     if (context->keyStore == nullptr) {
+        DeleteCertChainContext(env, context);
         return nullptr;
     }
     context->pwd = CertGetBlobFromStringJSParams(env, param2);
     if (context->pwd == nullptr) {
+        DeleteCertChainContext(env, context);
         return nullptr;
     }
 

@@ -63,7 +63,7 @@ static void DestroyX509Openssl(CfObjectBase *self)
     if (self == NULL) {
         return;
     }
-    if (!IsClassMatch(self, GetX509CertClass())) {
+    if (!CfIsClassMatch(self, GetX509CertClass())) {
         LOGE("Input wrong class type!");
         return;
     }
@@ -83,7 +83,7 @@ static void DestroyX509PubKeyOpenssl(HcfObjectBase *self)
     if (self == NULL) {
         return;
     }
-    if (!IsPubKeyClassMatch(self, GetX509CertPubKeyClass())) {
+    if (!CfIsPubKeyClassMatch(self, GetX509CertPubKeyClass())) {
         LOGE("Input wrong class type!");
         return;
     }
@@ -108,7 +108,7 @@ static HcfResult GetPubKeyEncoded(HcfKey *self, HcfBlob *returnBlob)
         LOGE("Input params is invalid.");
         return HCF_INVALID_PARAMS;
     }
-    if (!IsPubKeyClassMatch((HcfObjectBase *)self, GetX509CertPubKeyClass())) {
+    if (!CfIsPubKeyClassMatch((HcfObjectBase *)self, GetX509CertPubKeyClass())) {
         LOGE("Input wrong class type!");
         return HCF_INVALID_PARAMS;
     }
@@ -148,8 +148,8 @@ static CfResult VerifyX509Openssl(HcfX509CertificateSpi *self, HcfPubKey *key)
         LOGE("The input data is null!");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CertClass()) ||
-        (!IsPubKeyClassMatch((HcfObjectBase *)key, GetX509CertPubKeyClass()))) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertClass()) ||
+        (!CfIsPubKeyClassMatch((HcfObjectBase *)key, GetX509CertPubKeyClass()))) {
         LOGE("Input wrong class type!");
         return CF_INVALID_PARAMS;
     }
@@ -171,7 +171,7 @@ static CfResult GetEncodedX509Openssl(HcfX509CertificateSpi *self, CfEncodingBlo
         LOGE("The input data is null!");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
         LOGE("Input wrong class type!");
         return CF_INVALID_PARAMS;
     }
@@ -204,7 +204,7 @@ static CfResult GetPublicKeyX509Openssl(HcfX509CertificateSpi *self, HcfPubKey *
         LOGE("The input data is null!");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
         LOGE("Input wrong class type!");
         return CF_INVALID_PARAMS;
     }
@@ -375,7 +375,7 @@ static CfResult CheckValidityWithDateX509Openssl(HcfX509CertificateSpi *self, co
         LOGE("The input data is null!");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
         LOGE("Input wrong class type!");
         return CF_INVALID_PARAMS;
     }
@@ -571,7 +571,7 @@ static long GetVersionX509Openssl(HcfX509CertificateSpi *self)
         LOGE("The input data is null!");
         return INVALID_VERSION;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
         LOGE("Input wrong class type!");
         return INVALID_VERSION;
     }
@@ -586,7 +586,7 @@ static CfResult GetSerialNumberX509Openssl(HcfX509CertificateSpi *self, CfBlob *
         LOGE("The input data is null!");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
         LOGE("Input wrong class type!");
         return CF_INVALID_PARAMS;
     }
@@ -619,7 +619,7 @@ static CfResult GetIssuerDNX509Openssl(HcfX509CertificateSpi *self, CfBlob *out)
         LOGE("[Get issuerDN openssl] The input data is null!");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
         LOGE("Input wrong class type!");
         return CF_INVALID_PARAMS;
     }
@@ -659,7 +659,7 @@ static CfResult GetSubjectDNX509Openssl(HcfX509CertificateSpi *self, CfBlob *out
         LOGE("[Get subjectDN openssl]The input data is null!");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
         LOGE("Input wrong class type!");
         return CF_INVALID_PARAMS;
     }
@@ -726,7 +726,7 @@ static CfResult GetSubjectDNX509OpensslEx(HcfX509CertificateSpi *self, CfEncodin
         LOGE("[Get utf8 subjectDN openssl]The input data is null or encodingType is not utf8!");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
         LOGE("Input wrong class type!");
         return CF_INVALID_PARAMS;
     }
@@ -769,7 +769,7 @@ static CfResult GetNotBeforeX509Openssl(HcfX509CertificateSpi *self, CfBlob *out
         LOGE("Get not before, input is null!");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
         LOGE("Get not before, input wrong class type!");
         return CF_INVALID_PARAMS;
     }
@@ -801,7 +801,7 @@ static CfResult GetNotAfterX509Openssl(HcfX509CertificateSpi *self, CfBlob *outD
         LOGE("Get not after, input data is null!");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
         LOGE("Get not after, input wrong class type!");
         return CF_INVALID_PARAMS;
     }
@@ -833,7 +833,7 @@ static CfResult GetSignatureX509Openssl(HcfX509CertificateSpi *self, CfBlob *sig
         LOGE("The input data is null!");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
         LOGE("Input wrong class type!");
         return CF_INVALID_PARAMS;
     }
@@ -862,7 +862,7 @@ static CfResult GetSigAlgNameX509Openssl(HcfX509CertificateSpi *self, CfBlob *ou
         LOGE("[GetSigAlgName openssl] The input data is null!");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
         LOGE("[GetSigAlgName openssl] Input wrong class type!");
         return CF_INVALID_PARAMS;
     }
@@ -893,7 +893,7 @@ static CfResult GetSigAlgOidX509Openssl(HcfX509CertificateSpi *self, CfBlob *out
         LOGE("[GetSigAlgOID openssl] The input data is null!");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
         LOGE("[GetSigAlgOID openssl] Input wrong class type!");
         return CF_INVALID_PARAMS;
     }
@@ -920,7 +920,7 @@ static CfResult GetSigAlgParamsX509Openssl(HcfX509CertificateSpi *self, CfBlob *
         LOGE("[GetSigAlgParams openssl] The input data is null!");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
         LOGE("[GetSigAlgParams openssl] Input wrong class type!");
         return CF_INVALID_PARAMS;
     }
@@ -985,7 +985,7 @@ static CfResult GetKeyUsageX509Openssl(HcfX509CertificateSpi *self, CfBlob *bool
         LOGE("[GetKeyUsage openssl] The input data is null!");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
         LOGE("Input wrong class type!");
         return CF_INVALID_PARAMS;
     }
@@ -1030,7 +1030,7 @@ static CfResult GetExtendedKeyUsageX509Openssl(HcfX509CertificateSpi *self, CfAr
         LOGE("The input data is null!");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
         LOGE("Input wrong class type!");
         return CF_INVALID_PARAMS;
     }
@@ -1079,7 +1079,7 @@ static int32_t GetBasicConstraintsX509Openssl(HcfX509CertificateSpi *self)
         LOGE("The input data is null!");
         return INVALID_CONSTRAINTS_LEN;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
         LOGE("Input wrong class type!");
         return INVALID_CONSTRAINTS_LEN;
     }
@@ -1139,7 +1139,7 @@ static CfResult GetSubjectAltNamesX509Openssl(HcfX509CertificateSpi *self, CfArr
         LOGE("[GetSubjectAltNames openssl] The input data is null!");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
         LOGE("Input wrong class type!");
         return CF_INVALID_PARAMS;
     }
@@ -1189,7 +1189,7 @@ static CfResult GetIssuerAltNamesX509Openssl(HcfX509CertificateSpi *self, CfArra
         LOGE("[GetIssuerAltNames openssl] The input data is null!");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
         LOGE("Input wrong class type!");
         return CF_INVALID_PARAMS;
     }
@@ -1239,7 +1239,7 @@ static CfResult ToStringX509Openssl(HcfX509CertificateSpi *self, CfBlob *out)
         LOGE("The input data is null!");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
         LOGE("Input wrong class type!");
         return CF_INVALID_PARAMS;
     }
@@ -1274,7 +1274,7 @@ static CfResult HashCodeX509Openssl(HcfX509CertificateSpi *self, CfBlob *out)
         LOGE("The input data is null!");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
         LOGE("Input wrong class type!");
         return CF_INVALID_PARAMS;
     }
@@ -1305,7 +1305,7 @@ static CfResult GetExtensionsObjectX509Openssl(HcfX509CertificateSpi *self, CfBl
         LOGE("The input data is null!");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
         LOGE("Input wrong class type!");
         return CF_INVALID_PARAMS;
     }
@@ -1853,7 +1853,7 @@ static CfResult MatchX509Openssl(HcfX509CertificateSpi *self, const HcfX509CertM
         LOGE("[GetIssuerAltNames openssl] The input data is null!");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
         LOGE("Input wrong class type!");
         return CF_INVALID_PARAMS;
     }
@@ -2027,7 +2027,7 @@ static CfResult GetCRLDistributionPointsURIX509Openssl(HcfX509CertificateSpi *se
         LOGE("[GetCRLDistributionPointsURI openssl] The input data is null!");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
         LOGE("[GetCRLDistributionPointsURI openssl] Input wrong class type!");
         return CF_INVALID_PARAMS;
     }

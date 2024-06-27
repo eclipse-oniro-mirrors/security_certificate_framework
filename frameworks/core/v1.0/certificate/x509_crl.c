@@ -76,7 +76,7 @@ static void DestroyX509Crl(CfObjectBase *self)
         LOGE("Invalid input parameter.");
         return;
     }
-    if (!IsClassMatch(self, GetX509CrlClass())) {
+    if (!CfIsClassMatch(self, GetX509CrlClass())) {
         LOGE("Class is not match.");
         return;
     }
@@ -91,7 +91,7 @@ static const char *GetType(HcfCrl *self)
         LOGE("Invalid input parameter.");
         return NULL;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
         LOGE("Class is not match.");
         return NULL;
     }
@@ -105,7 +105,7 @@ static bool IsRevoked(HcfCrl *self, const HcfCertificate *cert)
         LOGE("Invalid input parameter.");
         return false;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
         LOGE("Class is not match.");
         return false;
     }
@@ -119,7 +119,7 @@ static CfResult Verify(HcfX509Crl *self, void *key)
         LOGE("Invalid input parameter.");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
         LOGE("Class is not match.");
         return CF_INVALID_PARAMS;
     }
@@ -133,7 +133,7 @@ static CfResult GetEncoded(HcfX509Crl *self, CfEncodingBlob *encodedByte)
         LOGE("Invalid input parameter.");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
         LOGE("Class is not match.");
         return CF_INVALID_PARAMS;
     }
@@ -147,7 +147,7 @@ static long GetVersion(HcfX509Crl *self)
         LOGE("Invalid input parameter.");
         return OPENSSL_INVALID_VERSION;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
         LOGE("Class is not match.");
         return OPENSSL_INVALID_VERSION;
     }
@@ -161,7 +161,7 @@ static CfResult GetIssuerName(HcfX509Crl *self, CfBlob *out)
         LOGE("Invalid input parameter.");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
         LOGE("Class is not match.");
         return CF_INVALID_PARAMS;
     }
@@ -175,7 +175,7 @@ static CfResult GetLastUpdate(HcfX509Crl *self, CfBlob *out)
         LOGE("Invalid input parameter.");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
         LOGE("Class is not match.");
         return CF_INVALID_PARAMS;
     }
@@ -189,7 +189,7 @@ static CfResult GetNextUpdate(HcfX509Crl *self, CfBlob *out)
         LOGE("Invalid input parameter.");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
         LOGE("Class is not match.");
         return CF_INVALID_PARAMS;
     }
@@ -203,7 +203,7 @@ static CfResult GetRevokedCert(HcfX509Crl *self, const CfBlob *serialNumber, Hcf
         LOGE("Invalid input parameter.");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
         LOGE("Class is not match.");
         return CF_INVALID_PARAMS;
     }
@@ -217,7 +217,7 @@ static CfResult GetRevokedCertWithCert(HcfX509Crl *self, HcfX509Certificate *cer
         LOGE("Invalid input parameter.");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
         LOGE("Class is not match.");
         return CF_INVALID_PARAMS;
     }
@@ -231,7 +231,7 @@ static CfResult GetRevokedCerts(HcfX509Crl *self, CfArray *entrysOut)
         LOGE("Invalid input parameter.");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
         LOGE("Class is not match.");
         return CF_INVALID_PARAMS;
     }
@@ -245,7 +245,7 @@ static CfResult GetTbsInfo(HcfX509Crl *self, CfBlob *tbsCertListOut)
         LOGE("Invalid input parameter.");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
         LOGE("Class is not match.");
         return CF_INVALID_PARAMS;
     }
@@ -259,7 +259,7 @@ static CfResult GetSignature(HcfX509Crl *self, CfBlob *signature)
         LOGE("Invalid input parameter.");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
         LOGE("Class is not match.");
         return CF_INVALID_PARAMS;
     }
@@ -273,7 +273,7 @@ static CfResult GetSignatureAlgName(HcfX509Crl *self, CfBlob *out)
         LOGE("Invalid input parameter.");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
         LOGE("Class is not match.");
         return CF_INVALID_PARAMS;
     }
@@ -287,7 +287,7 @@ static CfResult GetSignatureAlgOid(HcfX509Crl *self, CfBlob *out)
         LOGE("Invalid input parameter.");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
         LOGE("Class is not match.");
         return CF_INVALID_PARAMS;
     }
@@ -301,7 +301,7 @@ static CfResult GetSignatureAlgParams(HcfX509Crl *self, CfBlob *sigAlgParamOut)
         LOGE("Invalid input parameter.");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
         LOGE("Class is not match.");
         return CF_INVALID_PARAMS;
     }
@@ -315,7 +315,7 @@ static CfResult GetExtensions(HcfX509Crl *self, CfBlob *outBlob)
         LOGE("Invalid input parameter.");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
         LOGE("Class is not match.");
         return CF_INVALID_PARAMS;
     }
@@ -329,7 +329,7 @@ static CfResult ToString(HcfX509Crl *self, CfBlob *out)
         LOGE("Invalid input parameter.");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
         LOGE("Class is not match.");
         return CF_INVALID_PARAMS;
     }
@@ -343,7 +343,7 @@ static CfResult HashCode(HcfX509Crl *self, CfBlob *out)
         LOGE("Invalid input parameter.");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
         LOGE("Class is not match.");
         return CF_INVALID_PARAMS;
     }
@@ -357,7 +357,7 @@ static CfResult GetExtensionsOjbect(HcfX509Crl *self, CfBlob *out)
         LOGE("Invalid input parameter.");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
         LOGE("Class is not match.");
         return CF_INVALID_PARAMS;
     }
@@ -371,7 +371,7 @@ static CfResult Match(HcfX509Crl *self, const HcfX509CrlMatchParams *matchParams
         LOGE("Invalid input parameter.");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
         LOGE("Class is not match.");
         return CF_INVALID_PARAMS;
     }

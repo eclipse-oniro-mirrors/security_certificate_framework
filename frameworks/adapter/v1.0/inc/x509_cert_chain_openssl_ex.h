@@ -34,8 +34,8 @@ extern "C" {
 #endif
 
 const char *GetX509CertChainClass(void);
-CfResult ToString(HcfX509CertChainSpi *self, CfBlob *out);
-CfResult HashCode(HcfX509CertChainSpi *self, CfBlob *out);
+CfResult CfToString(HcfX509CertChainSpi *self, CfBlob *out);
+CfResult CfHashCode(HcfX509CertChainSpi *self, CfBlob *out);
 
 #ifdef __cplusplus
 }

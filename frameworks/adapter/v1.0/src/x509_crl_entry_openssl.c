@@ -45,7 +45,7 @@ static const char *GetClass(void)
 
 static X509_REVOKED *GetSelfRev(const HcfX509CrlEntry *self)
 {
-    if (!IsClassMatch((CfObjectBase *)self, GetClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetClass())) {
         LOGE("Input wrong class type!");
         return NULL;
     }
@@ -127,12 +127,12 @@ static CfResult GetCertIssuer(HcfX509CrlEntry *self, CfBlob *encodedOut)
         LOGE("Invalid Paramas for calling GetCertIssuer!");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetClass())) {
         LOGE("Input wrong class type!");
         return CF_INVALID_PARAMS;
     }
     CfBlob *certIssuer = ((HcfX509CRLEntryOpensslImpl *)self)->certIssuer;
-    if (!IsBlobValid(certIssuer)) {
+    if (!CfIsBlobValid(certIssuer)) {
         LOGE("Get certIssuer fail! No certIssuer in CRL entry.");
         return CF_NOT_SUPPORT;
     }
@@ -339,7 +339,7 @@ static void Destroy(CfObjectBase *self)
         LOGE("Invalid Paramas!");
         return;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetClass())) {
         LOGE("Input wrong class type!");
         return;
     }

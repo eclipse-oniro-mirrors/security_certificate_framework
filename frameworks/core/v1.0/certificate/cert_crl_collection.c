@@ -45,7 +45,7 @@ static void DestroyCertCrlCollection(CfObjectBase *self)
         LOGE("Invalid input parameter.");
         return;
     }
-    if (!IsClassMatch(self, GetCertCrlCollectionClass())) {
+    if (!CfIsClassMatch(self, GetCertCrlCollectionClass())) {
         LOGE("Class is not match.");
         return;
     }
@@ -165,7 +165,7 @@ static CfResult SelectCerts(
         LOGE("Invalid input parameter.");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetCertCrlCollectionClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetCertCrlCollectionClass())) {
         LOGE("Class is not match.");
         return CF_INVALID_PARAMS;
     }
@@ -189,7 +189,7 @@ static CfResult SelectCRLs(
         LOGE("Invalid input parameter.");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetCertCrlCollectionClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetCertCrlCollectionClass())) {
         LOGE("Class is not match.");
         return CF_INVALID_PARAMS;
     }
@@ -212,7 +212,7 @@ static CfResult GetCRLs(HcfCertCrlCollection *self, HcfX509CrlArray **retCrls)
         LOGE("Invalid input parameter.");
         return CF_INVALID_PARAMS;
     }
-    if (!IsClassMatch((CfObjectBase *)self, GetCertCrlCollectionClass())) {
+    if (!CfIsClassMatch((CfObjectBase *)self, GetCertCrlCollectionClass())) {
         LOGE("Class is not match.");
         return CF_INVALID_PARAMS;
     }
