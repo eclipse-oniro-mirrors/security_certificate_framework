@@ -307,7 +307,7 @@ static CfResult GetSubKeyIdDNX509Openssl(HcfX509CertificateSpi *self, CfBlob *ou
     return res;
 }
 
-static CfResult convertNameDerDataToString(const CfBlob *blobObj, CfBlob *cfBlobDataParam, X509NameType nameType)
+static CfResult ConvertName(const CfBlob *blobObj, CfBlob *cfBlobDataParam, X509NameType nameType)
 {
     switch (nameType) {
         case NAME_TYPE_SUBECT:
@@ -329,7 +329,7 @@ static CfResult CompareNameObjectX509Openssl(
     CfBlob cfBlobDataParam = { 0 };
 
     if (blobObj != NULL) {
-        res = convertNameDerDataToString(blobObj, &cfBlobDataParam, nameType);
+        res = ConvertName(blobObj, &cfBlobDataParam, nameType);
         if (res != CF_SUCCESS) {
             LOGE("Convert name der data to string failed!");
             return res;

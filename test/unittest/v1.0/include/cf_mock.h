@@ -20,6 +20,7 @@
 #include <openssl/bn.h>
 #include <openssl/ocsp.h>
 #include <openssl/x509v3.h>
+#include <openssl/pkcs12.h>
 
 #include "certificate_openssl_common.h"
 #include "x509_certificate.h"
@@ -100,9 +101,12 @@ public:
     MOCK_METHOD(int, X509_print, (BIO * bp, X509 *x));
     MOCK_METHOD(int, BIO_ctrl, (BIO * bp, int cmd, long larg, void *parg));
     MOCK_METHOD(int, i2d_X509_bio, (BIO * bp, X509 *x509));
+    MOCK_METHOD(int, PKCS12_parse, (PKCS12 *p12, const char *pass, EVP_PKEY **pkey, X509 **cert, STACK_OF(X509) **ca));
+    MOCK_METHOD(bool, CheckIsSelfSigned, (const X509 *cert));
 
     static NiceMock<X509OpensslMock> &GetInstance(void);
     static void SetMockFlag(bool flag);
+    static void SetHcfMockFlag(bool flag);
     static bool GetMockFlag(void);
 
     X509OpensslMock();
