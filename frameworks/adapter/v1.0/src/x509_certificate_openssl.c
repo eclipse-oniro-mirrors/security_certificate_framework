@@ -964,8 +964,8 @@ static CfResult GetSigAlgParamsX509Openssl(HcfX509CertificateSpi *self, CfBlob *
 static CfResult ConvertAsn1String2BoolArray(const ASN1_BIT_STRING *string, CfBlob *boolArr)
 {
     uint32_t length = ASN1_STRING_length(string) * CHAR_TO_BIT_LEN;
-    if (string->flags & ASN1_STRING_FLAG_BITS_LEFT) {
-        length -= string->flags & FLAG_BIT_LEFT_NUM;
+    if ((uint32_t)(string->flags) & ASN1_STRING_FLAG_BITS_LEFT) {
+        length -= (uint32_t)(string->flags) & FLAG_BIT_LEFT_NUM;
     }
     boolArr->data = (uint8_t *)CfMalloc(length, 0);
     if (boolArr->data == NULL) {
