@@ -88,7 +88,7 @@ namespace OHOS {
         if (data == nullptr || size < 1) {
             return false;
         }
-        uint8_t *testData = (uint8_t *)CfMalloc(size + 1, sizeof(uint8_t));
+        uint8_t *testData = static_cast<uint8_t *>(CfMalloc(size + 1, sizeof(uint8_t)));
         if (testData == nullptr) {
             return false;
         }

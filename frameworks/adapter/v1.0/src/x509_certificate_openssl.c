@@ -270,6 +270,7 @@ static CfResult GetAuKeyIdDNX509Openssl(HcfX509CertificateSpi *self, CfBlob *out
         LOGE("Failed to get authority key identifier!");
         return CF_ERR_CRYPTO_OPERATION;
     }
+
     unsigned char *akidBytes = NULL;
     int32_t akidLen = i2d_AUTHORITY_KEYID(akid, &akidBytes);
     if (akidLen <= 0) {
