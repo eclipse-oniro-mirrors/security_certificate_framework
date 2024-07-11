@@ -847,7 +847,7 @@ OCSP_REQUEST *__wrap_OCSP_REQUEST_new(void)
 
 X509_CRL *__wrap_X509_CRL_load_http(const char *url, BIO *bio, BIO *rbio, int timeout)
 {
-    if (g_mockTagX509Openssl) {
+    if (g_mockTagX509Openssl || g_mockTagX509HcfCert) {
         CF_LOG_I("X509OpensslMock X509_CRL_load_http");
         return X509OpensslMock::GetInstance().X509_CRL_load_http(url, bio, rbio, timeout);
     } else {
