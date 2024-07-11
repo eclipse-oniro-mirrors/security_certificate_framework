@@ -15,6 +15,8 @@
 
 #include <gtest/gtest.h>
 
+#include <openssl/pem.h>
+
 #include "cert_crl_common.h"
 #include "cf_blob.h"
 #include "cf_log.h"
@@ -68,6 +70,10 @@ public:
 
 static HcfX509CertChainSpi *g_certChainPemSpi = nullptr;
 static HcfX509CertChainSpi *g_certChainPemSpi163 = nullptr;
+
+static CfBlob g_blobCertChainPemCrl163 = {
+    .data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testCertChainPemCrl163)),
+    .size = strlen(g_testCertChainPemCrl163) };
 
 static CfBlob g_blobDownloadURI = { .data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_crlDownloadURI)),
     .size = strlen(g_crlDownloadURI) + 1 };
@@ -392,6 +398,22 @@ HWTEST_F(CryptoX509CertChainTestPart2, ValidateOpensslRevocationLocalTest001, Te
     FreeHcfRevocationCheckParam(params.revocationCheckParam);
 }
 
+static X509_CRL *GetX509CRL(void)
+{
+    BIO *bio = BIO_new_mem_buf(g_blobCertChainPemCrl163.data, g_blobCertChainPemCrl163.size);
+    if (bio == nullptr) {
+        CF_LOG_E("bio get null!");
+        return nullptr;
+    }
+    X509_CRL *crlOut = PEM_read_bio_X509_CRL(bio, nullptr, nullptr, nullptr);
+    BIO_free_all(bio);
+    if (crlOut == nullptr) {
+        CF_LOG_E("Get X509 CRL fail!");
+        return nullptr;
+    }
+    return crlOut;
+}
+
 HWTEST_F(CryptoX509CertChainTestPart2, ValidateOpensslRevocationOnLineTest001, TestSize.Level0)
 {
     CF_LOG_I("ValidateOpensslRevocationOnLineTest001");
@@ -408,12 +430,20 @@ HWTEST_F(CryptoX509CertChainTestPart2, ValidateOpensslRevocationOnLineTest001, T
         ConstructHcfRevocationCheckParam(data, sizeof(data) / sizeof(data[0]), &g_blobDownloadURI, &g_blobDownloadURI);
     ASSERT_NE(params.revocationCheckParam, nullptr);
 
+    X509_CRL *certChainPemCrl163 = GetX509CRL();
+    ASSERT_NE(certChainPemCrl163, nullptr);
+
     HcfX509CertChainValidateResult result = { 0 };
     CfResult ret;
 
+    X509OpensslMock::SetHcfMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_CRL_load_http(_, _, _, _))
+        .WillOnce(Return(certChainPemCrl163))
+        .WillRepeatedly(Invoke(__real_X509_CRL_load_http));
     // test ValidateOcspLocal failed case
     ret = g_certChainPemSpi163->engineValidate(g_certChainPemSpi163, &params, &result);
     EXPECT_EQ(ret, CF_SUCCESS);
+    X509OpensslMock::SetHcfMockFlag(false);
     FreeValidateResult(result);
 
     FreeTrustAnchorArr(trustAnchorArray);
