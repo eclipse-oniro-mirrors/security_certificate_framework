@@ -396,7 +396,7 @@ HWTEST_F(CryptoX509CertChainTestPart2, ValidateOpensslRevocationOnLineTest006, T
 
     HcfRevChkOption data[] = { REVOCATION_CHECK_OPTION_ACCESS_NETWORK };
     params.revocationCheckParam =
-        ConstructHcfRevocationCheckParam(data, sizeof(data) / sizeof(data[0]), &g_blobDownloadURI, NULL);
+        ConstructHcfRevocationCheckParam(data, sizeof(data) / sizeof(data[0]), &g_blobDownloadURI, nullptr);
     ASSERT_NE(params.revocationCheckParam, nullptr);
 
     HcfX509CertChainValidateResult result = { 0 };
@@ -406,7 +406,7 @@ HWTEST_F(CryptoX509CertChainTestPart2, ValidateOpensslRevocationOnLineTest006, T
     CF_LOG_I("ValidateOpensslRevocationOnLineTest - 3");
     DIST_POINT dp = { 0 };
     X509OpensslMock::SetMockFlag(true);
-    dp.distpoint = NULL;
+    dp.distpoint = nullptr;
     EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_value(_, _))
         .WillOnce(Invoke(__real_OPENSSL_sk_value))
         .WillOnce(Invoke(__real_OPENSSL_sk_value))
