@@ -15,7 +15,7 @@
       "name": "certificate_framework",
       "subsystem": "security",
       "syscap": [ "SystemCapability.Security.Cert" ],
-      "features": [],
+      "features": [ "certificate_framework_enabled" ],
       "adapted_system_type": [ "standard" ],
       "rom": "1024KB",
       "ram": "5120KB",
