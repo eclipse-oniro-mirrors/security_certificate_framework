@@ -346,18 +346,17 @@ bool CheckIsSelfSigned(const X509 *cert)
     if (issuer == NULL) {
         LOGE("x509 get issuer name failed!");
         CfPrintOpensslError();
-        return CF_ERR_CRYPTO_OPERATION;
+        return ret;
     }
 
     X509_NAME *subject = X509_get_subject_name(cert);
     if (subject == NULL) {
         LOGE("x509 get subject name failed!");
         CfPrintOpensslError();
-        return CF_ERR_CRYPTO_OPERATION;
+        return ret;
     }
 
     ret = (X509_NAME_cmp(issuer, subject) == 0);
-    LOGI("The ret of whether the cert is self signed is %d.", ret);
     return ret;
 }
 
