@@ -16,8 +16,6 @@
 #ifndef NAPI_X509_DISTINGUISHED_NAME_H
 #define NAPI_X509_DISTINGUISHED_NAME_H
 
-#include <string>
-
 #include "napi/native_api.h"
 #include "napi/native_common.h"
 #include "x509_distinguished_name.h"

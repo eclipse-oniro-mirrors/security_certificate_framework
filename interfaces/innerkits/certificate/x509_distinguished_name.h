@@ -50,7 +50,7 @@ typedef struct {
 extern "C" {
 #endif
 
-CfResult HcfX509DistinguishedNameCreate(const CfBlob *inStream, bool isInputType, HcfX509DistinguishedName **returnObj);
+CfResult HcfX509DistinguishedNameCreate(const CfBlob *inStream, bool bString, HcfX509DistinguishedName **returnObj);
 
 #ifdef __cplusplus
 }

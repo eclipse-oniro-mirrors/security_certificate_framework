@@ -30,6 +30,5 @@ static CfObjectAbilityFunc g_extensionObjectFunc = {
 
 __attribute__((constructor)) static void LoadExtensionOjbectAbility(void)
 {
-    CF_LOG_I("enter load extension object ability");
     (void)RegisterAbility(CF_ABILITY(CF_ABILITY_TYPE_OBJECT, CF_OBJ_TYPE_EXTENSION), &g_extensionObjectFunc.base);
 }

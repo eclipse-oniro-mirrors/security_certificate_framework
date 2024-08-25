@@ -33,7 +33,6 @@ typedef struct {
 
 static int32_t CfLifeGet(const CfObject *object, const CfParamSet *in, CfParamSet **out)
 {
-    CF_LOG_I("enter get");
     if ((object == NULL) || (in == NULL) || (out == NULL)) {
         CF_LOG_E("input params invalid");
         return CF_NULL_POINTER;
@@ -41,13 +40,11 @@ static int32_t CfLifeGet(const CfObject *object, const CfParamSet *in, CfParamSe
 
     CfLifeCtx *tmp = (CfLifeCtx *)object;
     int32_t ret = tmp->func.get(tmp->base, in, out);
-    CF_LOG_I("leave get ret = %d", ret);
     return ret;
 }
 
 static int32_t CfLifeCheck(const CfObject *object, const CfParamSet *in, CfParamSet **out)
 {
-    CF_LOG_I("enter check");
     if ((object == NULL) || (in == NULL) || (out == NULL)) {
         CF_LOG_E("input params invalid");
         return CF_NULL_POINTER;
@@ -55,13 +52,11 @@ static int32_t CfLifeCheck(const CfObject *object, const CfParamSet *in, CfParam
 
     CfLifeCtx *tmp = (CfLifeCtx *)object;
     int32_t ret = tmp->func.check(tmp->base, in, out);
-    CF_LOG_I("leave check ret = %d", ret);
     return ret;
 }
 
 static void CfLifeDestroy(CfObject **object)
 {
-    CF_LOG_I("enter: destroy object");
     if ((object == NULL) || (*object == NULL)) {
         CF_LOG_I("param is null");
         return;
@@ -71,7 +66,6 @@ static void CfLifeDestroy(CfObject **object)
     tmp->func.destroy(&tmp->base);
     CfFree(tmp);
     *object = NULL;
-    CF_LOG_I("leave: destroy object");
 }
 
 CF_API_EXPORT int32_t CfCreate(CfObjectType objType, const CfEncodingBlob *in, CfObject **object)
@@ -107,7 +101,6 @@ CF_API_EXPORT int32_t CfCreate(CfObjectType objType, const CfEncodingBlob *in, C
     tmp->object.destroy = CfLifeDestroy;
     *object = &tmp->object;
 
-    CF_LOG_I("leave: create object success");
     return CF_SUCCESS;
 }
 

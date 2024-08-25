@@ -30,6 +30,5 @@ static CfObjectAbilityFunc g_certObjectFunc = {
 
 __attribute__((constructor)) static void LoadCertOjbectAbility(void)
 {
-    CF_LOG_I("enter load cert object ability");
     (void)RegisterAbility(CF_ABILITY(CF_ABILITY_TYPE_OBJECT, CF_OBJ_TYPE_CERT), &g_certObjectFunc.base);
 }

@@ -20,12 +20,13 @@
 #include "x509_cert_chain.h"
 #include "x509_cert_chain_spi.h"
 #include "x509_certificate.h"
+#include "fwk_class.h"
 
 #include <openssl/x509.h>
 
 typedef struct {
     HcfX509CertChainSpi base;
-    STACK_OF(X509) * x509CertChain;
+    STACK_OF(X509) *x509CertChain;
     bool isOrder; // is an order chain
 } HcfX509CertChainOpensslImpl;
 
@@ -36,6 +37,9 @@ extern "C" {
 const char *GetX509CertChainClass(void);
 CfResult CfToString(HcfX509CertChainSpi *self, CfBlob *out);
 CfResult CfHashCode(HcfX509CertChainSpi *self, CfBlob *out);
+X509 *GetX509FromHcfX509Certificate(const HcfCertificate *cert);
+CfResult GetLeafCertsFromCertStack(
+    const HcfX509CertChainBuildParameters *inParams, STACK_OF(X509) *allCerts, STACK_OF(X509) *leafCerts);
 
 #ifdef __cplusplus
 }

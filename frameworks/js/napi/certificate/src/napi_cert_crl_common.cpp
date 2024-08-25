@@ -45,6 +45,7 @@ napi_value ConvertCertArrToNapiValue(napi_env env, HcfX509CertificateArray *cert
         napi_value element = ConvertCertToNapiValue(env, certs->data[i]);
         if (element != nullptr) {
             napi_set_element(env, instance, j++, element);
+            certs->data[i] = nullptr;
         }
     }
     return instance;
@@ -69,6 +70,11 @@ napi_value ConvertCertToNapiValue(napi_env env, HcfX509Certificate *cert)
         return nullptr;
     }
     napi_value instance = NapiX509Certificate::CreateX509Cert(env);
+    if (instance == nullptr) {
+        LOGE("Create x509Cert failed!");
+        certObj->destroy(&certObj);
+        return nullptr;
+    }
     napi_status status = napi_wrap(
         env, instance, x509Cert,
         [](napi_env env, void *data, void *hint) {

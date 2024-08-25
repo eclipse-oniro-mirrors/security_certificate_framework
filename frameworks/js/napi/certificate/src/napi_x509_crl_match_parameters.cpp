@@ -14,6 +14,7 @@
  */
 
 #include "napi_x509_crl_match_parameters.h"
+#include <string>
 #include "napi_x509_certificate.h"
 #include "cf_log.h"
 #include "cf_memory.h"
@@ -60,7 +61,6 @@ static bool GetX509Cert(napi_env env, napi_value arg, HcfCertificate *&out)
         LOGE("cert is null!");
         return false;
     }
-    LOGI("x509Cert is not null!");
     out = &(cert->base);
 
     return true;

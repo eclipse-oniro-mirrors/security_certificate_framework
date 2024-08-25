@@ -16,8 +16,6 @@
 #ifndef NAPI_X509_CERT_CHAIN_H
 #define NAPI_X509_CERT_CHAIN_H
 
-#include <string>
-
 #include "cf_api.h"
 #include "napi/native_api.h"
 #include "napi/native_common.h"

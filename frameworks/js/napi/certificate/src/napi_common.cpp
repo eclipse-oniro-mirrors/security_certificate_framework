@@ -87,6 +87,9 @@ static void ReturnPromiseResult(napi_env env, AsyncCtx async, napi_value result)
 
 void ReturnJSResult(napi_env env, AsyncCtx async, napi_value result)
 {
+    if (async == nullptr) {
+        return;
+    }
     if (async->asyncType == ASYNC_TYPE_CALLBACK) {
         ReturnCallbackResult(env, async, result);
     } else {
@@ -155,7 +158,7 @@ int32_t GetBlobArrayFromParamSet(const CfParamSet *paramSet, CfArray *outArray)
     return CF_SUCCESS;
 }
 
-napi_value ConvertBlobArrayToNapiValue(napi_env env,  const CfParamSet *paramSet)
+napi_value ConvertBlobArrayToNapiValue(napi_env env, const CfParamSet *paramSet)
 {
     CfArray outArray = { nullptr, CF_FORMAT_DER, 0 };
     int32_t ret = GetBlobArrayFromParamSet(paramSet, &outArray);

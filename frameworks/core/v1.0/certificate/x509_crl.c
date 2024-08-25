@@ -21,7 +21,6 @@
 #include "cf_memory.h"
 #include "config.h"
 #include "utils.h"
-#include "x509_crl.h"
 #include "x509_crl_match_parameters.h"
 #include "x509_crl_openssl.h"
 #include "x509_crl_spi.h"
@@ -381,7 +380,6 @@ static CfResult Match(HcfX509Crl *self, const HcfX509CrlMatchParams *matchParams
 
 CfResult HcfX509CrlCreate(const CfEncodingBlob *inStream, HcfX509Crl **returnObj)
 {
-    CF_LOG_I("enter");
     if ((inStream == NULL) || (inStream->data == NULL) || (inStream->len > HCF_MAX_BUFFER_LEN) || (returnObj == NULL)) {
         LOGE("FuncSet is null!");
         return CF_INVALID_PARAMS;

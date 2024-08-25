@@ -37,20 +37,14 @@ __attribute__((no_sanitize("cfi"))) HcfPubKey *NapiPubKey::GetPubKey()
 
 napi_value NapiPubKey::PubKeyConstructor(napi_env env, napi_callback_info info)
 {
-    LOGI("enter ...");
-
     napi_value thisVar = nullptr;
     napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
-
-    LOGI("out ...");
     return thisVar;
 }
 
 napi_value NapiPubKey::ConvertToJsPubKey(napi_env env)
 {
-    LOGI("enter ...");
-
-    napi_value instance;
+    napi_value instance = nullptr;
     napi_value constructor = nullptr;
     napi_get_reference_value(env, classRef_, &constructor);
     napi_new_instance(env, constructor, 0, nullptr, &instance);
@@ -66,7 +60,6 @@ napi_value NapiPubKey::ConvertToJsPubKey(napi_env env)
     napi_create_string_utf8(env, format, NAPI_AUTO_LENGTH, &napiFormat);
     napi_set_named_property(env, instance, CRYPTO_TAG_FORMAT.c_str(), napiFormat);
 
-    LOGI("out ...");
     return instance;
 }
 
@@ -81,7 +74,7 @@ napi_value NapiPubKey::JsGetEncoded(napi_env env, napi_callback_info info)
     HcfBlob returnBlob = { nullptr, 0 };
     HcfResult res = pubKey->base.getEncoded(&pubKey->base, &returnBlob);
     if (res != HCF_SUCCESS) {
-        LOGE("c getEncoded fail.");
+        LOGE("getEncoded fail.");
         return nullptr;
     }
     CfBlob tmpCfBlob = { returnBlob.len, returnBlob.data };

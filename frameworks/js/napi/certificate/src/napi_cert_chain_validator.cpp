@@ -193,7 +193,6 @@ napi_value NapiCertChainValidator::Validate(napi_env env, napi_callback_info inf
 
 static napi_value NapiValidate(napi_env env, napi_callback_info info)
 {
-    LOGI("start to validate cert chain.");
     napi_value thisVar = nullptr;
     napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
     NapiCertChainValidator *certChainValidator = nullptr;
@@ -214,7 +213,6 @@ static napi_value CertChainValidatorConstructor(napi_env env, napi_callback_info
 
 napi_value NapiCertChainValidator::CreateCertChainValidator(napi_env env, napi_callback_info info)
 {
-    LOGI("start to create cert chain validator.");
     napi_value thisVar = nullptr;
     size_t argc = ARGS_SIZE_ONE;
     napi_value argv[ARGS_SIZE_ONE] = { nullptr };
