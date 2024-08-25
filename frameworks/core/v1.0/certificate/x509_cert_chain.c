@@ -27,9 +27,6 @@
 #include "x509_cert_chain_spi.h"
 #include "x509_certificate.h"
 
-#define LV_LENGTH_LEN sizeof(uint16_t)
-#define MAX_CERT_PATH_DATA_LEM 8192
-
 typedef CfResult (*CertChainSpiCreateByEncFunc)(const CfEncodingBlob *, HcfX509CertChainSpi **);
 typedef CfResult (*CertChainSpiCreateByArrFunc)(const HcfX509CertificateArray *, HcfX509CertChainSpi **);
 typedef CfResult (*CertChainSpiCreateByParamsFunc)(const HcfX509CertChainBuildParameters *, HcfX509CertChainSpi **);
@@ -155,7 +152,6 @@ static CfResult Validate(
 CfResult HcfCertChainCreate(
     const CfEncodingBlob *inStream, const HcfX509CertificateArray *inCerts, HcfCertChain **returnObj)
 {
-    LOGI("enter");
     if ((inStream == NULL && inCerts == NULL) || (inStream != NULL && inCerts != NULL) || returnObj == NULL) {
         LOGE("invalid param!");
         return CF_INVALID_PARAMS;
@@ -248,7 +244,6 @@ CfResult HcfCertChainBuildResultCreate(
 CfResult HcfCreateTrustAnchorWithKeyStore(
     const CfBlob *keyStore, const CfBlob *pwd, HcfX509TrustAnchorArray **trustAnchorArray)
 {
-    LOGI("enter");
     if (keyStore == NULL || pwd == NULL || trustAnchorArray == NULL) {
         LOGE("invalid param!");
         return CF_INVALID_PARAMS;

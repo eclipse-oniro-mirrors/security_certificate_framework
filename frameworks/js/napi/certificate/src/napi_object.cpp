@@ -372,7 +372,6 @@ static napi_value ConvertToNapiValue(napi_env env, int32_t opType, int32_t typeV
     if (outType == NAPI_OUT_TYPE_BLOB) {
         return CertConvertBlobToNapiValue(env, &resultParam->blob);
     } else if (outType == NAPI_OUT_TYPE_ARRAY) {
-        CF_LOG_I("blob array");
         return ConvertBlobArrayToNapiValue(env, paramSet);
     } else if (outType == NAPI_OUT_TYPE_NUMBER) {
         napi_value result = nullptr;

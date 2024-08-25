@@ -30,8 +30,6 @@
 #include "x509_crl_entry.h"
 #include "x509_crl_openssl.h"
 
-#define OPENSSL_ERROR_SERIAL_NUMBER (-1)
-
 typedef struct {
     HcfX509CrlEntry base;
     X509_REVOKED *rev;
@@ -55,7 +53,7 @@ static X509_REVOKED *GetSelfRev(const HcfX509CrlEntry *self)
 static CfResult GetEncoded(HcfX509CrlEntry *self, CfEncodingBlob *encodedOut)
 {
     if ((self == NULL) || (encodedOut == NULL)) {
-        LOGE("Invalid Paramas for calling GetEncoded!");
+        LOGE("Invalid params for calling GetEncoded!");
         return CF_INVALID_PARAMS;
     }
     X509_REVOKED *rev = GetSelfRev(self);
@@ -86,7 +84,7 @@ static CfResult GetEncoded(HcfX509CrlEntry *self, CfEncodingBlob *encodedOut)
 static CfResult GetSerialNumber(HcfX509CrlEntry *self, CfBlob *out)
 {
     if (self == NULL) {
-        LOGE("Invalid Paramas for calling GetSerialNumber!");
+        LOGE("Invalid params for calling GetSerialNumber!");
         return CF_INVALID_PARAMS;
     }
     X509_REVOKED *rev = GetSelfRev(self);
@@ -124,7 +122,7 @@ static CfResult GetSerialNumber(HcfX509CrlEntry *self, CfBlob *out)
 static CfResult GetCertIssuer(HcfX509CrlEntry *self, CfBlob *encodedOut)
 {
     if ((self == NULL) || (encodedOut == NULL)) {
-        LOGE("Invalid Paramas for calling GetCertIssuer!");
+        LOGE("Invalid params for calling GetCertIssuer!");
         return CF_INVALID_PARAMS;
     }
     if (!CfIsClassMatch((CfObjectBase *)self, GetClass())) {
@@ -150,7 +148,7 @@ static CfResult GetCertIssuer(HcfX509CrlEntry *self, CfBlob *encodedOut)
 static CfResult GetRevocationDate(HcfX509CrlEntry *self, CfBlob *out)
 {
     if ((self == NULL) || (out == NULL)) {
-        LOGE("invalid Paramas for calling GetRevocationDate!");
+        LOGE("invalid params for calling GetRevocationDate!");
         return CF_INVALID_PARAMS;
     }
     X509_REVOKED *rev = GetSelfRev(self);
@@ -183,7 +181,7 @@ static CfResult GetRevocationDate(HcfX509CrlEntry *self, CfBlob *out)
 static CfResult GetExtensions(HcfX509CrlEntry *self, CfBlob *outBlob)
 {
     if ((self == NULL) || (outBlob == NULL)) {
-        LOGE("Invalid Paramas!");
+        LOGE("Invalid params!");
         return CF_INVALID_PARAMS;
     }
 
@@ -204,7 +202,7 @@ static CfResult GetExtensions(HcfX509CrlEntry *self, CfBlob *outBlob)
 static CfResult HasExtensions(HcfX509CrlEntry *self, bool *out)
 {
     if (self == NULL || out == NULL) {
-        LOGE("Invalid Paramas!");
+        LOGE("Invalid params!");
         return CF_INVALID_PARAMS;
     }
 
@@ -227,7 +225,7 @@ static CfResult HasExtensions(HcfX509CrlEntry *self, bool *out)
 static CfResult ToString(HcfX509CrlEntry *self, CfBlob *outBlob)
 {
     if ((self == NULL) || (outBlob == NULL)) {
-        LOGE("Invalid Paramas!");
+        LOGE("Invalid params!");
         return CF_INVALID_PARAMS;
     }
     X509_REVOKED *rev = GetSelfRev(self);
@@ -247,7 +245,7 @@ static CfResult ToString(HcfX509CrlEntry *self, CfBlob *outBlob)
     ASN1_TIME_print(out, X509_REVOKED_get0_revocationDate(rev));
     BIO_printf(out, "\n");
     int len = X509V3_extensions_print(out, "CRL entry extensions", X509_REVOKED_get0_extensions(rev), 0, 8);
-    if (len < 0) {
+    if (len <= 0) {
         LOGE("X509V3_extensions_print error");
         BIO_free(out);
         return CF_ERR_CRYPTO_OPERATION;
@@ -266,7 +264,7 @@ static CfResult ToString(HcfX509CrlEntry *self, CfBlob *outBlob)
 static CfResult HashCode(HcfX509CrlEntry *self, CfBlob *outBlob)
 {
     if ((self == NULL) || (outBlob == NULL)) {
-        LOGE("Invalid Paramas!");
+        LOGE("Invalid params!");
         return CF_INVALID_PARAMS;
     }
     X509_REVOKED *rev = GetSelfRev(self);
@@ -285,19 +283,24 @@ static CfResult HashCode(HcfX509CrlEntry *self, CfBlob *outBlob)
     outBlob->data = (uint8_t *)CfMalloc(SHA256_DIGEST_LENGTH, 0);
     if (outBlob->data == NULL) {
         LOGE("CfMalloc error");
-        CfFree(buf);
+        OPENSSL_free(buf);
         return CF_ERR_MALLOC;
     }
-    SHA256(buf, len, (unsigned char *)outBlob->data);
+    if (SHA256(buf, len, (unsigned char *)outBlob->data) == NULL) {
+        LOGE("Compute sha256 error");
+        OPENSSL_free(buf);
+        CfFree(outBlob->data);
+        return CF_ERR_CRYPTO_OPERATION;
+    }
     outBlob->size = SHA256_DIGEST_LENGTH;
-    CfFree(buf);
+    OPENSSL_free(buf);
     return CF_SUCCESS;
 }
 
 static CfResult GetExtensionsObject(HcfX509CrlEntry *self, CfBlob *outBlob)
 {
     if ((self == NULL) || (outBlob == NULL)) {
-        LOGE("Invalid Paramas!");
+        LOGE("Invalid params!");
         return CF_INVALID_PARAMS;
     }
 
@@ -322,21 +325,20 @@ static CfResult DeepCopyCertIssuer(HcfX509CRLEntryOpensslImpl *returnCRLEntry, C
         LOGE("Failed to malloc certIssuer!");
         return CF_ERR_MALLOC;
     }
-    size_t len = certIssuer->size;
-    returnCRLEntry->certIssuer->size = len;
-    returnCRLEntry->certIssuer->data = (uint8_t *)CfMalloc(len, 0);
+    returnCRLEntry->certIssuer->size = certIssuer->size;
+    returnCRLEntry->certIssuer->data = (uint8_t *)CfMalloc(certIssuer->size, 0);
     if (returnCRLEntry->certIssuer->data == NULL) {
         LOGE("Failed to malloc certIssuer data!");
         return CF_ERR_MALLOC;
     }
-    (void)memcpy_s(returnCRLEntry->certIssuer->data, len, certIssuer->data, len);
+    (void)memcpy_s(returnCRLEntry->certIssuer->data, certIssuer->size, certIssuer->data, certIssuer->size);
     return CF_SUCCESS;
 }
 
 static void Destroy(CfObjectBase *self)
 {
     if (self == NULL) {
-        LOGE("Invalid Paramas!");
+        LOGE("Invalid params!");
         return;
     }
     if (!CfIsClassMatch((CfObjectBase *)self, GetClass())) {
@@ -360,7 +362,7 @@ static void Destroy(CfObjectBase *self)
 CfResult HcfCX509CRLEntryCreate(X509_REVOKED *rev, HcfX509CrlEntry **crlEntryOut, CfBlob *certIssuer)
 {
     if ((rev == NULL) || (crlEntryOut == NULL) || certIssuer == NULL) {
-        LOGE("Invalid Paramas!");
+        LOGE("Invalid params!");
         return CF_INVALID_PARAMS;
     }
     HcfX509CRLEntryOpensslImpl *returnCRLEntry = (HcfX509CRLEntryOpensslImpl *)CfMalloc(

@@ -143,7 +143,9 @@ static bool CreateCallbackAndPromise(
             return false;
         }
     } else {
-        napi_create_promise(env, &context->deferred, &context->promise);
+        if (napi_create_promise(env, &context->deferred, &context->promise) != napi_ok) {
+            return false;
+        }
     }
     return true;
 }
@@ -188,13 +190,13 @@ napi_value NapiCertCRLCollection::SelectCRLsRet(napi_env env, const HcfX509CrlAr
             },
             nullptr, nullptr);
         napi_set_element(env, instance, j++, element);
+        crls->data[i] = nullptr;
     }
     return instance;
 }
 
 static void SelectCertsExecute(napi_env env, void *data)
 {
-    LOGI("enter SelectCertsExecute");
     CfCertCRLColCtx *context = static_cast<CfCertCRLColCtx *>(data);
     NapiCertCRLCollection *certCrlCol = context->certCRLColClass;
     HcfCertCrlCollection *collection = certCrlCol->GetCertCrlCollection();
@@ -208,7 +210,6 @@ static void SelectCertsExecute(napi_env env, void *data)
 
 static void SelectCertsComplete(napi_env env, napi_status status, void *data)
 {
-    LOGI("enter SelectCertsComplete");
     CfCertCRLColCtx *context = static_cast<CfCertCRLColCtx *>(data);
     if (context->errCode != CF_SUCCESS) {
         ReturnResult(env, context, nullptr);
@@ -217,12 +218,14 @@ static void SelectCertsComplete(napi_env env, napi_status status, void *data)
     }
     napi_value instance = ConvertCertArrToNapiValue(env, &context->retCerts);
     ReturnResult(env, context, instance);
+    for (uint32_t i = 0; i < context->retCerts.count; ++i) {
+        CfObjDestroy(context->retCerts.data[i]);
+    }
     FreeCryptoFwkCtx(env, context);
 }
 
 static napi_value NapiSelectCerts(napi_env env, napi_callback_info info)
 {
-    LOGI("enter NapiSelectCerts");
     napi_value thisVar = nullptr;
     napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
     if (thisVar == nullptr) {
@@ -264,6 +267,7 @@ napi_value NapiCertCRLCollection::SelectCerts(napi_env env, napi_callback_info i
     napi_value argv[ARGS_SIZE_TWO] = { nullptr };
     napi_value thisVar = nullptr;
     napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr);
+
     if (!CertCheckArgsCount(env, argc, ARGS_SIZE_TWO, false)) {
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "CertCheckArgsCount failed."));
         LOGE("CertCheckArgsCount is not 2!");
@@ -314,7 +318,6 @@ napi_value NapiCertCRLCollection::SelectCerts(napi_env env, napi_callback_info i
 
 static napi_value NapiSelectCRLs(napi_env env, napi_callback_info info)
 {
-    LOGI("enter NapiSelectCRLs");
     napi_value thisVar = nullptr;
     napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
     if (thisVar == nullptr) {
@@ -355,6 +358,9 @@ static void SelectCRLComplete(napi_env env, napi_status status, void *data)
     }
     NapiCertCRLCollection *certCrlCol = context->certCRLColClass;
     napi_value instance = certCrlCol->SelectCRLsRet(env, &context->retCrls);
+    for (uint32_t i = 0; i < context->retCrls.count; ++i) {
+        CfObjDestroy(context->retCrls.data[i]);
+    }
     ReturnResult(env, context, instance);
     FreeCryptoFwkCtx(env, context);
 }
@@ -384,6 +390,11 @@ napi_value NapiCertCRLCollection::SelectCRLs(napi_env env, napi_callback_info in
     napi_value argv[ARGS_SIZE_TWO] = { nullptr };
     napi_value thisVar = nullptr;
     napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr);
+    if (thisVar == nullptr) {
+        LOGE("thisVar is nullptr");
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "thisVar is nullptr."));
+        return nullptr;
+    }
     if (!CertCheckArgsCount(env, argc, ARGS_SIZE_TWO, false)) {
         return nullptr;
     }
@@ -471,7 +482,6 @@ static CfResult ParseCreateCertCRLColJSParams(napi_env env, napi_callback_info i
 
 static napi_value NapiCreateCertCRLCollection(napi_env env, napi_callback_info info)
 {
-    LOGI("enter NapiCreateCertCRLCollection");
     HcfCertCrlCollection *collection = nullptr;
     CfResult res = ParseCreateCertCRLColJSParams(env, info, collection);
     if (res != CF_SUCCESS) {
@@ -483,6 +493,7 @@ static napi_value NapiCreateCertCRLCollection(napi_env env, napi_callback_info i
     if (napiObject == nullptr) {
         LOGE("Failed to create napi certcrlcolletion class");
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc napiObject failed."));
+        CfObjDestroy(collection);
         return nullptr;
     }
 

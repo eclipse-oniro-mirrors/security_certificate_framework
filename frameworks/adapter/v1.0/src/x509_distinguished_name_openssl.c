@@ -99,7 +99,7 @@ static CfResult GetDataByEntryOpenssl(int32_t count, CfArray *outArr, X509_NAME_
         return CF_INVALID_PARAMS;
     }
 
-    outArr->data = (CfBlob *)CfMalloc(count*sizeof(CfBlob), 0);
+    outArr->data = (CfBlob *)CfMalloc(count * sizeof(CfBlob), 0);
     if (outArr->data == NULL) {
         LOGE("CfMalloc error");
         return CF_ERR_MALLOC;

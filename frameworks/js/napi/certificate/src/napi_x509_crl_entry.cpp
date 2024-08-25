@@ -14,7 +14,7 @@
  */
 
 #include "napi_x509_crl_entry.h"
-
+#include <string>
 #include "cf_log.h"
 #include "cf_memory.h"
 #include "cf_object_base.h"
@@ -382,9 +382,7 @@ static napi_value BuildCertExtsObject(napi_env env, CfEncodingBlob *encodingBlob
     NapiCertExtension *napiObject = new (std::nothrow) NapiCertExtension(extsObj);
     if (napiObject == nullptr) {
         LOGE("Failed to create napi extension class");
-        if (extsObj != nullptr) {
-            extsObj->destroy(&(extsObj));
-        }
+        extsObj->destroy(&(extsObj));
         return nullptr;
     }
     napi_wrap(
@@ -451,7 +449,7 @@ napi_value NapiX509CrlEntry::GetCertIssuerX500DistinguishedName(napi_env env, na
     HcfX509DistinguishedName *x509Name = nullptr;
     CfResult ret = HcfX509DistinguishedNameCreate(&blob, true, &x509Name);
     CfBlobDataFree(&blob);
-    if (ret != CF_SUCCESS || x509Name == nullptr) {
+    if (ret != CF_SUCCESS) {
         LOGE("HcfX509DistinguishedNameCreate failed");
         napi_throw(env, CertGenerateBusinessError(env, ret, "HcfX509DistinguishedNameCreate failed"));
         return nullptr;
