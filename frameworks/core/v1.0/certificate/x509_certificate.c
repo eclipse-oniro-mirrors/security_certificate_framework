@@ -459,7 +459,6 @@ static void HcfX509CertificateImplPack(HcfX509CertificateImpl *x509CertImpl, Hcf
 
 CfResult HcfX509CertificateCreate(const CfEncodingBlob *inStream, HcfX509Certificate **returnObj)
 {
-    CF_LOG_I("enter");
     if ((inStream == NULL) || (inStream->len > HCF_MAX_BUFFER_LEN) || (returnObj == NULL)) {
         return CF_INVALID_PARAMS;
     }

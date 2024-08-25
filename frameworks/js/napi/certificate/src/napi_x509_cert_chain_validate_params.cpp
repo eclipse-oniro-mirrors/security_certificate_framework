@@ -49,6 +49,7 @@ static bool GetValidDate(napi_env env, napi_value arg, CfBlob *&out)
 
 static bool GetArrayLength(napi_env env, napi_value arg, uint32_t &length)
 {
+    length = 0;
     bool flag = false;
     napi_status status = napi_is_array(env, arg, &flag);
     if (status != napi_ok || !flag) {
@@ -411,6 +412,7 @@ static bool GetKeyUsage(napi_env env, napi_value arg, HcfKuArray *&out)
         napi_value element;
         if (napi_get_element(env, obj, i, &element) != napi_ok ||
             napi_get_value_int32(env, element, (int32_t *)&(out->data[i])) != napi_ok) {
+            CfFree(out->data);
             CfFree(out);
             out = nullptr;
             return false;
@@ -476,15 +478,15 @@ bool BuildX509CertChainValidateParams(napi_env env, napi_value arg, HcfX509CertC
     }
 
     if (!GetValidDate(env, arg, param.date)) {
-        LOGE("GetValidDate failed");
+        LOGE("Get valid date failed");
         return false;
     }
     if (!GetX509TrustAnchorArray(env, arg, param.trustAnchors)) {
-        LOGE("GetX509TrustAnchorArray failed");
+        LOGE("Get X509 trust anchor array failed");
         return false;
     }
     if (!GetCertCRLCollectionArray(env, arg, param.certCRLCollections)) {
-        LOGE("GetCertCRLCollectionArray failed");
+        LOGE("Get cert CRL collection array failed");
         return false;
     }
     if (!GetRevocationCheckParam(env, arg, param.revocationCheckParam)) {
@@ -496,7 +498,7 @@ bool BuildX509CertChainValidateParams(napi_env env, napi_value arg, HcfX509CertC
         return false;
     }
     if (!GetSSLHostname(env, arg, param.sslHostname)) {
-        LOGE("Get SSLHostname failed!");
+        LOGE("Get SSL hostname failed!");
         return false;
     }
     if (!GetKeyUsage(env, arg, param.keyUsage)) {

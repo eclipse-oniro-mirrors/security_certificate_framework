@@ -16,8 +16,6 @@
 #ifndef NAPI_CERT_CHAIN_VALIDATOR_H
 #define NAPI_CERT_CHAIN_VALIDATOR_H
 
-#include <string>
-
 #include "napi/native_api.h"
 #include "napi/native_common.h"
 #include "cert_chain_validator.h"

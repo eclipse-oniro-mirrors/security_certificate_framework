@@ -17,7 +17,6 @@
 #define NAPI_X509_CRL_ENTRY_H
 
 #include <string>
-
 #include "napi/native_api.h"
 #include "napi/native_common.h"
 #include "x509_crl_entry.h"

@@ -49,6 +49,10 @@ napi_value BuildX509CertChainValidateResultJS(napi_env env, const HcfX509CertCha
 
     napi_value returnValue = nullptr;
     napi_create_object(env, &returnValue);
+    if (returnValue == nullptr) {
+        LOGE("create result obj failed");
+        return nullptr;
+    }
     napi_set_named_property(env, returnValue, CERT_CHAIN_VALIDATE_RESULLT_TAG_X509CERT.c_str(), entityCert);
     napi_set_named_property(env, returnValue, CERT_CHAIN_VALIDATE_RESULLT_TAG_TRUSTANCHOR.c_str(), trustAnchor);
 

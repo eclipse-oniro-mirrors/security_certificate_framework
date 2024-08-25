@@ -1163,7 +1163,7 @@ HWTEST_F(CryptoX509CertificateTest, DeepCopyDataToBlobTest001, TestSize.Level0)
 {
     SetMockFlag(true);
     CfResult ret = DeepCopyDataToBlob(nullptr, 0, nullptr);
-    EXPECT_EQ(ret, CF_ERR_MALLOC);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
     SetMockFlag(false);
 }
 

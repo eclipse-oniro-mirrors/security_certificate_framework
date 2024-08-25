@@ -16,8 +16,6 @@
 #ifndef NAPI_CERT_CRL_COLLECTION_H
 #define NAPI_CERT_CRL_COLLECTION_H
 
-#include <string>
-#include <vector>
 #include "napi/native_api.h"
 #include "napi/native_common.h"
 #include "napi_x509_certificate.h"

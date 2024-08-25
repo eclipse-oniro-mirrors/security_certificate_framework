@@ -21,7 +21,6 @@
 #include "cf_memory.h"
 #include "cf_result.h"
 #include "cf_test_data.h"
-#include "cf_test_common.h"
 
 using namespace testing::ext;
 using namespace CertframeworkTest;

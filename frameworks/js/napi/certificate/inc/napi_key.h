@@ -16,7 +16,6 @@
 #ifndef CF_NAPI_KEY_H
 #define CF_NAPI_KEY_H
 
-#include <cstdint>
 #include "cf_log.h"
 #include "napi/native_api.h"
 #include "napi/native_common.h"

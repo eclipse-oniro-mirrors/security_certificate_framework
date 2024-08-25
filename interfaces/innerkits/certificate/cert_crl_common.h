@@ -24,9 +24,9 @@
 extern "C" {
 #endif
 
-CfResult CloneCertificateObj(HcfX509Certificate *oriObj, HcfX509Certificate **out);
+CfResult CloneCertificateObj(HcfX509Certificate *in, HcfX509Certificate **out);
 
-CfResult CloneCrlObj(HcfX509Crl *oriObj, HcfX509Crl **out);
+CfResult CloneCrlObj(HcfX509Crl *in, HcfX509Crl **out);
 
 void FreeCertArrayData(HcfX509CertificateArray *certs);
 

@@ -23,12 +23,11 @@
 #include "cf_result.h"
 #include "cf_log.h"
 #include "cf_memory.h"
-#include "cf_result.h"
 #include "utils.h"
 #include "x509_cert_chain_validator_openssl.h"
 
 #define LV_LENGTH_LEN sizeof(uint16_t)
-#define MAX_CERT_PATH_DATA_LEM 8192
+#define MAX_CERT_PATH_DATA_LEN 8192
 
 typedef CfResult (*CertChainValidatorSpiCreateFunc)(HcfCertChainValidatorSpi **);
 
@@ -126,7 +125,7 @@ static CfResult ConvertCertBuffer2List(const HcfCertChainData *certChainData, Cf
 
 static CfResult Validate(HcfCertChainValidator *self, const HcfCertChainData *certChainData)
 {
-    if ((self == NULL) || (certChainData == NULL) || (certChainData->dataLen > MAX_CERT_PATH_DATA_LEM)) {
+    if ((self == NULL) || (certChainData == NULL) || (certChainData->dataLen > MAX_CERT_PATH_DATA_LEN)) {
         LOGE("Invalid input parameter.");
         return CF_INVALID_PARAMS;
     }

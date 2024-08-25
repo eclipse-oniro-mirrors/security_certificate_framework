@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include <string>
 #include "cf_log.h"
 #include "cf_type.h"
 #include "napi_cert_chain_validator.h"
@@ -264,7 +265,6 @@ static void DefineEncodingTypeProperties(napi_env env, napi_value exports)
  ***********************************************/
 static napi_value CertModuleExport(napi_env env, napi_value exports)
 {
-    LOGI("module init start.");
     DefineEncodingFormatProperties(env, exports);
     DefineResultCodeProperties(env, exports);
     DefineCertItemTypeProperties(env, exports);
@@ -289,7 +289,6 @@ static napi_value CertModuleExport(napi_env env, napi_value exports)
     NapiX509CertChain::DefineX509CertChainJsClass(env, exports);
     NapiX509CertChainBulidResult::DefineX509CertChainBuildResultJsClass(env, exports);
     NapiCertCRLCollection::DefineCertCRLCollectionJSClass(env, exports);
-    LOGI("module init end.");
     return exports;
 }
 

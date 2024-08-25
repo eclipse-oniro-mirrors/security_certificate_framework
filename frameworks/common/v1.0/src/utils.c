@@ -104,7 +104,6 @@ bool CfIsUrlValid(const char *url)
             return true;
         }
     }
-    return false;
 }
 
 bool CfIsHttp(const char *url)

@@ -43,7 +43,6 @@ static CfExtensionAdapterAbilityFunc g_extensionAdapterFunc = {
 
 __attribute__((constructor)) static void LoadAdapterAbility(void)
 {
-    CF_LOG_I("enter load adapter ability");
     (void)RegisterAbility(CF_ABILITY(CF_ABILITY_TYPE_ADAPTER, CF_OBJ_TYPE_CERT), &g_certAdapterFunc.base);
     (void)RegisterAbility(CF_ABILITY(CF_ABILITY_TYPE_ADAPTER, CF_OBJ_TYPE_EXTENSION), &g_extensionAdapterFunc.base);
 }

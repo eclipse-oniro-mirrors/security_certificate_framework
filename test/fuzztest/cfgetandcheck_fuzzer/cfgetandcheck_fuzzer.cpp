@@ -163,14 +163,18 @@ namespace OHOS {
             int32_t ret = CfCreate(CF_OBJ_TYPE_EXTENSION, &g_extensionBlob[0], &object);
             if (ret != CF_SUCCESS) {
                 CfFree(tmpData);
-                object->destroy(&object);
+                if (object != nullptr) {
+                    object->destroy(&object);
+                }
                 return false;
             }
         } else {
             int32_t ret = CfCreate(CF_OBJ_TYPE_CERT, &g_cert[0], &object);
             if (ret != CF_SUCCESS) {
                 CfFree(tmpData);
-                object->destroy(&object);
+                if (object != nullptr) {
+                    object->destroy(&object);
+                }
                 return false;
             }
         }
@@ -181,7 +185,9 @@ namespace OHOS {
         TestObjectTypeFunc5(object, tmpData, size);
         TestObjectTypeFunc6(object, tmpData, size);
 
-        object->destroy(&object);
+        if (object != nullptr) {
+            object->destroy(&object);
+        }
         CfFree(tmpData);
         return true;
     }
