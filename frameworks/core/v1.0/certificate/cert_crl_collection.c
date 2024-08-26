@@ -22,7 +22,6 @@
 #include "cf_result.h"
 #include "cf_log.h"
 #include "cf_memory.h"
-#include "cf_result.h"
 #include "utils.h"
 #include "x509_certificate.h"
 #include "x509_crl.h"
@@ -292,7 +291,6 @@ static CfResult CloneCrlArray(const HcfX509CrlArray *inCrls, HcfX509CrlArray *cr
 CfResult HcfCertCrlCollectionCreate(
     const HcfX509CertificateArray *inCerts, const HcfX509CrlArray *inCrls, HcfCertCrlCollection **out)
 {
-    CF_LOG_I("enter");
     if (out == NULL) {
         LOGE("input params invalid!");
         return CF_INVALID_PARAMS;

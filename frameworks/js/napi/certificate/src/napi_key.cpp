@@ -86,7 +86,7 @@ napi_value NapiKey::JsGetEncoded(napi_env env, napi_callback_info info)
     }
     CfBlob tmpCfBlob = { blob.len, blob.data };
     napi_value instance = ConvertBlobToNapiValue(env, &tmpCfBlob);
-    HcfBlobDataFree(&blob);
+    HcfBlobDataClearAndFree(&blob);
     return instance;
 }
 

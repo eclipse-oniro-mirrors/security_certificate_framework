@@ -155,7 +155,6 @@ napi_value NapiX509DistinguishedName::GetName(napi_env env, napi_callback_info i
     }
     HcfX509DistinguishedName *x509Name = GetX509DistinguishedName();
     if (argc == PARAM0) {
-        LOGI("GetName PARAM0");
         CfBlob blob = { 0, nullptr };
         CfResult ret = x509Name->getName(x509Name, NULL, &blob, NULL);
         if (ret != CF_SUCCESS) {
@@ -169,7 +168,6 @@ napi_value NapiX509DistinguishedName::GetName(napi_env env, napi_callback_info i
         CfBlobDataFree(&blob);
         return result;
     } else if (argc == ARGS_SIZE_ONE) {
-        LOGI("GetName PARAM1");
         CfBlob *inPara = CertGetBlobFromStringJSParams(env, argv[PARAM0]);
         if (inPara != nullptr) {
             CfArray outArr = { nullptr, CF_FORMAT_DER, 0 };
@@ -247,11 +245,9 @@ napi_value NapiX509DistinguishedName::NapiCreateX509DistinguishedName(napi_env e
     napi_valuetype valueType;
     napi_typeof(env, argv[PARAM0], &valueType);
     if (valueType != napi_string) {
-        LOGI("NapiCreateX509DistinguishedName nameDer");
         context->inPara = CertGetBlobFromUint8ArrJSParams(env, argv[PARAM0]);
         context->paraIsString = false;
     } else {
-        LOGI("NapiCreateX509DistinguishedName nameStr");
         context->inPara = CertGetBlobFromStringJSParams(env, argv[PARAM0]);
         context->paraIsString = true;
     }
@@ -288,7 +284,6 @@ void NapiX509DistinguishedName::DefineX509DistinguishedNameJSClass(napi_env env,
     napi_define_class(env, "X500DistinguishedName", NAPI_AUTO_LENGTH, X509DistinguishedNameConstructor, nullptr,
         sizeof(x509NameDesc) / sizeof(x509NameDesc[0]), x509NameDesc, &constructor);
     napi_create_reference(env, constructor, 1, &classRef_);
-    LOGI("DefineX509DistinguishedNameJSClass end");
 }
 
 napi_value NapiX509DistinguishedName::CreateX509DistinguishedName(napi_env env)

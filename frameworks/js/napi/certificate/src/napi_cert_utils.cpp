@@ -14,7 +14,7 @@
  */
 
 #include "napi_cert_utils.h"
-
+#include <string>
 #include "cf_log.h"
 #include "cf_memory.h"
 #include "cipher.h"
@@ -385,7 +385,7 @@ CfBlob *CertGetBlobFromUint8ArrJSParams(napi_env env, napi_value arg)
     }
 
     if (length == 0 || rawData == nullptr) {
-        LOGI("array length is 0!");
+        LOGE("array length is 0!");
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "array length is 0!"));
         return nullptr;
     }
@@ -504,7 +504,7 @@ CfBlobArray *CertGetBlobArrFromArrUarrJSParams(napi_env env, napi_value arg)
     uint32_t length = 0;
     status = napi_get_array_length(env, arg, &length);
     if (status != napi_ok || length == 0 || length > MAX_NAPI_ARRAY_OF_U8ARR) {
-        LOGI("length is invalid!");
+        LOGE("length is invalid!");
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "length is invalid!"));
         return nullptr;
     }
@@ -555,7 +555,7 @@ static bool GetArrayLen(napi_env env, napi_value arg, uint32_t &length)
 
     status = napi_get_array_length(env, arg, &length);
     if (status != napi_ok || length == 0) {
-        LOGI("array length = 0!");
+        LOGE("array length = 0!");
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "array length = 0!"));
         return false;
     }
@@ -566,7 +566,7 @@ CfBlob *CertGetBlobFromArrBoolJSParams(napi_env env, napi_value arg)
 {
     uint32_t length = 0;
     if (!GetArrayLen(env, arg, length)) {
-        LOGI("get array length failed!");
+        LOGE("get array length failed!");
         return nullptr;
     }
 
@@ -709,7 +709,7 @@ CfArray *CertGetArrFromArrUarrJSParams(napi_env env, napi_value arg)
     uint32_t length = 0;
     status = napi_get_array_length(env, arg, &length);
     if (status != napi_ok || length == 0 || length > MAX_NAPI_ARRAY_OF_U8ARR) {
-        LOGI("Length is invalid!");
+        LOGE("Length is invalid!");
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "length is invalid!"));
         return nullptr;
     }
@@ -969,12 +969,7 @@ napi_value ConvertBlobToNapiValue(napi_env env, const CfBlob *blob)
         return nullptr;
     }
 
-    if (memcpy_s(buffer, blob->size, blob->data, blob->size) != EOK) {
-        LOGE("memcpy_s data to buffer failed!");
-        CfFree(buffer);
-        return nullptr;
-    }
-
+    (void)memcpy_s(buffer, blob->size, blob->data, blob->size);
     napi_value outBuffer = nullptr;
     napi_status status = napi_create_external_arraybuffer(
         env, buffer, blob->size, [](napi_env env, void *data, void *hint) { CfFree(data); }, nullptr, &outBuffer);

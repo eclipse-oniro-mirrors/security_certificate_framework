@@ -334,7 +334,7 @@ int32_t CfOpensslHasUnsupportedCriticalExtension(const CfBase *object, bool *out
     return CF_SUCCESS;
 }
 
-static int GetTargetNid(const CfBlob *oid)
+static int GetTargetNid(const CfBlob *oid, int *nid)
 {
     uint32_t length = oid->size + 1; /* add '\0' in the end */
     uint8_t *oidString = (uint8_t *)CfMalloc(length, 0);
@@ -349,9 +349,9 @@ static int GetTargetNid(const CfBlob *oid)
         return CF_ERR_COPY;
     }
 
-    int nid = OBJ_txt2nid((char *)oidString);
+    *nid = OBJ_txt2nid((char *)oidString);
     CfFree(oidString);
-    return nid;
+    return CF_SUCCESS;
 }
 
 static int32_t FoundExtMatchedNid(const X509_EXTENSIONS *exts, int targetNid, X509_EXTENSION **found)
@@ -370,7 +370,7 @@ static int32_t FoundExtMatchedNid(const X509_EXTENSIONS *exts, int targetNid, X5
         }
 
         int nid = OBJ_obj2nid(X509_EXTENSION_get_object(ex));
-        if ((nid == NID_undef) || (nid > MAX_COUNT_NID)) {
+        if (nid == NID_undef) {
             CF_LOG_E("nid undefined");
             return CF_ERR_CRYPTO_OPERATION;
         }
@@ -399,7 +399,7 @@ static int32_t GetEntry(const X509_EXTENSION *found, CfBlob *out)
 
 static int32_t GetEntryCritical(const X509_EXTENSION *found, CfBlob *out)
 {
-    out->data = (uint8_t *)CfMalloc(1, 0); /* critical value is 0 or 1 */
+    out->data = (uint8_t *)CfMalloc(CRITICAL_SIZE, 0); /* critical value is 0 or 1 */
     if (out->data == NULL) {
         CF_LOG_E("Failed to malloc");
         return CF_ERR_MALLOC;
@@ -467,10 +467,12 @@ int32_t CfOpensslGetEntry(const CfBase *object, CfExtensionEntryType type, const
     }
 
     /* get target nid from oid */
-    int targetNid = GetTargetNid(oid);
-    if ((targetNid == NID_undef) || (targetNid > MAX_COUNT_NID)) {
+    int targetNid;
+    ret = GetTargetNid(oid, &targetNid);
+    if ((ret != CF_SUCCESS) || (targetNid == NID_undef)) {
         CF_LOG_E("nid is undefined");
-        return CF_INVALID_PARAMS;
+        ret = (ret == CF_SUCCESS) ? CF_INVALID_PARAMS : ret;
+        return ret;
     }
 
     /* found one extension matched target nid in extensions */
@@ -620,5 +622,4 @@ int32_t CfOpensslGetExtensionItem(const CfBase *object, CfItemId id, CfBlob *out
             CF_LOG_E("id is invalid");
             return CF_INVALID_PARAMS;
     }
-    return CF_SUCCESS;
 }

@@ -43,6 +43,7 @@ ohos_static_library("libcertificate_framework_adapter_openssl") {
 
   cflags = [
     "-DHILOG_ENABLE",
+    "-DOPENSSL_NO_FILENAMES",
     "-Wall",
     "-Werror",
   ]

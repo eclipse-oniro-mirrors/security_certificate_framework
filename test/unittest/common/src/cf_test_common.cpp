@@ -19,7 +19,8 @@
 
 bool CertframeworkTest::CompareBlob(const CfBlob *first, const CfBlob *second)
 {
-    if ((first == nullptr) || (second == nullptr) || (first->size != second->size)) {
+    if (first == nullptr || second == nullptr || first->data == nullptr || second->data == nullptr ||
+        first->size != second->size) {
         return false;
     }
 

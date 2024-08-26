@@ -83,9 +83,13 @@ void CfPrintOpensslError(void)
 
 CfResult DeepCopyDataToBlob(const unsigned char *data, uint32_t len, CfBlob *outBlob)
 {
+    if (data == NULL || outBlob == NULL) {
+        CF_LOG_E("The input params invalid.");
+        return CF_INVALID_PARAMS;
+    }
     uint8_t *tmp = (uint8_t *)CfMalloc(len, 0);
     if (tmp == NULL) {
-        CF_LOG_E("Failed to malloc");
+        CF_LOG_E("Failed to malloc.");
         return CF_ERR_MALLOC;
     }
     (void)memcpy_s(tmp, len, data, len);
@@ -165,7 +169,7 @@ CfResult CompareDateWithCertTime(const X509 *x509, const ASN1_TIME *inputDate)
 CfResult ConvertNameDerDataToString(const unsigned char *data, uint32_t derLen, CfBlob *out)
 {
     if (data == NULL || derLen == 0 || out == NULL) {
-        LOGE("input params valid!");
+        LOGE("The input params invalid!");
         return CF_INVALID_PARAMS;
     }
     X509_NAME *x509Name = d2i_X509_NAME(NULL, &data, derLen);
@@ -175,9 +179,16 @@ CfResult ConvertNameDerDataToString(const unsigned char *data, uint32_t derLen, 
         return CF_ERR_CRYPTO_OPERATION;
     }
     char *name = X509_NAME_oneline(x509Name, NULL, 0);
-    if (name == NULL || strlen(name) > HCF_MAX_STR_LEN) {
+    if (name == NULL) {
         LOGE("name is null!");
         CfPrintOpensslError();
+        X509_NAME_free(x509Name);
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    if (strlen(name) > HCF_MAX_STR_LEN) {
+        LOGE("name is to long!");
+        CfPrintOpensslError();
+        OPENSSL_free(name);
         X509_NAME_free(x509Name);
         return CF_ERR_CRYPTO_OPERATION;
     }
@@ -190,7 +201,7 @@ CfResult ConvertNameDerDataToString(const unsigned char *data, uint32_t derLen, 
 CfResult CompareNameObject(const X509 *cert, const CfBlob *derBlob, X509NameType type, bool *compareRes)
 {
     X509_NAME *name = NULL;
-    if (type == NAME_TYPE_SUBECT) {
+    if (type == NAME_TYPE_SUBJECT) {
         name = X509_get_subject_name(cert);
     } else if (type == NAME_TYPE_ISSUER) {
         name = X509_get_issuer_name(cert);
@@ -229,7 +240,7 @@ CfResult CompareNameObject(const X509 *cert, const CfBlob *derBlob, X509NameType
 CfResult CompareBigNum(const CfBlob *lhs, const CfBlob *rhs, int *out)
 {
     if ((lhs->data == NULL) || (lhs->size == 0) || (rhs->data == NULL) || (rhs->size == 0)) {
-        LOGE("Invalid Paramas!");
+        LOGE("Invalid params!");
         return CF_INVALID_PARAMS;
     }
 
@@ -255,7 +266,7 @@ CfResult CompareBigNum(const CfBlob *lhs, const CfBlob *rhs, int *out)
 uint8_t *GetX509EncodedDataStream(const X509 *certificate, int *dataLength)
 {
     if (certificate == NULL) {
-        LOGE("Failed to convert internal x509 to der format!");
+        LOGE("The input params null.");
         return NULL;
     }
 
@@ -341,6 +352,9 @@ CfResult DeepCopyDataToOut(const char *data, uint32_t len, CfBlob *out)
 
 bool CheckIsSelfSigned(const X509 *cert)
 {
+    if (cert == NULL) {
+        return false;
+    }
     bool ret = false;
     X509_NAME *issuer = X509_get_issuer_name(cert);
     if (issuer == NULL) {
@@ -366,15 +380,14 @@ bool CheckIsLeafCert(X509 *cert)
         return false;
     }
 
-    bool ret = true;
     if (X509_check_ca(cert)) {
         return false;
     }
 
-    return ret;
+    return true;
 }
 
-CfResult IsOrderCertChain(STACK_OF(X509) * certsChain, bool *isOrder)
+CfResult IsOrderCertChain(STACK_OF(X509) *certsChain, bool *isOrder)
 {
     int num = sk_X509_num(certsChain);
     if (num == 1) {
@@ -444,11 +457,11 @@ CfResult CheckSelfPubkey(X509 *cert, const EVP_PKEY *pubKey)
     return CF_SUCCESS;
 }
 
-X509 *FindCertificateBySubject(STACK_OF(X509) * certs, X509_NAME *subjectName)
+X509 *FindCertificateBySubject(STACK_OF(X509) *certs, X509_NAME *subjectName)
 {
     X509_STORE_CTX *ctx = NULL;
     X509 *cert = NULL;
-    X509_OBJECT *obj;
+    X509_OBJECT *obj = NULL;
 
     X509_STORE *store = X509_STORE_new();
     if (store == NULL) {
@@ -456,7 +469,10 @@ X509 *FindCertificateBySubject(STACK_OF(X509) * certs, X509_NAME *subjectName)
     }
     for (int i = 0; i < sk_X509_num(certs); i++) {
         cert = sk_X509_value(certs, i);
-        X509_STORE_add_cert(store, cert);
+        if (X509_STORE_add_cert(store, cert) != 1) {
+            X509_STORE_free(store);
+            return NULL;
+        }
     }
 
     if (!(ctx = X509_STORE_CTX_new())) {
@@ -567,6 +583,7 @@ CfResult GetNameConstraintsFromX509(X509 *cert, CfBlob **name)
         return CF_ERR_MALLOC;
     }
     int32_t size = i2d_ASN1_BIT_STRING(nc, &((*name)->data));
+    ASN1_BIT_STRING_free(nc);
     if (size < 0) {
         LOGE("Failed to get name DER data!");
         CfFree(*name);

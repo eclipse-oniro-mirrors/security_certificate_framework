@@ -111,7 +111,6 @@ static CfResult GetName(HcfX509DistinguishedName *self, CfBlob *type, CfBlob *ou
 
 CfResult HcfX509DistinguishedNameCreate(const CfBlob *inStream, bool bString, HcfX509DistinguishedName **returnObj)
 {
-    CF_LOG_I("enter");
     if ((inStream == NULL) || (returnObj == NULL)) {
         return CF_INVALID_PARAMS;
     }

@@ -31,7 +31,7 @@ extern "C" {
 #endif
 
 typedef enum {
-    NAME_TYPE_SUBECT,
+    NAME_TYPE_SUBJECT,
     NAME_TYPE_ISSUER,
     NAME_TYPE_AUKEYID,
     NAME_TYPE_SUBKEYID
@@ -41,7 +41,7 @@ const char *GetAlgorithmName(const char *oid);
 void CfPrintOpensslError(void);
 CfResult DeepCopyDataToBlob(const unsigned char *data, uint32_t len, CfBlob *outBlob);
 CfResult DeepCopyBlobToBlob(const CfBlob *inBlob, CfBlob **outBlob);
-CfResult CopyExtensionsToBlob(const X509_EXTENSIONS *ext, CfBlob *outBlob);
+CfResult CopyExtensionsToBlob(const X509_EXTENSIONS *exts, CfBlob *outBlob);
 CfResult CompareDateWithCertTime(const X509 *x509, const ASN1_TIME *inputDate);
 CfResult ConvertNameDerDataToString(const unsigned char *data, uint32_t derLen, CfBlob *out);
 CfResult CompareNameObject(const X509 *cert, const CfBlob *derBlob, X509NameType type, bool *compareRes);

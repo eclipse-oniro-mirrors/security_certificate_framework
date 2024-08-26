@@ -45,6 +45,7 @@ napi_value ConvertCertArrToNapiValue(napi_env env, HcfX509CertificateArray *cert
         napi_value element = ConvertCertToNapiValue(env, certs->data[i]);
         if (element != nullptr) {
             napi_set_element(env, instance, j++, element);
+            certs->data[i] = nullptr;
         }
     }
     return instance;

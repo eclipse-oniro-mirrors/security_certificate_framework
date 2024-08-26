@@ -14,7 +14,7 @@
  */
 
 #include "napi_x509_certificate.h"
-
+#include <string>
 #include "napi/native_common.h"
 #include "napi/native_api.h"
 #include "cf_log.h"
@@ -157,7 +157,6 @@ static bool CreateCallbackAndPromise(napi_env env, CfCtx *context, size_t argc,
 
 static void VerifyExecute(napi_env env, void *data)
 {
-    LOGI("start to verify.");
     CfCtx *context = static_cast<CfCtx *>(data);
     HcfX509Certificate *cert = context->certClass->GetX509Cert();
     context->errCode = cert->base.verify(&(cert->base), context->pubKey);
@@ -711,7 +710,6 @@ napi_value NapiX509Certificate::GetIssuerAlternativeNames(napi_env env, napi_cal
 
 napi_value NapiX509Certificate::Match(napi_env env, napi_callback_info info)
 {
-    LOGI("enter NapiX509Certificate::match");
     size_t argc = ARGS_SIZE_ONE;
     napi_value argv[ARGS_SIZE_ONE] = { nullptr };
     napi_value thisVar = nullptr;
@@ -1280,7 +1278,7 @@ static napi_value NapiMatch(napi_env env, napi_callback_info info)
     }
     return x509Cert->Match(env, info);
 }
-//v3
+// v3
 static napi_value NapiToString(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
@@ -1371,6 +1369,12 @@ void NapiX509Certificate::CreateX509CertComplete(napi_env env, napi_status statu
         return;
     }
     napi_value instance = CreateX509Cert(env);
+    if (instance == nullptr) {
+        LOGE("Create x509Cert failed!");
+        ReturnResult(env, context, nullptr);
+        FreeCryptoFwkCtx(env, context);
+        return;
+    }
     NapiX509Certificate *x509CertClass = new (std::nothrow) NapiX509Certificate(context->cert, context->object);
     if (x509CertClass == nullptr) {
         context->errCode = CF_ERR_MALLOC;

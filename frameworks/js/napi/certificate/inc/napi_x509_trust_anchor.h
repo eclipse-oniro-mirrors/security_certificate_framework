@@ -16,9 +16,6 @@
 #ifndef NAPI_X509_TRUST_ANCHOR_H
 #define NAPI_X509_TRUST_ANCHOR_H
 
-#include <cstdint>
-#include <string>
-
 #include "cf_blob.h"
 #include "napi/native_api.h"
 #include "napi/native_common.h"

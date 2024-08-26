@@ -82,12 +82,12 @@ static CfCtx *BuildCertChainContext()
 {
     CfCtx *context = static_cast<CfCtx *>(CfMalloc(sizeof(CfCtx), 0));
     if (context == nullptr) {
-        LOGE("malloc context failed!");
+        LOGE("malloc cf ctx failed!");
         return nullptr;
     }
     context->async = static_cast<AsyncCtx>(CfMalloc(sizeof(AsyncContext), 0));
     if (context->async == nullptr) {
-        LOGE("malloc context failed!");
+        LOGE("malloc async ctx failed!");
         CfFree(context);
         return nullptr;
     }
@@ -288,7 +288,6 @@ static napi_value CreateCertChainExtAsyncWork(napi_env env, CfCtx *context)
 
 static void ValidateExecute(napi_env env, void *data)
 {
-    LOGI("enter");
     CfCtx *context = static_cast<CfCtx *>(data);
     context->async->errCode = context->certChain->validate(context->certChain, &context->params, &context->result);
     if (context->async->errCode != CF_SUCCESS) {
@@ -298,7 +297,6 @@ static void ValidateExecute(napi_env env, void *data)
 
 static void ValidateComplete(napi_env env, napi_status status, void *data)
 {
-    LOGI("enter");
     CfCtx *context = static_cast<CfCtx *>(data);
     if (context->async->errCode != CF_SUCCESS) {
         ReturnJSResult(env, context->async, nullptr);
@@ -334,7 +332,6 @@ static napi_value ValidateAsyncWork(napi_env env, CfCtx *context)
 
 napi_value NapiX509CertChain::Validate(napi_env env, napi_callback_info info)
 {
-    LOGI("enter");
     size_t argc = ARGS_SIZE_TWO;
     napi_value argv[ARGS_SIZE_TWO] = { nullptr };
     napi_value thisVar = nullptr;
@@ -406,8 +403,8 @@ napi_value NapiX509CertChain::HashCode(napi_env env, napi_callback_info info)
     CfBlob blob = { 0, nullptr };
     CfResult result = certChain->hashCode(certChain, &blob);
     if (result != CF_SUCCESS) {
-        LOGE("toString failed!");
-        napi_throw(env, CertGenerateBusinessError(env, result, "toString failed"));
+        LOGE("hashCode failed!");
+        napi_throw(env, CertGenerateBusinessError(env, result, "hashCode failed"));
         return nullptr;
     }
     napi_value returnBlob = ConvertBlobToUint8ArrNapiValue(env, &blob);
@@ -434,10 +431,10 @@ static napi_value CreateX509CertChainByArray(napi_env env, napi_value param)
     }
     napi_value instance = BuildCreateInstance(env, certChain);
     if (instance == nullptr) {
-        LOGE("HcfCertChainCreate failed!");
+        LOGE("BuildCreateInstance failed!");
         CfObjDestroy(certChain);
         CF_FREE_PTR(certs.data);
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "create instance failed!"));
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "build create instance failed!"));
         return nullptr;
     }
     return instance;
@@ -595,6 +592,10 @@ static napi_value BuildCreateInstanceByTrustAnchorArray(napi_env env, HcfX509Tru
     int elementIdx = 0;
     for (uint32_t i = 0; i < trustAnchorArray->count; ++i) {
         napi_value element = NapiX509Certificate::CreateX509Cert(env);
+        if (instance == nullptr) {
+            LOGE("Create x509Cert failed!");
+            return nullptr;
+        }
         napi_value valueCACert = ConvertX509CertToNapiValue(env, trustAnchorArray->data[i]->CACert);
         if (valueCACert == nullptr) {
             LOGI("The CACert value is null, return to js is an enpty object!");
@@ -678,6 +679,7 @@ static napi_value CreateTrustAnchorsWithKeyStore(napi_env env, size_t argc, napi
     if (context->async->asyncType == ASYNC_TYPE_CALLBACK) {
         LOGE("ASYNC_TYPE_CALLBACK is not supported.");
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "ASYNC_TYPE_CALLBACK is not supported."));
+        DeleteCertChainContext(env, context);
         return nullptr;
     }
     napi_create_promise(env, &context->async->deferred, &context->async->promise);
@@ -912,9 +914,7 @@ static napi_value CertChainConstructor(napi_env env, napi_callback_info info)
 
 napi_value NapiX509CertChain::Constructor(napi_env env, napi_callback_info info)
 {
-    napi_value thisVar = nullptr;
-    napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
-    return thisVar;
+    return CertChainConstructor(env, info);
 }
 
 napi_value NapiX509CertChain::ConvertToJsCertChain(napi_env env)
@@ -929,9 +929,7 @@ napi_value NapiX509CertChain::ConvertToJsCertChain(napi_env env)
 
 napi_value NapiX509CertChainBulidResult::Constructor(napi_env env, napi_callback_info info)
 {
-    napi_value thisVar = nullptr;
-    napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
-    return thisVar;
+    return CertChainConstructor(env, info);
 }
 
 napi_value NapiX509CertChainBulidResult::ConvertToJsBuildResult(napi_env env)

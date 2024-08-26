@@ -69,13 +69,15 @@ void CfArrayDataClearAndFree(CfArray *array)
         LOGD("The input array is null, no need to free.");
         return;
     }
-    for (uint32_t i = 0; i < array->count; ++i) {
-        CfFree(array->data[i].data);
-        array->data[i].data = NULL;
-        array->data[i].size = 0;
+    if (array->data != NULL) {
+        for (uint32_t i = 0; i < array->count; ++i) {
+            CfFree(array->data[i].data);
+            array->data[i].data = NULL;
+            array->data[i].size = 0;
+        }
+        CfFree(array->data);
     }
     array->count = 0;
-    CfFree(array->data);
     array->data = NULL;
 }
 

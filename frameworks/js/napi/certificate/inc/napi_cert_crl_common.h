@@ -16,9 +16,6 @@
 #ifndef NAPI_CERT_CRL_COMMON_H
 #define NAPI_CERT_CRL_COMMON_H
 
-#include <cstdint>
-#include <string>
-
 #include "cf_blob.h"
 #include "napi/native_api.h"
 #include "napi/native_common.h"

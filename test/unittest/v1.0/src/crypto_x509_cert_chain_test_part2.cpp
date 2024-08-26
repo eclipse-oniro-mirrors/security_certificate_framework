@@ -71,11 +71,11 @@ public:
 static HcfX509CertChainSpi *g_certChainPemSpi = nullptr;
 static HcfX509CertChainSpi *g_certChainPemSpi163 = nullptr;
 
-static CfBlob g_blobDownloadURI = { .data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_crlDownloadURI)),
-    .size = strlen(g_crlDownloadURI) + 1 };
+static CfBlob g_blobDownloadURI = { .size = strlen(g_crlDownloadURI) + 1,
+    .data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_crlDownloadURI)) };
 
-static CfBlob g_ocspDigest = { .data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_digest)),
-    .size = strlen(g_digest) + 1 };
+static CfBlob g_ocspDigest = { .size = strlen(g_digest) + 1,
+    .data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_digest)) };
 
 static void FreeHcfRevocationCheckParam(HcfRevocationCheckParam *param)
 {

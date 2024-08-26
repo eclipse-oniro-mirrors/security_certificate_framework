@@ -16,8 +16,6 @@
 #ifndef NAPI_CERT_EXTENSION_H
 #define NAPI_CERT_EXTENSION_H
 
-#include <string>
-
 #include "napi/native_api.h"
 #include "napi/native_common.h"
 
