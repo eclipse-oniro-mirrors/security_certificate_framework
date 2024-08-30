@@ -39,7 +39,6 @@ const std::string CERT_TAG_ENCODING_FORMAT = "encodingFormat";
 const std::string CERT_TAG_ALGORITHM = "algorithm";
 const std::string CRYPTO_TAG_ALG_NAME = "algName";
 const std::string CRYPTO_TAG_FORMAT = "format";
-const std::string CERT_TAG_CERT_COLLECTION = "certCollection";
 const std::string CERT_TAG_CERT_MATCH_PARAMS = "certMatchParameters";
 const std::string CERT_TAG_MAX_LENGTH = "maxLength";
 const std::string CERT_TAG_VALIDATE_PARAMS = "validationParameters";
@@ -93,7 +92,6 @@ const std::string CRL_MATCH_TAG_MINCRL = "minCRL";
 // X509TrustAnchor
 const std::string CERT_CHAIN_TRUSTANCHOR_TAG_CACERT = "CACert";
 const std::string CERT_CHAIN_TRUSTANCHOR_TAG_CAPUBKEY = "CAPubKey";
-// const std::string CERT_CHAIN_TRUSTANCHOR_TAG_NAMECSTRAINTS = "nameConstraints";
 const std::string CERT_CHAIN_TRUSTANCHOR_TAG_CASUBJECT = "CASubject";
 // CertChainValidateParameters
 const std::string CERT_CHAIN_VALIDATE_TAG_DATE = "date";

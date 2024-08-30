@@ -104,22 +104,6 @@ napi_value GetResourceName(napi_env env, const char *name)
     return resourceName;
 }
 
-int32_t CheckOutParamType(const CfParamSet *paramSet, CfTagType targetType)
-{
-    CfParam *resultTypeParam = nullptr;
-    int32_t ret = CfGetParam(paramSet, CF_TAG_RESULT_TYPE, &resultTypeParam);
-    if (ret != CF_SUCCESS) {
-        CF_LOG_E("ext: Failed to get CF_TAG_RESULT_TYPE");
-        return ret;
-    }
-
-    if (resultTypeParam->int32Param != targetType) {
-        CF_LOG_E("ext: result type is not target type");
-        return CF_NOT_SUPPORT;
-    }
-    return CF_SUCCESS;
-}
-
 int32_t GetBlobArrayFromParamSet(const CfParamSet *paramSet, CfArray *outArray)
 {
     if (paramSet->paramsCnt <= 1) {

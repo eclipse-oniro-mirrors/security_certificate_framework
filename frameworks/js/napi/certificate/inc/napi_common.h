@@ -40,7 +40,6 @@ using AsyncCtx = AsyncContext *;
 bool GetCallbackAndPromise(napi_env env, AsyncCtx async, napi_value arg);
 void ReturnJSResult(napi_env env, AsyncCtx async, napi_value result);
 napi_value GetResourceName(napi_env env, const char *name);
-int32_t CheckOutParamType(const CfParamSet *paramSet, CfTagType targetType);
 napi_value ConvertBlobArrayToNapiValue(napi_env env,  const CfParamSet *paramSet);
 int32_t GetBlobArrayFromParamSet(const CfParamSet *paramSet, CfArray *outArray);
 void FreeAsyncContext(napi_env env, AsyncCtx &ctx);
