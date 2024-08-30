@@ -550,47 +550,27 @@ static CfResult PushCrl2Stack(HcfX509CrlArray *crlArray, STACK_OF(X509_CRL) *out
     CfResult res = CF_SUCCESS;
     HcfX509Crl *x509Crl = NULL;
     X509_CRL *crl = NULL;
-    STACK_OF(X509_CRL) *stackCrls = sk_X509_CRL_new_null();
     for (uint32_t i = 0; i < crlArray->count; i++) {
         CfEncodingBlob encodedBlob = { 0 };
         x509Crl = crlArray->data[i];
         res = x509Crl->getEncoded(x509Crl, &encodedBlob);
         if (res != CF_SUCCESS) {
             LOGE("Failed to getEncoded of crl!");
-            sk_X509_CRL_pop_free(stackCrls, X509_CRL_free);
             return res;
         }
 
         crl = ParseX509CRL(&encodedBlob);
+        CfFree(encodedBlob.data);
         if (crl == NULL) {
             LOGE("Failed to Parse x509 CRL!");
-            CfFree(encodedBlob.data);
-            sk_X509_CRL_pop_free(stackCrls, X509_CRL_free);
             return CF_INVALID_PARAMS;
         }
-        if (sk_X509_CRL_push(stackCrls, crl) == 0) {
-            LOGE("sk_X509_CRL_push failed!");
-            CfFree(encodedBlob.data);
-            sk_X509_CRL_pop_free(stackCrls, X509_CRL_free);
-            X509_CRL_free(crl);
-            return CF_ERR_CRYPTO_OPERATION;
-        }
-        CfFree(encodedBlob.data);
-    }
-
-    /* Move stackCrls elements to outCrls */
-    while (sk_X509_CRL_num(stackCrls) > 0) {
-        crl = sk_X509_CRL_pop(stackCrls);
-        LOGI("push crl to crlStack.");
         if (sk_X509_CRL_push(outCrls, crl) == 0) {
             LOGE("sk_X509_CRL_push failed!");
-            sk_X509_CRL_pop_free(stackCrls, X509_CRL_free);
             X509_CRL_free(crl);
             return CF_ERR_CRYPTO_OPERATION;
         }
     }
-
-    sk_X509_CRL_free(stackCrls); /* Only free the stack, do not free elements */
     return res;
 }
 
@@ -841,7 +821,7 @@ static bool ContainsOption(HcfRevChkOpArray *options, HcfRevChkOption op)
     return false;
 }
 
-static CfResult VerifyOcspSinger(OCSP_BASICRESP *bs, STACK_OF(X509) *certChain, X509 *cert)
+static CfResult VerifyOcspSigner(OCSP_BASICRESP *bs, STACK_OF(X509) *certChain, X509 *cert)
 {
     if (cert == NULL) {
         LOGE("Input data cert is null!");
@@ -934,7 +914,7 @@ static CfResult ValidateOcspLocal(OcspLocalParam localParam, STACK_OF(X509) *x50
         trustCert = sk_X509_value(x509CertChain, sk_X509_num(x509CertChain) - 1);
     }
 
-    CfResult res = VerifyOcspSinger(bs, x509CertChain, trustCert);
+    CfResult res = VerifyOcspSigner(bs, x509CertChain, trustCert);
     if (res != CF_SUCCESS) {
         LOGE("VerifySinger failed!");
         OCSP_BASICRESP_free(bs);
