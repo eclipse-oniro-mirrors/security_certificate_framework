@@ -344,7 +344,7 @@ HWTEST_F(CryptoX509CertChainTestPart2, ValidateOpensslInvaidCertId, TestSize.Lev
     EXPECT_EQ(ret, CF_INVALID_PARAMS);
     FreeValidateResult(result);
 
-    // test VerifyOcspSinger failed case
+    // test VerifyOcspSigner failed case
     CfBlob resp;
     resp.data = (uint8_t *)(&g_testOcspResponses[0]);
     resp.size = sizeof(g_testOcspResponses);
