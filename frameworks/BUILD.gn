@@ -18,6 +18,7 @@ group("certificate_framework_lib") {
     public_deps = [
       "core:certificate_framework_core",
       "js/napi/certificate:cert",
+      "cj:cj_cert_ffi",
     ]
   }
 }
