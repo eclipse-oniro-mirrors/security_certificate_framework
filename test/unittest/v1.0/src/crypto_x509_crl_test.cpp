@@ -16,6 +16,7 @@
 #include <gtest/gtest.h>
 #include <openssl/x509.h>
 
+#include "object_base.h"
 #include "asy_key_generator.h"
 #include "certificate_openssl_class.h"
 #include "cf_log.h"

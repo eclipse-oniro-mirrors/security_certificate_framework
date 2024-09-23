@@ -73,7 +73,7 @@ public:
     MOCK_METHOD(void *, GENERAL_NAME_get0_value, (const GENERAL_NAME *a, int *ptype));
     MOCK_METHOD(int, X509_verify, (X509 * a, EVP_PKEY *r));
     MOCK_METHOD(CfResult, DeepCopyBlobToBlob, (const CfBlob *inBlob, CfBlob **outBlob));
-    MOCK_METHOD(int, OPENSSL_sk_push, (OPENSSL_STACK * st, const int data));
+    MOCK_METHOD(int, OPENSSL_sk_push, (OPENSSL_STACK * st, const void *data));
     MOCK_METHOD(int, i2d_X509_REVOKED, (X509_REVOKED * a, unsigned char **out));
     MOCK_METHOD(int, i2d_X509_CRL, (X509_CRL * a, unsigned char **out));
     MOCK_METHOD(

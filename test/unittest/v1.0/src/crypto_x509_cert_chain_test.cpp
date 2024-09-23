@@ -89,7 +89,7 @@ void *__real_GENERAL_NAME_get0_value(const GENERAL_NAME *a, int *ptype);
 int __real_X509_verify(X509 *a, EVP_PKEY *r);
 CfResult __real_DeepCopyBlobToBlob(const CfBlob *inBlob, CfBlob **outBlob);
 char *__real_X509_NAME_oneline(const X509_NAME *a, char *buf, int size);
-int __real_OPENSSL_sk_push(OPENSSL_STACK *st, const int data);
+int __real_OPENSSL_sk_push(OPENSSL_STACK *st, const void *data);
 int __real_i2d_X509_REVOKED(X509_REVOKED *a, unsigned char **out);
 int __real_i2d_X509_CRL(X509_CRL *a, unsigned char **out);
 OPENSSL_STACK *__real_OPENSSL_sk_deep_copy(const OPENSSL_STACK *, OPENSSL_sk_copyfunc c, OPENSSL_sk_freefunc f);
@@ -330,13 +330,11 @@ void CryptoX509CertChainTest::SetUpTestCase()
     ASSERT_EQ(ret, CF_SUCCESS);
     ASSERT_NE(certChainSpi, nullptr);
     g_certChainP7bSpi = certChainSpi;
-
     certChainSpi = nullptr;
     ret = HcfX509CertChainByEncSpiCreate(&g_inStreamChainDataPem, &certChainSpi);
     ASSERT_EQ(ret, CF_SUCCESS);
     ASSERT_NE(certChainSpi, nullptr);
     g_certChainPemSpi = certChainSpi;
-
     certChainSpi = nullptr;
     ret = HcfX509CertChainByEncSpiCreate(&g_inStreamChainDataDer, &certChainSpi);
     ASSERT_EQ(ret, CF_SUCCESS);
@@ -1919,7 +1917,7 @@ HWTEST_F(CryptoX509CertChainTest, HcfX509CertChainByParamsSpiCreateTest002, Test
     // test HcfX509CertChainByParamsSpiCreate failed case
     X509OpensslMock::SetMockFlag(true);
     EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_new_null())
-        .WillOnce(Return(NULL))
+        .WillOnce(Return(nullptr))
         .WillRepeatedly(Invoke(__real_OPENSSL_sk_new_null));
     CfResult result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
     EXPECT_EQ(result, CF_ERR_MALLOC);
@@ -1928,7 +1926,7 @@ HWTEST_F(CryptoX509CertChainTest, HcfX509CertChainByParamsSpiCreateTest002, Test
     X509OpensslMock::SetMockFlag(true);
     EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_new_null())
         .WillOnce(Invoke(__real_OPENSSL_sk_new_null))
-        .WillOnce(Return(NULL))
+        .WillOnce(Return(nullptr))
         .WillRepeatedly(Invoke(__real_OPENSSL_sk_new_null));
     result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
     EXPECT_EQ(result, CF_ERR_CRYPTO_OPERATION);
@@ -1938,7 +1936,7 @@ HWTEST_F(CryptoX509CertChainTest, HcfX509CertChainByParamsSpiCreateTest002, Test
     EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_new_null())
         .WillOnce(Invoke(__real_OPENSSL_sk_new_null))
         .WillOnce(Invoke(__real_OPENSSL_sk_new_null))
-        .WillOnce(Return(NULL))
+        .WillOnce(Return(nullptr))
         .WillRepeatedly(Invoke(__real_OPENSSL_sk_new_null));
     result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
     EXPECT_EQ(result, CF_ERR_CRYPTO_OPERATION);
@@ -1979,7 +1977,7 @@ HWTEST_F(CryptoX509CertChainTest, HcfX509CertChainByParamsSpiCreateTest003, Test
     X509OpensslMock::SetMockFlag(true);
     ResetMockFunction();
     EXPECT_CALL(X509OpensslMock::GetInstance(), X509_dup(_))
-        .WillOnce(Return(NULL))
+        .WillOnce(Return(nullptr))
         .WillRepeatedly(Invoke(__real_X509_dup));
     result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
     EXPECT_EQ(result, CF_ERR_MALLOC);
@@ -2202,7 +2200,7 @@ HWTEST_F(CryptoX509CertChainTest, HcfX509CreateTrustAnchorWithKeyStoreFuncTest00
 
     X509OpensslMock::SetMockFlag(true);
     EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_value(_, _))
-        .WillOnce(Return(NULL))
+        .WillOnce(Return(nullptr))
         .WillRepeatedly(Invoke(__real_OPENSSL_sk_value));
     result = HcfX509CreateTrustAnchorWithKeyStoreFunc(&keyStore, &pwd, &trustAnchorArray);
     EXPECT_EQ(result, CF_SUCCESS);
@@ -2238,7 +2236,7 @@ HWTEST_F(CryptoX509CertChainTest, HcfCreateTrustAnchorWithKeyStoreTest001, TestS
     pwd.size = sizeof(g_testKeystorePwd);
     CfResult result = HcfCreateTrustAnchorWithKeyStore(&keyStore, &pwd, &trustAnchorArray);
     EXPECT_EQ(result, CF_SUCCESS);
-    EXPECT_NE(trustAnchorArray, NULL);
+    ASSERT_TRUE(trustAnchorArray != NULL);
     assert(trustAnchorArray->count > 0);
     FreeTrustAnchorArr(*trustAnchorArray);
     CfFree(trustAnchorArray);
