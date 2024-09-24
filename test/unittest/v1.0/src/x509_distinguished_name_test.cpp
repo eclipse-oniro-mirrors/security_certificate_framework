@@ -188,7 +188,6 @@ HWTEST_F(X509DistinguishedNameTest, HcfX509DistinguishedNameCreateTest002, TestS
 
 HWTEST_F(X509DistinguishedNameTest, OpensslX509DistinguishedNameSpiCreateTest001, TestSize.Level0)
 {
-    CF_LOG_I("OpensslX509DistinguishedNameSpiCreateTest001");
     ASSERT_NE(g_x509CertObj, nullptr);
 
     CfBlob out = { 0 };
@@ -223,6 +222,7 @@ HWTEST_F(X509DistinguishedNameTest, OpensslX509DistinguishedNameSpiCreateTest001
     ret = OpensslX509DistinguishedNameSpiCreate(&out, true, &spi);
     EXPECT_EQ(ret, CF_SUCCESS);
     X509OpensslMock::SetMockFlag(false);
+    CfObjDestroy(spi);
 
     // test ParseName failed case
     X509OpensslMock::SetMockFlag(true);
@@ -233,18 +233,16 @@ HWTEST_F(X509DistinguishedNameTest, OpensslX509DistinguishedNameSpiCreateTest001
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
     X509OpensslMock::SetMockFlag(false);
 
-    CF_LOG_I("OpensslX509DistinguishedNameSpiCreateTest001 - 1");
     out.data[3] = '+';
     ret = OpensslX509DistinguishedNameSpiCreate(&out, true, &spi);
     EXPECT_EQ(ret, CF_SUCCESS);
+    CfObjDestroy(spi);
 
-    CF_LOG_I("OpensslX509DistinguishedNameSpiCreateTest001 - 2");
     out.data[3] = '\\';
     out.data[4] = '\0';
     ret = OpensslX509DistinguishedNameSpiCreate(&out, true, &spi);
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
 
-    CF_LOG_I("OpensslX509DistinguishedNameSpiCreateTest001 - 3");
     out.data[2] = '\0';
     ret = OpensslX509DistinguishedNameSpiCreate(&out, true, &spi);
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
@@ -365,6 +363,7 @@ HWTEST_F(X509DistinguishedNameTest, GetNameTest001, TestSize.Level0)
 
     ret = g_x509Name->getName(g_x509Name, &inPara, NULL, &outArr);
     EXPECT_EQ(ret, CF_SUCCESS);
+    CfArrayDataClearAndFree(&outArr);
 
     ret = g_x509Name->getName(g_x509Name, NULL, NULL, NULL);
     EXPECT_EQ(ret, CF_INVALID_PARAMS);

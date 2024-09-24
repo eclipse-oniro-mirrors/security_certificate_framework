@@ -1632,7 +1632,7 @@ static CfResult CompareSubAltNameX509Openssl(
     if (res == CF_SUCCESS && CompareSubAltNameMatch(subAltNameArray, &subAltNameArrayOut, matchAllSubAltNames)) {
         *out = true;
     }
-    sk_GENERAL_NAME_free(altname);
+    GENERAL_NAMES_free(altname);
     SubAltNameArrayDataClearAndFree(&subAltNameArrayOut);
     return res;
 }
