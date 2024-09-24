@@ -921,6 +921,7 @@ static CfResult ValidateOcspLocal(OcspLocalParam localParam, STACK_OF(X509) *x50
         return res;
     }
     res = ParseResp(bs, localParam.certid);
+    OCSP_RESPONSE_free(localParam.resp);
     OCSP_BASICRESP_free(bs);
     return res;
 }
@@ -1302,15 +1303,18 @@ static CfResult ValidateRevocation(
             res = ValidateRevocationOnLine(params, x509CertChain, trustAnchor, certId);
             if (res != CF_SUCCESS) {
                 LOGE("Try to validate revocation online failed.");
+                OCSP_CERTID_free(certId);
                 return res;
             }
         } else {
             res = ValidateRevocationLocal(params, x509CertChain, trustAnchor, certId);
             if (res != CF_SUCCESS) {
                 LOGE("Try to validate revocation local failed.");
+                OCSP_CERTID_free(certId);
                 return res;
             }
         }
+        OCSP_CERTID_free(certId);
         return res;
     } else {
         return ValidateCrlLocal(params->certCRLCollections, x509CertChain);
