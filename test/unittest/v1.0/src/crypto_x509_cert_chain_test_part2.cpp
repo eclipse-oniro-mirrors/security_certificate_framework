@@ -332,7 +332,7 @@ HWTEST_F(CryptoX509CertChainTestPart2, ValidateOpensslInvaidCertId, TestSize.Lev
     ASSERT_NE(revChkOpArray.data, nullptr);
     revChkOpArray.data[0] = REVOCATION_CHECK_OPTION_PREFER_OCSP;
 
-    HcfRevocationCheckParam rcp;
+    HcfRevocationCheckParam rcp = { 0 };
     rcp.options = &revChkOpArray;
     params.revocationCheckParam = &rcp;
 
@@ -408,13 +408,6 @@ HWTEST_F(CryptoX509CertChainTestPart2, ValidateOpensslRevocationOnLineTest006, T
     DIST_POINT dp = { 0 };
     X509OpensslMock::SetMockFlag(true);
     dp.distpoint = nullptr;
-    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_value(_, _))
-        .WillOnce(Invoke(__real_OPENSSL_sk_value))
-        .WillOnce(Invoke(__real_OPENSSL_sk_value))
-        .WillOnce(Invoke(__real_OPENSSL_sk_value))
-        .WillOnce(Invoke(__real_OPENSSL_sk_value))
-        .WillOnce(Return(&dp))
-        .WillRepeatedly(Invoke(__real_OPENSSL_sk_value));
     ret = g_certChainPemSpi163->engineValidate(g_certChainPemSpi163, &params, &result);
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
 
@@ -422,13 +415,6 @@ HWTEST_F(CryptoX509CertChainTestPart2, ValidateOpensslRevocationOnLineTest006, T
     DIST_POINT_NAME dpn;
     dpn.type = GEN_URI;
     dp.distpoint = &dpn;
-    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_value(_, _))
-        .WillOnce(Invoke(__real_OPENSSL_sk_value))
-        .WillOnce(Invoke(__real_OPENSSL_sk_value))
-        .WillOnce(Invoke(__real_OPENSSL_sk_value))
-        .WillOnce(Invoke(__real_OPENSSL_sk_value))
-        .WillOnce(Return(&dp))
-        .WillRepeatedly(Invoke(__real_OPENSSL_sk_value));
     ret = g_certChainPemSpi163->engineValidate(g_certChainPemSpi163, &params, &result);
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
     X509OpensslMock::SetMockFlag(false);

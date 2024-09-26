@@ -120,7 +120,7 @@ bool __real_CheckIsSelfSigned(const X509 *cert);
 
 int PKCS12_parse_mock(PKCS12 *p12, const char *pass, EVP_PKEY **pkey, X509 **cert, STACK_OF(X509) **ca) {
     CF_LOG_I("PKCS12_parse_mock");
-    *cert = static_cast<X509 *>(malloc(sizeof(X509 *)));
+    *cert  = X509_new();
     if (*cert == nullptr) {
         CF_LOG_E("Failed to malloc cert.");
         return 0;
@@ -1843,6 +1843,7 @@ HWTEST_F(CryptoX509CertChainTest, HcfX509CertChainByParamsSpiCreateTest001, Test
 {
     CF_LOG_I("HcfX509CertChainByParamsSpiCreateTest001");
     HcfX509CertChainBuildParameters inParams;
+    memset_s(&inParams, sizeof(HcfX509CertChainBuildParameters), 0, sizeof(HcfX509CertChainBuildParameters));
     HcfX509CertChainSpi *spi = nullptr;
 
     CfResult result;
@@ -1881,6 +1882,7 @@ HWTEST_F(CryptoX509CertChainTest, HcfX509CertChainByParamsSpiCreateInvalidParamT
 {
     CF_LOG_I("HcfX509CertChainByParamsSpiCreateInvalidParamTest");
     HcfX509CertChainBuildParameters inParams;
+    memset_s(&inParams, sizeof(HcfX509CertChainBuildParameters), 0, sizeof(HcfX509CertChainBuildParameters));
     HcfX509CertChainSpi *spi = nullptr;
 
     CfResult result = HcfX509CertChainByParamsSpiCreate(NULL, &spi);
@@ -1897,6 +1899,7 @@ HWTEST_F(CryptoX509CertChainTest, HcfX509CertChainByParamsSpiCreateTest002, Test
 {
     CF_LOG_I("HcfX509CertChainByParamsSpiCreateTest002");
     HcfX509CertChainBuildParameters inParams;
+    memset_s(&inParams, sizeof(HcfX509CertChainBuildParameters), 0, sizeof(HcfX509CertChainBuildParameters));
     HcfX509CertChainSpi *spi = nullptr;
 
     inParams.maxlength = -1;
@@ -1955,6 +1958,7 @@ HWTEST_F(CryptoX509CertChainTest, HcfX509CertChainByParamsSpiCreateTest003, Test
 {
     CF_LOG_I("HcfX509CertChainByParamsSpiCreateTest003");
     HcfX509CertChainBuildParameters inParams;
+    memset_s(&inParams, sizeof(HcfX509CertChainBuildParameters), 0, sizeof(HcfX509CertChainBuildParameters));
     HcfX509CertChainSpi *spi = nullptr;
 
     CfResult result;
@@ -2016,6 +2020,7 @@ HWTEST_F(CryptoX509CertChainTest, HcfCertChainBuildResultCreateTest001, TestSize
 {
     CF_LOG_I("HcfCertChainBuildResultCreateTest001");
     HcfX509CertChainBuildParameters inParams;
+    memset_s(&inParams, sizeof(HcfX509CertChainBuildParameters), 0, sizeof(HcfX509CertChainBuildParameters));
     HcfX509CertChainBuildResult *returnObj = nullptr;
     CfEncodingBlob inStream = { 0 };
     inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testSelfSignedCaCertValid));
@@ -2063,7 +2068,7 @@ HWTEST_F(CryptoX509CertChainTest, HcfX509CreateTrustAnchorWithKeyStoreFuncTest00
     pwd.size = strlen(g_testKeystorePwd) + 1;
     CfResult result = HcfX509CreateTrustAnchorWithKeyStoreFunc(&keyStore, &pwd, &trustAnchorArray);
     EXPECT_EQ(result, CF_SUCCESS);
-    EXPECT_NE(trustAnchorArray, NULL);
+    EXPECT_EQ(trustAnchorArray != NULL, true);
     assert(trustAnchorArray->count > 0);
     FreeTrustAnchorArr(*trustAnchorArray);
     CfFree(trustAnchorArray);
@@ -2197,6 +2202,9 @@ HWTEST_F(CryptoX509CertChainTest, HcfX509CreateTrustAnchorWithKeyStoreFuncTest00
     CfResult result = HcfX509CreateTrustAnchorWithKeyStoreFunc(&keyStore, &pwd, &trustAnchorArray);
     EXPECT_EQ(result, CF_SUCCESS);
     X509OpensslMock::SetMockFlag(false);
+    FreeTrustAnchorArr(*trustAnchorArray);
+    CfFree(trustAnchorArray);
+    trustAnchorArray = NULL;
 
     X509OpensslMock::SetMockFlag(true);
     EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_value(_, _))
@@ -2205,14 +2213,33 @@ HWTEST_F(CryptoX509CertChainTest, HcfX509CreateTrustAnchorWithKeyStoreFuncTest00
     result = HcfX509CreateTrustAnchorWithKeyStoreFunc(&keyStore, &pwd, &trustAnchorArray);
     EXPECT_EQ(result, CF_SUCCESS);
     X509OpensslMock::SetMockFlag(false);
+    FreeTrustAnchorArr(*trustAnchorArray);
+    CfFree(trustAnchorArray);
+    trustAnchorArray = NULL;
+}
+
+HWTEST_F(CryptoX509CertChainTest, HcfX509CreateTrustAnchorWithKeyStoreFuncTest005, TestSize.Level0)
+{
+    CF_LOG_I("HcfX509CreateTrustAnchorWithKeyStoreFuncTest005");
+    CfBlob keyStore;
+    CfBlob pwd;
+    HcfX509TrustAnchorArray *trustAnchorArray = NULL;
+
+    keyStore.data = const_cast<uint8_t *>(g_testChainKeystore);
+    keyStore.size = sizeof(g_testChainKeystore);
+    pwd.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testKeystorePwd));
+    pwd.size = strlen(g_testKeystorePwd) + 1;
 
     X509OpensslMock::SetMockFlag(true);
     EXPECT_CALL(X509OpensslMock::GetInstance(), i2d_X509(_, _))
         .WillOnce(Return(-1))
         .WillRepeatedly(Invoke(__real_i2d_X509));
-    result = HcfX509CreateTrustAnchorWithKeyStoreFunc(&keyStore, &pwd, &trustAnchorArray);
+    CfResult result = HcfX509CreateTrustAnchorWithKeyStoreFunc(&keyStore, &pwd, &trustAnchorArray);
     EXPECT_EQ(result, CF_SUCCESS);
     X509OpensslMock::SetMockFlag(false);
+    FreeTrustAnchorArr(*trustAnchorArray);
+    CfFree(trustAnchorArray);
+    trustAnchorArray = NULL;
 
     X509OpensslMock::SetMockFlag(true);
     EXPECT_CALL(X509OpensslMock::GetInstance(), HcfX509CertificateCreate(_, _))
@@ -2221,6 +2248,9 @@ HWTEST_F(CryptoX509CertChainTest, HcfX509CreateTrustAnchorWithKeyStoreFuncTest00
     result = HcfX509CreateTrustAnchorWithKeyStoreFunc(&keyStore, &pwd, &trustAnchorArray);
     EXPECT_EQ(result, CF_SUCCESS);
     X509OpensslMock::SetMockFlag(false);
+    FreeTrustAnchorArr(*trustAnchorArray);
+    CfFree(trustAnchorArray);
+    trustAnchorArray = NULL;
 }
 
 HWTEST_F(CryptoX509CertChainTest, HcfCreateTrustAnchorWithKeyStoreTest001, TestSize.Level0)
