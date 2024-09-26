@@ -370,7 +370,7 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareExtendedKeyUsageTest001, TestSiz
     CfFree(certMatchParameters.extendedKeyUsage);
 }
 
-HWTEST_F(CryptoX509CertificateTestPart3, CompareNameConstraintsTest001, TestSize.Level0)
+HWTEST_F(CryptoX509CertificateTestPart3, CompareNameConstraintsTest000, TestSize.Level0)
 {
     ASSERT_NE(g_x509CertExtAttrObj, nullptr);
     bool bResult = true;
@@ -409,9 +409,37 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareNameConstraintsTest001, TestSize
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_EQ(bResult, false);
     X509OpensslMock::SetMockFlag(false);
+    OTHERNAME_free(tree->base->d.otherName);
+    tree->base->d.otherName = nullptr;
+    GENERAL_NAME_free(tree->base);
+    tree->base = nullptr;
+    GENERAL_SUBTREE_free(tree);
+}
+
+HWTEST_F(CryptoX509CertificateTestPart3, CompareNameConstraintsTest001, TestSize.Level0)
+{
+    ASSERT_NE(g_x509CertExtAttrObj, nullptr);
+    bool bResult = true;
+
+    HcfX509CertMatchParams certMatchParameters = { 0 };
+
+    CfBlob blob;
+    blob.data = const_cast<uint8_t *>(g_testNameConstraints);
+    blob.size = sizeof(g_testNameConstraints);
+    certMatchParameters.nameConstraints = &blob;
+
+    CfResult ret =
+        g_testCertWithPrivateKeyValidObj->match(g_testCertWithPrivateKeyValidObj, &certMatchParameters, &bResult);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    EXPECT_EQ(bResult, false);
+
+    certMatchParameters.minPathLenConstraint = -1;
+    ret = g_testCertWithPrivateKeyValidObj->match(g_testCertWithPrivateKeyValidObj, &certMatchParameters, &bResult);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    EXPECT_EQ(bResult, true);
 
     // GEN_X400
-    tree = reinterpret_cast<GENERAL_SUBTREE *>sk_GENERAL_SUBTREE_new_null();
+    GENERAL_SUBTREE *tree = reinterpret_cast<GENERAL_SUBTREE *>sk_GENERAL_SUBTREE_new_null();
     EXPECT_NE(tree, nullptr);
     tree->base = GENERAL_NAME_new();
     EXPECT_NE(tree->base, nullptr);
@@ -426,6 +454,11 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareNameConstraintsTest001, TestSize
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_EQ(bResult, false);
     X509OpensslMock::SetMockFlag(false);
+    ASN1_STRING_free(tree->base->d.x400Address);
+    tree->base->d.x400Address = nullptr;
+    GENERAL_NAME_free(tree->base);
+    tree->base = nullptr;
+    GENERAL_SUBTREE_free(tree);
 }
 
 HWTEST_F(CryptoX509CertificateTestPart3, CompareNameConstraintsTest002, TestSize.Level0)
@@ -456,6 +489,11 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareNameConstraintsTest002, TestSize
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_EQ(bResult, false);
     X509OpensslMock::SetMockFlag(false);
+    ASN1_OCTET_STRING_free(tree->base->d.ip);
+    tree->base->d.ip = nullptr;
+    GENERAL_NAME_free(tree->base);
+    tree->base = nullptr;
+    GENERAL_SUBTREE_free(tree);
 }
 
 HWTEST_F(CryptoX509CertificateTestPart3, CompareNameConstraintsTest003, TestSize.Level0)
@@ -484,6 +522,11 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareNameConstraintsTest003, TestSize
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_EQ(bResult, false);
     X509OpensslMock::SetMockFlag(false);
+    EDIPARTYNAME_free(tree->base->d.ediPartyName);
+    tree->base->d.ediPartyName = nullptr;
+    GENERAL_NAME_free(tree->base);
+    tree->base = nullptr;
+    GENERAL_SUBTREE_free(tree);
 
     tree = reinterpret_cast<GENERAL_SUBTREE *>sk_GENERAL_SUBTREE_new_null();
     EXPECT_NE(tree, nullptr);
@@ -500,6 +543,11 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareNameConstraintsTest003, TestSize
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_EQ(bResult, false);
     X509OpensslMock::SetMockFlag(false);
+    EDIPARTYNAME_free(tree->base->d.ediPartyName);
+    tree->base->d.ediPartyName = nullptr;
+    GENERAL_NAME_free(tree->base);
+    tree->base = nullptr;
+    GENERAL_SUBTREE_free(tree);
 }
 
 HWTEST_F(CryptoX509CertificateTestPart3, CompareNameConstraintsTest004, TestSize.Level0)
@@ -530,6 +578,11 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareNameConstraintsTest004, TestSize
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_EQ(bResult, false);
     X509OpensslMock::SetMockFlag(false);
+    X509_NAME_free(tree->base->d.directoryName);
+    tree->base->d.directoryName = nullptr;
+    GENERAL_NAME_free(tree->base);
+    tree->base = nullptr;
+    GENERAL_SUBTREE_free(tree);
 
     // GEN_RID
     tree = reinterpret_cast<GENERAL_SUBTREE *>sk_GENERAL_SUBTREE_new_null();
@@ -547,6 +600,11 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareNameConstraintsTest004, TestSize
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_EQ(bResult, false);
     X509OpensslMock::SetMockFlag(false);
+    ASN1_OBJECT_free(tree->base->d.registeredID);
+    tree->base->d.registeredID = nullptr;
+    GENERAL_NAME_free(tree->base);
+    tree->base = nullptr;
+    GENERAL_SUBTREE_free(tree);
 }
 
 HWTEST_F(CryptoX509CertificateTestPart3, CompareNameConstraintsTest005, TestSize.Level0)
@@ -578,6 +636,7 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareNameConstraintsTest005, TestSize
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_EQ(bResult, false);
     X509OpensslMock::SetMockFlag(false);
+    NAME_CONSTRAINTS_free(nc);
 
     nc = NAME_CONSTRAINTS_new();
     EXPECT_NE(nc, nullptr);
@@ -591,6 +650,7 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareNameConstraintsTest005, TestSize
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_EQ(bResult, false);
     X509OpensslMock::SetMockFlag(false);
+    NAME_CONSTRAINTS_free(nc);
 }
 
 HWTEST_F(CryptoX509CertificateTestPart3, CompareCertPolicyTest001, TestSize.Level0)
@@ -731,6 +791,12 @@ HWTEST_F(CryptoX509CertificateTestPart3, ComparePrivateKeyValidTest002, TestSize
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_EQ(bResult, false);
     X509OpensslMock::SetMockFlag(false);
+    CfFree(pKeyValid->notBefore->data);
+    pKeyValid->notBefore->data = nullptr;
+    CfFree(pKeyValid->notBefore);
+    pKeyValid->notBefore = nullptr;
+    CfFree(pKeyValid);
+    pKeyValid = nullptr;
 }
 
 HWTEST_F(CryptoX509CertificateTestPart3, CompareSubjectKeyIdentifierTest001, TestSize.Level0)
