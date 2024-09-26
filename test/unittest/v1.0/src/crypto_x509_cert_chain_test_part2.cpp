@@ -46,7 +46,7 @@ extern "C" {
 
 int __real_OPENSSL_sk_num(const OPENSSL_STACK *st);
 void *__real_OPENSSL_sk_value(const OPENSSL_STACK *st, int i);
-int __real_OPENSSL_sk_push(OPENSSL_STACK *st, const int data);
+int __real_OPENSSL_sk_push(OPENSSL_STACK *st, const void *data);
 OPENSSL_STACK *__real_OPENSSL_sk_new_null(void);
 void *__real_X509_get_ext_d2i(const X509 *x, int nid, int *crit, int *idx);
 X509_CRL *__real_X509_CRL_load_http(const char *url, BIO *bio, BIO *rbio, int timeout);
@@ -255,7 +255,7 @@ HWTEST_F(CryptoX509CertChainTestPart2, ValidateOpensslUseageTest001, TestSize.Le
     // test ValidatePolicy failed case
     X509OpensslMock::SetMockFlag(true);
     EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_value(_, _))
-        .WillOnce(Return(NULL))
+        .WillOnce(Return(nullptr))
         .WillRepeatedly(Invoke(__real_OPENSSL_sk_value));
     ret = g_certChainPemSpi->engineValidate(g_certChainPemSpi, &params, &result);
     EXPECT_EQ(ret, CF_INVALID_PARAMS);
@@ -281,7 +281,7 @@ HWTEST_F(CryptoX509CertChainTestPart2, ValidateOpensslPart2Test001, TestSize.Lev
 
     X509OpensslMock::SetMockFlag(true);
     EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_value(_, _))
-        .WillOnce(Return(NULL))
+        .WillOnce(Return(nullptr))
         .WillRepeatedly(Invoke(__real_OPENSSL_sk_value));
     ret = g_certChainPemSpi->engineValidate(g_certChainPemSpi, &params, &result);
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
@@ -306,7 +306,7 @@ HWTEST_F(CryptoX509CertChainTestPart2, ValidateOpensslCRLLocalTest001, TestSize.
 
     X509OpensslMock::SetMockFlag(true);
     EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_new_null())
-        .WillOnce(Return(NULL))
+        .WillOnce(Return(nullptr))
         .WillRepeatedly(Invoke(__real_OPENSSL_sk_new_null));
     ret = g_certChainPemSpi->engineValidate(g_certChainPemSpi, &params, &result);
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);

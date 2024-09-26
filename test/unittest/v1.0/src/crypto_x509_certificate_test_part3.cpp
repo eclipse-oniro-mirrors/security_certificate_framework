@@ -159,7 +159,7 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareSubjectAlternativeNamesTest002, 
     // test CompareSubAltNameX509Openssl failed case
     X509OpensslMock::SetMockFlag(true);
     EXPECT_CALL(X509OpensslMock::GetInstance(), X509_get_ext_d2i(_, _, _, _))
-        .WillOnce(Return(NULL))
+        .WillOnce(Return(nullptr))
         .WillRepeatedly(Invoke(__real_X509_get_ext_d2i));
     ret = g_x509CertExtAttrObj->match(g_x509CertExtAttrObj, &matchParams, &bResult);
     EXPECT_EQ(ret, CF_SUCCESS);
@@ -312,7 +312,7 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareMinPathLenConstraintTest002, Tes
 
     X509OpensslMock::SetMockFlag(true);
     EXPECT_CALL(X509OpensslMock::GetInstance(), X509V3_EXT_d2i(_))
-        .WillOnce(Return(NULL))
+        .WillOnce(Return(nullptr))
         .WillRepeatedly(Invoke(__real_X509V3_EXT_d2i));
     ret = g_x509CertExtAttrObj->match(g_x509CertExtAttrObj, &certMatchParameters, &bResult);
     EXPECT_EQ(ret, CF_SUCCESS);
@@ -320,7 +320,7 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareMinPathLenConstraintTest002, Tes
     X509OpensslMock::SetMockFlag(false);
 
     X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_get_ext(_, _)).WillRepeatedly(Return(NULL));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_get_ext(_, _)).WillRepeatedly(Return(nullptr));
     ret = g_x509CertExtAttrObj->match(g_x509CertExtAttrObj, &certMatchParameters, &bResult);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_EQ(bResult, false);
@@ -329,7 +329,7 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareMinPathLenConstraintTest002, Tes
     X509OpensslMock::SetMockFlag(true);
     certMatchParameters.minPathLenConstraint = 2;
     EXPECT_CALL(X509OpensslMock::GetInstance(), X509_get_ext(_, _))
-        .WillOnce(Return(NULL))
+        .WillOnce(Return(nullptr))
         .WillRepeatedly(Invoke(__real_X509_get_ext));
     ret = g_x509CertExtAttrObj->match(g_x509CertExtAttrObj, &certMatchParameters, &bResult);
     EXPECT_EQ(ret, CF_SUCCESS);
@@ -622,7 +622,7 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareNameConstraintsTest005, TestSize
     CfResult ret;
 
     X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_get_ext_d2i(_, _, _, _)).WillRepeatedly(Return(NULL));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_get_ext_d2i(_, _, _, _)).WillRepeatedly(Return(nullptr));
     ret = g_x509CertExtAttrObj->match(g_x509CertExtAttrObj, &certMatchParameters, &bResult);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_EQ(bResult, false);
@@ -786,7 +786,7 @@ HWTEST_F(CryptoX509CertificateTestPart3, ComparePrivateKeyValidTest002, TestSize
 
     // test ComparePrivateKeyValidX509Openssl failed case
     X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_get_ext_d2i(_, _, _, _)).WillRepeatedly(Return(NULL));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_get_ext_d2i(_, _, _, _)).WillRepeatedly(Return(nullptr));
     ret = g_x509CertExtAttrObj->match(g_x509CertExtAttrObj, &certMatchParameters, &bResult);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_EQ(bResult, false);
@@ -831,7 +831,7 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareSubjectKeyIdentifierTest001, Tes
     X509OpensslMock::SetMockFlag(false);
 
     X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_get_ext_d2i(_, _, _, _)).WillRepeatedly(Return(NULL));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_get_ext_d2i(_, _, _, _)).WillRepeatedly(Return(nullptr));
     ret = g_x509CertExtAttrObj->match(g_x509CertExtAttrObj, &certMatchParameters, &bResult);
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
     X509OpensslMock::SetMockFlag(false);
@@ -872,7 +872,7 @@ HWTEST_F(CryptoX509CertificateTestPart3, ToStringTest001, TestSize.Level0)
 
     X509OpensslMock::SetMockFlag(true);
     EXPECT_CALL(X509OpensslMock::GetInstance(), BIO_new(_))
-        .WillOnce(Return(NULL))
+        .WillOnce(Return(nullptr))
         .WillRepeatedly(Invoke(__real_BIO_new));
     ret = g_x509CertExtAttrObj->toString(g_x509CertExtAttrObj, &blob);
     EXPECT_EQ(ret, CF_ERR_MALLOC);

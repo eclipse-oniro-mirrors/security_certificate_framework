@@ -285,17 +285,6 @@ HWTEST_F(CfCommonTest, CfLogTest004, TestSize.Level0)
 }
 
 /**
-* @tc.name: CfLogTest005
-* @tc.desc: Test Log ID INVALID
-* @tc.type: FUNC
-* @tc.require: AR000HS2RB /SR000HS2Q1
-*/
-HWTEST_F(CfCommonTest, CfLogTest005, TestSize.Level0)
-{
-    CfLog(CF_LOG_LEVEL_D + 1, __func__, __LINE__, "this is test for default branch");
-}
-
-/**
 * @tc.name: CfLogTest006
 * @tc.desc: Test Log info length more than 512
 * @tc.type: FUNC

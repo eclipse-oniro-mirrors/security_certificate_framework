@@ -64,7 +64,7 @@ void *__real_GENERAL_NAME_get0_value(const GENERAL_NAME *a, int *ptype);
 int __real_X509_verify(X509 *a, EVP_PKEY *r);
 CfResult __real_DeepCopyBlobToBlob(const CfBlob *inBlob, CfBlob **outBlob);
 char *__real_X509_NAME_oneline(const X509_NAME *a, char *buf, int size);
-int __real_OPENSSL_sk_push(OPENSSL_STACK *st, const int data);
+int __real_OPENSSL_sk_push(OPENSSL_STACK *st, const void *data);
 int __real_i2d_X509_REVOKED(X509_REVOKED *a, unsigned char **out);
 int __real_i2d_X509_CRL(X509_CRL *a, unsigned char **out);
 OPENSSL_STACK *__real_OPENSSL_sk_deep_copy(const OPENSSL_STACK *, OPENSSL_sk_copyfunc c, OPENSSL_sk_freefunc f);
@@ -129,7 +129,7 @@ void X509OpensslMock::SetMockFunDefaultBehaviorPartOne(void)
         return __real_i2d_X509_REVOKED(a, out);
     });
 
-    ON_CALL(*this, OPENSSL_sk_push).WillByDefault([this](OPENSSL_STACK *st, const int data) {
+    ON_CALL(*this, OPENSSL_sk_push).WillByDefault([this](OPENSSL_STACK *st, const void *data) {
         return __real_OPENSSL_sk_push(st, data);
     });
 
@@ -765,7 +765,7 @@ CfResult __wrap_DeepCopyBlobToBlob(const CfBlob *inBlob, CfBlob **outBlob)
     }
 }
 
-int __wrap_OPENSSL_sk_push(OPENSSL_STACK *st, const int data)
+int __wrap_OPENSSL_sk_push(OPENSSL_STACK *st, const void *data)
 {
     if (g_mockTagX509Openssl) {
         CF_LOG_I("X509OpensslMock OPENSSL_sk_push");

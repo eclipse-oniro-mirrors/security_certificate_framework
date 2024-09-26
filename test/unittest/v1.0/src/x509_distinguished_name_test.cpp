@@ -268,7 +268,7 @@ HWTEST_F(X509DistinguishedNameTest, OpensslX509DistinguishedNameSpiCreateTest002
     // test ParseName failed case
     X509OpensslMock::SetMockFlag(true);
     EXPECT_CALL(X509OpensslMock::GetInstance(), X509_NAME_new())
-        .WillOnce(Return(NULL))
+        .WillOnce(Return(nullptr))
         .WillRepeatedly(Invoke(__real_X509_NAME_new));
     ret = OpensslX509DistinguishedNameSpiCreate(&out, true, &spi);
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
@@ -276,7 +276,7 @@ HWTEST_F(X509DistinguishedNameTest, OpensslX509DistinguishedNameSpiCreateTest002
 
     // test ParseName failed case
     X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), CRYPTO_strdup(_, _, _)).WillRepeatedly(Return(NULL));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), CRYPTO_strdup(_, _, _)).WillRepeatedly(Return(nullptr));
     ret = OpensslX509DistinguishedNameSpiCreate(&out, true, &spi);
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
     X509OpensslMock::SetMockFlag(false);
@@ -341,7 +341,7 @@ HWTEST_F(X509DistinguishedNameTest, GetNameTest001, TestSize.Level0)
     X509OpensslMock::SetMockFlag(true);
     EXPECT_CALL(X509OpensslMock::GetInstance(), X509_NAME_oneline(_, _, _))
         .Times(AnyNumber())
-        .WillRepeatedly(Return(NULL));
+        .WillRepeatedly(Return(nullptr));
     ret = g_x509Name->getName(g_x509Name, NULL, &blob, NULL);
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
     X509OpensslMock::SetMockFlag(false);
@@ -416,7 +416,7 @@ HWTEST_F(X509DistinguishedNameTest, GetNameTest002, TestSize.Level0)
 
     // test GetNameByTypeOpenssl failed case
     X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), OBJ_nid2sn(_)).Times(AnyNumber()).WillRepeatedly(Return(NULL));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), OBJ_nid2sn(_)).Times(AnyNumber()).WillRepeatedly(Return(nullptr));
     ret = g_x509Name->getName(g_x509Name, &inPara, NULL, &outArr);
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
     X509OpensslMock::SetMockFlag(false);
