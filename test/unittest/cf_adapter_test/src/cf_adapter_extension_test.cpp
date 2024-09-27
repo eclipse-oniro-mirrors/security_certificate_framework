@@ -211,6 +211,7 @@ HWTEST_F(CfAdapterExtensionTest, OpensslCreateExtensionTest009, TestSize.Level0)
  */
 HWTEST_F(CfAdapterExtensionTest, OpensslDestoryExtensionTest001, TestSize.Level0)
 {
+    CfOpensslDestoryExtension(nullptr); /* object is null */
     CfBase *obj001 = nullptr;
     int32_t ret = CfOpensslCreateExtension(&g_extension[2], &obj001);
     EXPECT_EQ(ret, CF_SUCCESS) << "Normal adapter create extension object test failed, recode:" << ret;
@@ -220,29 +221,6 @@ HWTEST_F(CfAdapterExtensionTest, OpensslDestoryExtensionTest001, TestSize.Level0
 
     obj001->type = CF_MAGIC(CF_MAGIC_TYPE_ADAPTER_RESOURCE, CF_OBJ_TYPE_EXTENSION); /* normal case */
     CfOpensslDestoryExtension(&obj001);
-}
-
-/**
- * @tc.name: OpensslDestoryExtensionTest002
- * @tc.desc: Test CertFramework adapter destory extension object interface Abnormal function
- * @tc.type: FUNC
- * @tc.require: AR000HS2SC /SR000HS2SB
- */
-HWTEST_F(CfAdapterExtensionTest, OpensslDestoryExtensionTest002, TestSize.Level0)
-{
-    CfBase *obj002 = nullptr;  /* *object is null */
-    CfOpensslDestoryExtension(&obj002);
-}
-
-/**
- * @tc.name: OpensslDestoryExtensionTest003
- * @tc.desc: Test CertFramework adapter destory extension object interface Abnormal function
- * @tc.type: FUNC
- * @tc.require: AR000HS2SC /SR000HS2SB
- */
-HWTEST_F(CfAdapterExtensionTest, OpensslDestoryExtensionTest003, TestSize.Level0)
-{
-    CfOpensslDestoryExtension(nullptr); /* object is null */
 }
 
 /**

@@ -361,6 +361,7 @@ HWTEST_F(CfParamTest, CfGetParam006, TestSize.Level0)
 */
 HWTEST_F(CfParamTest, CfGetParam007, TestSize.Level0)
 {
+    CfFreeParamSet(nullptr);
     CfParamSet *paramSet = nullptr;
     ConstrutParamSet(&paramSet);
 
@@ -369,17 +370,6 @@ HWTEST_F(CfParamTest, CfGetParam007, TestSize.Level0)
     EXPECT_NE(ret, CF_SUCCESS);
 
     CfFreeParamSet(&paramSet);
-}
-
-/**
-* @tc.name: CfFreeParamSet001
-* @tc.desc: test CfFreeParamSet paramSet is nullptr
-* @tc.type: FUNC
-* @tc.require: AR000HS2RB /SR000HS2Q1
-*/
-HWTEST_F(CfParamTest, CfFreeParamSet001, TestSize.Level0)
-{
-    CfFreeParamSet(nullptr);
 }
 
 /**

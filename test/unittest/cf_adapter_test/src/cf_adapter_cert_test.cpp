@@ -200,6 +200,8 @@ HWTEST_F(CfAdapterCertTest, OpensslCreateCertTest008, TestSize.Level0)
  */
 HWTEST_F(CfAdapterCertTest, OpensslCreateCertTest009, TestSize.Level0)
 {
+    CfBase **obj006 = nullptr; /* object is nullptr */
+    CfOpensslDestoryCert(obj006);
     for (uint32_t i = 0; i < PERFORMANCE_COUNT; ++i) { /* run 1000 times */
         CfBase *pemObj = nullptr;
         int32_t ret = CfOpensslCreateCert(&g_cert[0], &pemObj);
@@ -221,30 +223,6 @@ HWTEST_F(CfAdapterCertTest, OpensslCreateCertTest010, TestSize.Level0)
     CfEncodingBlob invalCert010 = { const_cast<uint8_t *>(g_certData01), sizeof(g_certData01) - 1, CF_FORMAT_DER };
     int32_t ret = CfOpensslCreateCert(&invalCert010, &obj010);
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION) << "Abnormal adapter create cert object test failed, recode:" << ret;
-}
-
-/**
- * @tc.name: OpensslDestoryCertTest001
- * @tc.desc: Test CertFramework adapter create cert object interface Abnormal function
- * @tc.type: FUNC
- * @tc.require: AR000HS2RB /SR000HS2Q1
- */
-HWTEST_F(CfAdapterCertTest, OpensslDestoryCertTest001, TestSize.Level0)
-{
-    CfBase **obj006 = nullptr; /* object is nullptr */
-    CfOpensslDestoryCert(obj006);
-}
-
-/**
- * @tc.name: OpensslDestoryCertTest002
- * @tc.desc: Test CertFramework adapter create cert object interface Abnormal function
- * @tc.type: FUNC
- * @tc.require: AR000HS2RB /SR000HS2Q1
- */
-HWTEST_F(CfAdapterCertTest, OpensslDestoryCertTest002, TestSize.Level0)
-{
-    CfBase *obj007 = nullptr; /* *object is nullptr */
-    CfOpensslDestoryCert(&obj007);
 }
 
 /**

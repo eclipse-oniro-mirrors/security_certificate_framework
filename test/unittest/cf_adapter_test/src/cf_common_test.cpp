@@ -54,35 +54,15 @@ void CfCommonTest::TearDown()
 
 /**
 * @tc.name: CfBlobDataFree001
-* @tc.desc: CfBlobDataFree blob is nullptr
+* @tc.desc: CfBlobDataFree normal case
 * @tc.type: FUNC
 * @tc.require: AR000HS2RB /SR000HS2Q1
 */
 HWTEST_F(CfCommonTest, CfBlobDataFree001, TestSize.Level0)
 {
     CfBlobDataFree(nullptr);
-}
-
-/**
-* @tc.name: CfBlobDataFree002
-* @tc.desc: CfBlobDataFree blob.data is nullptr
-* @tc.type: FUNC
-* @tc.require: AR000HS2RB /SR000HS2Q1
-*/
-HWTEST_F(CfCommonTest, CfBlobDataFree002, TestSize.Level0)
-{
-    CfBlob blob = { 0, nullptr };
-    CfBlobDataFree(&blob);
-}
-
-/**
-* @tc.name: CfBlobDataFree003
-* @tc.desc: CfBlobDataFree normal case
-* @tc.type: FUNC
-* @tc.require: AR000HS2RB /SR000HS2Q1
-*/
-HWTEST_F(CfCommonTest, CfBlobDataFree003, TestSize.Level0)
-{
+    CfBlob blobNull = { 0, nullptr };
+    CfBlobDataFree(&blobNull);
     CfBlob blob = { TEST_DEFAULT_SIZE, nullptr };
     blob.data = static_cast<uint8_t *>(CfMalloc(blob.size, 0));
     ASSERT_NE(blob.data, nullptr);
@@ -91,35 +71,15 @@ HWTEST_F(CfCommonTest, CfBlobDataFree003, TestSize.Level0)
 
 /**
 * @tc.name: CfBlobDataClearAndFree001
-* @tc.desc: CfBlobDataClearAndFree blob is nullptr
+* @tc.desc: CfBlobDataClearAndFree normal case
 * @tc.type: FUNC
 * @tc.require: AR000HS2RB /SR000HS2Q1
 */
 HWTEST_F(CfCommonTest, CfBlobDataClearAndFree001, TestSize.Level0)
 {
     CfBlobDataClearAndFree(nullptr);
-}
-
-/**
-* @tc.name: CfBlobDataClearAndFree002
-* @tc.desc: CfBlobDataClearAndFree blob.data is nullptr
-* @tc.type: FUNC
-* @tc.require: AR000HS2RB /SR000HS2Q1
-*/
-HWTEST_F(CfCommonTest, CfBlobDataClearAndFree002, TestSize.Level0)
-{
-    CfBlob blob = { 0, nullptr };
-    CfBlobDataClearAndFree(&blob);
-}
-
-/**
-* @tc.name: CfBlobDataClearAndFree003
-* @tc.desc: CfBlobDataClearAndFree normal case
-* @tc.type: FUNC
-* @tc.require: AR000HS2RB /SR000HS2Q1
-*/
-HWTEST_F(CfCommonTest, CfBlobDataClearAndFree003, TestSize.Level0)
-{
+    CfBlob blobNull = { 0, nullptr };
+    CfBlobDataClearAndFree(&blobNull);
     CfBlob blob = { TEST_DEFAULT_SIZE, nullptr };
     blob.data = static_cast<uint8_t *>(CfMalloc(blob.size, 0));
     ASSERT_NE(blob.data, nullptr);
@@ -128,35 +88,15 @@ HWTEST_F(CfCommonTest, CfBlobDataClearAndFree003, TestSize.Level0)
 
 /**
 * @tc.name: CfEncodingBlobDataFree001
-* @tc.desc: CfEncodingBlobDataFree encodingBlob is nullptr
+* @tc.desc: CfEncodingBlobDataFree normal case
 * @tc.type: FUNC
 * @tc.require: AR000HS2RB /SR000HS2Q1
 */
 HWTEST_F(CfCommonTest, CfEncodingBlobDataFree001, TestSize.Level0)
 {
     CfEncodingBlobDataFree(nullptr);
-}
-
-/**
-* @tc.name: CfEncodingBlobDataFree001
-* @tc.desc: CfEncodingBlobDataFree encodingBlob.data is nullptr
-* @tc.type: FUNC
-* @tc.require: AR000HS2RB /SR000HS2Q1
-*/
-HWTEST_F(CfCommonTest, CfEncodingBlobDataFree002, TestSize.Level0)
-{
-    CfEncodingBlob blob = { nullptr, 0, CF_FORMAT_DER };
-    CfEncodingBlobDataFree(&blob);
-}
-
-/**
-* @tc.name: CfEncodingBlobDataFree003
-* @tc.desc: CfEncodingBlobDataFree normal case
-* @tc.type: FUNC
-* @tc.require: AR000HS2RB /SR000HS2Q1
-*/
-HWTEST_F(CfCommonTest, CfEncodingBlobDataFree003, TestSize.Level0)
-{
+    CfEncodingBlob blobNull = { nullptr, 0, CF_FORMAT_DER };
+    CfEncodingBlobDataFree(&blobNull);
     CfEncodingBlob blob = { nullptr, TEST_DEFAULT_SIZE, CF_FORMAT_DER };
     blob.data = static_cast<uint8_t *>(CfMalloc(blob.len, 0));
     ASSERT_NE(blob.data, nullptr);
@@ -164,24 +104,14 @@ HWTEST_F(CfCommonTest, CfEncodingBlobDataFree003, TestSize.Level0)
 }
 
 /**
-* @tc.name: CfArrayDataClearAndFree001
-* @tc.desc: CfArrayDataClearAndFree array is nullptr
+* @tc.name: CfArrayDataClearAndFree01
+* @tc.desc: CfArrayDataClearAndFree normal case
 * @tc.type: FUNC
 * @tc.require: AR000HS2RB /SR000HS2Q1
 */
 HWTEST_F(CfCommonTest, CfArrayDataClearAndFree001, TestSize.Level0)
 {
     CfArrayDataClearAndFree(nullptr);
-}
-
-/**
-* @tc.name: CfArrayDataClearAndFree002
-* @tc.desc: CfArrayDataClearAndFree normal case
-* @tc.type: FUNC
-* @tc.require: AR000HS2RB /SR000HS2Q1
-*/
-HWTEST_F(CfCommonTest, CfArrayDataClearAndFree002, TestSize.Level0)
-{
     CfArray array = { nullptr, CF_FORMAT_DER, TEST_DEFAULT_COUNT };
     array.data = static_cast<CfBlob *>(CfMalloc(array.count * sizeof(CfBlob), 0));
     ASSERT_NE(array.data, nullptr);
@@ -196,17 +126,6 @@ HWTEST_F(CfCommonTest, CfArrayDataClearAndFree002, TestSize.Level0)
 }
 
 /**
-* @tc.name: FreeCfBlobArray001
-* @tc.desc: FreeCfBlobArray array is nullptr
-* @tc.type: FUNC
-* @tc.require: AR000HS2RB /SR000HS2Q1
-*/
-HWTEST_F(CfCommonTest, FreeCfBlobArray001, TestSize.Level0)
-{
-    FreeCfBlobArray(nullptr, 0);
-}
-
-/**
 * @tc.name: FreeCfBlobArray002
 * @tc.desc: FreeCfBlobArray normal case
 * @tc.type: FUNC
@@ -214,6 +133,7 @@ HWTEST_F(CfCommonTest, FreeCfBlobArray001, TestSize.Level0)
 */
 HWTEST_F(CfCommonTest, FreeCfBlobArray002, TestSize.Level0)
 {
+    FreeCfBlobArray(nullptr, 0);
     CfBlob *array = static_cast<CfBlob *>(CfMalloc(TEST_DEFAULT_COUNT * sizeof(CfBlob), 0));
     ASSERT_NE(array, nullptr);
 
@@ -228,6 +148,18 @@ HWTEST_F(CfCommonTest, FreeCfBlobArray002, TestSize.Level0)
 */
 HWTEST_F(CfCommonTest, FreeCfBlobArray003, TestSize.Level0)
 {
+    CF_LOG_W("this is test for log Warn");
+    CF_LOG_I("this is test for log Info");
+    CF_LOG_E("this is test for log Error");
+    CF_LOG_D("this is test for log Debug");
+    CF_LOG_W("MoreThan512Bytes................................................"
+        "................................................................"
+        "................................................................"
+        "................................................................"
+        "................................................................"
+        "................................................................"
+        "................................................................"
+        "..................................................................");
     CfBlob *array = static_cast<CfBlob *>(CfMalloc(TEST_DEFAULT_COUNT * sizeof(CfBlob), 0));
     ASSERT_NE(array, nullptr);
 
@@ -241,68 +173,6 @@ HWTEST_F(CfCommonTest, FreeCfBlobArray003, TestSize.Level0)
 }
 
 /**
-* @tc.name: CfLogTest001
-* @tc.desc: Test Log Warn
-* @tc.type: FUNC
-* @tc.require: AR000HS2RB /SR000HS2Q1
-*/
-HWTEST_F(CfCommonTest, CfLogTest001, TestSize.Level0)
-{
-    CF_LOG_W("this is test for log Warn");
-}
-
-/**
-* @tc.name: CfLogTest002
-* @tc.desc: Test Log Info
-* @tc.type: FUNC
-* @tc.require: AR000HS2RB /SR000HS2Q1
-*/
-HWTEST_F(CfCommonTest, CfLogTest002, TestSize.Level0)
-{
-    CF_LOG_I("this is test for log Info");
-}
-
-/**
-* @tc.name: CfLogTest003
-* @tc.desc: Test Log Error
-* @tc.type: FUNC
-* @tc.require: AR000HS2RB /SR000HS2Q1
-*/
-HWTEST_F(CfCommonTest, CfLogTest003, TestSize.Level0)
-{
-    CF_LOG_E("this is test for log Error");
-}
-
-/**
-* @tc.name: CfLogTest004
-* @tc.desc: Test Log Debug
-* @tc.type: FUNC
-* @tc.require: AR000HS2RB /SR000HS2Q1
-*/
-HWTEST_F(CfCommonTest, CfLogTest004, TestSize.Level0)
-{
-    CF_LOG_D("this is test for log Debug");
-}
-
-/**
-* @tc.name: CfLogTest006
-* @tc.desc: Test Log info length more than 512
-* @tc.type: FUNC
-* @tc.require: AR000HS2RB /SR000HS2Q1
-*/
-HWTEST_F(CfCommonTest, CfLogTest006, TestSize.Level0)
-{
-    CF_LOG_W("MoreThan512Bytes................................................"
-        "................................................................"
-        "................................................................"
-        "................................................................"
-        "................................................................"
-        "................................................................"
-        "................................................................"
-        "..................................................................");
-}
-
-/**
 * @tc.name: CfMemTest001
 * @tc.desc: malloc and free normal
 * @tc.type: FUNC
@@ -310,6 +180,7 @@ HWTEST_F(CfCommonTest, CfLogTest006, TestSize.Level0)
 */
 HWTEST_F(CfCommonTest, CfMemTest001, TestSize.Level0)
 {
+    CfFree(nullptr);
     uint8_t *buf = static_cast<uint8_t *>(CfMalloc(TEST_DEFAULT_SIZE, 0));
     ASSERT_NE(buf, nullptr);
     CfFree(buf);
@@ -337,17 +208,6 @@ HWTEST_F(CfCommonTest, CfMemTest003, TestSize.Level0)
 {
     uint8_t *buf = static_cast<uint8_t *>(CfMalloc(MAX_MEMORY_SIZE + 1, 0));
     ASSERT_EQ(buf, nullptr);
-}
-
-/**
-* @tc.name: CfMemTest004
-* @tc.desc: free nullptr
-* @tc.type: FUNC
-* @tc.require: AR000HS2RB /SR000HS2Q1
-*/
-HWTEST_F(CfCommonTest, CfMemTest004, TestSize.Level0)
-{
-    CfFree(nullptr);
 }
 
 /**
