@@ -63,21 +63,11 @@ void CfAbilityTest::TearDown()
  */
 HWTEST_F(CfAbilityTest, RegisterAbilityTest001, TestSize.Level0)
 {
-    int32_t ret = RegisterAbility(CF_ABILITY(CF_ABILITY_TYPE_ADAPTER, CF_OBJ_TYPE_CERT), nullptr);
-    EXPECT_EQ(ret, CF_NOT_SUPPORT) << "register extension adapter func again, recode:" << ret;
-}
-
-/**
- * @tc.name: RegisterAbilityTest002
- * @tc.desc: Test RegisterAbility Exceeds max
- * @tc.type: FUNC
- * @tc.require: AR000HS2RB /SR000HS2Q1
- */
-HWTEST_F(CfAbilityTest, RegisterAbilityTest002, TestSize.Level0)
-{
     for (uint32_t i = 0; i <= CF_ABILITY_MAX_SIZE; ++i) {
         (void)RegisterAbility(i, nullptr); /* coverage test */
     }
+    int32_t ret = RegisterAbility(CF_ABILITY(CF_ABILITY_TYPE_ADAPTER, CF_OBJ_TYPE_CERT), nullptr);
+    EXPECT_EQ(ret, CF_NOT_SUPPORT) << "register extension adapter func again, recode:" << ret;
 }
 
 /**
