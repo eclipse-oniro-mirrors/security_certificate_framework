@@ -355,6 +355,7 @@ HWTEST_F(CryptoX509CertChainTestPart2, ValidateOpensslInvaidCertId, TestSize.Lev
     FreeValidateResult(result);
 
     FreeTrustAnchorArr(trustAnchorArray);
+    CfFree(revChkOpArray.data);
 }
 
 HWTEST_F(CryptoX509CertChainTestPart2, ValidateOpensslRevocationLocalTest001, TestSize.Level0)
