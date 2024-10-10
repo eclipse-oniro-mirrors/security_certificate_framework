@@ -15,9 +15,9 @@ import("//build/ohos.gni")
 
 config("cert_framework_config") {
   include_dirs = [
-    "../../interfaces/innerkits/certificate",
-    "../../interfaces/innerkits/common",
-    "../../interfaces/innerkits/include",
+    "../../interfaces/inner_api/certificate",
+    "../../interfaces/inner_api/common",
+    "../../interfaces/inner_api/include",
   ]
 }
 

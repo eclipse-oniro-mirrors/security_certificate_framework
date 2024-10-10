@@ -23,8 +23,8 @@ ohos_fuzztest("CfCreateFuzzTest") {
   include_dirs = [
     "include",
     "../../../frameworks/common/v1.0/inc",
-    "../../../interfaces/innerkits/common",
-    "../../../interfaces/innerkits/include",
+    "../../../interfaces/inner_api/common",
+    "../../../interfaces/inner_api/include",
   ]
   configs = [ "../../../config/build:coverage_flag_cc" ]
   cflags = [

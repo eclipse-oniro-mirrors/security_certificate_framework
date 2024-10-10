@@ -23,8 +23,8 @@ ohos_fuzztest("X509CertChainFuzzTest") {
   configs = [ "../../../../config/build:coverage_flag_cc" ]
   include_dirs = [
     "include",
-    "../../../../interfaces/innerkits/certificate",
-    "../../../../interfaces/innerkits/common",
+    "../../../../interfaces/inner_api/certificate",
+    "../../../../interfaces/inner_api/common",
     "../../../../frameworks/common/v1.0/inc",
     "../../../../frameworks/core/v1.0/spi",
     "../../../../frameworks/adapter/v1.0/inc",

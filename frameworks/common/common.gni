@@ -12,9 +12,9 @@
 # limitations under the License.
 
 crypto_framwork_common_inc_path = [
-  "../../interfaces/innerkits/certificate",
-  "../../interfaces/innerkits/common",
-  "../../interfaces/innerkits/include",
+  "../../interfaces/inner_api/certificate",
+  "../../interfaces/inner_api/common",
+  "../../interfaces/inner_api/include",
   "v1.0/inc",
 ]
 

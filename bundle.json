@@ -47,6 +47,7 @@
                 "certificate/x509_crl_match_parameters.h",
                 "certificate/x509_certificate.h",
                 "certificate/x509_cert_chain.h",
+                "certificate/x509_distinguished_name.h",
                 "certificate/x509_trust_anchor.h",
                 "certificate/x509_cert_chain_validate_params.h",
                 "certificate/x509_cert_chain_validate_result.h",
@@ -60,7 +61,7 @@
                 "include/cf_param.h",
                 "include/cf_type.h"
               ],
-              "header_base": "//base/security/certificate_framework/interfaces/innerkits"
+              "header_base": "//base/security/certificate_framework/interfaces/inner_api"
             }
           }
         ],
