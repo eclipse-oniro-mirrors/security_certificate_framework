@@ -872,31 +872,49 @@ static CfResult ParseResp(OCSP_BASICRESP *bs, OCSP_CERTID *certid)
     return res;
 }
 
+static void ValidateOcspLocalGetTrustCert(STACK_OF(X509) *x509CertChain, HcfX509TrustAnchor *trustAnchor,
+    const HcfX509CertChainValidateParams *params, HcfRevocationCheckParam *revo, X509 **trustCert)
+{
+    if (revo->ocspResponderCert != NULL) {
+        *trustCert = GetX509FromHcfX509Certificate((HcfCertificate *)(params->revocationCheckParam->ocspResponderCert));
+    } else if (trustAnchor->CACert != NULL) {
+        *trustCert = GetX509FromHcfX509Certificate((HcfCertificate *)(trustAnchor->CACert));
+    } else {
+        *trustCert = sk_X509_value(x509CertChain, sk_X509_num(x509CertChain) - 1);
+    }
+}
+
 static CfResult ValidateOcspLocal(OcspLocalParam localParam, STACK_OF(X509) *x509CertChain,
     HcfX509TrustAnchor *trustAnchor, const HcfX509CertChainValidateParams *params)
 {
     int i;
-    OCSP_BASICRESP *bs = NULL;
     X509 *trustCert = NULL;
-
+    OCSP_RESPONSE *rsp = NULL;
+    if (localParam.certid == NULL) {
+        LOGE("The input data is null!");
+        return CF_INVALID_PARAMS;
+    }
     HcfRevocationCheckParam *revo = params->revocationCheckParam;
     if (localParam.resp == NULL && revo->ocspResponses != NULL) {
-        localParam.resp =
-            d2i_OCSP_RESPONSE(NULL, (const unsigned char **)&(revo->ocspResponses->data), revo->ocspResponses->size);
+        rsp = d2i_OCSP_RESPONSE(NULL, (const unsigned char **)&(revo->ocspResponses->data), revo->ocspResponses->size);
+        localParam.resp = rsp;
     }
-    if (localParam.resp == NULL || localParam.certid == NULL) {
+    if (localParam.resp == NULL) {
         LOGE("The input data is null!");
         return CF_ERR_CRYPTO_OPERATION;
     }
     if (OCSP_response_status(localParam.resp) != OCSP_RESPONSE_STATUS_SUCCESSFUL) {
         LOGE("The resp status is not success!");
+        OCSP_RESPONSE_free(rsp);
         return CF_ERR_CRYPTO_OPERATION;
     }
-    bs = OCSP_response_get1_basic(localParam.resp);
+    OCSP_BASICRESP *bs = OCSP_response_get1_basic(localParam.resp);
     if (bs == NULL) {
         LOGE("Error parsing response!");
+        OCSP_RESPONSE_free(rsp);
         return CF_ERR_CRYPTO_OPERATION;
     }
+    OCSP_RESPONSE_free(rsp);
     if (localParam.req != NULL && ((i = OCSP_check_nonce(localParam.req, bs)) <= 0)) {
         if (i == -1) {
             LOGW("No nonce in response!");
@@ -906,14 +924,8 @@ static CfResult ValidateOcspLocal(OcspLocalParam localParam, STACK_OF(X509) *x50
             return CF_ERR_CRYPTO_OPERATION;
         }
     }
-    if (revo->ocspResponderCert != NULL) {
-        trustCert = GetX509FromHcfX509Certificate((HcfCertificate *)(params->revocationCheckParam->ocspResponderCert));
-    } else if (trustAnchor->CACert != NULL) {
-        trustCert = GetX509FromHcfX509Certificate((HcfCertificate *)(trustAnchor->CACert));
-    } else {
-        trustCert = sk_X509_value(x509CertChain, sk_X509_num(x509CertChain) - 1);
-    }
 
+    ValidateOcspLocalGetTrustCert(x509CertChain, trustAnchor, params, revo, &trustCert);
     CfResult res = VerifyOcspSigner(bs, x509CertChain, trustCert);
     if (res != CF_SUCCESS) {
         LOGE("VerifySinger failed!");
@@ -921,7 +933,6 @@ static CfResult ValidateOcspLocal(OcspLocalParam localParam, STACK_OF(X509) *x50
         return res;
     }
     res = ParseResp(bs, localParam.certid);
-    OCSP_RESPONSE_free(localParam.resp);
     OCSP_BASICRESP_free(bs);
     return res;
 }

@@ -520,7 +520,7 @@ namespace OHOS {
 
     static void FreeCertArrayData(HcfX509CertificateArray *certs)
     {
-        if (certs == nullptr) {
+        if (certs == nullptr || certs->data == nullptr) {
             return;
         }
         for (uint32_t i = 0; i < certs->count; ++i) {

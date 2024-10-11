@@ -137,6 +137,18 @@ X509 *GetX509FromHcfX509Certificate(const HcfCertificate *cert)
     return realCert->x509;
 }
 
+static void FreeCertArrayData(HcfX509CertificateArray *certs)
+{
+    if (certs == NULL || certs->data == NULL) {
+        return;
+    }
+    for (uint32_t i = 0; i < certs->count; ++i) {
+        CfObjDestroy(certs->data[i]);
+    }
+    CF_FREE_PTR(certs->data);
+    certs->count = 0;
+}
+
 static CfResult GetCertChainFromCollection(const HcfX509CertChainBuildParameters *inParams, STACK_OF(X509) *certStack)
 {
     if (inParams->validateParameters.certCRLCollections == NULL) {
@@ -156,20 +168,24 @@ static CfResult GetCertChainFromCollection(const HcfX509CertChainBuildParameters
             X509 *cert = GetX509FromHcfX509Certificate((HcfCertificate *)retCerts.data[j]);
             if (cert == NULL) {
                 LOGE("GetX509Cert from inParams failed!");
+                FreeCertArrayData(&retCerts);
                 return CF_INVALID_PARAMS;
             }
 
             X509 *certDup = X509_dup(cert);
             if (certDup == NULL) {
                 LOGE("Memory allocation failure!");
+                FreeCertArrayData(&retCerts);
                 return CF_ERR_MALLOC;
             }
             if (sk_X509_push(certStack, certDup) <= 0) {
                 LOGE("Push cert to SK failed!");
                 X509_free(certDup);
+                FreeCertArrayData(&retCerts);
                 return CF_ERR_CRYPTO_OPERATION;
             }
         }
+        FreeCertArrayData(&retCerts);
     }
     return CF_SUCCESS;
 }
