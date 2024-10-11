@@ -25,9 +25,9 @@ ohos_unittest("cf_version1_test") {
 
   include_dirs = [
     "./include",
-    "../../../interfaces/innerkits/certificate",
-    "../../../interfaces/innerkits/common",
-    "../../../interfaces/innerkits/include",
+    "../../../interfaces/inner_api/certificate",
+    "../../../interfaces/inner_api/common",
+    "../../../interfaces/inner_api/include",
     "../../../frameworks/common/v1.0/inc",
     "../../../frameworks/core/v1.0/spi",
     "../../../frameworks/adapter/v1.0/inc",

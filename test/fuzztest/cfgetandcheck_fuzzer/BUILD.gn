@@ -22,8 +22,8 @@ ohos_fuzztest("CfGetAndCheckFuzzTest") {
   fuzz_config_file = "../../../test/fuzztest/cfgetandcheck_fuzzer"
   include_dirs = [
     "include",
-    "../../../interfaces/innerkits/common",
-    "../../../interfaces/innerkits/include",
+    "../../../interfaces/inner_api/common",
+    "../../../interfaces/inner_api/include",
     "../../../frameworks/common/v1.0/inc",
     "../../../test/unittest/common/include",
   ]
