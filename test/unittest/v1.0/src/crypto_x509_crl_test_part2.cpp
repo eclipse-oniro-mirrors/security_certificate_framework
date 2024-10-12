@@ -94,7 +94,7 @@ static const char *GetInvalidCrlClass(void)
 HWTEST_F(CryptoX509CrlTestPart2, MatchX509CRLTest001, TestSize.Level0)
 {
     bool bResult = true;
-    HcfX509CrlMatchParams matchParams;
+    HcfX509CrlMatchParams matchParams = { 0 };
     CfResult ret = g_x509Crl->match(nullptr, &matchParams, &bResult);
     EXPECT_EQ(ret, CF_INVALID_PARAMS);
 }
@@ -112,7 +112,7 @@ HWTEST_F(CryptoX509CrlTestPart2, MatchX509CRLTest002, TestSize.Level0)
 HWTEST_F(CryptoX509CrlTestPart2, MatchX509CRLTest003, TestSize.Level0)
 {
     ASSERT_NE(g_x509Crl, nullptr);
-    HcfX509CrlMatchParams matchParams;
+    HcfX509CrlMatchParams matchParams = { 0 };
     CfResult ret = g_x509Crl->match(g_x509Crl, &matchParams, nullptr);
     EXPECT_EQ(ret, CF_INVALID_PARAMS);
 }
@@ -121,8 +121,9 @@ HWTEST_F(CryptoX509CrlTestPart2, MatchX509CRLTest003, TestSize.Level0)
 HWTEST_F(CryptoX509CrlTestPart2, MatchX509CRLTest004, TestSize.Level0)
 {
     ASSERT_NE(g_x509Crl, nullptr);
-    HcfX509CrlMatchParams matchParams;
+    HcfX509CrlMatchParams matchParams = { 0 };
     HcfX509Crl invalidCrl;
+    memset_s(&invalidCrl, sizeof(HcfX509Crl), 0, sizeof(HcfX509Crl));
     invalidCrl.base.base.getClass = GetInvalidCrlClass;
     bool bResult = true;
     CfResult ret = g_x509Crl->match(&invalidCrl, &matchParams, &bResult);
@@ -133,7 +134,7 @@ HWTEST_F(CryptoX509CrlTestPart2, MatchX509CRLTest004, TestSize.Level0)
 HWTEST_F(CryptoX509CrlTestPart2, MatchX509CRLTest005, TestSize.Level0)
 {
     ASSERT_NE(g_x509Crl, nullptr);
-    HcfX509CrlMatchParams matchParams;
+    HcfX509CrlMatchParams matchParams = { 0 };
     matchParams.x509Cert = nullptr;
     bool bResult = true;
     CfResult ret = g_x509Crl->match(g_x509Crl, &matchParams, &bResult);
@@ -159,7 +160,7 @@ HWTEST_F(CryptoX509CrlTestPart2, MatchX509CRLTest006, TestSize.Level0)
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(x509Crl, nullptr);
 
-    HcfX509CrlMatchParams matchParams;
+    HcfX509CrlMatchParams matchParams = { 0 };
     matchParams.x509Cert = &(x509Cert->base);
     bool bResult = true;
     ret = x509Crl->match(x509Crl, &matchParams, &bResult);
@@ -178,7 +179,7 @@ HWTEST_F(CryptoX509CrlTestPart2, MatchX509CRLTest007, TestSize.Level0)
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(x509Cert, nullptr);
 
-    HcfX509CrlMatchParams matchParams;
+    HcfX509CrlMatchParams matchParams = { 0 };
     matchParams.x509Cert = &(x509Cert->base);
     bool bResult = true;
     ret = g_x509Crl->match(g_x509Crl, &matchParams, &bResult);
@@ -191,7 +192,7 @@ HWTEST_F(CryptoX509CrlTestPart2, MatchX509CRLTest007, TestSize.Level0)
 HWTEST_F(CryptoX509CrlTestPart2, MatchX509CRLTest008, TestSize.Level0)
 {
     ASSERT_NE(g_x509Crl, nullptr);
-    HcfX509CrlMatchParams matchParams;
+    HcfX509CrlMatchParams matchParams = { 0 };
     matchParams.issuer = nullptr;
     bool bResult = true;
     CfResult ret = g_x509Crl->match(g_x509Crl, &matchParams, &bResult);
@@ -212,7 +213,7 @@ HWTEST_F(CryptoX509CrlTestPart2, MatchX509CRLTest009, TestSize.Level0)
     cfBlobArr.data = cfb;
     cfBlobArr.count = 2;
 
-    HcfX509CrlMatchParams matchParams;
+    HcfX509CrlMatchParams matchParams = { 0 };
     matchParams.issuer = &cfBlobArr;
     bool bResult = true;
     CfResult ret = g_x509Crl->match(g_x509Crl, &matchParams, &bResult);
@@ -242,7 +243,7 @@ HWTEST_F(CryptoX509CrlTestPart2, MatchX509CRLTest010, TestSize.Level0)
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(x509Crl, nullptr);
 
-    HcfX509CrlMatchParams matchParams;
+    HcfX509CrlMatchParams matchParams = { 0 };
     matchParams.issuer = &cfBlobArr;
     bool bResult = true;
     ret = x509Crl->match(x509Crl, &matchParams, &bResult);
@@ -266,7 +267,7 @@ HWTEST_F(CryptoX509CrlTestPart2, MatchX509CRLTest011, TestSize.Level0)
     cfBlobArr.data = cfb;
     cfBlobArr.count = 0;
 
-    HcfX509CrlMatchParams matchParams;
+    HcfX509CrlMatchParams matchParams = { 0 };
     matchParams.issuer = &cfBlobArr;
     bool bResult = true;
     CfResult ret = g_x509Crl->match(g_x509Crl, &matchParams, &bResult);
@@ -290,7 +291,7 @@ HWTEST_F(CryptoX509CrlTestPart2, MatchX509CRLTest012, TestSize.Level0)
     cfBlobArr.data = cfb;
     cfBlobArr.count = 2;
 
-    HcfX509CrlMatchParams matchParams;
+    HcfX509CrlMatchParams matchParams = { 0 };
     matchParams.issuer = &cfBlobArr;
     bool bResult = true;
     CfResult ret = g_x509Crl->match(g_x509Crl, &matchParams, &bResult);
@@ -317,7 +318,7 @@ HWTEST_F(CryptoX509CrlTestPart2, MatchX509CRLTest013, TestSize.Level0)
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(x509Crl, nullptr);
 
-    HcfX509CrlMatchParams matchParams;
+    HcfX509CrlMatchParams matchParams = { 0 };
     matchParams.issuer = &cfBlobArr;
     bool bResult = true;
     ret = x509Crl->match(x509Crl, &matchParams, &bResult);
@@ -347,7 +348,7 @@ HWTEST_F(CryptoX509CrlTestPart2, MatchX509CRLTest014, TestSize.Level0)
     cfBlobArr.data = cfb;
     cfBlobArr.count = 2;
 
-    HcfX509CrlMatchParams matchParams;
+    HcfX509CrlMatchParams matchParams = { 0 };
     matchParams.x509Cert = &(x509Cert->base);
     matchParams.issuer = &cfBlobArr;
     bool bResult = true;
@@ -368,6 +369,7 @@ HWTEST_F(CryptoX509CrlTestPart2, CrlToStringTest001, TestSize.Level0)
     CfBlobDataFree(&blob);
 
     HcfX509Crl invalidCrl;
+    memset_s(&invalidCrl, sizeof(HcfX509Crl), 0, sizeof(HcfX509Crl));
     invalidCrl.base.base.getClass = GetInvalidCrlClass;
 
     ret = g_x509Crl->toString(&invalidCrl, &blob);
@@ -394,6 +396,7 @@ HWTEST_F(CryptoX509CrlTestPart2, CrlHashCodeTest001, TestSize.Level0)
     CfBlobDataFree(&blob);
 
     HcfX509Crl invalidCrl;
+    memset_s(&invalidCrl, sizeof(HcfX509Crl), 0, sizeof(HcfX509Crl));
     invalidCrl.base.base.getClass = GetInvalidCrlClass;
 
     ret = g_x509Crl->hashCode(&invalidCrl, &blob);
@@ -420,6 +423,7 @@ HWTEST_F(CryptoX509CrlTestPart2, CrlGetExtensionsObjectTest001, TestSize.Level0)
     CfBlobDataFree(&blob);
 
     HcfX509Crl invalidCrl;
+    memset_s(&invalidCrl, sizeof(HcfX509Crl), 0, sizeof(HcfX509Crl));
     invalidCrl.base.base.getClass = GetInvalidCrlClass;
 
     ret = g_x509Crl->getExtensionsObject(&invalidCrl, &blob);

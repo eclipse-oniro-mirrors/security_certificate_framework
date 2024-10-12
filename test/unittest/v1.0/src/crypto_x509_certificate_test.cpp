@@ -627,7 +627,7 @@ HWTEST_F(CryptoX509CertificateTest, GetAlgorithmName002, TestSize.Level0)
 HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest001, TestSize.Level0)
 {
     bool bResult = true;
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertMatchParams matchParams = { 0 };
     matchParams.x509Cert = &(g_x509CertObj->base);
     CfResult ret = g_x509CertObj->match(nullptr, &matchParams, &bResult);
     EXPECT_NE(ret, CF_SUCCESS);
@@ -644,7 +644,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest002, TestSize.Level0)
 /* out point is nullptr */
 HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest003, TestSize.Level0)
 {
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertMatchParams matchParams = { 0 };
     matchParams.x509Cert = &(g_x509CertObj->base);
     CfResult ret = g_x509CertObj->match(g_x509CertObj, &matchParams, nullptr);
     EXPECT_NE(ret, CF_SUCCESS);
@@ -656,7 +656,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest004, TestSize.Level0)
     HcfX509CertificateSpi invalidSpi = { { 0 } };
     invalidSpi.base.getClass = GetInvalidCertClass;
 
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertMatchParams matchParams = { 0 };
     matchParams.x509Cert = &(g_x509CertObj->base);
 
     CfResult ret = g_x509CertObj->match((HcfX509Certificate *)&invalidSpi, &matchParams, nullptr);
@@ -676,7 +676,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest005, TestSize.Level0)
     EXPECT_NE(x509Cert, nullptr);
 
     bool bResult = true;
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertMatchParams matchParams = { 0 };
     matchParams.x509Cert = &(x509Cert->base);
     ret = g_x509CertObj->match(g_x509CertObj, &matchParams, &bResult);
     EXPECT_EQ(ret, CF_SUCCESS);
@@ -690,7 +690,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest006, TestSize.Level0)
 {
     ASSERT_NE(g_x509CertObj, nullptr);
     bool bResult = true;
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertMatchParams matchParams = { 0 };
     matchParams.x509Cert = &(g_x509CertObj->base);
     CfResult ret = g_x509CertObj->match(g_x509CertObj, &matchParams, &bResult);
     EXPECT_EQ(ret, CF_SUCCESS);
@@ -706,7 +706,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest007, TestSize.Level0)
     cfBlobDataParam.data = (uint8_t *)(&g_testSubjectAndIssuerNameDerData[0]);
     cfBlobDataParam.size = g_testSubjectAndIssuerNameDerDataSize;
 
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertMatchParams matchParams = { 0 };
     matchParams.subject = &cfBlobDataParam;
     CfResult ret = g_x509CertObj->match(g_x509CertObj, &matchParams, &bResult);
     EXPECT_EQ(ret, CF_SUCCESS);
@@ -722,7 +722,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest008, TestSize.Level0)
     cfBlobDataParam.data = (uint8_t *)(&g_deviceTestCert[0]);
     cfBlobDataParam.size = g_deviceTestCertSize;
 
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertMatchParams matchParams = { 0 };
     matchParams.subject = &cfBlobDataParam;
     CfResult ret = g_x509CertObj->match(g_x509CertObj, &matchParams, &bResult);
     EXPECT_NE(ret, CF_SUCCESS);
@@ -737,7 +737,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest009, TestSize.Level0)
     CfBlob validDate = { 0 };
     validDate.data = reinterpret_cast<uint8_t *>(const_cast<char *>(date));
     validDate.size = strlen(date) + 1;
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertMatchParams matchParams = { 0 };
     matchParams.validDate = &validDate;
     // validatetime :2022/08/19 - 2032/08/16
     CfResult ret = g_x509CertObj->match(g_x509CertObj, &matchParams, &bResult);
@@ -754,7 +754,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest010, TestSize.Level0)
     CfBlob validDate = { 0 };
     validDate.data = reinterpret_cast<uint8_t *>(const_cast<char *>(date));
     validDate.size = strlen(date) + 1;
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertMatchParams matchParams = { 0 };
     matchParams.validDate = &validDate;
     // validatetime :2022/08/19 - 2032/08/16
     CfResult ret = g_x509CertObj->match(g_x509CertObj, &matchParams, &bResult);
@@ -771,7 +771,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest011, TestSize.Level0)
     CfBlob validDate = { 0 };
     validDate.data = reinterpret_cast<uint8_t *>(const_cast<char *>(date));
     validDate.size = strlen(date) + 1;
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertMatchParams matchParams = { 0 };
     matchParams.validDate = &validDate;
     // validatetime :2022/08/19 - 2032/08/16
     CfResult ret = g_x509CertObj->match(g_x509CertObj, &matchParams, &bResult);
@@ -788,7 +788,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest012, TestSize.Level0)
     CfBlob validDate = { 0 };
     validDate.data = reinterpret_cast<uint8_t *>(const_cast<char *>(date));
     validDate.size = strlen(date) + 1;
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertMatchParams matchParams = { 0 };
     matchParams.validDate = &validDate;
     // validatetime :2022/08/19 - 2032/08/16
     CfResult ret = g_x509CertObj->match(g_x509CertObj, &matchParams, &bResult);
@@ -805,7 +805,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest013, TestSize.Level0)
     CfBlob validDate = { 0 };
     validDate.data = reinterpret_cast<uint8_t *>(const_cast<char *>(date));
     validDate.size = strlen(date) + 1;
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertMatchParams matchParams = { 0 };
     matchParams.validDate = &validDate;
     // validatetime :2022/08/19 - 2032/08/16
     CfResult ret = g_x509CertObj->match(g_x509CertObj, &matchParams, &bResult);
@@ -823,7 +823,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest014, TestSize.Level0)
     CfBlob validDate = { 0 };
     validDate.data = reinterpret_cast<uint8_t *>(const_cast<char *>(date));
     validDate.size = strlen(date) + 1;
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertMatchParams matchParams = { 0 };
     matchParams.validDate = &validDate;
     // validatetime :2022/08/19 - 2032/08/16
     CfResult ret = g_x509CertObj->match(g_x509CertObj, &matchParams, &bResult);
@@ -839,7 +839,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest015, TestSize.Level0)
     cfBlobDataParam.data = (uint8_t *)(&g_testSubjectAndIssuerNameDerData[0]);
     cfBlobDataParam.size = g_testSubjectAndIssuerNameDerDataSize;
 
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertMatchParams matchParams = { 0 };
     matchParams.issuer = &cfBlobDataParam;
     CfResult ret = g_x509CertObj->match(g_x509CertObj, &matchParams, &bResult);
     EXPECT_EQ(ret, CF_SUCCESS);
@@ -855,7 +855,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest016, TestSize.Level0)
     cfBlobDataParam.data = (uint8_t *)(&g_deviceTestCert[0]);
     cfBlobDataParam.size = g_deviceTestCertSize;
 
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertMatchParams matchParams = { 0 };
     matchParams.issuer = &cfBlobDataParam;
     CfResult ret = g_x509CertObj->match(g_x509CertObj, &matchParams, &bResult);
     EXPECT_NE(ret, CF_SUCCESS);
@@ -870,7 +870,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest017, TestSize.Level0)
     CfResult ret = g_x509CertObj->getKeyUsage(g_x509CertObj, &cfBlobDataParam);
     EXPECT_EQ(ret, CF_SUCCESS);
 
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertMatchParams matchParams = { 0 };
     matchParams.keyUsage = &cfBlobDataParam;
     ret = g_x509CertObj->match(g_x509CertObj, &matchParams, &bResult);
     EXPECT_EQ(ret, CF_SUCCESS);
@@ -894,7 +894,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest018, TestSize.Level0)
     }
     cfBlobDataParam.size = cfBlobDataSelf.size - 1;
     cfBlobDataParam.data = data;
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertMatchParams matchParams = { 0 };
     matchParams.keyUsage = &cfBlobDataParam;
     ret = g_x509CertObj->match(g_x509CertObj, &matchParams, &bResult);
     EXPECT_EQ(ret, CF_SUCCESS);
@@ -923,7 +923,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest019, TestSize.Level0)
 
     cfBlobDataParam.size = cfBlobDataSelf.size + 1;
     cfBlobDataParam.data = data;
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertMatchParams matchParams = { 0 };
     matchParams.keyUsage = &cfBlobDataParam;
     ret = g_x509CertObj->match(g_x509CertObj, &matchParams, &bResult);
     EXPECT_EQ(ret, CF_SUCCESS);
@@ -952,7 +952,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest020, TestSize.Level0)
 
     cfBlobDataParam.size = cfBlobDataSelf.size + 1;
     cfBlobDataParam.data = data;
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertMatchParams matchParams = { 0 };
     matchParams.keyUsage = &cfBlobDataParam;
     ret = g_x509CertObj->match(g_x509CertObj, &matchParams, &bResult);
     EXPECT_EQ(ret, CF_SUCCESS);
@@ -978,7 +978,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest021, TestSize.Level0)
     }
     cfBlobDataParam.size = cfBlobDataSelf.size;
     cfBlobDataParam.data = data;
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertMatchParams matchParams = { 0 };
     matchParams.keyUsage = &cfBlobDataParam;
     ret = g_x509CertObj->match(g_x509CertObj, &matchParams, &bResult);
     EXPECT_EQ(ret, CF_SUCCESS);
@@ -995,7 +995,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest022, TestSize.Level0)
     // Serial Number: 272 (0x110)
     uint8_t testSn[] = { 0x01, 0x10 };
     CfBlob testSnBlob = { sizeof(testSn) / sizeof(testSn[0]), testSn };
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertMatchParams matchParams = { 0 };
     matchParams.serialNumber = &testSnBlob;
 
     bool bResult = true;
@@ -1011,7 +1011,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest023, TestSize.Level0)
     // Serial Number: 272 (0x110)
     uint8_t testSn[] = { 0x01, 0x11 };
     CfBlob testSnBlob = { sizeof(testSn) / sizeof(testSn[0]), testSn };
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertMatchParams matchParams = { 0 };
     matchParams.serialNumber = &testSnBlob;
 
     bool bResult = true;
@@ -1029,7 +1029,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest024, TestSize.Level0)
     cfBlobDataParam.data = reinterpret_cast<uint8_t *>(const_cast<uint8_t *>(&g_testPublicKeyDerData[0]));
     cfBlobDataParam.size = g_testPublicKeyDerDataSize;
 
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertMatchParams matchParams = { 0 };
     matchParams.publicKey = &cfBlobDataParam;
     CfResult ret = g_x509CertObj->match(g_x509CertObj, &matchParams, &bResult);
     EXPECT_EQ(ret, CF_SUCCESS);
@@ -1045,7 +1045,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest025, TestSize.Level0)
     cfBlobDataParam.data = const_cast<uint8_t *>(g_testSubjectAndIssuerNameDerData);
     cfBlobDataParam.size = g_testSubjectAndIssuerNameDerDataSize;
 
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertMatchParams matchParams = { 0 };
     matchParams.publicKey = &cfBlobDataParam;
     CfResult ret = g_x509CertObj->match(g_x509CertObj, &matchParams, &bResult);
     EXPECT_EQ(ret, CF_SUCCESS);
@@ -1061,7 +1061,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest026, TestSize.Level0)
     CfBlob cfBlobDataParam = { 0 };
     cfBlobDataParam.data = reinterpret_cast<uint8_t *>(const_cast<char *>(data));
     cfBlobDataParam.size = strlen(data) + 1;
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertMatchParams matchParams = { 0 };
     matchParams.publicKeyAlgID = &cfBlobDataParam;
     CfResult ret = g_x509CertObj->match(g_x509CertObj, &matchParams, &bResult);
     EXPECT_EQ(ret, CF_SUCCESS);
@@ -1077,7 +1077,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest027, TestSize.Level0)
     CfBlob cfBlobDataParam = { 0 };
     cfBlobDataParam.data = reinterpret_cast<uint8_t *>(const_cast<char *>(data));
     cfBlobDataParam.size = strlen(data) + 1;
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertMatchParams matchParams = { 0 };
     matchParams.publicKeyAlgID = &cfBlobDataParam;
     CfResult ret = g_x509CertObj->match(g_x509CertObj, &matchParams, &bResult);
     EXPECT_EQ(ret, CF_SUCCESS);
@@ -1094,7 +1094,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest028, TestSize.Level0)
     CfBlob cfBlobDataParam = { 0 };
     cfBlobDataParam.data = reinterpret_cast<uint8_t *>(const_cast<char *>(data));
     cfBlobDataParam.size = strlen(data) + 1;
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertMatchParams matchParams = { 0 };
     matchParams.publicKeyAlgID = &cfBlobDataParam;
     CfResult ret = g_x509CertObj->match(g_x509CertObj, &matchParams, &bResult);
     EXPECT_EQ(ret, CF_SUCCESS);
@@ -1110,7 +1110,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest029, TestSize.Level0)
     cfBlobDataParam.data = reinterpret_cast<uint8_t *>(const_cast<char *>(&g_deviceTestCert[0]));
     cfBlobDataParam.size = 0;
 
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertMatchParams matchParams = { 0 };
     matchParams.subject = &cfBlobDataParam;
     CfResult ret = g_x509CertObj->match(g_x509CertObj, &matchParams, &bResult);
     EXPECT_EQ(ret, CF_INVALID_PARAMS);
@@ -1121,7 +1121,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest030, TestSize.Level0)
 {
     ASSERT_NE(g_x509CertObj, nullptr);
     bool bResult = true;
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertMatchParams matchParams = { 0 };
     CfBlob cfDataSubject = { 0 };
     cfDataSubject.data = const_cast<uint8_t *>(&g_testSubjectAndIssuerNameDerData[0]);
     cfDataSubject.size = g_testSubjectAndIssuerNameDerDataSize;
@@ -1554,7 +1554,7 @@ HWTEST_F(CryptoX509CertificateTest, NullSpiInput, TestSize.Level0)
     ret = spiObj->engineGetIssuerAltNames(nullptr, nullptr);
     EXPECT_NE(ret, CF_SUCCESS);
     bool bResutlt = true;
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertMatchParams matchParams = { 0 };
     ret = spiObj->engineMatch(nullptr, &matchParams, &bResutlt);
     EXPECT_NE(ret, CF_SUCCESS);
     CfObjDestroy(spiObj);
@@ -1591,7 +1591,7 @@ HWTEST_F(CryptoX509CertificateTest, NullSpiInput002, TestSize.Level0)
     ret = spiObj->engineGetIssuerAltNames(spiObj, nullptr);
     EXPECT_NE(ret, CF_SUCCESS);
     bool bResutlt = true;
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertMatchParams matchParams = { 0 };
     ret = spiObj->engineMatch(spiObj, nullptr, &bResutlt);
     EXPECT_NE(ret, CF_SUCCESS);
     ret = spiObj->engineMatch(spiObj, &matchParams, nullptr);
@@ -1618,7 +1618,7 @@ HWTEST_F(CryptoX509CertificateTest, NullSpiInput003, TestSize.Level0)
     CfBlob cfBlobDataParam = { 0 };
     cfBlobDataParam.data = (uint8_t *)(&g_testPublicKeyDerData[0]);
     cfBlobDataParam.size = g_testPublicKeyDerDataSize;
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertMatchParams matchParams = { 0 };
     matchParams.publicKey = &cfBlobDataParam;
     bool bResult = false;
     ret = spiObj->engineMatch(spiObj, &matchParams, &bResult);
@@ -1673,7 +1673,7 @@ HWTEST_F(CryptoX509CertificateTest, InvalidSpiClass, TestSize.Level0)
     ret = spiObj->engineGetIssuerAltNames(&invalidSpi, &invalidArr);
     EXPECT_NE(ret, CF_SUCCESS);
     bool bResutlt = true;
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertMatchParams matchParams = { 0 };
     ret = spiObj->engineMatch(&invalidSpi, &matchParams, &bResutlt);
     EXPECT_NE(ret, CF_SUCCESS);
 

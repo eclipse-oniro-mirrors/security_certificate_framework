@@ -103,6 +103,10 @@ static void FreeCertArrayData(HcfX509CertificateArray *certs)
     if (certs == NULL) {
         return;
     }
+    if (certs->data == NULL) {
+        certs->count = 0;
+        return;
+    }
     for (uint32_t i = 0; i < certs->count; ++i) {
         CfObjDestroy(certs->data[i]);
     }
@@ -114,6 +118,10 @@ static void FreeCertArrayData(HcfX509CertificateArray *certs)
 static void FreeCrlArrayData(HcfX509CrlArray *crls)
 {
     if (crls == NULL) {
+        return;
+    }
+    if (crls->data == NULL) {
+        crls->count = 0;
         return;
     }
     for (uint32_t i = 0; i < crls->count; ++i) {
@@ -128,7 +136,7 @@ HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCertsTest001, TestSize.Level0)
 {
     ASSERT_NE(g_x509CertCrlCollection, nullptr);
     HcfX509CertificateArray retCerts;
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertMatchParams matchParams = { 0 };;
     CfResult ret = g_x509CertCrlCollection->selectCerts(nullptr, &matchParams, &retCerts);
     EXPECT_EQ(ret, CF_INVALID_PARAMS);
 }
@@ -149,11 +157,11 @@ HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCertsTest002, TestSize.Level0)
     invalidTypeCollection->base.getClass = GetInvalidCertCrlCollectionClass;
 
     HcfX509CertMatchParams matchCertParams;
-    HcfX509CertificateArray retCerts;
+    HcfX509CertificateArray retCerts = { 0 };
     ret = invalidTypeCollection->selectCerts(invalidTypeCollection, &matchCertParams, &retCerts);
     EXPECT_EQ(ret, CF_INVALID_PARAMS);
 
-    HcfX509CrlArray retCrls;
+    HcfX509CrlArray retCrls = { 0 };
     HcfX509CrlMatchParams matchCrlParams;
     ret = invalidTypeCollection->selectCRLs(invalidTypeCollection, &matchCrlParams, &retCrls);
     EXPECT_EQ(ret, CF_INVALID_PARAMS);
@@ -175,7 +183,7 @@ HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCertsTest002, TestSize.Level0)
 HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCertsTest003, TestSize.Level0)
 {
     ASSERT_NE(g_x509CertCrlCollection, nullptr);
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertMatchParams matchParams = { 0 };;
     CfResult ret = g_x509CertCrlCollection->selectCerts(g_x509CertCrlCollection, &matchParams, nullptr);
     EXPECT_EQ(ret, CF_INVALID_PARAMS);
 }
@@ -194,8 +202,8 @@ HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCertsTest004, TestSize.Level0)
     ASSERT_EQ(ret, CF_SUCCESS);
     ASSERT_NE(x509CertCrlCollection, nullptr);
 
-    HcfX509CertificateArray retCerts;
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertificateArray retCerts = { 0 };
+    HcfX509CertMatchParams matchParams = { 0 };;
     ret = x509CertCrlCollection->selectCerts(x509CertCrlCollection, &matchParams, &retCerts);
     EXPECT_NE(ret, CF_SUCCESS);
 
@@ -226,8 +234,8 @@ HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCertsTest006, TestSize.Level0)
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(x509Cert, nullptr);
 
-    HcfX509CertificateArray retCerts;
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertificateArray retCerts = { 0 };
+    HcfX509CertMatchParams matchParams = { 0 };;
     matchParams.x509Cert = &(x509Cert->base);
     ret = g_x509CertCrlCollection->selectCerts(g_x509CertCrlCollection, &matchParams, &retCerts);
     EXPECT_EQ(ret, CF_SUCCESS);
@@ -249,8 +257,8 @@ HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCertsTest007, TestSize.Level0)
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(x509Cert, nullptr);
 
-    HcfX509CertificateArray retCerts;
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertificateArray retCerts = { 0 };
+    HcfX509CertMatchParams matchParams = { 0 };
     matchParams.x509Cert = &(x509Cert->base);
     ret = g_x509CertCrlCollection->selectCerts(g_x509CertCrlCollection, &matchParams, &retCerts);
     EXPECT_EQ(ret, CF_SUCCESS);
@@ -276,12 +284,12 @@ HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCertsTest008, TestSize.Level0)
     certArray->count = 1;
     crlArray->count = 1;
 
-    HcfX509CertificateArray retCerts;
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertificateArray retCerts = { 0 };
+    HcfX509CertMatchParams matchParams = { 0 };;
     ret = x509CertCrlCollection->selectCerts(x509CertCrlCollection, &matchParams, &retCerts);
     EXPECT_NE(ret, CF_SUCCESS);
 
-    HcfX509CrlArray retCrls;
+    HcfX509CrlArray retCrls = { 0 };
     HcfX509CrlMatchParams matchCrlParams;
     ret = x509CertCrlCollection->selectCRLs(x509CertCrlCollection, &matchCrlParams, &retCrls);
     EXPECT_NE(ret, CF_SUCCESS);
@@ -318,7 +326,7 @@ HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCRLsTest001, TestSize.Level0)
 {
     ASSERT_NE(g_x509CertCrlCollection, nullptr);
 
-    HcfX509CrlArray retCrls;
+    HcfX509CrlArray retCrls = { 0 };
     HcfX509CrlMatchParams matchParams;
     CfResult ret = g_x509CertCrlCollection->selectCRLs(nullptr, &matchParams, &retCrls);
     EXPECT_EQ(ret, CF_INVALID_PARAMS);
@@ -328,7 +336,7 @@ HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCRLsTest002, TestSize.Level0)
 {
     ASSERT_NE(g_x509CertCrlCollection, nullptr);
 
-    HcfX509CrlArray retCrls;
+    HcfX509CrlArray retCrls = { 0 };
     CfResult ret = g_x509CertCrlCollection->selectCRLs(g_x509CertCrlCollection, nullptr, &retCrls);
     EXPECT_EQ(ret, CF_INVALID_PARAMS);
 }
@@ -357,7 +365,7 @@ HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCRLsTest004, TestSize.Level0)
     ASSERT_NE(x509CertCrlCollection, nullptr);
 
     HcfX509CrlMatchParams matchParams;
-    HcfX509CrlArray retCrls;
+    HcfX509CrlArray retCrls = { 0 };
     ret = x509CertCrlCollection->selectCRLs(x509CertCrlCollection, &matchParams, &retCrls);
     EXPECT_EQ(ret, CF_INVALID_PARAMS);
 
@@ -381,7 +389,7 @@ HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCRLsTest005, TestSize.Level0)
 
     HcfX509CrlMatchParams matchParams;
     matchParams.x509Cert = &(x509Cert->base);
-    HcfX509CrlArray retCrls;
+    HcfX509CrlArray retCrls = { 0 };
     ret = g_x509CertCrlCollection->selectCRLs(g_x509CertCrlCollection, &matchParams, &retCrls);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_EQ(retCrls.data, nullptr);
@@ -398,9 +406,9 @@ HWTEST_F(CryptoX509CertCrlCollectionTest, SelectCRLsTest006, TestSize.Level0)
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(x509Cert, nullptr);
 
-    HcfX509CrlMatchParams matchParams;
+    HcfX509CrlMatchParams matchParams = { 0 };
     matchParams.x509Cert = &(x509Cert->base);
-    HcfX509CrlArray retCrls;
+    HcfX509CrlArray retCrls = { 0 };
     ret = g_x509CertCrlCollection->selectCRLs(g_x509CertCrlCollection, &matchParams, &retCrls);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_EQ(retCrls.count > 0, true);

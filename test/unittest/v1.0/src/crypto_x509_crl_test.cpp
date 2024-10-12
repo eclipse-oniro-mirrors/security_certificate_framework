@@ -1630,7 +1630,7 @@ HWTEST_F(CryptoX509CrlTest, InvalidCrlSpiClass2, TestSize.Level0)
     ret = spiObj->engineGetRevokedCert(&invalidSpi, &testSnBlob, &entry);
     EXPECT_NE(ret, CF_SUCCESS);
 
-    HcfX509CrlMatchParams matchParams;
+    HcfX509CrlMatchParams matchParams = { 0 };
     bool bOut = true;
     ret = spiObj->engineMatch(&invalidSpi, &matchParams, &bOut);
     EXPECT_NE(ret, CF_SUCCESS);
@@ -1689,7 +1689,7 @@ HWTEST_F(CryptoX509CrlTest, InvalidCrlClass, TestSize.Level0)
 
 HWTEST_F(CryptoX509CrlTest, InvalidCrlClass2, TestSize.Level0)
 {
-    HcfX509CrlMatchParams matchParams;
+    HcfX509CrlMatchParams matchParams = { 0 };
     HcfX509Crl invalidCrl;
     invalidCrl.base.base.getClass = GetInvalidCrlClass;
     bool bOut = true;
@@ -1761,7 +1761,7 @@ HWTEST_F(CryptoX509CrlTest, CompareUpdateDateTimeTest001, TestSize.Level0)
     HcfX509CrlSpi *spiObj = nullptr;
     CfResult ret = HcfCX509CrlSpiCreate(&g_crlDerInStream, &spiObj);
 
-    HcfX509CrlMatchParams matchParams;
+    HcfX509CrlMatchParams matchParams = { 0 };
     CfBlob blob;
     blob.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testUpdateDateTime));
     blob.size = strlen(g_testUpdateDateTime) + 1;
@@ -1779,7 +1779,7 @@ HWTEST_F(CryptoX509CrlTest, CompareMaxCRLTest001, TestSize.Level0)
     HcfX509CrlSpi *spiObj = nullptr;
     CfResult ret = HcfCX509CrlSpiCreate(&g_crlDerInStream, &spiObj);
 
-    HcfX509CrlMatchParams matchParams;
+    HcfX509CrlMatchParams matchParams = { 0 };
     CfBlob blob;
     blob.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testUpdateDateTime));
     blob.size = strlen(g_testUpdateDateTime) + 1;
@@ -1798,7 +1798,7 @@ HWTEST_F(CryptoX509CrlTest, CompareMinCRLTest001, TestSize.Level0)
     HcfX509CrlSpi *spiObj = nullptr;
     CfResult ret = HcfCX509CrlSpiCreate(&g_crlDerInStream, &spiObj);
 
-    HcfX509CrlMatchParams matchParams;
+    HcfX509CrlMatchParams matchParams = { 0 };
     CfBlob blob;
     blob.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testUpdateDateTime));
     blob.size = strlen(g_testUpdateDateTime) + 1;
@@ -1831,17 +1831,20 @@ HWTEST_F(CryptoX509CrlTest, GetX509FromCertificateBranchTest, TestSize.Level0)
     bool flag = spiObj->engineIsRevoked(&invalidSpi, &cert);
     EXPECT_EQ(flag, false);
 
-    HcfX509Certificate x509Cert;
-    x509Cert.base.base.getClass = GetInvalidCertClass;
-    ret = spiObj->engineGetRevokedCertWithCert(&invalidSpi, &x509Cert, &entry);
+    HcfX509CertificateImpl x509CertSpi;
+    memset_s(&x509CertSpi, sizeof(HcfX509CertificateImpl), 0, sizeof(HcfX509CertificateImpl));
+    HcfX509Certificate *x509Cert = (HcfX509Certificate *)&x509CertSpi;
+    x509Cert->base.base.getClass = GetInvalidCertClass;
+    ret = spiObj->engineGetRevokedCertWithCert(&invalidSpi, x509Cert, &entry);
     EXPECT_EQ(ret, CF_INVALID_PARAMS);
 
-    x509Cert.base.base.getClass = GetValidX509CertificateClass;
-    HcfX509CertificateImpl *impl = (HcfX509CertificateImpl *)(&x509Cert);
+    x509Cert->base.base.getClass = GetValidX509CertificateClass;
+    HcfX509CertificateImpl *impl = (HcfX509CertificateImpl *)(x509Cert);
     HcfX509CertificateSpi spi;
+    memset_s(&spi, sizeof(HcfX509CertificateSpi), 0, sizeof(HcfX509CertificateSpi));
     impl->spiObj = &spi;
     ((CfObjectBase *)(impl->spiObj))->getClass = GetInvalidCertClass;
-    ret = spiObj->engineGetRevokedCertWithCert(&invalidSpi, &x509Cert, &entry);
+    ret = spiObj->engineGetRevokedCertWithCert(&invalidSpi, x509Cert, &entry);
     EXPECT_EQ(ret, CF_INVALID_PARAMS);
 
     CfObjDestroy(spiObj);

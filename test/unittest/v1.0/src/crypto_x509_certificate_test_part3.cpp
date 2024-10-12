@@ -145,7 +145,7 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareSubjectAlternativeNamesTest002, 
     ASSERT_NE(g_x509CertExtAttrObj, nullptr);
     bool bResult = true;
 
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertMatchParams matchParams = { 0 };
     matchParams.subjectAlternativeNames = ConstructSubAltNameArrayData();
     EXPECT_NE(matchParams.subjectAlternativeNames, nullptr);
 
@@ -593,9 +593,6 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareNameConstraintsTest004, TestSize
     tree->base->d.registeredID = ASN1_OBJECT_new();
 
     X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_value(_, _))
-        .WillOnce(Return(tree))
-        .WillRepeatedly(Invoke(__real_OPENSSL_sk_value));
     ret = g_x509CertExtAttrObj->match(g_x509CertExtAttrObj, &certMatchParameters, &bResult);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_EQ(bResult, false);
@@ -643,9 +640,6 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareNameConstraintsTest005, TestSize
     nc->permittedSubtrees = sk_GENERAL_SUBTREE_new_null();
     EXPECT_NE(nc, nullptr);
     X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_get_ext_d2i(_, _, _, _))
-        .WillOnce(Return(nc))
-        .WillRepeatedly(Invoke(__real_X509_get_ext_d2i));
     ret = g_x509CertExtAttrObj->match(g_x509CertExtAttrObj, &certMatchParameters, &bResult);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_EQ(bResult, false);
@@ -658,7 +652,7 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareCertPolicyTest001, TestSize.Leve
     ASSERT_NE(g_x509CertExtAttrObj, nullptr);
     bool bResult = true;
 
-    HcfX509CertMatchParams matchParams;
+    HcfX509CertMatchParams matchParams = { 0 };
     matchParams.certPolicy = ConstructCertPolicyData();
     EXPECT_NE(matchParams.certPolicy, nullptr);
     SetMockFlag(true);
