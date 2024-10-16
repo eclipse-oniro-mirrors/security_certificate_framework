@@ -59,7 +59,7 @@ CfResult CloneCrlObj(HcfX509Crl *in, HcfX509Crl **out)
 
 void FreeCertArrayData(HcfX509CertificateArray *certs)
 {
-    if (certs == NULL) {
+    if (certs == NULL|| certs->data == NULL) {
         return;
     }
     for (uint32_t i = 0; i < certs->count; ++i) {
