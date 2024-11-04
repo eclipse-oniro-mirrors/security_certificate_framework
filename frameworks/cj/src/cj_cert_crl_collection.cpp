@@ -29,7 +29,6 @@ int32_t FfiCertCjCertCrlCollectionNewInstance(const HcfX509CertificateArray *inC
     }
     returnObj->collection = collection;
     return CF_SUCCESS;
-
 }
 
 void FfiCertCjCertCrlCollectionDeleteInstance(CjCertCrlCollection self)

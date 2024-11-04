@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include <stdlib.h>
+#include <cstdlib>
 
 #include "cj_certchain_validator.h"
 
@@ -38,7 +38,7 @@ void FfiCertCjCertChainValidatorDeleteInstance(CjCertChainValidator self)
 }
 
 CfResult FfiCertCjCertChainValidatorValidate(const CjCertChainValidator self,
-                                                const HcfCertChainData *certChainData)
+                                             const HcfCertChainData *certChainData)
 {
     return self.validator->validate(self.validator, certChainData);
 }

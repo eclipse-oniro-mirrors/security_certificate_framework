@@ -67,7 +67,6 @@ struct CjX509CertChainValidateParams {
     CfBlob *sslHostname;
     HcfKeyUsageType *keyUsage;
     uint32_t keyUsageCnt;
-
 };
 
 typedef struct CjX509CertChainValidateResult CjX509CertChainValidateResult;
@@ -87,9 +86,9 @@ FFI_DECLARE_HcfCertChain(ToString, CfResult, CfBlob *out);
 FFI_DECLARE_HcfCertChain(HashCode, CfResult, CfBlob *out);
 
 
-CfResult
-FfiCertBuildX509CertChain(const CjX509CertMatchParams &matchParams, const CjX509CertChainValidateParams &validParams,
-                          int32_t maxLength, CjX509CertChain *returnObj);
+CfResult FfiCertBuildX509CertChain(const CjX509CertMatchParams &matchParams,
+                                   const CjX509CertChainValidateParams &validParams,
+                                   int32_t maxLength, CjX509CertChain *returnObj);
 
 typedef struct {
     CjX509TrustAnchor **data;

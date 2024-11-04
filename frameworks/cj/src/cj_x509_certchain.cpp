@@ -15,6 +15,17 @@
 
 #include "cj_x509_certchain.h"
 
+CfResult parseAnchor(CjX509TrustAnchor *trustAnchors, uint32_t trustAnchorCnt, HcfX509TrustAnchorArray &ret);
+
+HcfCertCRLCollectionArray *parseCRLCollections(HcfCertCrlCollection **certCRLCollections, uint32_t certCRLCollectionCnt,
+                                               HcfCertCRLCollectionArray &ret);
+
+HcfRevocationCheckParam *parseRevocation(const CjRevocationCheckParam *checkParam,
+                                         HcfRevocationCheckParam &revocationCheckParam,
+                                         HcfRevChkOpArray &revChkOption);
+
+HcfKuArray *parseKeyUsage(const CjX509CertChainValidateParams *params, HcfKuArray &keyUsage);
+
 int32_t FfiCertCjX509CertChainNewInstanceBlob(const CfEncodingBlob *blob, CjX509CertChain *returnObj)
 {
     auto chain = static_cast<HcfCertChain *>(malloc(sizeof(HcfCertChain)));
@@ -59,67 +70,25 @@ CfResult FfiCertCjX509CertChainValidate(const CjX509CertChain self,
                                         const CjX509CertChainValidateParams *params,
                                         CjX509CertChainValidateResult *result)
 {
-    auto anchors = HcfX509TrustAnchorArray{
-        .data = static_cast<HcfX509TrustAnchor **>(malloc(sizeof(HcfX509TrustAnchor *) * (params->trustAnchorCnt))),
-        .count = params->trustAnchorCnt,
-    };
-    if (anchors.data == nullptr) {
-        return CF_ERR_MALLOC;
-    }
-    for (int i = 0; i < params->trustAnchorCnt; ++i) {
-        const auto item = static_cast<HcfX509TrustAnchor *>(malloc(sizeof(HcfX509TrustAnchor)));
-        if (item == nullptr) {
-            free(anchors.data);
-            return CF_ERR_MALLOC;
-        }
-        item->CAPubKey = params->trustAnchors[i].CAPubKey;
-        item->CACert = params->trustAnchors[i].CACert;
-        item->CASubject = params->trustAnchors[i].CASubject;
-        item->nameConstraints = params->trustAnchors[i].nameConstraints;
-        anchors.data[i] = item;
+    HcfX509TrustAnchorArray anchors;
+    CfResult errCode = parseAnchor(params->trustAnchors, params->trustAnchorCnt, anchors);
+    if (errCode != CF_SUCCESS) {
+        return errCode;
     }
 
-    HcfCertCRLCollectionArray *certCRLCollectionsPtr = nullptr;
     HcfCertCRLCollectionArray certCRLCollections;
-    if (params->certCRLCollectionCnt != 0) {
-        certCRLCollections.data = params->certCRLCollections;
-        certCRLCollections.count = params->certCRLCollectionCnt;
-        certCRLCollectionsPtr = &certCRLCollections;
-    }
+    HcfCertCRLCollectionArray *certCRLCollectionsPtr = parseCRLCollections(
+        params->certCRLCollections, params->certCRLCollectionCnt,
+        certCRLCollections);
 
-    HcfRevChkOpArray *revChkOptionPtr = nullptr;
-    HcfRevChkOpArray revChkOption;
-    HcfRevocationCheckParam *revocationCheckParamPtr = nullptr;
     HcfRevocationCheckParam revocationCheckParam;
-    if (params->revocationCheckParam) {
-        if (params->revocationCheckParam->optionCnt != 0) {
-            revChkOption = HcfRevChkOpArray{
-                .data = params->revocationCheckParam->options,
-                .count = params->revocationCheckParam->optionCnt,
-            };
-            revChkOptionPtr = &revChkOption;
-        }
-        revocationCheckParam = HcfRevocationCheckParam{
-            .ocspRequestExtension = params->revocationCheckParam->ocspRequestExtension,
-            .ocspResponderURI = params->revocationCheckParam->ocspResponderURI,
-            .ocspResponderCert = params->revocationCheckParam->ocspResponderCert,
-            .ocspResponses = params->revocationCheckParam->ocspResponses,
-            .crlDownloadURI = params->revocationCheckParam->crlDownloadURI,
-            .options = revChkOptionPtr,
-            .ocspDigest = params->revocationCheckParam->ocspDigest,
-        };
-        revocationCheckParamPtr = &revocationCheckParam;
-    }
+    HcfRevChkOpArray revChkOption;
+    HcfRevocationCheckParam *revocationCheckParamPtr = parseRevocation(params->revocationCheckParam,
+                                                                       revocationCheckParam,
+                                                                       revChkOption);
 
-    HcfKuArray *keyUsagePtr = nullptr;
     HcfKuArray keyUsage;
-    if(params->keyUsageCnt != 0){
-        keyUsage = HcfKuArray {
-            .data = params->keyUsage,
-            .count = params->keyUsageCnt,
-        };
-        keyUsagePtr = &keyUsage;
-    }
+    HcfKuArray *keyUsagePtr = parseKeyUsage(params, keyUsage);
 
     auto hcfParams = HcfX509CertChainValidateParams{
         .date = params->date,
@@ -132,14 +101,12 @@ CfResult FfiCertCjX509CertChainValidate(const CjX509CertChain self,
     };
 
     HcfX509CertChainValidateResult hcfResult;
-    const CfResult errCode = self.chain->validate(self.chain, &hcfParams, &hcfResult);
+    errCode = self.chain->validate(self.chain, &hcfParams, &hcfResult);
 
-
-    for (int i = 0; i < anchors.count; ++i) {
+    for (uint32_t i = 0; i < anchors.count; ++i) {
         free(anchors.data[i]);
     }
     free(anchors.data);
-
 
     if (errCode == CF_SUCCESS) {
         result->trustAnchor.CAPubKey = hcfResult.trustAnchor->CAPubKey;
@@ -161,9 +128,9 @@ CfResult FfiCertCjX509CertChainHashCode(const CjX509CertChain self, CfBlob *out)
     return self.chain->hashCode(self.chain, out);
 }
 
-CfResult
-FfiCertBuildX509CertChain(const CjX509CertMatchParams &matchParams, const CjX509CertChainValidateParams &validParams,
-                          int32_t maxLength, CjX509CertChain *returnObj)
+CfResult FfiCertBuildX509CertChain(const CjX509CertMatchParams &matchParams,
+                                   const CjX509CertChainValidateParams &validParams,
+                                   int32_t maxLength, CjX509CertChain *returnObj)
 {
     HcfCertificate *certPtr = nullptr;
     if (matchParams.x509Cert != nullptr) {
@@ -179,68 +146,25 @@ FfiCertBuildX509CertChain(const CjX509CertMatchParams &matchParams, const CjX509
         subjectAlternativeNamesPtr = &subjectAlternativeNames;
     }
 
-
-    auto anchors = HcfX509TrustAnchorArray{
-        .data = static_cast<HcfX509TrustAnchor **>(malloc(sizeof(HcfX509TrustAnchor *) * (validParams.trustAnchorCnt))),
-        .count = validParams.trustAnchorCnt,
-    };
-    if (anchors.data == nullptr) {
-        return CF_ERR_MALLOC;
-    }
-    for (int i = 0; i < validParams.trustAnchorCnt; ++i) {
-        const auto item = static_cast<HcfX509TrustAnchor *>(malloc(sizeof(HcfX509TrustAnchor)));
-        if (item == nullptr) {
-            free(anchors.data);
-            return CF_ERR_MALLOC;
-        }
-        item->CAPubKey = validParams.trustAnchors[i].CAPubKey;
-        item->CACert = validParams.trustAnchors[i].CACert;
-        item->CASubject = validParams.trustAnchors[i].CASubject;
-        item->nameConstraints = validParams.trustAnchors[i].nameConstraints;
-        anchors.data[i] = item;
+    HcfX509TrustAnchorArray anchors;
+    CfResult errCode = parseAnchor(validParams.trustAnchors, validParams.trustAnchorCnt, anchors);
+    if (errCode != CF_SUCCESS) {
+        return errCode;
     }
 
-    HcfCertCRLCollectionArray *certCRLCollectionsPtr = nullptr;
     HcfCertCRLCollectionArray certCRLCollections;
-    if (validParams.certCRLCollectionCnt != 0) {
-        certCRLCollections.data = validParams.certCRLCollections;
-        certCRLCollections.count = validParams.certCRLCollectionCnt;
-        certCRLCollectionsPtr = &certCRLCollections;
-    }
+    HcfCertCRLCollectionArray *certCRLCollectionsPtr = parseCRLCollections(
+        validParams.certCRLCollections, validParams.certCRLCollectionCnt,
+        certCRLCollections);
 
-    HcfRevChkOpArray *revChkOptionPtr = nullptr;
-    HcfRevChkOpArray revChkOption;
-    HcfRevocationCheckParam *revocationCheckParamPtr = nullptr;
     HcfRevocationCheckParam revocationCheckParam;
-    if (validParams.revocationCheckParam) {
-        if (validParams.revocationCheckParam->optionCnt != 0) {
-            revChkOption = HcfRevChkOpArray{
-                .data = validParams.revocationCheckParam->options,
-                .count = validParams.revocationCheckParam->optionCnt,
-            };
-            revChkOptionPtr = &revChkOption;
-        }
-        revocationCheckParam = HcfRevocationCheckParam{
-            .ocspRequestExtension = validParams.revocationCheckParam->ocspRequestExtension,
-            .ocspResponderURI = validParams.revocationCheckParam->ocspResponderURI,
-            .ocspResponderCert = validParams.revocationCheckParam->ocspResponderCert,
-            .ocspResponses = validParams.revocationCheckParam->ocspResponses,
-            .crlDownloadURI = validParams.revocationCheckParam->crlDownloadURI,
-            .options = revChkOptionPtr,
-            .ocspDigest = validParams.revocationCheckParam->ocspDigest,
-        };
-        revocationCheckParamPtr = &revocationCheckParam;
-    }
+    HcfRevChkOpArray revChkOption;
+    HcfRevocationCheckParam *revocationCheckParamPtr = parseRevocation(validParams.revocationCheckParam,
+                                                                       revocationCheckParam,
+                                                                       revChkOption);
 
-    HcfKuArray *keyUsagePtr = nullptr;
     HcfKuArray keyUsage;
-    if(validParams.keyUsageCnt != 0){
-        keyUsage = HcfKuArray {
-            .data = validParams.keyUsage,
-            .count = validParams.keyUsageCnt,
-        };
-        keyUsagePtr = &keyUsage;
-    }
+    HcfKuArray *keyUsagePtr = parseKeyUsage(&validParams, keyUsage);
 
     const HcfX509CertChainBuildParameters hcfParams = {
         .certMatchParameters = {
@@ -275,7 +199,7 @@ FfiCertBuildX509CertChain(const CjX509CertMatchParams &matchParams, const CjX509
     };
 
     HcfX509CertChainBuildResult *buildResult = nullptr;
-    const auto errCode = HcfCertChainBuildResultCreate(&hcfParams, &buildResult);
+    errCode = HcfCertChainBuildResultCreate(&hcfParams, &buildResult);
     if (errCode != CF_SUCCESS) {
         return errCode;
     }
@@ -297,8 +221,15 @@ CfResult FfiCertCreateTrustAnchorWithKeyStore(const CfBlob *keyStore, const CfBl
         free(anchorArray->data);
         return CF_ERR_MALLOC;
     }
-    for (int i = 0; i < anchorArray->count; ++i) {
+    for (uint32_t i = 0; i < anchorArray->count; ++i) {
         const auto anchor = static_cast<CjX509TrustAnchor *>(malloc(sizeof(CjX509TrustAnchor)));
+        if (anchor == nullptr) {
+            for (int j = 0; j < i; j++) {
+                free(returnObj->data[j]);
+            }
+            free(anchorArray->data);
+            return CF_ERR_MALLOC;
+        }
         anchor->CAPubKey = anchorArray->data[i]->CAPubKey;
         anchor->CACert = anchorArray->data[i]->CACert;
         anchor->CASubject = anchorArray->data[i]->CASubject;
@@ -307,4 +238,85 @@ CfResult FfiCertCreateTrustAnchorWithKeyStore(const CfBlob *keyStore, const CfBl
     }
     free(anchorArray->data);
     return CF_SUCCESS;
+}
+
+HcfCertCRLCollectionArray *parseCRLCollections(HcfCertCrlCollection **certCRLCollections,
+                                               uint32_t certCRLCollectionCnt,
+                                               HcfCertCRLCollectionArray &ret)
+{
+    HcfCertCRLCollectionArray *certCRLCollectionsPtr = nullptr;
+    if (certCRLCollectionCnt != 0) {
+        ret.data = certCRLCollections;
+        ret.count = certCRLCollectionCnt;
+        certCRLCollectionsPtr = &ret;
+    }
+    return certCRLCollectionsPtr;
+}
+
+CfResult parseAnchor(CjX509TrustAnchor *trustAnchors, uint32_t trustAnchorCnt, HcfX509TrustAnchorArray &ret)
+{
+    ret = HcfX509TrustAnchorArray{
+        .data = static_cast<HcfX509TrustAnchor **>(malloc(sizeof(HcfX509TrustAnchor *) * (trustAnchorCnt))),
+        .count = trustAnchorCnt,
+    };
+    if (ret.data == nullptr) {
+        return CF_ERR_MALLOC;
+    }
+    for (uint32_t i = 0; i < trustAnchorCnt; ++i) {
+        const auto item = static_cast<HcfX509TrustAnchor *>(malloc(sizeof(HcfX509TrustAnchor)));
+        if (item == nullptr) {
+            for (uint32_t j = 0; j < i; j++) {
+                free(ret.data[j]);
+            }
+            free(ret.data);
+            return CF_ERR_MALLOC;
+        }
+        item->CAPubKey = trustAnchors[i].CAPubKey;
+        item->CACert = trustAnchors[i].CACert;
+        item->CASubject = trustAnchors[i].CASubject;
+        item->nameConstraints = trustAnchors[i].nameConstraints;
+        ret.data[i] = item;
+    }
+    return CF_SUCCESS;
+}
+
+HcfKuArray *parseKeyUsage(const CjX509CertChainValidateParams *params, HcfKuArray &keyUsage)
+{
+    HcfKuArray *keyUsagePtr = nullptr;
+    if (params->keyUsageCnt != 0) {
+        keyUsage = HcfKuArray{
+            .data = params->keyUsage,
+            .count = params->keyUsageCnt,
+        };
+        keyUsagePtr = &keyUsage;
+    }
+    return keyUsagePtr;
+}
+
+HcfRevocationCheckParam *parseRevocation(const CjRevocationCheckParam *checkParam,
+                                         HcfRevocationCheckParam &revocationCheckParam,
+                                         HcfRevChkOpArray &revChkOption)
+{
+    HcfRevocationCheckParam *revocationCheckParamPtr = nullptr;
+    HcfRevChkOpArray *revChkOptionPtr = nullptr;
+    if (checkParam) {
+        if (checkParam->optionCnt != 0) {
+            revChkOption = HcfRevChkOpArray{
+                .data = checkParam->options,
+                .count = checkParam->optionCnt,
+            };
+            revChkOptionPtr = &revChkOption;
+        }
+        revocationCheckParam = HcfRevocationCheckParam{
+            .ocspRequestExtension = checkParam->ocspRequestExtension,
+            .ocspResponderURI = checkParam->ocspResponderURI,
+            .ocspResponderCert = checkParam->ocspResponderCert,
+            .ocspResponses = checkParam->ocspResponses,
+            .crlDownloadURI = checkParam->crlDownloadURI,
+            .options = revChkOptionPtr,
+            .ocspDigest = checkParam->ocspDigest,
+        };
+        revocationCheckParamPtr = &revocationCheckParam;
+    }
+    return revocationCheckParamPtr;
 }

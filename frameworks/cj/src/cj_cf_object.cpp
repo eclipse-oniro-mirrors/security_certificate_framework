@@ -105,7 +105,7 @@ CfResult FfiCertCjCfObjectGetOidList(const CjCfObject self, int32_t valueType, C
             CfFreeParamSet(&outParamSet);
             return CF_ERR_MALLOC;
         }
-        for (int i = 0; i < out->count; ++i) {
+        for (uint32_t i = 0; i < out->count; ++i) {
             out->data[i] = outParamSet->params[i + 1].blob;
         }
         ret = CF_SUCCESS;

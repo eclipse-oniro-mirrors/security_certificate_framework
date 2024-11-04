@@ -15,6 +15,7 @@
 
 #include "cj_cert_common.h"
 
-void FfiCertDestroy(void *obj){
+void FfiCertDestroy(void *obj)
+{
     CfObjDestroy(obj);
 }

@@ -29,7 +29,6 @@ ohos_shared_library("cj_cert_ffi") {
   include_dirs = [
     "inc",
     "../common/v1.0/inc",
-    "//base/security/crypto_framework/frameworks/cj/include",
   ]
 
   cflags = [

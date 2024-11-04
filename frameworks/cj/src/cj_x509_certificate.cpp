@@ -275,7 +275,6 @@ CfResult FfiCertCjX509CertificateGetItem(const CjX509Certificate self, const int
         return CfResult(ret);
     }
 
-
     CfParamSet *outParamSet = nullptr;
     if ((ret = self.cfObj->get(self.cfObj, inParamSet, &outParamSet)) != CF_SUCCESS) {
         CfFreeParamSet(&inParamSet);

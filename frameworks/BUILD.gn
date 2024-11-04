@@ -16,9 +16,9 @@ import("//build/ohos.gni")
 group("certificate_framework_lib") {
   if (os_level == "standard") {
     public_deps = [
+      "cj:cj_cert_ffi",
       "core:certificate_framework_core",
       "js/napi/certificate:cert",
-      "cj:cj_cert_ffi",
     ]
   }
 }
