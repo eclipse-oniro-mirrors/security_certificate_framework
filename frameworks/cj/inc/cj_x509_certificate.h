@@ -37,7 +37,7 @@ FFI_DECLARE_INSTANCE(CjX509Certificate, const CfEncodingBlob *blob);
 CfResult FfiCertCjX509CertificateFromHcfCert(HcfX509Certificate *hcfCert, CjX509Certificate *returnObj);
 FFI_DECLARE_HcfX509Certificate(Verify, CfResult, HcfPubKey *pubKey);
 FFI_DECLARE_HcfX509Certificate(GetEncoded, CfResult, CfEncodingBlob *encodedByte);
-FFI_DECLARE_HcfX509Certificate(GetPublicKey, CfResult, HcfPubKey **retPubKey, const char **retAlgorithm);
+FFI_DECLARE_HcfX509Certificate(GetPublicKey, CfResult, HcfPubKey **retPubKey);
 FFI_DECLARE_HcfX509Certificate(CheckValidityWithDate, CfResult, const char *date);
 FFI_DECLARE_HcfX509Certificate(GetVersion, long);
 FFI_DECLARE_HcfX509Certificate(GetSerialNumber, CfResult, CfBlob *out);

@@ -14,7 +14,6 @@
  */
 
 #include "cf_param.h"
-#include "pub_key.h"
 
 #include "cj_x509_certificate.h"
 
@@ -99,14 +98,12 @@ CfResult FfiCertCjX509CertificateGetEncoded(const CjX509Certificate self, CfEnco
     return self.cert->base.getEncoded(&self.cert->base, encodedByte);
 }
 
-CfResult FfiCertCjX509CertificateGetPublicKey(const CjX509Certificate self, HcfPubKey **retPubKey,
-                                              const char **retAlgorithm)
+CfResult FfiCertCjX509CertificateGetPublicKey(const CjX509Certificate self, HcfPubKey **retPubKey)
 {
     HcfPubKey *pubKey = nullptr;
     const CfResult errCode = self.cert->base.getPublicKey(&self.cert->base, (void **) &pubKey);
     if (errCode == CF_SUCCESS) {
         *retPubKey = pubKey;
-        *retAlgorithm = pubKey->base.getAlgorithm(&pubKey->base);
     }
     return errCode;
 }

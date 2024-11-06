@@ -50,6 +50,4 @@ ohos_shared_library("cj_cert_ffi") {
   ]
 
   deps = [ "../core:certificate_framework_core" ]
-
-  external_deps = [ "crypto_framework:crypto_framework_lib" ]
 }

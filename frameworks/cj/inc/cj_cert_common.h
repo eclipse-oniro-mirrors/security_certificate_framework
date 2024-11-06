@@ -49,6 +49,10 @@ struct CjX509CrlMatchParams {
     CfBlob *minCRL;
 };
 
+typedef struct HcfPubKey HcfPubKey;
+struct HcfPubKey {
+};
+
 extern "C" void FfiCertDestroy(void *obj);
 
 #endif //CJ_CERT_COMMON_H
