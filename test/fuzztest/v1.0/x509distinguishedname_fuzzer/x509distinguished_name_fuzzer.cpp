@@ -88,17 +88,12 @@ namespace OHOS {
         if (data == nullptr || size < 1) {
             return false;
         }
-        uint8_t *testData = static_cast<uint8_t *>(CfMalloc(size + 1, sizeof(uint8_t)));
-        if (testData == nullptr) {
-            return false;
-        }
         CfBlob inStream = { 0 };
-        inStream.data = testData;
-        inStream.size = size + 1;
+        inStream.data = const_cast<uint8_t*>(data);
+        inStream.size = size;
         HcfX509DistinguishedName *x509DistinguishedNameObj = nullptr;
         CfResult res = HcfX509DistinguishedNameCreate(&inStream, false, &x509DistinguishedNameObj);
         if (res != CF_SUCCESS) {
-            CfFree(testData);
             return false;
         }
         CfObjDestroy(x509DistinguishedNameObj);
@@ -107,11 +102,9 @@ namespace OHOS {
         x509DistinguishedNameObj = nullptr;
         res = HcfX509DistinguishedNameCreate(&inStream, true, &x509DistinguishedNameObj);
         if (res != CF_SUCCESS) {
-            CfFree(testData);
             return false;
         }
         CfObjDestroy(x509DistinguishedNameObj);
-        CfFree(testData);
         return true;
     }
 }
