@@ -26,6 +26,13 @@ HcfRevocationCheckParam *parseRevocation(const CjRevocationCheckParam *checkPara
 
 HcfKuArray *parseKeyUsage(const CjX509CertChainValidateParams *params, HcfKuArray &keyUsage);
 
+void updateCertMatchParameters(HcfX509CertChainBuildParameters &hcfParams, const CjX509CertMatchParams *matchParams);
+
+void updateValidateParameters(const CjX509CertChainValidateParams &validParams,
+                              HcfX509CertChainBuildParameters &hcfParams);
+
+SubAltNameArray *parseSubAltName(const CjX509CertMatchParams &matchParams, SubAltNameArray &subjectAlternativeNames);
+
 int32_t FfiCertCjX509CertChainNewInstanceBlob(const CfEncodingBlob *blob, CjX509CertChain *returnObj)
 {
     auto chain = static_cast<HcfCertChain *>(malloc(sizeof(HcfCertChain)));
@@ -137,14 +144,8 @@ CfResult FfiCertBuildX509CertChain(const CjX509CertMatchParams &matchParams,
         certPtr = &matchParams.x509Cert->base;
     }
 
-    SubAltNameArray *subjectAlternativeNamesPtr = nullptr;
-    if (matchParams.subjectAlternativeNameCnt > 0) {
-        auto subjectAlternativeNames = SubAltNameArray{
-            .data = matchParams.subjectAlternativeNames,
-            .count = matchParams.subjectAlternativeNameCnt
-        };
-        subjectAlternativeNamesPtr = &subjectAlternativeNames;
-    }
+    SubAltNameArray subjectAlternativeNames;
+    SubAltNameArray *subjectAlternativeNamesPtr = parseSubAltName(matchParams, subjectAlternativeNames);
 
     HcfX509TrustAnchorArray anchors;
     CfResult errCode = parseAnchor(validParams.trustAnchors, validParams.trustAnchorCnt, anchors);
@@ -166,37 +167,16 @@ CfResult FfiCertBuildX509CertChain(const CjX509CertMatchParams &matchParams,
     HcfKuArray keyUsage;
     HcfKuArray *keyUsagePtr = parseKeyUsage(&validParams, keyUsage);
 
-    const HcfX509CertChainBuildParameters hcfParams = {
-        .certMatchParameters = {
-            certPtr,
-            matchParams.validDate,
-            matchParams.issuer,
-            matchParams.keyUsage,
-            matchParams.serialNumber,
-            matchParams.subject,
-            matchParams.publicKey,
-            matchParams.publicKeyAlgID,
-            subjectAlternativeNamesPtr,
-            matchParams.matchAllSubjectAltNames,
-            matchParams.authorityKeyIdentifier,
-            matchParams.minPathLenConstraint,
-            matchParams.extendedKeyUsage,
-            matchParams.nameConstraints,
-            matchParams.certPolicy,
-            matchParams.privateKeyValid,
-            matchParams.subjectKeyIdentifier,
-        },
-        .maxlength = maxLength,
-        .validateParameters = {
-            .date = validParams.date,
-            .trustAnchors = &anchors,
-            .certCRLCollections = certCRLCollectionsPtr,
-            .revocationCheckParam = revocationCheckParamPtr,
-            .policy = validParams.policy,
-            .sslHostname = validParams.sslHostname,
-            .keyUsage = keyUsagePtr,
-        }
-    };
+    HcfX509CertChainBuildParameters hcfParams = {};
+    updateCertMatchParameters(hcfParams, &matchParams);
+    hcfParams.certMatchParameters.x509Cert = certPtr;
+    hcfParams.certMatchParameters.subjectAlternativeNames = subjectAlternativeNamesPtr;
+    hcfParams.maxlength = maxLength;
+    updateValidateParameters(validParams, hcfParams);
+    hcfParams.validateParameters.trustAnchors = &anchors;
+    hcfParams.validateParameters.certCRLCollections = certCRLCollectionsPtr;
+    hcfParams.validateParameters.revocationCheckParam = revocationCheckParamPtr;
+    hcfParams.validateParameters.keyUsage = keyUsagePtr;
 
     HcfX509CertChainBuildResult *buildResult = nullptr;
     errCode = HcfCertChainBuildResultCreate(&hcfParams, &buildResult);
@@ -205,6 +185,48 @@ CfResult FfiCertBuildX509CertChain(const CjX509CertMatchParams &matchParams,
     }
     returnObj->chain = buildResult->certChain;
     return CF_SUCCESS;
+}
+
+SubAltNameArray *parseSubAltName(const CjX509CertMatchParams &matchParams, SubAltNameArray &subjectAlternativeNames)
+{
+    SubAltNameArray *subjectAlternativeNamesPtr = nullptr;
+    if (matchParams.subjectAlternativeNameCnt > 0) {
+        subjectAlternativeNames = SubAltNameArray{
+            .data = matchParams.subjectAlternativeNames,
+            .count = matchParams.subjectAlternativeNameCnt
+        };
+        subjectAlternativeNamesPtr = &subjectAlternativeNames;
+    }
+    return subjectAlternativeNamesPtr;
+}
+
+void updateValidateParameters(const CjX509CertChainValidateParams &validParams,
+                              HcfX509CertChainBuildParameters &hcfParams)
+{
+    hcfParams.validateParameters = {
+        .date = validParams.date,
+        .policy = validParams.policy,
+        .sslHostname = validParams.sslHostname,
+    };
+}
+
+void updateCertMatchParameters(HcfX509CertChainBuildParameters &hcfParams, const CjX509CertMatchParams *matchParams)
+{
+    hcfParams.certMatchParameters.validDate = matchParams->validDate;
+    hcfParams.certMatchParameters.issuer = matchParams->issuer;
+    hcfParams.certMatchParameters.keyUsage = matchParams->keyUsage;
+    hcfParams.certMatchParameters.serialNumber = matchParams->serialNumber;
+    hcfParams.certMatchParameters.subject = matchParams->subject;
+    hcfParams.certMatchParameters.publicKey = matchParams->publicKey;
+    hcfParams.certMatchParameters.publicKeyAlgID = matchParams->publicKeyAlgID;
+    hcfParams.certMatchParameters.matchAllSubjectAltNames = matchParams->matchAllSubjectAltNames;
+    hcfParams.certMatchParameters.authorityKeyIdentifier = matchParams->authorityKeyIdentifier;
+    hcfParams.certMatchParameters.minPathLenConstraint = matchParams->minPathLenConstraint;
+    hcfParams.certMatchParameters.extendedKeyUsage = matchParams->extendedKeyUsage;
+    hcfParams.certMatchParameters.nameConstraints = matchParams->nameConstraints;
+    hcfParams.certMatchParameters.certPolicy = matchParams->certPolicy;
+    hcfParams.certMatchParameters.privateKeyValid = matchParams->privateKeyValid;
+    hcfParams.certMatchParameters.subjectKeyIdentifier = matchParams->subjectKeyIdentifier;
 }
 
 CfResult FfiCertCreateTrustAnchorWithKeyStore(const CfBlob *keyStore, const CfBlob *pwd,
@@ -224,7 +246,7 @@ CfResult FfiCertCreateTrustAnchorWithKeyStore(const CfBlob *keyStore, const CfBl
     for (uint32_t i = 0; i < anchorArray->count; ++i) {
         const auto anchor = static_cast<CjX509TrustAnchor *>(malloc(sizeof(CjX509TrustAnchor)));
         if (anchor == nullptr) {
-            for (int j = 0; j < i; j++) {
+            for (uint32_t j = 0; j < i; j++) {
                 free(returnObj->data[j]);
             }
             free(anchorArray->data);
