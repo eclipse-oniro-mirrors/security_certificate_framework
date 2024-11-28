@@ -180,6 +180,20 @@ static inline bool CfIsAdditionOverflow(uint32_t a, uint32_t b)
     return (UINT32_MAX - a) < b;
 }
 
+typedef enum {
+    SIGNED_DATA = 0,
+} HcfCmsContentType;
+
+typedef enum {
+    BINARY = 0,
+    TEXT = 1,
+} HcfCmsContentDataFormat;
+
+typedef enum {
+    CMS_PEM = 0,
+    CMS_DER = 1,
+} HcfCmsFormat;
+
 #define MAX_COUNT_OID          100
 #define MAX_LEN_OID            128
 #define MAX_COUNT_NID          1195

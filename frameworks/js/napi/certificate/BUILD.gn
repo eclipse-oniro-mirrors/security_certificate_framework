@@ -39,6 +39,7 @@ ohos_shared_library("cert") {
 
   sources = [
     "src/napi_cert_chain_validator.cpp",
+    "src/napi_cert_cms_generator.cpp",
     "src/napi_cert_crl_collection.cpp",
     "src/napi_cert_crl_common.cpp",
     "src/napi_cert_extension.cpp",

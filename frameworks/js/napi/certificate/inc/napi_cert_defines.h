@@ -56,7 +56,8 @@ enum ResultCode {
     JS_ERR_CERT_HAS_EXPIRED = 19030004,
     JS_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY = 19030005,
     JS_ERR_KEYUSAGE_NO_CERTSIGN = 19030006,
-    JS_ERR_KEYUSAGE_NO_DIGITAL_SIGNATURE = 19030007
+    JS_ERR_KEYUSAGE_NO_DIGITAL_SIGNATURE = 19030007,
+    JS_ERR_CERT_INVALID_PRIVATE_KEY = 19030008
 };
 
 enum AsyncType { ASYNC_TYPE_CALLBACK = 1, ASYNC_TYPE_PROMISE = 2 };
@@ -127,6 +128,16 @@ const std::string CERT_CHAIN_VALIDATE_RESULLT_TAG_X509CERT = "entityCert";
 const std::string CERT_CHAIN_BUILD_RESULLT_TAG_CERTCHAIN = "certChain";
 const std::string CERT_CHAIN_BUILD_RESULLT_TAG_VALIDATERESULT = "validationResult";
 
+// Cms GENERATOR
+const std::string CMS_GENERATOR_MDNAME = "mdName";
+const std::string CMS_GENERATOR_ADD_ATTR = "addAttr";
+const std::string CMS_GENERATOR_ADD_CERT = "addCert";
+const std::string CMS_GENERATOR_ADD_SMIME_CAP_ATTR = "addSmimeCapAttr";
+const std::string CMS_GENERATOR_PRIVATE_KEY = "key";
+const std::string CMS_GENERATOR_PRIVATE_KEY_PASSWORD = "password";
+const std::string CMS_GENERATOR_CONTENT_DATA_FORMAT = "contentDataFormat";
+const std::string CMS_GENERATOR_OUT_FORMAT = "outFormat";
+const std::string CMS_GENERATOR_IS_DETACHED_CONTENT = "isDetachedContent";
 } // namespace CertFramework
 } // namespace OHOS
 
