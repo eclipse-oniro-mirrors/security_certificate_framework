@@ -50,5 +50,7 @@ typedef enum CfResult {
     CF_ERR_KEYUSAGE_NO_DIGITAL_SIGNATURE = -30007,
     /* Indicates that cert data format is invalid. */
     CF_ERR_INVALID_CODE_FORMAT = -30008,
+    /* Indicates that private key is invalid. */
+    CF_ERR_CERT_INVALID_PRIVATE_KEY = -30009,
 } CfResult;
 #endif

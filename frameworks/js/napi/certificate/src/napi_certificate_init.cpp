@@ -27,6 +27,7 @@
 #include "napi_x509_crl_entry.h"
 #include "napi_cert_crl_collection.h"
 #include "napi_x509_distinguished_name.h"
+#include "napi_cert_cms_generator.h"
 #include "securec.h"
 
 namespace OHOS {
@@ -68,7 +69,7 @@ static napi_value CreateCertResultCode(napi_env env)
         JS_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY);
     CertAddUint32Property(env, resultCode, "ERR_KEYUSAGE_NO_CERTSIGN", JS_ERR_KEYUSAGE_NO_CERTSIGN);
     CertAddUint32Property(env, resultCode, "ERR_KEYUSAGE_NO_DIGITAL_SIGNATURE", JS_ERR_KEYUSAGE_NO_DIGITAL_SIGNATURE);
-
+    CertAddUint32Property(env, resultCode, "ERR_MAYBE_WRONG_PASSWORD", JS_ERR_CERT_INVALID_PRIVATE_KEY);
     return resultCode;
 }
 
@@ -279,6 +280,47 @@ static void DefinePkcs12TypeProperties(napi_env env, napi_value exports)
     napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
 }
 
+static napi_value CreateCmsContentType(napi_env env)
+{
+    napi_value cmsContentType = nullptr;
+    napi_create_object(env, &cmsContentType);
+
+    CertAddUint32Property(env, cmsContentType, "SIGNED_DATA", SIGNED_DATA);
+    return cmsContentType;
+}
+
+static napi_value CreateCmsContentDataFormat(napi_env env)
+{
+    napi_value cmsContentDataFormat = nullptr;
+    napi_create_object(env, &cmsContentDataFormat);
+
+    CertAddUint32Property(env, cmsContentDataFormat, "BINARY", BINARY);
+    CertAddUint32Property(env, cmsContentDataFormat, "TEXT", TEXT);
+
+    return cmsContentDataFormat;
+}
+
+static napi_value CreateCmsFormat(napi_env env)
+{
+    napi_value cmsFormat = nullptr;
+    napi_create_object(env, &cmsFormat);
+
+    CertAddUint32Property(env, cmsFormat, "PEM", CMS_PEM);
+    CertAddUint32Property(env, cmsFormat, "DER", CMS_DER);
+
+    return cmsFormat;
+}
+
+static void DefineCertCmsGeneratorProperties(napi_env env, napi_value exports)
+{
+    napi_property_descriptor desc[] = {
+        DECLARE_NAPI_PROPERTY("CmsContentType", CreateCmsContentType(env)),
+        DECLARE_NAPI_PROPERTY("CmsContentDataFormat", CreateCmsContentDataFormat(env)),
+        DECLARE_NAPI_PROPERTY("CmsFormat", CreateCmsFormat(env)),
+    };
+    napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
+}
+
 /***********************************************
  * Module export and register
  ***********************************************/
@@ -295,6 +337,7 @@ static napi_value CertModuleExport(napi_env env, napi_value exports)
     DefineValidationKeyUsageTypeProperties(env, exports);
     DefineEncodingTypeProperties(env, exports);
     DefinePkcs12TypeProperties(env, exports);
+    DefineCertCmsGeneratorProperties(env, exports);
 
     NapiKey::DefineHcfKeyJSClass(env);
     NapiPubKey::DefinePubKeyJSClass(env);
@@ -309,6 +352,7 @@ static napi_value CertModuleExport(napi_env env, napi_value exports)
     NapiX509CertChain::DefineX509CertChainJsClass(env, exports);
     NapiX509CertChainBulidResult::DefineX509CertChainBuildResultJsClass(env, exports);
     NapiCertCRLCollection::DefineCertCRLCollectionJSClass(env, exports);
+    NapiCertCmsGenerator::DefineCertCmsGeneratorJSClass(env, exports);
     return exports;
 }
 
