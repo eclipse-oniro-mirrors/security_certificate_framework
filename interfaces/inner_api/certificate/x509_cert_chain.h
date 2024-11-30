@@ -74,6 +74,8 @@ CfResult HcfCertChainBuildResultCreate(
 CfResult HcfCreateTrustAnchorWithKeyStore(
     const CfBlob *keyStore, const CfBlob *pwd, HcfX509TrustAnchorArray **trustAnchorArray);
 
+CfResult HcfParsePKCS12(const CfBlob *keyStore, const HcfParsePKCS12Conf *conf, HcfX509P12Collection **p12Collection);
+
 #ifdef __cplusplus
 }
 #endif
