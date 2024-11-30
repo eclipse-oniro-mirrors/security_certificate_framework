@@ -257,3 +257,13 @@ CfResult HcfCreateTrustAnchorWithKeyStore(
 
     return func->createTrustAnchorFunc(keyStore, pwd, trustAnchorArray);
 }
+
+CfResult HcfParsePKCS12(const CfBlob *keyStore, const HcfParsePKCS12Conf *conf, HcfX509P12Collection **p12Collection)
+{
+    if (keyStore == NULL || conf == NULL || conf->pwd == NULL || p12Collection == NULL) {
+        LOGE("invalid param!");
+        return CF_INVALID_PARAMS;
+    }
+
+    return HcfX509ParsePKCS12Func(keyStore, conf, p12Collection);
+}

@@ -25,6 +25,7 @@
 #include "memory_mock.h"
 #include "securec.h"
 #include "string"
+#include "x509_trust_anchor.h"
 #include "x509_cert_chain.h"
 #include "x509_cert_chain_openssl.h"
 #include "x509_certificate_openssl.h"
@@ -2295,5 +2296,230 @@ HWTEST_F(CryptoX509CertChainTest, HcfCreateTrustAnchorWithKeyStoreTest001, TestS
 
     result = HcfCreateTrustAnchorWithKeyStore(&keyStore, &pwd, &trustAnchorArray);
     EXPECT_EQ(result, CF_ERR_CRYPTO_OPERATION);
+}
+
+static void FreeHcfX509P12Collection(HcfX509P12Collection *p12Collection)
+{
+    if (p12Collection == NULL) {
+        return;
+    }
+    if (p12Collection->cert != NULL) {
+        CfFree(p12Collection->cert);
+    }
+    if (p12Collection->prikey != NULL && p12Collection->prikey->data != NULL) {
+        CfFree(p12Collection->prikey->data);
+        CfFree(p12Collection->prikey);
+    }
+    if (p12Collection->otherCerts != NULL && p12Collection->otherCertsCount != 0) {
+        for (uint32_t i = 0; i < p12Collection->otherCertsCount; i++) {
+            if (p12Collection->otherCerts[i] != NULL) {
+                CfFree(p12Collection->otherCerts[i]);
+            }
+        }
+        CfFree(p12Collection->otherCerts);
+    }
+    CfFree(p12Collection);
+}
+
+HWTEST_F(CryptoX509CertChainTest, HcfParsePKCS12Test001, TestSize.Level0)
+{
+    CF_LOG_I("HcfParsePKCS12Test001");
+    CfBlob keyStore;
+    CfBlob pwd;
+    HcfX509P12Collection *p12Collection = NULL;
+    HcfParsePKCS12Conf conf = { 0 };
+
+    keyStore.data = const_cast<uint8_t *>(g_testChainKeystore);
+    keyStore.size = sizeof(g_testChainKeystore);
+    pwd.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testKeystorePwd));
+    pwd.size = strlen(g_testKeystorePwd) + 1;
+    conf.pwd = &pwd;
+    CfResult result = HcfParsePKCS12(&keyStore, &conf, &p12Collection);
+    EXPECT_EQ(result, CF_SUCCESS);
+    EXPECT_EQ(p12Collection != NULL, true);
+    FreeHcfX509P12Collection(p12Collection);
+    p12Collection = NULL;
+
+    result = HcfParsePKCS12(NULL, &conf, &p12Collection);
+    EXPECT_EQ(result, CF_INVALID_PARAMS);
+
+    result = HcfParsePKCS12(&keyStore, NULL, &p12Collection);
+    EXPECT_EQ(result, CF_INVALID_PARAMS);
+
+    result = HcfParsePKCS12(&keyStore, &conf, NULL);
+    EXPECT_EQ(result, CF_INVALID_PARAMS);
+
+    result = HcfParsePKCS12(NULL, NULL, &p12Collection);
+    EXPECT_EQ(result, CF_INVALID_PARAMS);
+
+    result = HcfParsePKCS12(NULL, NULL, NULL);
+    EXPECT_EQ(result, CF_INVALID_PARAMS);
+
+    result = HcfParsePKCS12(&keyStore, NULL, NULL);
+    EXPECT_EQ(result, CF_INVALID_PARAMS);
+
+    keyStore.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testSelfSignedCaCert));
+    keyStore.size = strlen(g_testSelfSignedCaCert) + 1;
+
+    result = HcfParsePKCS12(&keyStore, &conf, &p12Collection);
+    EXPECT_EQ(result, CF_ERR_CRYPTO_OPERATION);
+}
+
+HWTEST_F(CryptoX509CertChainTest, HcfParsePKCS12Test002, TestSize.Level0)
+{
+    CF_LOG_I("HcfParsePKCS12Test002");
+    CfBlob keyStore;
+    CfBlob pwd;
+    HcfX509P12Collection *p12Collection = NULL;
+    HcfParsePKCS12Conf conf = { 0 };
+
+    keyStore.data = const_cast<uint8_t *>(g_testChainKeystore);
+    keyStore.size = sizeof(g_testChainKeystore);
+    pwd.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testKeystorePwd));
+    pwd.size = strlen(g_testKeystorePwd) + 1;
+    conf.pwd = &pwd;
+
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), PKCS12_parse(_, _, _, _, _))
+        .WillOnce(Return(0))
+        .WillRepeatedly(Invoke(__real_PKCS12_parse));
+    CfResult result = HcfParsePKCS12(&keyStore, &conf, &p12Collection);
+    EXPECT_EQ(result, CF_ERR_CRYPTO_OPERATION);
+    X509OpensslMock::SetMockFlag(false);
+
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), PKCS12_parse(_, _, _, _, _))
+        .WillOnce(Return(1))
+        .WillRepeatedly(Invoke(__real_PKCS12_parse));
+    result = HcfParsePKCS12(&keyStore, &conf, &p12Collection);
+    EXPECT_EQ(result, CF_SUCCESS);
+    X509OpensslMock::SetMockFlag(false);
+
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), PKCS12_parse(_, _, _, _, _))
+        .WillOnce(Return(1))
+        .WillRepeatedly(Invoke(__real_PKCS12_parse));
+    result = HcfParsePKCS12(&keyStore, &conf, &p12Collection);
+    EXPECT_EQ(result, CF_SUCCESS);
+    X509OpensslMock::SetMockFlag(false);
+
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), PKCS12_parse(_, _, _, _, _))
+        .WillOnce(Invoke(PKCS12_parse_mock))
+        .WillRepeatedly(Invoke(__real_PKCS12_parse));
+    result = HcfParsePKCS12(&keyStore, &conf, &p12Collection);
+    EXPECT_EQ(result, CF_SUCCESS);
+    X509OpensslMock::SetMockFlag(false);
+}
+
+HWTEST_F(CryptoX509CertChainTest, HcfParsePKCS12Test003, TestSize.Level0)
+{
+    CF_LOG_I("HcfParsePKCS12Test003");
+    CfBlob keyStore;
+    CfBlob pwd;
+    HcfX509P12Collection *p12Collection = NULL;
+    HcfParsePKCS12Conf conf = { 0 };
+
+    keyStore.data = const_cast<uint8_t *>(g_testChainKeystore);
+    keyStore.size = sizeof(g_testChainKeystore);
+    pwd.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testKeystorePwd));
+    pwd.size = strlen(g_testKeystorePwd) + 1;
+    conf.pwd = &pwd;
+
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_num(_))
+        .WillOnce(Return(-1))
+        .WillRepeatedly(Invoke(__real_OPENSSL_sk_num));
+    CfResult result = HcfParsePKCS12(&keyStore, &conf, &p12Collection);
+    EXPECT_EQ(result, CF_SUCCESS);
+    X509OpensslMock::SetMockFlag(false);
+
+    SetMockFlag(true);
+    result = HcfParsePKCS12(&keyStore, &conf, &p12Collection);
+    EXPECT_EQ(result, CF_ERR_MALLOC);
+    SetMockFlag(false);
+
+    StartRecordMallocNum();
+    SetMockMallocIndex(1);
+    result = HcfParsePKCS12(&keyStore, &conf, &p12Collection);
+    EXPECT_EQ(result, CF_SUCCESS);
+    EndRecordMallocNum();
+
+    StartRecordMallocNum();
+    SetMockMallocIndex(2);
+    result = HcfParsePKCS12(&keyStore, &conf, &p12Collection);
+    EXPECT_EQ(result, CF_SUCCESS);
+    EndRecordMallocNum();
+}
+
+HWTEST_F(CryptoX509CertChainTest, HcfParsePKCS12Test004, TestSize.Level0)
+{
+    CF_LOG_I("HcfParsePKCS12Test004");
+    CfBlob keyStore;
+    CfBlob pwd;
+    HcfX509P12Collection *p12Collection = NULL;
+    HcfParsePKCS12Conf conf = { 0 };
+
+    keyStore.data = const_cast<uint8_t *>(g_testChainKeystore);
+    keyStore.size = sizeof(g_testChainKeystore);
+    pwd.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testKeystorePwd));
+    pwd.size = strlen(g_testKeystorePwd) + 1;
+    conf.pwd = &pwd;
+
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_num(_))
+        .WillOnce(Invoke(__real_OPENSSL_sk_num))
+        .WillOnce(Return(-1))
+        .WillRepeatedly(Invoke(__real_OPENSSL_sk_num));
+    CfResult result = HcfParsePKCS12(&keyStore, &conf, &p12Collection);
+    EXPECT_EQ(result, CF_SUCCESS);
+    X509OpensslMock::SetMockFlag(false);
+    FreeHcfX509P12Collection(p12Collection);
+    p12Collection = NULL;
+
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_value(_, _))
+        .WillOnce(Return(nullptr))
+        .WillRepeatedly(Invoke(__real_OPENSSL_sk_value));
+    result = HcfParsePKCS12(&keyStore, &conf, &p12Collection);
+    EXPECT_EQ(result, CF_SUCCESS);
+    X509OpensslMock::SetMockFlag(false);
+    FreeHcfX509P12Collection(p12Collection);
+    p12Collection = NULL;
+}
+
+HWTEST_F(CryptoX509CertChainTest, HcfParsePKCS12Test005, TestSize.Level0)
+{
+    CF_LOG_I("HcfParsePKCS12Test005");
+    CfBlob keyStore;
+    CfBlob pwd;
+    HcfX509P12Collection *p12Collection = NULL;
+    HcfParsePKCS12Conf conf = { 0 };
+
+    keyStore.data = const_cast<uint8_t *>(g_testChainKeystore);
+    keyStore.size = sizeof(g_testChainKeystore);
+    pwd.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testKeystorePwd));
+    pwd.size = strlen(g_testKeystorePwd) + 1;
+    conf.pwd = &pwd;
+
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), i2d_X509(_, _))
+        .WillOnce(Return(-1))
+        .WillRepeatedly(Invoke(__real_i2d_X509));
+    CfResult result = HcfParsePKCS12(&keyStore, &conf, &p12Collection);
+    EXPECT_EQ(result, CF_SUCCESS);
+    X509OpensslMock::SetMockFlag(false);
+    FreeHcfX509P12Collection(p12Collection);
+    p12Collection = NULL;
+
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), HcfX509CertificateCreate(_, _))
+        .WillOnce(Return(CF_INVALID_PARAMS))
+        .WillRepeatedly(Invoke(__real_HcfX509CertificateCreate));
+    result = HcfParsePKCS12(&keyStore, &conf, &p12Collection);
+    EXPECT_EQ(result, CF_SUCCESS);
+    X509OpensslMock::SetMockFlag(false);
+    FreeHcfX509P12Collection(p12Collection);
+    p12Collection = NULL;
 }
 } // namespace

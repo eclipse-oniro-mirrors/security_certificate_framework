@@ -30,6 +30,8 @@ CfResult HcfX509CertChainByArrSpiCreate(const HcfX509CertificateArray *inCerts, 
 CfResult HcfX509CertChainByParamsSpiCreate(const HcfX509CertChainBuildParameters *inParams, HcfX509CertChainSpi **spi);
 CfResult HcfX509CreateTrustAnchorWithKeyStoreFunc(
     const CfBlob *keyStore, const CfBlob *pwd, HcfX509TrustAnchorArray **trustAnchorArray);
+CfResult HcfX509ParsePKCS12Func(
+    const CfBlob *keyStore, const HcfParsePKCS12Conf *conf, HcfX509P12Collection **p12Collection);
 
 #ifdef __cplusplus
 }

@@ -90,9 +90,21 @@ const std::string CRL_MATCH_TAG_MINCRL = "minCRL";
 
 // X509 CERT CHAIN VALIDATE
 // X509TrustAnchor
+const std::string CERT_CHAIN_TRUSTANCHOR_TAG_CERT = "Cert";
+const std::string CERT_CHAIN_TRUSTANCHOR_TAG_PRIKEY = "CertPriKey";
 const std::string CERT_CHAIN_TRUSTANCHOR_TAG_CACERT = "CACert";
 const std::string CERT_CHAIN_TRUSTANCHOR_TAG_CAPUBKEY = "CAPubKey";
 const std::string CERT_CHAIN_TRUSTANCHOR_TAG_CASUBJECT = "CASubject";
+// PKCS12 conf
+const std::string CERT_CHAIN_PKCS12_TAG_PASSWORD = "password";
+const std::string CERT_CHAIN_PKCS12_TAG_IS_GET_PRIKEY = "isGetPrivateKey";
+const std::string CERT_CHAIN_PKCS12_TAG_PRIKEY_FORMAT = "privateKeyFormat";
+const std::string CERT_CHAIN_PKCS12_TAG_IS_GET_CERT = "isGetCert";
+const std::string CERT_CHAIN_PKCS12_TAG_IS_GET_OTHER_CERTS = "isGetOtherCerts";
+// PKCS12 data
+const std::string CERT_CHAIN_PKCS12_TAG_PRIKEY = "privateKey";
+const std::string CERT_CHAIN_PKCS12_TAG_CERT = "cert";
+const std::string CERT_CHAIN_PKCS12_TAG_OTHER_CERTS = "otherCerts";
 // CertChainValidateParameters
 const std::string CERT_CHAIN_VALIDATE_TAG_DATE = "date";
 const std::string CERT_CHAIN_VALIDATE_TAG_TRUSTANCHORS = "trustAnchors";
