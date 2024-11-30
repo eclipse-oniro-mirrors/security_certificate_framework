@@ -957,6 +957,53 @@ napi_value CertGetResourceName(napi_env env, const char *name)
     return resourceName;
 }
 
+bool GetBoolFromNapiValue(napi_env env, napi_value arg, bool &out, const char *name)
+{
+    napi_value obj = GetProp(env, arg, name);
+    if (obj == nullptr) {
+        return true;
+    }
+
+    napi_valuetype valueType;
+    napi_typeof(env, obj, &valueType);
+    if (valueType != napi_boolean) {
+        LOGE("Get %s obj is not bool!", name);
+        return false;
+    }
+
+    napi_status status = napi_get_value_bool(env, obj, &out);
+    if (status != napi_ok) {
+        LOGE("Failed to get value bool!");
+        return false;
+    }
+    return true;
+}
+
+bool GetIsPemFromStringNapiValue(napi_env env, napi_value arg, bool &out, const char *name)
+{
+    napi_value obj = GetProp(env, arg, name);
+    if (obj == nullptr) {
+        return true;
+    }
+
+    CfBlob *prikeyFormat = CertGetBlobFromStringJSParams(env, obj);
+    if (prikeyFormat == nullptr) {
+        LOGE("get blob failed!");
+        return false;
+    }
+    if (memcmp(prikeyFormat->data, "DER", prikeyFormat->size) != 0 &&
+        memcmp(prikeyFormat->data, "PEM", prikeyFormat->size) != 0) {
+        LOGE("Failed to get prikey format, invalid format!");
+        CfBlobFree(&prikeyFormat);
+        return false;
+    }
+    if (memcmp(prikeyFormat->data, "DER", prikeyFormat->size) == 0) {
+        out = false;
+    }
+    CfBlobFree(&prikeyFormat);
+    return true;
+}
+
 napi_value ConvertBlobToNapiValue(napi_env env, const CfBlob *blob)
 {
     if (blob == nullptr || blob->data == nullptr || blob->size == 0) {
