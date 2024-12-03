@@ -985,22 +985,15 @@ bool GetIsPemFromStringNapiValue(napi_env env, napi_value arg, bool &out, const 
     if (obj == nullptr) {
         return true;
     }
-
-    CfBlob *prikeyFormat = CertGetBlobFromStringJSParams(env, obj);
-    if (prikeyFormat == nullptr) {
-        LOGE("get blob failed!");
+    CfEncodinigBaseFormat encodingBaseFormat = PEM;
+    napi_status status = napi_get_value_int32(env, obj, (int32_t *)&encodingBaseFormat);
+    if (status != napi_ok) {
+        LOGE("get privateKeyFormat failed!");
         return false;
     }
-    if (memcmp(prikeyFormat->data, "DER", prikeyFormat->size) != 0 &&
-        memcmp(prikeyFormat->data, "PEM", prikeyFormat->size) != 0) {
-        LOGE("Failed to get prikey format, invalid format!");
-        CfBlobFree(&prikeyFormat);
-        return false;
-    }
-    if (memcmp(prikeyFormat->data, "DER", prikeyFormat->size) == 0) {
+    if (encodingBaseFormat == DER) {
         out = false;
     }
-    CfBlobFree(&prikeyFormat);
     return true;
 }
 

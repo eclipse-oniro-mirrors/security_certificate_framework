@@ -153,6 +153,11 @@ typedef enum {
     CF_ENCODING_UTF8 = 0,
 } CfEncodinigType;
 
+typedef enum {
+    PEM = 0,
+    DER = 1,
+} CfEncodinigBaseFormat;
+
 typedef struct {
     uint32_t tag;
     union {

@@ -716,13 +716,13 @@ static bool GetP12ConfFromValue(napi_env env, napi_value arg, HcfParsePKCS12Conf
     if (!GetIsPemFromStringNapiValue(env, arg, conf->isPem, CERT_CHAIN_PKCS12_TAG_PRIKEY_FORMAT.c_str())) {
         return false;
     }
-    if (!GetBoolFromNapiValue(env, arg, conf->isGetPriKey, CERT_CHAIN_PKCS12_TAG_IS_GET_PRIKEY.c_str())) {
+    if (!GetBoolFromNapiValue(env, arg, conf->isGetPriKey, CERT_CHAIN_PKCS12_TAG_NEEDS_PRIVATE_KEY.c_str())) {
         return false;
     }
-    if (!GetBoolFromNapiValue(env, arg, conf->isGetCert, CERT_CHAIN_PKCS12_TAG_IS_GET_CERT.c_str())) {
+    if (!GetBoolFromNapiValue(env, arg, conf->isGetCert, CERT_CHAIN_PKCS12_TAG_NEEDS_CERT.c_str())) {
         return false;
     }
-    if (!GetBoolFromNapiValue(env, arg, conf->isGetOtherCerts, CERT_CHAIN_PKCS12_TAG_IS_GET_OTHER_CERTS.c_str())) {
+    if (!GetBoolFromNapiValue(env, arg, conf->isGetOtherCerts, CERT_CHAIN_PKCS12_TAG_NEEDS_OTHER_CERTS.c_str())) {
         return false;
     }
 
@@ -791,7 +791,7 @@ static napi_value ConvertBlobToStringNapiValue(napi_env env, CfBlob *blob)
 
     (void)memcpy_s(returnString, len, blob->data, len);
     napi_value instance = nullptr;
-    napi_create_string_utf8(env, returnString, NAPI_AUTO_LENGTH, &instance);
+    napi_create_string_utf8(env, returnString, len, &instance);
     CfFree(returnString);
     return instance;
 }
@@ -1174,7 +1174,7 @@ void NapiX509CertChain::DefineX509CertChainJsClass(napi_env env, napi_value expo
     napi_property_descriptor desc[] = {
         DECLARE_NAPI_FUNCTION("createX509CertChain", NapiCreateX509CertChain),
         DECLARE_NAPI_FUNCTION("createTrustAnchorsWithKeyStore", NapiCreateTrustAnchorsWithKeyStore),
-        DECLARE_NAPI_FUNCTION("parsePKCS12", NapiParsePKCS12),
+        DECLARE_NAPI_FUNCTION("parsePkcs12", NapiParsePKCS12),
     };
     napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
 

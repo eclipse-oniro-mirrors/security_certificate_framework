@@ -97,10 +97,10 @@ const std::string CERT_CHAIN_TRUSTANCHOR_TAG_CAPUBKEY = "CAPubKey";
 const std::string CERT_CHAIN_TRUSTANCHOR_TAG_CASUBJECT = "CASubject";
 // PKCS12 conf
 const std::string CERT_CHAIN_PKCS12_TAG_PASSWORD = "password";
-const std::string CERT_CHAIN_PKCS12_TAG_IS_GET_PRIKEY = "isGetPrivateKey";
+const std::string CERT_CHAIN_PKCS12_TAG_NEEDS_PRIVATE_KEY = "needsPrivateKey";
 const std::string CERT_CHAIN_PKCS12_TAG_PRIKEY_FORMAT = "privateKeyFormat";
-const std::string CERT_CHAIN_PKCS12_TAG_IS_GET_CERT = "isGetCert";
-const std::string CERT_CHAIN_PKCS12_TAG_IS_GET_OTHER_CERTS = "isGetOtherCerts";
+const std::string CERT_CHAIN_PKCS12_TAG_NEEDS_CERT = "needsCert";
+const std::string CERT_CHAIN_PKCS12_TAG_NEEDS_OTHER_CERTS = "needsOtherCerts";
 // PKCS12 data
 const std::string CERT_CHAIN_PKCS12_TAG_PRIKEY = "privateKey";
 const std::string CERT_CHAIN_PKCS12_TAG_CERT = "cert";
