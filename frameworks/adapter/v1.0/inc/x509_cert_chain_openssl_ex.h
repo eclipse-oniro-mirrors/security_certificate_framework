@@ -40,7 +40,12 @@ CfResult CfHashCode(HcfX509CertChainSpi *self, CfBlob *out);
 X509 *GetX509FromHcfX509Certificate(const HcfCertificate *cert);
 CfResult GetLeafCertsFromCertStack(
     const HcfX509CertChainBuildParameters *inParams, STACK_OF(X509) *allCerts, STACK_OF(X509) *leafCerts);
-
+CfResult X509ToHcfX509Certificate(X509 *cert, HcfX509Certificate **returnObj);
+void FreeResources(X509 *cert, EVP_PKEY *pkey, STACK_OF(X509) *caStack);
+void FreeHcfX509P12Collection(HcfX509P12Collection *p12Collection);
+CfResult AllocateAndConvertCert(X509 *cert, HcfX509P12Collection *collection, bool isGet);
+CfResult AllocateAndConvertPkey(EVP_PKEY *pkey, HcfX509P12Collection *collection, bool isGet);
+CfResult AllocateAndConvertCertStack(STACK_OF(X509) *ca, HcfX509P12Collection *collection, bool isGet);
 #ifdef __cplusplus
 }
 #endif
