@@ -113,11 +113,11 @@ static CfResult ConvertPemToKey(const PrivateKeyInfo *privateKey, EVP_PKEY **pke
         return CF_ERR_CRYPTO_OPERATION;
     }
     EVP_PKEY *pkeyRet = NULL;
-    const char *password = privateKey->privateKeyPassword;
-    if (password == NULL) {
-        password = "";
+    const char *priPassword = privateKey->privateKeyPassword;
+    if (priPassword == NULL) {
+        priPassword = "";
     }
-    pkeyRet = PEM_read_bio_PrivateKey(bio, pkey, NULL, (char *)password);
+    pkeyRet = PEM_read_bio_PrivateKey(bio, pkey, NULL, (char *)priPassword);
     BIO_free(bio);
     if (pkeyRet == NULL) {
         LOGE("Failed to read private key from bio");
@@ -129,31 +129,18 @@ static CfResult ConvertPemToKey(const PrivateKeyInfo *privateKey, EVP_PKEY **pke
 
 static CfResult ConvertDerToKey(const PrivateKeyInfo *privateKey, EVP_PKEY **pkey)
 {
-    BIO *bio = BIO_new(BIO_s_mem());
-    if (bio == NULL) {
-        LOGE("Failed to init bio.");
-        CfPrintOpensslError();
-        return CF_ERR_CRYPTO_OPERATION;
-    }
-    if (BIO_write(bio, privateKey->privateKey->data, privateKey->privateKey->len) <= 0) {
-        BIO_free(bio);
-        LOGE("Failed to write pem private key to bio");
-        CfPrintOpensslError();
-        return CF_ERR_CRYPTO_OPERATION;
-    }
-
     OSSL_DECODER_CTX *dctx = OSSL_DECODER_CTX_new_for_pkey(pkey, "DER", NULL, "RSA", EVP_PKEY_KEYPAIR, NULL, NULL);
     if (dctx == NULL) {
         LOGE("Failed to init decoder context.");
         CfPrintOpensslError();
         return CF_ERR_CRYPTO_OPERATION;
     }
-    const char *password = privateKey->privateKeyPassword;
-    if (password == NULL) {
-        password = "";
+    const char *priPassword = privateKey->privateKeyPassword;
+    if (priPassword == NULL) {
+        priPassword = "";
     }
 
-    if (OSSL_DECODER_CTX_set_passphrase(dctx, (const unsigned char *)password, strlen(password)) != 1) {
+    if (OSSL_DECODER_CTX_set_passphrase(dctx, (const unsigned char *)priPassword, strlen(priPassword)) != 1) {
         LOGE("Failed to set passphrase.");
         CfPrintOpensslError();
         OSSL_DECODER_CTX_free(dctx);
@@ -163,7 +150,7 @@ static CfResult ConvertDerToKey(const PrivateKeyInfo *privateKey, EVP_PKEY **pke
     const unsigned char *pdata = privateKey->privateKey->data;
     size_t pdataLen = privateKey->privateKey->len;
     if (OSSL_DECODER_from_data(dctx, &pdata, &pdataLen) != 1) {
-        LOGE("Failed to decode private key from bio.");
+        LOGE("Failed to decode private key.");
         CfPrintOpensslError();
         OSSL_DECODER_CTX_free(dctx);
         EVP_PKEY_free(*pkey);
@@ -304,8 +291,8 @@ static CfResult AddCertOpenssl(HcfCmsGeneratorSpi *self, const HcfCertificate *c
         return CF_INVALID_PARAMS;  // Changed from false to proper error code
     }
 
-    if (!CMS_add0_cert(impl->cms, certOpenssl)) {
-        LOGE("CMS_add0_cert fail.");
+    if (!CMS_add1_cert(impl->cms, certOpenssl)) {
+        LOGE("CMS_add1_cert fail.");
         CfPrintOpensslError();
         return CF_ERR_CRYPTO_OPERATION;
     }
@@ -391,10 +378,10 @@ static CfResult DoFinalOpenssl(HcfCmsGeneratorSpi *self, const CfBlob *content, 
         CMS_set_detached(impl->cms, detached);
     }
     int ret = CMS_final(impl->cms, bio, NULL, flags);
+    BIO_free(bio);
     if (ret != 1) {
         LOGE("CMS_final fail.");
         CfPrintOpensslError();
-        BIO_free(bio);
         return CF_ERR_CRYPTO_OPERATION;
     }
     return WriteBioToCms(impl->cms, options, out);

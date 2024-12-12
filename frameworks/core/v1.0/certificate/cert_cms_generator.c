@@ -125,7 +125,7 @@ CfResult HcfCreateCmsGenerator(HcfCmsContentType type, HcfCmsGenerator **cmsGene
     const HcfCmsGeneratorFuncSet *func = FindAbility(type);
     if (func == NULL) {
         LOGE("Func is null!");
-        return CF_NOT_SUPPORT;
+        return CF_INVALID_PARAMS;
     }
 
     HcfCmsGeneratorSpi *spiObj = NULL;

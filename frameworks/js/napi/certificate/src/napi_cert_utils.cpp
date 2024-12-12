@@ -159,57 +159,6 @@ static bool GetDataOfEncodingBlob(napi_env env, napi_value data, CfEncodingBlob 
     return true;
 }
 
-static CfEncodingBlob *CertGetEncodingBlobFromStringJSParams(napi_env env, napi_value arg)
-{
-    napi_valuetype valueType;
-    napi_typeof(env, arg, &valueType);
-    if (valueType != napi_string) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "param type is not string"));
-        LOGE("wrong argument type. expect string type. [Type]: %d", valueType);
-        return nullptr;
-    }
-
-    size_t length = 0;
-    if (napi_get_value_string_utf8(env, arg, nullptr, 0, &length) != napi_ok) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "can not get string length!"));
-        LOGE("can not get string length");
-        return nullptr;
-    }
-
-    if (length == 0) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "string length is 0!"));
-        LOGE("string length is 0");
-        return nullptr;
-    }
-
-    CfEncodingBlob *newBlob = static_cast<CfEncodingBlob *>(CfMalloc(sizeof(CfEncodingBlob), 0));
-    if (newBlob == nullptr) {
-        LOGE("Failed to allocate newBlob memory!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed!"));
-        return nullptr;
-    }
-
-    newBlob->len = length + 1;
-    newBlob->data = static_cast<uint8_t *>(CfMalloc(newBlob->len, 0));
-    if (newBlob->data == nullptr) {
-        LOGE("malloc blob data failed!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed"));
-        CfFree(newBlob);
-        return nullptr;
-    }
-
-    if (napi_get_value_string_utf8(env, arg, reinterpret_cast<char *>(newBlob->data), newBlob->len, &length) !=
-        napi_ok) {
-        LOGE("can not get string value");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get string failed"));
-        CfFree(newBlob->data);
-        CfFree(newBlob);
-        return nullptr;
-    }
-    newBlob->encodingFormat = CF_FORMAT_PEM;
-    return newBlob;
-}
-
 static char *CertGetStringFromValue(napi_env env, napi_value arg)
 {
     napi_valuetype valueType;
@@ -232,74 +181,21 @@ static char *CertGetStringFromValue(napi_env env, napi_value arg)
         return nullptr;
     }
 
-    char *password = static_cast<char *>(CfMalloc(length + 1, 0));
-    if (password == nullptr) {
-        LOGE("Failed to allocate password memory!");
+    char *value = static_cast<char *>(CfMalloc(length + 1, 0));
+    if (value == nullptr) {
+        LOGE("Failed to allocate value memory!");
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed!"));
         return nullptr;
     }
 
-    if (napi_get_value_string_utf8(env, arg, password, length + 1, &length) != napi_ok) {
-        LOGE("can not get password value");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get password failed"));
-        memset_s(password, length + 1, 0, length + 1);
-        CfFree(password);
+    if (napi_get_value_string_utf8(env, arg, value, length + 1, &length) != napi_ok) {
+        LOGE("can not get value value");
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get value failed"));
+        memset_s(value, length + 1, 0, length + 1);
+        CfFree(value);
         return nullptr;
     }
-    return password;
-}
-
-static CfEncodingBlob *CertGetEncodingBlobFromUint8ArrJSParams(napi_env env, napi_value arg)
-{
-    size_t length = 0;
-    size_t offset = 0;
-    void *rawData = nullptr;
-    napi_value arrayBuffer = nullptr;
-    napi_typedarray_type arrayType;
-    // Warning: Do not release the rawData returned by this interface because the rawData is managed by VM.
-    napi_status status = napi_get_typedarray_info(
-        env, arg, &arrayType, &length, reinterpret_cast<void **>(&rawData), &arrayBuffer, &offset);
-    if (status != napi_ok) {
-        LOGE("failed to get valid rawData.");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "failed to get valid rawData!"));
-        return nullptr;
-    }
-    if (arrayType != napi_uint8_array) {
-        LOGE("input data is not uint8 array.");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "input data is not uint8 array!"));
-        return nullptr;
-    }
-
-    if (length == 0 || rawData == nullptr) {
-        LOGE("array length is 0!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "array length is 0!"));
-        return nullptr;
-    }
-
-    CfEncodingBlob *newBlob = static_cast<CfEncodingBlob *>(CfMalloc(sizeof(CfEncodingBlob), 0));
-    if (newBlob == nullptr) {
-        LOGE("Failed to allocate newBlob memory!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed!"));
-        return nullptr;
-    }
-
-    newBlob->len = length;
-    newBlob->data = static_cast<uint8_t *>(CfMalloc(length, 0));
-    if (newBlob->data == nullptr) {
-        LOGE("malloc blob data failed!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed!"));
-        CfFree(newBlob);
-        return nullptr;
-    }
-    if (memcpy_s(newBlob->data, length, rawData, length) != EOK) {
-        LOGE("memcpy_s blob data failed!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_COPY, "copy memory failed!"));
-        CfFree(newBlob->data);
-        CfFree(newBlob);
-        return nullptr;
-    }
-    newBlob->encodingFormat = CF_FORMAT_DER;
-    return newBlob;
+    return value;
 }
 
 bool GetEncodingBlobFromValue(napi_env env, napi_value obj, CfEncodingBlob **encodingBlob)
@@ -338,28 +234,86 @@ bool GetEncodingBlobFromValue(napi_env env, napi_value obj, CfEncodingBlob **enc
     return true;
 }
 
+static bool AllocatePrivateKey(PrivateKeyInfo **privateKey)
+{
+    (*privateKey)->privateKey = static_cast<CfEncodingBlob *>(CfMalloc(sizeof(CfEncodingBlob), 0));
+    return (*privateKey)->privateKey != nullptr;
+}
+
+static bool GetBlobFromData(napi_env env, napi_value data, CfBlob **blob, napi_valuetype valueType)
+{
+    if (valueType == napi_string) {
+        *blob = CertGetBlobFromStringJSParams(env, data);
+        if (*blob == nullptr) {
+            LOGE("get private key from string failed!");
+            return false;
+        }
+        return true;
+    } else {
+        *blob = CertGetBlobFromUint8ArrJSParams(env, data);
+        if (*blob == nullptr) {
+            LOGE("get private key from uint8 array failed!");
+            return false;
+        }
+        return true;
+    }
+}
+
+static bool CopyBlobDataToPrivateKey(CfBlob *blob, CfEncodingBlob *privateKey)
+{
+    privateKey->data = static_cast<uint8_t *>(CfMalloc(blob->size, 0));
+    if (privateKey->data == nullptr) {
+        LOGE("malloc private key data failed!");
+        return false;
+    }
+    if (memcpy_s(privateKey->data, blob->size, blob->data, blob->size) != EOK) {
+        LOGE("memcpy_s private key data failed!");
+        CfFree(privateKey->data);
+        privateKey->data = nullptr;
+        return false;
+    }
+    privateKey->len = blob->size;
+    return true;
+}
+
 static bool GetPrivateKeyFromValue(napi_env env, napi_value obj, PrivateKeyInfo **privateKey)
 {
     napi_value data = nullptr;
     napi_valuetype valueType = napi_undefined;
     napi_status status = napi_get_named_property(env, obj, CMS_GENERATOR_PRIVATE_KEY.c_str(), &data);
-    napi_typeof(env, data, &valueType);
-    if (status != napi_ok || (data == nullptr) || (valueType == napi_undefined)) {
+    if (status != napi_ok || data == nullptr) {
+        LOGE("Failed to get private key property!");
         return false;
     }
-    if (valueType == napi_string) {
-        (*privateKey)->privateKey = CertGetEncodingBlobFromStringJSParams(env, data);
-        if ((*privateKey)->privateKey == nullptr) {
-            LOGE("get private key from string failed!");
-            return false;
-        }
-    } else {
-        (*privateKey)->privateKey = CertGetEncodingBlobFromUint8ArrJSParams(env, data);
-        if ((*privateKey)->privateKey == nullptr) {
-            LOGE("get private key from uint8 array failed!");
-            return false;
-        }
+
+    napi_typeof(env, data, &valueType);
+    if (valueType == napi_undefined) {
+        LOGE("Invalid type for private key property!");
+        return false;
     }
+
+    if (!AllocatePrivateKey(privateKey)) {
+        LOGE("malloc private key failed!");
+        return false;
+    }
+
+    CfBlob *blob = nullptr;
+    if (!GetBlobFromData(env, data, &blob, valueType)) {
+        CfFree((*privateKey)->privateKey);
+        (*privateKey)->privateKey = nullptr;
+        return false;
+    }
+
+    (*privateKey)->privateKey->encodingFormat = (valueType == napi_string) ? CF_FORMAT_PEM : CF_FORMAT_DER;
+
+    if (!CopyBlobDataToPrivateKey(blob, (*privateKey)->privateKey)) {
+        CfFree(blob);
+        CfFree((*privateKey)->privateKey);
+        (*privateKey)->privateKey = nullptr;
+        return false;
+    }
+
+    CfFree(blob);
     return true;
 }
 
@@ -531,6 +485,8 @@ bool GetCmsSignerOptionsFromValue(napi_env env, napi_value obj, HcfCmsSignerOpti
         return false;
     }
     if (!BuildCmsSignerOptions(env, obj, *cmsSignerOptions)) {
+        CfFree((*cmsSignerOptions)->mdName);
+        (*cmsSignerOptions)->mdName = nullptr;
         CfFree(*cmsSignerOptions);
         *cmsSignerOptions = nullptr;
         return false;
@@ -544,7 +500,6 @@ static bool GetFormat(napi_env env, napi_value arg, HcfCmsFormat *format)
     napi_has_named_property(env, arg, CMS_GENERATOR_OUT_FORMAT.c_str(), &result);
     if (!result) {
         LOGI("%s do not exist!", CMS_GENERATOR_OUT_FORMAT.c_str());
-        *format = CMS_DER;
         return true;
     }
     napi_value obj = nullptr;
@@ -569,7 +524,6 @@ static bool GetIsDetachedContent(napi_env env, napi_value arg, bool *isDetachedC
     napi_has_named_property(env, arg, CMS_GENERATOR_IS_DETACHED_CONTENT.c_str(), &result);
     if (!result) {
         LOGI("%s do not exist!", CMS_GENERATOR_IS_DETACHED_CONTENT.c_str());
-        *isDetachedContent = false;
         return true;
     }
     napi_value obj = nullptr;
@@ -594,7 +548,6 @@ static bool GetContentDataFormat(napi_env env, napi_value arg, HcfCmsContentData
     napi_has_named_property(env, arg, CMS_GENERATOR_CONTENT_DATA_FORMAT.c_str(), &result);
     if (!result) {
         LOGI("%s do not exist!", CMS_GENERATOR_CONTENT_DATA_FORMAT.c_str());
-        *dataFormat = BINARY;
         return true;
     }
     napi_value obj = nullptr;
@@ -613,7 +566,7 @@ static bool GetContentDataFormat(napi_env env, napi_value arg, HcfCmsContentData
     return true;
 }
 
-static bool BuildCmsGeneratorOptions(napi_env env, napi_value obj, HcfCmsGeneratorOptions **options)
+bool GetCmsGeneratorOptionsFromValue(napi_env env, napi_value obj, HcfCmsGeneratorOptions **options)
 {
     napi_valuetype type;
     napi_typeof(env, obj, &type);
@@ -631,22 +584,6 @@ static bool BuildCmsGeneratorOptions(napi_env env, napi_value obj, HcfCmsGenerat
     }
     if (!GetIsDetachedContent(env, obj, &(*options)->isDetachedContent)) {
         LOGE("GetIsDetachedContent failed!");
-        return false;
-    }
-    return true;
-}
-
-bool GetCmsGeneratorOptionsFromValue(napi_env env, napi_value obj, HcfCmsGeneratorOptions **cmsGeneratorOptions)
-{
-    *cmsGeneratorOptions = static_cast<HcfCmsGeneratorOptions *>(CfMalloc(sizeof(HcfCmsGeneratorOptions), 0));
-    if (*cmsGeneratorOptions == nullptr) {
-        LOGE("malloc cms generator options failed!");
-        return false;
-    }
-    if (!BuildCmsGeneratorOptions(env, obj, cmsGeneratorOptions)) {
-        LOGE("Build cms generator options failed");
-        CfFree(*cmsGeneratorOptions);
-        *cmsGeneratorOptions = nullptr;
         return false;
     }
     return true;
@@ -872,7 +809,6 @@ CfBlob *CertGetBlobFromUint8ArrJSParams(napi_env env, napi_value arg)
         CfFree(newBlob);
         return nullptr;
     }
-
     return newBlob;
 }
 
@@ -923,7 +859,6 @@ CfBlob *CertGetBlobFromStringJSParams(napi_env env, napi_value arg)
         CfFree(newBlob);
         return nullptr;
     }
-
     return newBlob;
 }
 

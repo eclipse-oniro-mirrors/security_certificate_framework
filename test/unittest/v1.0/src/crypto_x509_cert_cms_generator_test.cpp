@@ -303,10 +303,10 @@ HWTEST_F(CryptoX509CertCmsGeneratorTest, CreateCmsGenerator002, TestSize.Level0)
 {
     HcfCmsGenerator *cmsGenerator = nullptr;
     CfResult res = HcfCreateCmsGenerator(static_cast<HcfCmsContentType>(1), &cmsGenerator);
-    EXPECT_EQ(res, CF_NOT_SUPPORT);
+    EXPECT_EQ(res, CF_INVALID_PARAMS);
     EXPECT_EQ(cmsGenerator, nullptr);
     res = HcfCreateCmsGenerator(static_cast<HcfCmsContentType>(-1), &cmsGenerator);
-    EXPECT_EQ(res, CF_NOT_SUPPORT);
+    EXPECT_EQ(res, CF_INVALID_PARAMS);
     EXPECT_EQ(cmsGenerator, nullptr);
 }
 // 证书私钥带密码pem格式addSigner正常场景

@@ -51,10 +51,8 @@ struct CmsDoFinalCtx {
 static void FreeCmsSignerOptions(HcfCmsSignerOptions *options)
 {
     if (options != nullptr) {
-        if (options->mdName != nullptr) {
-            CfFree(options->mdName);
-            options->mdName = nullptr;
-        }
+        CfFree(options->mdName);
+        options->mdName = nullptr;
         CfFree(options);
         options = nullptr;
     }
@@ -109,10 +107,9 @@ static void FreePrivateKeyInfo(PrivateKeyInfo *privateKey)
 {
     if (privateKey != nullptr) {
         if (privateKey->privateKey != nullptr) {
-            if (privateKey->privateKey->data != nullptr) {
-                CfFree(privateKey->privateKey->data);
-                privateKey->privateKey->data = nullptr;
-            }
+            memset_s(privateKey->privateKey->data, privateKey->privateKey->len, 0, privateKey->privateKey->len);
+            CfFree(privateKey->privateKey->data);
+            privateKey->privateKey->data = nullptr;
             CfFree(privateKey->privateKey);
             privateKey->privateKey = nullptr;
         }
@@ -268,28 +265,16 @@ static bool BuildCmsDoFinalCtx(napi_env env, napi_callback_info info, CmsDoFinal
     }
     ctx->content = CertGetBlobFromUint8ArrJSParams(env, argv[PARAM0]);
     if (ctx->content == nullptr) {
-        FreeCmsDoFinalCtx(env, ctx);
         return false;
     }
     if (argc == expectedArgc) {
         if (!GetCmsGeneratorOptionsFromValue(env, argv[PARAM1], &ctx->options)) {
-            FreeCmsDoFinalCtx(env, ctx);
             return false;
         }
-    } else {
-        ctx->options = static_cast<HcfCmsGeneratorOptions *>(CfMalloc(sizeof(HcfCmsGeneratorOptions), 0));
-        if (ctx->options == nullptr) {
-            FreeCmsDoFinalCtx(env, ctx);
-            return false;
-        }
-        ctx->options->dataFormat = BINARY;
-        ctx->options->outFormat = CMS_DER;
-        ctx->options->isDetachedContent = false;
     }
     ctx->cmsGenerator = napiCmsGenerator->GetCertCmsGenerator();
     if (napi_create_reference(env, thisVar, 1, &ctx->generatorRef) != napi_ok) {
-        LOGE("create generator ref failed when convert pem asym key!");
-        FreeCmsDoFinalCtx(env, ctx);
+        LOGE("create generator ref failed!");
         return false;
     }
     napi_create_promise(env, &ctx->deferred, &ctx->promise);
@@ -325,7 +310,7 @@ static void CmsDoFinalAsyncWorkReturn(napi_env env, napi_status status, void *da
         return;
     }
     napi_value instance = nullptr;
-    if (ctx->options->outFormat == 0) {
+    if (ctx->options->outFormat == CMS_PEM) {
         napi_create_string_utf8(env, reinterpret_cast<char *>(ctx->outBlob.data), ctx->outBlob.size, &instance);
     } else {
         instance = ConvertBlobToUint8ArrNapiValue(env, &ctx->outBlob);
@@ -363,9 +348,20 @@ napi_value NapiCertCmsGenerator::DoFinal(napi_env env, napi_callback_info info)
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "create context fail!"));
         return nullptr;
     }
+    ctx->options = static_cast<HcfCmsGeneratorOptions *>(CfMalloc(sizeof(HcfCmsGeneratorOptions), 0));
+    if (ctx->options == nullptr) {
+        LOGE("create options fail.");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "create options fail!"));
+        FreeCmsDoFinalCtx(env, ctx);
+        return nullptr;
+    }
+    ctx->options->dataFormat = BINARY;
+    ctx->options->outFormat = CMS_DER;
+    ctx->options->isDetachedContent = false;
+
     if (!BuildCmsDoFinalCtx(env, info, ctx)) {
         LOGE("build context fail.");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "build context fail."));
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "build cms doFinal Ctx fail."));
         FreeCmsDoFinalCtx(env, ctx);
         return nullptr;
     }
@@ -434,6 +430,15 @@ napi_value NapiCertCmsGenerator::DoFinalSync(napi_env env, napi_callback_info in
         return nullptr;
     }
     HcfCmsGeneratorOptions *options = nullptr;
+    options = static_cast<HcfCmsGeneratorOptions *>(CfMalloc(sizeof(HcfCmsGeneratorOptions), 0));
+    if (options == nullptr) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc options failed!"));
+        CfBlobDataFree(content);
+        return nullptr;
+    }
+    options->dataFormat = BINARY;
+    options->outFormat = CMS_DER;
+    options->isDetachedContent = false;
     if (argc == expectedArgc) {
         if (!GetCmsGeneratorOptionsFromValue(env, argv[PARAM1], &options)) {
             napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS,
@@ -441,16 +446,6 @@ napi_value NapiCertCmsGenerator::DoFinalSync(napi_env env, napi_callback_info in
             CfBlobDataFree(content);
             return nullptr;
         }
-    } else {
-        options = static_cast<HcfCmsGeneratorOptions *>(CfMalloc(sizeof(HcfCmsGeneratorOptions), 0));
-        if (options == nullptr) {
-            napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc options failed!"));
-            CfBlobDataFree(content);
-            return nullptr;
-        }
-        options->dataFormat = BINARY;
-        options->outFormat = CMS_DER;
-        options->isDetachedContent = false;
     }
     return GetDoFinalResult(env, napiCmsGenerator, content, options);
 }
