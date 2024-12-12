@@ -254,7 +254,6 @@ static void BuildX509CertChainComplete(napi_env env, napi_status status, void *d
         LOGE("Failed to create napi cert chain class");
         CfObjDestroy(context->buildResult->certChain);
         context->certChain = nullptr;
-        DeleteCertChainContext(env, context, true);
     }
     ReturnJSResult(env, context->async, instance);
     DeleteCertChainContext(env, context);
