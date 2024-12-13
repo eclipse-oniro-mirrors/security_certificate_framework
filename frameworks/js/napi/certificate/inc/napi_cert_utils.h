@@ -25,6 +25,7 @@
 #include "napi/native_common.h"
 #include "napi_cert_defines.h"
 #include "x509_cert_match_parameters.h"
+#include "cert_cms_generator.h"
 
 namespace OHOS {
 namespace CertFramework {
@@ -70,6 +71,9 @@ napi_value ConvertBlobToBigIntWords(napi_env env, const CfBlob &blob);
 napi_value ConvertBlobToInt64(napi_env env, const CfBlob &blob);
 napi_value ConvertArrayStringToNapiValue(napi_env env, CfArray *array);
 bool ConvertBlobToEncodingBlob(const CfBlob &blob, CfEncodingBlob *encodingBlob);
+bool GetPrivateKeyInfoFromValue(napi_env env, napi_value obj, PrivateKeyInfo **privateKey);
+bool GetCmsSignerOptionsFromValue(napi_env env, napi_value obj, HcfCmsSignerOptions **cmsSignerOptions);
+bool GetCmsGeneratorOptionsFromValue(napi_env env, napi_value obj, HcfCmsGeneratorOptions **cmsGeneratorOptions);
 }  // namespace CertFramework
 }  // namespace OHOS
 #endif

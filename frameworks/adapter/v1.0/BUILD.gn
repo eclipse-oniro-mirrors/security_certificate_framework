@@ -36,6 +36,7 @@ ohos_static_library("certificate_openssl_plugin_lib") {
     "src/x509_cert_chain_openssl.c",
     "src/x509_cert_chain_openssl_ex.c",
     "src/x509_cert_chain_validator_openssl.c",
+    "src/x509_cert_cms_generator_openssl.c",
     "src/x509_certificate_openssl.c",
     "src/x509_crl_entry_openssl.c",
     "src/x509_crl_openssl.c",
