@@ -22,7 +22,10 @@
 #include "cf_memory.h"
 #include "cf_result.h"
 #include "utils.h"
+#include <securec.h>
 #include "x509_cert_chain_spi.h"
+#include <openssl/pem.h>
+#include <openssl/pkcs12.h>
 
 #define X509_CERT_CHAIN_OPENSSL_CLASS "X509CertChainOpensslClass"
 
@@ -225,6 +228,169 @@ CfResult GetLeafCertsFromCertStack(
     if (sk_X509_num(leafCerts) <= 0) {
         LOGE("The num of leaf certificate is 0.");
         return CF_INVALID_PARAMS;
+    }
+    return CF_SUCCESS;
+}
+
+CfResult X509ToHcfX509Certificate(X509 *cert, HcfX509Certificate **returnObj)
+{
+    if (cert == NULL) {
+        LOGE("The input params invalid.");
+        return CF_INVALID_PARAMS;
+    }
+
+    int dataLength = 0;
+    uint8_t *certData = GetX509EncodedDataStream(cert, &dataLength);
+    if (certData == NULL) {
+        LOGE("Falied to get certificate data!");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    HcfX509Certificate *x509cert = NULL;
+    CfEncodingBlob encodingBlob = { certData, dataLength, CF_FORMAT_DER };
+    CfResult res = HcfX509CertificateCreate(&encodingBlob, &x509cert);
+    if (res != CF_SUCCESS) {
+        LOGE("HcfX509CertificateCreate fail, res : %d!", res);
+        CfFree(certData);
+        return CF_ERR_MALLOC;
+    }
+
+    *returnObj = x509cert;
+    CfFree(certData);
+    return res;
+}
+
+void FreeResources(X509 *cert, EVP_PKEY *pkey, STACK_OF(X509) *caStack)
+{
+    if (cert != NULL) {
+        X509_free(cert);
+    }
+    if (pkey != NULL) {
+        EVP_PKEY_free(pkey);
+    }
+    if (caStack != NULL) {
+        sk_X509_pop_free(caStack, X509_free);
+    }
+}
+
+void FreeHcfX509P12Collection(HcfX509P12Collection *p12Collection)
+{
+    if (p12Collection == NULL) {
+        return;
+    }
+    if (p12Collection->cert != NULL) {
+        CfFree(p12Collection->cert);
+    }
+    if (p12Collection->prikey != NULL && p12Collection->prikey->data != NULL) {
+        CfFree(p12Collection->prikey->data);
+        CfFree(p12Collection->prikey);
+    }
+    if (p12Collection->otherCerts != NULL && p12Collection->otherCertsCount != 0) {
+        for (uint32_t i = 0; i < p12Collection->otherCertsCount; i++) {
+            if (p12Collection->otherCerts[i] != NULL) {
+                CfFree(p12Collection->otherCerts[i]);
+            }
+        }
+        CfFree(p12Collection->otherCerts);
+    }
+    CfFree(p12Collection);
+}
+
+CfResult AllocateAndConvertCert(X509 *cert, HcfX509P12Collection *collection, bool isGet)
+{
+    if (!isGet) {
+        LOGI("The certificate for P12 does not need to be parsed!");
+        return CF_SUCCESS;
+    }
+    if (cert == NULL) {
+        LOGI("P12 dose not have a cert!");
+        return CF_SUCCESS;
+    }
+    CfResult ret = X509ToHcfX509Certificate(cert, &collection->cert);
+    if (ret != CF_SUCCESS) {
+        CfFree(collection->cert);
+        LOGE("Failed to convert X509 to HcfX509Certificate!");
+        return ret;
+    }
+    return CF_SUCCESS;
+}
+
+CfResult AllocateAndConvertPkey(EVP_PKEY *pkey, HcfX509P12Collection *collection, bool isGet)
+{
+    if (!isGet) {
+        LOGI("The prikey for P12 does not need to be parsed!");
+        return CF_SUCCESS;
+    }
+    if (pkey == NULL) {
+        LOGI("P12 dose not have a prikey!");
+        return CF_SUCCESS;
+    }
+    collection->prikey = (CfBlob *)CfMalloc(sizeof(CfBlob), 0);
+    if (collection->prikey == NULL) {
+        LOGE("Failed to malloc pri key!");
+        return CF_ERR_MALLOC;
+    }
+    BIO *memBio = BIO_new(BIO_s_mem());
+    if (collection->isPem) {
+        if (!PEM_write_bio_PrivateKey(memBio, pkey, NULL, NULL, 0, 0, NULL)) {
+            LOGE("PEM write bio PrivateKey failed");
+            CfPrintOpensslError();
+            CfBlobFree(&collection->prikey);
+            BIO_free_all(memBio);
+            return CF_ERR_CRYPTO_OPERATION;
+        }
+    } else {
+        if (!i2d_PKCS8PrivateKey_bio(memBio, pkey, NULL, NULL, 0, NULL, NULL)) {
+            LOGE("PrivateKey i2d failed");
+            CfPrintOpensslError();
+            CfBlobFree(&collection->prikey);
+            BIO_free_all(memBio);
+            return CF_ERR_CRYPTO_OPERATION;
+        }
+    }
+    BUF_MEM *buf = NULL;
+    BIO_get_mem_ptr(memBio, &buf);
+    collection->prikey->size = buf->length;
+    collection->prikey->data = (uint8_t *)CfMalloc((collection->prikey->size) + 1, 0);
+    if (collection->prikey == NULL) {
+        LOGE("Failed to malloc pri key data!");
+        CfBlobFree(&collection->prikey);
+        BIO_free_all(memBio);
+        return CF_ERR_MALLOC;
+    }
+    (void)memcpy_s(collection->prikey->data, buf->length, buf->data, buf->length);
+    BIO_free_all(memBio);
+    return CF_SUCCESS;
+}
+
+CfResult AllocateAndConvertCertStack(STACK_OF(X509) *ca, HcfX509P12Collection *collection, bool isGet)
+{
+    if (!isGet) {
+        LOGI("The other certs for P12 does not need to be parsed!");
+        return CF_SUCCESS;
+    }
+    if (ca == NULL) {
+        LOGI("P12 dose not have other certs!");
+        return CF_SUCCESS;
+    }
+    int32_t count = sk_X509_num(ca);
+    if (count <= 0) {
+        LOGI("P12 other certs num is 0!");
+        return CF_SUCCESS;
+    }
+    collection->otherCerts = (HcfX509Certificate **)CfMalloc(sizeof(HcfX509Certificate *) * count, 0);
+    collection->otherCertsCount = (uint32_t)count;
+    if (collection->otherCerts == NULL) {
+        LOGE("Failed to malloc otherCerts!");
+        return CF_ERR_MALLOC;
+    }
+    for (uint32_t i = 0; i < collection->otherCertsCount; i++) {
+        X509 *cert = sk_X509_value(ca, i);
+        CfResult ret = X509ToHcfX509Certificate(cert, &collection->otherCerts[i]);
+        if (ret != CF_SUCCESS) {
+            LOGE("Failed to convert X509 to HcfX509Certificate!");
+            return ret;
+        }
     }
     return CF_SUCCESS;
 }

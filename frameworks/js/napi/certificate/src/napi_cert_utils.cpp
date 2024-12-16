@@ -957,6 +957,46 @@ napi_value CertGetResourceName(napi_env env, const char *name)
     return resourceName;
 }
 
+bool GetBoolFromNapiValue(napi_env env, napi_value arg, bool &out, const char *name)
+{
+    napi_value obj = GetProp(env, arg, name);
+    if (obj == nullptr) {
+        return true;
+    }
+
+    napi_valuetype valueType;
+    napi_typeof(env, obj, &valueType);
+    if (valueType != napi_boolean) {
+        LOGE("Get %s obj is not bool!", name);
+        return false;
+    }
+
+    napi_status status = napi_get_value_bool(env, obj, &out);
+    if (status != napi_ok) {
+        LOGE("Failed to get value bool!");
+        return false;
+    }
+    return true;
+}
+
+bool GetIsPemFromStringNapiValue(napi_env env, napi_value arg, bool &out, const char *name)
+{
+    napi_value obj = GetProp(env, arg, name);
+    if (obj == nullptr) {
+        return true;
+    }
+    CfEncodinigBaseFormat encodingBaseFormat = PEM;
+    napi_status status = napi_get_value_int32(env, obj, (int32_t *)&encodingBaseFormat);
+    if (status != napi_ok) {
+        LOGE("get privateKeyFormat failed!");
+        return false;
+    }
+    if (encodingBaseFormat == DER) {
+        out = false;
+    }
+    return true;
+}
+
 napi_value ConvertBlobToNapiValue(napi_env env, const CfBlob *blob)
 {
     if (blob == nullptr || blob->data == nullptr || blob->size == 0) {

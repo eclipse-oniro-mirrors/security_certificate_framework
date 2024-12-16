@@ -35,4 +35,20 @@ typedef struct {
     uint32_t count;
 } HcfX509TrustAnchorArray;
 
+typedef struct {
+    bool isPem;                         // format of prikey : PEM format is true, DER is false
+    CfBlob *pwd;                        // pwd : string
+    bool isGetPriKey;                   // isGetPriKey : true is get prikey, false is not get prikey
+    bool isGetCert;                     // isGetCert : true is get Cert, false is not get Cert
+    bool isGetOtherCerts;               // isGetOtherCerts : true is get otherCerts, false is not get otherCerts
+} HcfParsePKCS12Conf;
+
+typedef struct {
+    bool isPem;                         // format of prikey : PEM format is true, DER is false
+    CfBlob *prikey;                     // prikey : Uint8Array
+    HcfX509Certificate *cert;           // cert : X509Cert
+    HcfX509Certificate **otherCerts;    // otherCerts : X509Cert[]
+    uint32_t otherCertsCount;           // otherCertsCount : count of otherCerts
+} HcfX509P12Collection;
+
 #endif // X509_TRUST_ANCHOR_H

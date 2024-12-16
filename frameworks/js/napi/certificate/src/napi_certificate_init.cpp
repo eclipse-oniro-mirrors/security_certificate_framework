@@ -260,6 +260,25 @@ static void DefineEncodingTypeProperties(napi_env env, napi_value exports)
     napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
 }
 
+static napi_value CreateEncodingBaseFormat(napi_env env)
+{
+    napi_value encodingBaseFormat = nullptr;
+    napi_create_object(env, &encodingBaseFormat);
+
+    CertAddUint32Property(env, encodingBaseFormat, "PEM", PEM);
+    CertAddUint32Property(env, encodingBaseFormat, "DER", DER);
+
+    return encodingBaseFormat;
+}
+
+static void DefinePkcs12TypeProperties(napi_env env, napi_value exports)
+{
+    napi_property_descriptor desc[] = {
+        DECLARE_NAPI_PROPERTY("EncodingBaseFormat", CreateEncodingBaseFormat(env)),
+    };
+    napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
+}
+
 /***********************************************
  * Module export and register
  ***********************************************/
@@ -275,6 +294,7 @@ static napi_value CertModuleExport(napi_env env, napi_value exports)
     DefineValidationPolicyTypeProperties(env, exports);
     DefineValidationKeyUsageTypeProperties(env, exports);
     DefineEncodingTypeProperties(env, exports);
+    DefinePkcs12TypeProperties(env, exports);
 
     NapiKey::DefineHcfKeyJSClass(env);
     NapiPubKey::DefinePubKeyJSClass(env);

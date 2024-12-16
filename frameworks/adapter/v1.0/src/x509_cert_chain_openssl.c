@@ -109,34 +109,6 @@ static void DestroyX509CertChain(CfObjectBase *self)
     CfFree(impl);
 }
 
-static CfResult X509ToHcfX509Certificate(X509 *cert, HcfX509Certificate **returnObj)
-{
-    if (cert == NULL) {
-        LOGE("The input params invalid.");
-        return CF_INVALID_PARAMS;
-    }
-
-    int dataLength = 0;
-    uint8_t *certData = GetX509EncodedDataStream(cert, &dataLength);
-    if (certData == NULL) {
-        LOGE("Falied to get certificate data!");
-        return CF_ERR_CRYPTO_OPERATION;
-    }
-
-    HcfX509Certificate *x509cert = NULL;
-    CfEncodingBlob encodingBlob = { certData, dataLength, CF_FORMAT_DER };
-    CfResult res = HcfX509CertificateCreate(&encodingBlob, &x509cert);
-    if (res != CF_SUCCESS) {
-        LOGE("HcfX509CertificateCreate fail, res : %d!", res);
-        CfFree(certData);
-        return CF_ERR_MALLOC;
-    }
-
-    *returnObj = x509cert;
-    CfFree(certData);
-    return res;
-}
-
 static CfResult GetCertlist(HcfX509CertChainSpi *self, HcfX509CertificateArray *certsList)
 {
     if ((self == NULL) || (certsList == NULL)) {
@@ -2107,5 +2079,77 @@ CfResult HcfX509CreateTrustAnchorWithKeyStoreFunc(
     *trustAnchorArray = anchor;
     anchor = NULL;
     sk_X509_pop_free(ca, X509_free);
+    return CF_SUCCESS;
+}
+
+static CfResult ParsePkcs12(const CfBlob *keyStore, const CfBlob *pwd,
+    X509 **cert, EVP_PKEY **pkey, STACK_OF(X509) **caStack)
+{
+    PKCS12 *p12 = NULL;
+    const unsigned char *in = (const unsigned char *)(keyStore->data);
+
+    p12 = d2i_PKCS12(NULL, &in, keyStore->size);
+    if (p12 == NULL) {
+        LOGE("Error convert pkcs12 data to inner struct!");
+        CfPrintOpensslError();
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    int ret = PKCS12_parse(p12, (const char *)pwd->data, pkey, cert, caStack);
+    PKCS12_free(p12);
+    if (ret != 1) {
+        LOGE("PKCS12_parse failed!");
+        CfPrintOpensslError();
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    return CF_SUCCESS;
+}
+
+CfResult HcfX509ParsePKCS12Func(
+    const CfBlob *keyStore, const HcfParsePKCS12Conf *conf, HcfX509P12Collection **p12Collection)
+{
+    X509 *cert = NULL;
+    EVP_PKEY *pkey = NULL;
+    STACK_OF(X509) *caStack = NULL;
+    CfResult ret = ParsePkcs12(keyStore, conf->pwd, &cert, &pkey, &caStack);
+    if (ret != CF_SUCCESS) {
+        LOGE("Failed to parse PKCS12!");
+        return ret;
+    }
+
+    HcfX509P12Collection *collection = (HcfX509P12Collection *)CfMalloc(sizeof(HcfX509P12Collection), 0);
+    if (collection == NULL) {
+        FreeResources(cert, pkey, caStack);
+        LOGE("Failed to malloc collection!");
+        return CF_ERR_MALLOC;
+    }
+
+    ret = AllocateAndConvertCert(cert, collection, conf->isGetCert);
+    if (ret != CF_SUCCESS) {
+        FreeResources(cert, pkey, caStack);
+        FreeHcfX509P12Collection(collection);
+        LOGE("Failed to convert cert!");
+        return ret;
+    }
+
+    collection->isPem = conf->isPem;
+    ret = AllocateAndConvertPkey(pkey, collection, conf->isGetPriKey);
+    if (ret != CF_SUCCESS) {
+        FreeResources(cert, pkey, caStack);
+        FreeHcfX509P12Collection(collection);
+        LOGE("Failed to convert pkey!");
+        return ret;
+    }
+
+    ret = AllocateAndConvertCertStack(caStack, collection, conf->isGetOtherCerts);
+    if (ret != CF_SUCCESS) {
+        FreeResources(cert, pkey, caStack);
+        FreeHcfX509P12Collection(collection);
+        LOGE("Failed to convert caStack!");
+        return ret;
+    }
+
+    *p12Collection = collection;
+    FreeResources(cert, pkey, caStack);
     return CF_SUCCESS;
 }
