@@ -34,6 +34,10 @@
 
 #define MAX_SIGNER_NUM 20
 #define MAX_CERT_NUM 60
+
+#define ERR_PRIVATE_KEY_PASSWORD_PKCS8 0x11800074
+#define ERR_PRIVATE_KEY_PASSWORD_PKCS1 0x4800065
+
 typedef struct {
     HcfCmsGeneratorSpi base;
     CMS_ContentInfo *cms;
@@ -98,6 +102,16 @@ static void GetSignerFlags(const HcfCmsSignerOptions *options, int *tflags)
     }
 }
 
+static CfResult IsInvalidPrivateKeyPassword(const PrivateKeyInfo *privateKey)
+{
+    unsigned long err = ERR_peek_last_error();
+    if ((err == ERR_PRIVATE_KEY_PASSWORD_PKCS8 || err == ERR_PRIVATE_KEY_PASSWORD_PKCS1)
+        && privateKey->privateKeyPassword != NULL) {
+        return CF_ERR_CERT_INVALID_PRIVATE_KEY;
+    }
+    return CF_ERR_CRYPTO_OPERATION;
+}
+
 static CfResult ConvertPemToKey(const PrivateKeyInfo *privateKey, EVP_PKEY **pkey)
 {
     BIO *bio = BIO_new(BIO_s_mem());
@@ -117,12 +131,14 @@ static CfResult ConvertPemToKey(const PrivateKeyInfo *privateKey, EVP_PKEY **pke
     if (priPassword == NULL) {
         priPassword = "";
     }
+    ERR_clear_error();
     pkeyRet = PEM_read_bio_PrivateKey(bio, pkey, NULL, (char *)priPassword);
     BIO_free(bio);
     if (pkeyRet == NULL) {
         LOGE("Failed to read private key from bio");
+        CfResult ret = IsInvalidPrivateKeyPassword(privateKey);
         CfPrintOpensslError();
-        return CF_ERR_CERT_INVALID_PRIVATE_KEY;
+        return ret;
     }
     return CF_SUCCESS;
 }
@@ -149,12 +165,14 @@ static CfResult ConvertDerToKey(const PrivateKeyInfo *privateKey, EVP_PKEY **pke
     }
     const unsigned char *pdata = privateKey->privateKey->data;
     size_t pdataLen = privateKey->privateKey->len;
+    ERR_clear_error();
     if (OSSL_DECODER_from_data(dctx, &pdata, &pdataLen) != 1) {
         LOGE("Failed to decode private key.");
+        CfResult ret = IsInvalidPrivateKeyPassword(privateKey);
         CfPrintOpensslError();
         OSSL_DECODER_CTX_free(dctx);
         EVP_PKEY_free(*pkey);
-        return CF_ERR_CRYPTO_OPERATION;
+        return ret;
     }
     OSSL_DECODER_CTX_free(dctx);
     return CF_SUCCESS;
