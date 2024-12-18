@@ -137,7 +137,7 @@ const std::string CMS_GENERATOR_PRIVATE_KEY = "key";
 const std::string CMS_GENERATOR_PRIVATE_KEY_PASSWORD = "password";
 const std::string CMS_GENERATOR_CONTENT_DATA_FORMAT = "contentDataFormat";
 const std::string CMS_GENERATOR_OUT_FORMAT = "outFormat";
-const std::string CMS_GENERATOR_IS_DETACHED_CONTENT = "isDetachedContent";
+const std::string CMS_GENERATOR_IS_DETACHED_CONTENT = "isDetached";
 } // namespace CertFramework
 } // namespace OHOS
 
