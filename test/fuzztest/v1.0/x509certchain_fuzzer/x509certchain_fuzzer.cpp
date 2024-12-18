@@ -752,11 +752,6 @@ namespace OHOS {
         issue.size = size;
         inParams.certMatchParameters.issuer = &issue;
         inParams.certMatchParameters.minPathLenConstraint = -1;
-
-        CfBlob validDate;
-        validDate.data = const_cast<uint8_t *>(data);
-        validDate.size = strlen(date) + 1;
-        inParams.certMatchParameters.issuer = &issue;
     
         ret = HcfCertChainBuildResultCreate(&inParams, &returnObj);
         if (ret != CF_SUCCESS) {
