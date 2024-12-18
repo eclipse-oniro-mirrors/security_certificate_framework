@@ -317,12 +317,8 @@ CfResult AllocateAndConvertCert(X509 *cert, HcfX509P12Collection *collection, bo
 
 CfResult AllocateAndConvertPkey(EVP_PKEY *pkey, HcfX509P12Collection *collection, bool isGet)
 {
-    if (!isGet) {
+    if ((!isGet) || (pkey == NULL)) {
         LOGI("The prikey for P12 does not need to be parsed!");
-        return CF_SUCCESS;
-    }
-    if (pkey == NULL) {
-        LOGI("P12 dose not have a prikey!");
         return CF_SUCCESS;
     }
     collection->prikey = (CfBlob *)CfMalloc(sizeof(CfBlob), 0);
@@ -349,10 +345,15 @@ CfResult AllocateAndConvertPkey(EVP_PKEY *pkey, HcfX509P12Collection *collection
         }
     }
     BUF_MEM *buf = NULL;
-    BIO_get_mem_ptr(memBio, &buf);
+    if (BIO_get_mem_ptr(memBio, &buf) < 0 || buf == NULL) {
+        LOGE("Failed to get mem ptr!");
+        CfBlobFree(&collection->prikey);
+        BIO_free_all(memBio);
+        return CF_ERR_MALLOC;
+    }
     collection->prikey->size = buf->length;
-    collection->prikey->data = (uint8_t *)CfMalloc((collection->prikey->size) + 1, 0);
-    if (collection->prikey == NULL) {
+    collection->prikey->data = (uint8_t *)CfMalloc(collection->prikey->size, 0);
+    if (collection->prikey->data == NULL) {
         LOGE("Failed to malloc pri key data!");
         CfBlobFree(&collection->prikey);
         BIO_free_all(memBio);
