@@ -29,7 +29,7 @@ int32_t FfiCertCjX509CertificateNewInstance(const CfEncodingBlob *blob, CjX509Ce
         return errCode;
     }
     auto cfObj = static_cast<CfObject *>(malloc(sizeof(CfObject)));
-    if (cert == nullptr) {
+    if (cfObj == nullptr) {
         free(cert);
         return CF_ERR_MALLOC;
     }

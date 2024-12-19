@@ -184,6 +184,9 @@ CfResult FfiCertBuildX509CertChain(const CjX509CertMatchParams &matchParams,
         return errCode;
     }
     returnObj->chain = buildResult->certChain;
+    // release buildResult here
+    // buildResult->certChain is allocated by CfMalloc and will be released by cangjie
+    free(buildResult);
     return CF_SUCCESS;
 }
 
