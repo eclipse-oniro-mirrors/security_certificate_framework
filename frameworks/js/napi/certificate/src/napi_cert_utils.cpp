@@ -25,6 +25,9 @@
 #include "napi_cert_defines.h"
 #include "securec.h"
 #include "utils.h"
+#include "cert_cms_generator.h"
+#include "napi/native_api.h"
+#include "napi/native_common.h"
 
 namespace OHOS {
 namespace CertFramework {
@@ -47,6 +50,7 @@ const struct CfResultCodeMap CODE_MAP[] = {
     { CF_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY, JS_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY },
     { CF_ERR_KEYUSAGE_NO_CERTSIGN, JS_ERR_KEYUSAGE_NO_CERTSIGN },
     { CF_ERR_KEYUSAGE_NO_DIGITAL_SIGNATURE, JS_ERR_KEYUSAGE_NO_DIGITAL_SIGNATURE },
+    { CF_ERR_CERT_INVALID_PRIVATE_KEY, JS_ERR_CERT_INVALID_PRIVATE_KEY },
 };
 
 napi_value CertNapiGetNull(napi_env env)
@@ -155,6 +159,45 @@ static bool GetDataOfEncodingBlob(napi_env env, napi_value data, CfEncodingBlob 
     return true;
 }
 
+static char *CertGetStringFromValue(napi_env env, napi_value arg)
+{
+    napi_valuetype valueType;
+    napi_typeof(env, arg, &valueType);
+    if (valueType != napi_string) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "param type is not string"));
+        LOGE("wrong argument type. expect string type. [Type]: %d", valueType);
+        return nullptr;
+    }
+
+    size_t length = 0;
+    if (napi_get_value_string_utf8(env, arg, nullptr, 0, &length) != napi_ok) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "can not get string length!"));
+        LOGE("can not get string length");
+        return nullptr;
+    }
+
+    if (length == 0) {
+        LOGE("string length is 0");
+        return nullptr;
+    }
+
+    char *value = static_cast<char *>(CfMalloc(length + 1, 0));
+    if (value == nullptr) {
+        LOGE("Failed to allocate value memory!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed!"));
+        return nullptr;
+    }
+
+    if (napi_get_value_string_utf8(env, arg, value, length + 1, &length) != napi_ok) {
+        LOGE("can not get value value");
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get value failed"));
+        memset_s(value, length + 1, 0, length + 1);
+        CfFree(value);
+        return nullptr;
+    }
+    return value;
+}
+
 bool GetEncodingBlobFromValue(napi_env env, napi_value obj, CfEncodingBlob **encodingBlob)
 {
     *encodingBlob = static_cast<CfEncodingBlob *>(CfMalloc(sizeof(CfEncodingBlob), 0));
@@ -191,6 +234,360 @@ bool GetEncodingBlobFromValue(napi_env env, napi_value obj, CfEncodingBlob **enc
     return true;
 }
 
+static bool AllocatePrivateKey(PrivateKeyInfo **privateKey)
+{
+    (*privateKey)->privateKey = static_cast<CfEncodingBlob *>(CfMalloc(sizeof(CfEncodingBlob), 0));
+    return (*privateKey)->privateKey != nullptr;
+}
+
+static bool GetBlobFromData(napi_env env, napi_value data, CfBlob **blob, napi_valuetype valueType)
+{
+    if (valueType == napi_string) {
+        *blob = CertGetBlobFromStringJSParams(env, data);
+        if (*blob == nullptr) {
+            LOGE("get private key from string failed!");
+            return false;
+        }
+        return true;
+    } else {
+        *blob = CertGetBlobFromUint8ArrJSParams(env, data);
+        if (*blob == nullptr) {
+            LOGE("get private key from uint8 array failed!");
+            return false;
+        }
+        return true;
+    }
+}
+
+static bool CopyBlobDataToPrivateKey(CfBlob *blob, CfEncodingBlob *privateKey)
+{
+    privateKey->data = static_cast<uint8_t *>(CfMalloc(blob->size, 0));
+    if (privateKey->data == nullptr) {
+        LOGE("malloc private key data failed!");
+        return false;
+    }
+    if (memcpy_s(privateKey->data, blob->size, blob->data, blob->size) != EOK) {
+        LOGE("memcpy_s private key data failed!");
+        CfFree(privateKey->data);
+        privateKey->data = nullptr;
+        return false;
+    }
+    privateKey->len = blob->size;
+    return true;
+}
+
+static bool GetPrivateKeyFromValue(napi_env env, napi_value obj, PrivateKeyInfo **privateKey)
+{
+    napi_value data = nullptr;
+    napi_valuetype valueType = napi_undefined;
+    napi_status status = napi_get_named_property(env, obj, CMS_GENERATOR_PRIVATE_KEY.c_str(), &data);
+    if (status != napi_ok || data == nullptr) {
+        LOGE("Failed to get private key property!");
+        return false;
+    }
+
+    napi_typeof(env, data, &valueType);
+    if (valueType == napi_undefined) {
+        LOGE("Invalid type for private key property!");
+        return false;
+    }
+
+    if (!AllocatePrivateKey(privateKey)) {
+        LOGE("malloc private key failed!");
+        return false;
+    }
+
+    CfBlob *blob = nullptr;
+    if (!GetBlobFromData(env, data, &blob, valueType)) {
+        CfFree((*privateKey)->privateKey);
+        (*privateKey)->privateKey = nullptr;
+        return false;
+    }
+
+    (*privateKey)->privateKey->encodingFormat = (valueType == napi_string) ? CF_FORMAT_PEM : CF_FORMAT_DER;
+
+    if (!CopyBlobDataToPrivateKey(blob, (*privateKey)->privateKey)) {
+        CfFree(blob);
+        CfFree((*privateKey)->privateKey);
+        (*privateKey)->privateKey = nullptr;
+        return false;
+    }
+
+    CfFree(blob);
+    return true;
+}
+
+static bool GetPrivateKeyPasswordFromValue(napi_env env, napi_value obj, PrivateKeyInfo **privateKey)
+{
+    bool result = false;
+    napi_has_named_property(env, obj, CMS_GENERATOR_PRIVATE_KEY_PASSWORD.c_str(), &result);
+    if (!result) {
+        LOGI("%s do not exist!", CMS_GENERATOR_PRIVATE_KEY_PASSWORD.c_str());
+        return true;
+    }
+    napi_value password = nullptr;
+    napi_status status = napi_get_named_property(env, obj, CMS_GENERATOR_PRIVATE_KEY_PASSWORD.c_str(), &password);
+    if (status != napi_ok || password == nullptr) {
+        LOGE("get property %s failed!", CMS_GENERATOR_PRIVATE_KEY_PASSWORD.c_str());
+        return false;
+    }
+    (*privateKey)->privateKeyPassword = CertGetStringFromValue(env, password);
+    return true;
+}
+
+bool GetPrivateKeyInfoFromValue(napi_env env, napi_value obj, PrivateKeyInfo **privateKey)
+{
+    *privateKey = static_cast<PrivateKeyInfo *>(CfMalloc(sizeof(PrivateKeyInfo), 0));
+    if (*privateKey == nullptr) {
+        LOGE("malloc private key failed!");
+        return false;
+    }
+    if (!GetPrivateKeyFromValue(env, obj, privateKey)) {
+        CfFree(*privateKey);
+        *privateKey = nullptr;
+        return false;
+    }
+    if (!GetPrivateKeyPasswordFromValue(env, obj, privateKey)) {
+        CfFree(*privateKey);
+        *privateKey = nullptr;
+        return false;
+    }
+    return true;
+}
+
+static bool GetMdName(napi_env env, napi_value arg, char **mdName)
+{
+    bool result = false;
+    napi_has_named_property(env, arg, CMS_GENERATOR_MDNAME.c_str(), &result);
+    if (!result) {
+        LOGI("%s do not exist!", CMS_GENERATOR_MDNAME.c_str());
+        return false;
+    }
+    napi_value obj = nullptr;
+    napi_status status = napi_get_named_property(env, arg, CMS_GENERATOR_MDNAME.c_str(), &obj);
+    if (status != napi_ok || obj == nullptr) {
+        LOGE("get property %s failed!", CMS_GENERATOR_MDNAME.c_str());
+        return false;
+    }
+    napi_valuetype valueType;
+    napi_typeof(env, obj, &valueType);
+    if (valueType == napi_undefined) {
+        LOGE("%s valueType is null or undefined.", CMS_GENERATOR_MDNAME.c_str());
+        return false;
+    }
+    *mdName = CertGetStringFromValue(env, obj);
+    return true;
+}
+
+static bool GetAddCert(napi_env env, napi_value arg, bool *addCert)
+{
+    bool result = false;
+    napi_has_named_property(env, arg, CMS_GENERATOR_ADD_CERT.c_str(), &result);
+    if (!result) {
+        LOGI("%s do not exist!", CMS_GENERATOR_ADD_CERT.c_str());
+        *addCert = true;
+        return true;
+    }
+    napi_value obj = nullptr;
+    napi_status status = napi_get_named_property(env, arg, CMS_GENERATOR_ADD_CERT.c_str(), &obj);
+    if (status != napi_ok || obj == nullptr) {
+        LOGE("get property %s failed!", CMS_GENERATOR_ADD_CERT.c_str());
+        return false;
+    }
+    napi_valuetype valueType;
+    napi_typeof(env, obj, &valueType);
+    if (valueType == napi_undefined) {
+        LOGE("%s valueType is null or undefined.", CMS_GENERATOR_ADD_CERT.c_str());
+        return false;
+    }
+    napi_get_value_bool(env, obj, addCert);
+    return true;
+}
+
+static bool GetAddSmimeCapAttr(napi_env env, napi_value arg, bool *addSmimeCapAttr)
+{
+    bool result = false;
+    napi_has_named_property(env, arg, CMS_GENERATOR_ADD_SMIME_CAP_ATTR.c_str(), &result);
+    if (!result) {
+        LOGI("%s do not exist!", CMS_GENERATOR_ADD_SMIME_CAP_ATTR.c_str());
+        *addSmimeCapAttr = true;
+        return true;
+    }
+    napi_value obj = nullptr;
+    napi_status status = napi_get_named_property(env, arg, CMS_GENERATOR_ADD_SMIME_CAP_ATTR.c_str(), &obj);
+    if (status != napi_ok || obj == nullptr) {
+        LOGE("get property %s failed!", CMS_GENERATOR_ADD_SMIME_CAP_ATTR.c_str());
+        return false;
+    }
+    napi_valuetype valueType;
+    napi_typeof(env, obj, &valueType);
+    if (valueType == napi_undefined) {
+        LOGE("%s valueType is null or undefined.", CMS_GENERATOR_ADD_SMIME_CAP_ATTR.c_str());
+        return false;
+    }
+    napi_get_value_bool(env, obj, addSmimeCapAttr);
+    return true;
+}
+
+static bool GetAddAttr(napi_env env, napi_value arg, bool *addAttr)
+{
+    bool result = false;
+    napi_has_named_property(env, arg, CMS_GENERATOR_ADD_ATTR.c_str(), &result);
+    if (!result) {
+        LOGI("%s do not exist!", CMS_GENERATOR_ADD_ATTR.c_str());
+        *addAttr = true;
+        return true;
+    }
+    napi_value obj = nullptr;
+    napi_status status = napi_get_named_property(env, arg, CMS_GENERATOR_ADD_ATTR.c_str(), &obj);
+    if (status != napi_ok || obj == nullptr) {
+        LOGE("get property %s failed!", CMS_GENERATOR_ADD_ATTR.c_str());
+        return false;
+    }
+    napi_valuetype valueType;
+    napi_typeof(env, obj, &valueType);
+    if (valueType == napi_undefined) {
+        LOGE("%s valueType is null or undefined.", CMS_GENERATOR_ADD_ATTR.c_str());
+        return false;
+    }
+    napi_get_value_bool(env, obj, addAttr);
+    return true;
+}
+
+static bool BuildCmsSignerOptions(napi_env env, napi_value obj, HcfCmsSignerOptions *options)
+{
+    napi_valuetype type;
+    napi_typeof(env, obj, &type);
+    if (type != napi_object) {
+        LOGE("wrong argument type. expect object type. [Type]: %d", type);
+        return false;
+    }
+    if (!GetMdName(env, obj, &options->mdName)) {
+        return false;
+    }
+    if (!GetAddCert(env, obj, &options->addCert)) {
+        return false;
+    }
+    if (!GetAddAttr(env, obj, &options->addAttr)) {
+        return false;
+    }
+    if (!GetAddSmimeCapAttr(env, obj, &options->addSmimeCapAttr)) {
+        return false;
+    }
+    return true;
+}
+
+bool GetCmsSignerOptionsFromValue(napi_env env, napi_value obj, HcfCmsSignerOptions **cmsSignerOptions)
+{
+    *cmsSignerOptions = static_cast<HcfCmsSignerOptions *>(CfMalloc(sizeof(HcfCmsSignerOptions), 0));
+    if (*cmsSignerOptions == nullptr) {
+        LOGE("malloc cms signer options failed!");
+        return false;
+    }
+    if (!BuildCmsSignerOptions(env, obj, *cmsSignerOptions)) {
+        CfFree((*cmsSignerOptions)->mdName);
+        (*cmsSignerOptions)->mdName = nullptr;
+        CfFree(*cmsSignerOptions);
+        *cmsSignerOptions = nullptr;
+        return false;
+    }
+    return true;
+}
+
+static bool GetFormat(napi_env env, napi_value arg, HcfCmsFormat *format)
+{
+    bool result = false;
+    napi_has_named_property(env, arg, CMS_GENERATOR_OUT_FORMAT.c_str(), &result);
+    if (!result) {
+        LOGI("%s do not exist!", CMS_GENERATOR_OUT_FORMAT.c_str());
+        return true;
+    }
+    napi_value obj = nullptr;
+    napi_status status = napi_get_named_property(env, arg, CMS_GENERATOR_OUT_FORMAT.c_str(), &obj);
+    if (status != napi_ok || obj == nullptr) {
+        LOGE("get property %s failed!", CMS_GENERATOR_OUT_FORMAT.c_str());
+        return false;
+    }
+    napi_valuetype valueType;
+    napi_typeof(env, obj, &valueType);
+    if (valueType == napi_undefined) {
+        LOGE("%s valueType is null or undefined.", CMS_GENERATOR_OUT_FORMAT.c_str());
+        return false;
+    }
+    napi_get_value_uint32(env, obj, reinterpret_cast<uint32_t *>(format));
+    return true;
+}
+
+static bool GetIsDetachedContent(napi_env env, napi_value arg, bool *isDetachedContent)
+{
+    bool result = false;
+    napi_has_named_property(env, arg, CMS_GENERATOR_IS_DETACHED_CONTENT.c_str(), &result);
+    if (!result) {
+        LOGI("%s do not exist!", CMS_GENERATOR_IS_DETACHED_CONTENT.c_str());
+        return true;
+    }
+    napi_value obj = nullptr;
+    napi_status status = napi_get_named_property(env, arg, CMS_GENERATOR_IS_DETACHED_CONTENT.c_str(), &obj);
+    if (status != napi_ok || obj == nullptr) {
+        LOGE("get property %s failed!", CMS_GENERATOR_IS_DETACHED_CONTENT.c_str());
+        return false;
+    }
+    napi_valuetype valueType;
+    napi_typeof(env, obj, &valueType);
+    if (valueType == napi_undefined) {
+        LOGE("%s valueType is null or undefined.", CMS_GENERATOR_IS_DETACHED_CONTENT.c_str());
+        return false;
+    }
+    napi_get_value_bool(env, obj, isDetachedContent);
+    return true;
+}
+
+static bool GetContentDataFormat(napi_env env, napi_value arg, HcfCmsContentDataFormat *dataFormat)
+{
+    bool result = false;
+    napi_has_named_property(env, arg, CMS_GENERATOR_CONTENT_DATA_FORMAT.c_str(), &result);
+    if (!result) {
+        LOGI("%s do not exist!", CMS_GENERATOR_CONTENT_DATA_FORMAT.c_str());
+        return true;
+    }
+    napi_value obj = nullptr;
+    napi_status status = napi_get_named_property(env, arg, CMS_GENERATOR_CONTENT_DATA_FORMAT.c_str(), &obj);
+    if (status != napi_ok || obj == nullptr) {
+        LOGE("get property %s failed!", CMS_GENERATOR_CONTENT_DATA_FORMAT.c_str());
+        return false;
+    }
+    napi_valuetype valueType;
+    napi_typeof(env, obj, &valueType);
+    if (valueType == napi_undefined) {
+        LOGE("%s valueType is null or undefined.", CMS_GENERATOR_CONTENT_DATA_FORMAT.c_str());
+        return false;
+    }
+    napi_get_value_uint32(env, obj, reinterpret_cast<uint32_t *>(dataFormat));
+    return true;
+}
+
+bool GetCmsGeneratorOptionsFromValue(napi_env env, napi_value obj, HcfCmsGeneratorOptions **options)
+{
+    napi_valuetype type;
+    napi_typeof(env, obj, &type);
+    if (type != napi_object) {
+        LOGE("wrong argument type. expect object type. [Type]: %d", type);
+        return false;
+    }
+    if (!GetContentDataFormat(env, obj, &(*options)->dataFormat)) {
+        LOGE("GetContentDataFormat failed!");
+        return false;
+    }
+    if (!GetFormat(env, obj, &(*options)->outFormat)) {
+        LOGE("GetFormat failed!");
+        return false;
+    }
+    if (!GetIsDetachedContent(env, obj, &(*options)->isDetachedContent)) {
+        LOGE("GetIsDetachedContent failed!");
+        return false;
+    }
+    return true;
+}
 napi_value ConvertEncodingBlobToNapiValue(napi_env env, CfEncodingBlob *encodingBlob)
 {
     napi_value outBuffer = GenerateArrayBuffer(env, encodingBlob->data, encodingBlob->len);
@@ -412,7 +809,6 @@ CfBlob *CertGetBlobFromUint8ArrJSParams(napi_env env, napi_value arg)
         CfFree(newBlob);
         return nullptr;
     }
-
     return newBlob;
 }
 
@@ -463,7 +859,6 @@ CfBlob *CertGetBlobFromStringJSParams(napi_env env, napi_value arg)
         CfFree(newBlob);
         return nullptr;
     }
-
     return newBlob;
 }
 
