@@ -24,6 +24,7 @@
 #include "cf_memory.h"
 #include "utils.h"
 #include "x509_cert_match_parameters.h"
+#include "x509_csr_openssl.h"
 
 typedef CfResult (*HcfX509CertificateSpiCreateFunc)(const CfEncodingBlob *, HcfX509CertificateSpi **);
 
@@ -480,5 +481,19 @@ CfResult HcfX509CertificateCreate(const CfEncodingBlob *inStream, HcfX509Certifi
     }
     HcfX509CertificateImplPack(x509CertImpl, spiObj);
     *returnObj = (HcfX509Certificate *)x509CertImpl;
+    return CF_SUCCESS;
+}
+
+CfResult HcfX509CertificateGenCsr(PrivateKeyInfo *privateKey, const HcfGenCsrConf *conf, CfBlob *csrBlob)
+{
+    if (privateKey == NULL || conf == NULL || csrBlob == NULL) {
+        return CF_INVALID_PARAMS;
+    }
+
+    CfResult ret = GenerateX509Csr(privateKey, conf, csrBlob);
+    if (ret != CF_SUCCESS) {
+        LOGE("Generate CSR failed, ret: %d", ret);
+        return ret;
+    }
     return CF_SUCCESS;
 }

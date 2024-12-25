@@ -128,13 +128,23 @@ const std::string CERT_CHAIN_VALIDATE_RESULLT_TAG_X509CERT = "entityCert";
 const std::string CERT_CHAIN_BUILD_RESULLT_TAG_CERTCHAIN = "certChain";
 const std::string CERT_CHAIN_BUILD_RESULLT_TAG_VALIDATERESULT = "validationResult";
 
+// HcfAttributes
+const std::string CERT_ATTRIBUTE_TYPE = "type";
+const std::string CERT_ATTRIBUTE_VALUE = "value";
+
+// HcfGenCsrConf
+const std::string CERT_CSR_CONF_SUBJECT = "subject";
+const std::string CERT_CSR_CONF_ATTRIBUTES = "attributes";
+const std::string CERT_MDNAME = "mdName";
+const std::string CERT_CSR_CONF_OUT_FORMAT = "outFormat";
+
 // Cms GENERATOR
 const std::string CMS_GENERATOR_MDNAME = "mdName";
 const std::string CMS_GENERATOR_ADD_ATTR = "addAttr";
 const std::string CMS_GENERATOR_ADD_CERT = "addCert";
 const std::string CMS_GENERATOR_ADD_SMIME_CAP_ATTR = "addSmimeCapAttr";
-const std::string CMS_GENERATOR_PRIVATE_KEY = "key";
-const std::string CMS_GENERATOR_PRIVATE_KEY_PASSWORD = "password";
+const std::string CERT_PRIVATE_KEY = "key";
+const std::string CERT_PASSWORD = "password";
 const std::string CMS_GENERATOR_CONTENT_DATA_FORMAT = "contentDataFormat";
 const std::string CMS_GENERATOR_OUT_FORMAT = "outFormat";
 const std::string CMS_GENERATOR_IS_DETACHED_CONTENT = "isDetached";

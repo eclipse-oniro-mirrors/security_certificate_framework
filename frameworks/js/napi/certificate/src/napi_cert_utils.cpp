@@ -25,7 +25,6 @@
 #include "napi_cert_defines.h"
 #include "securec.h"
 #include "utils.h"
-#include "cert_cms_generator.h"
 #include "napi/native_api.h"
 #include "napi/native_common.h"
 
@@ -280,7 +279,7 @@ static bool GetPrivateKeyFromValue(napi_env env, napi_value obj, PrivateKeyInfo 
 {
     napi_value data = nullptr;
     napi_valuetype valueType = napi_undefined;
-    napi_status status = napi_get_named_property(env, obj, CMS_GENERATOR_PRIVATE_KEY.c_str(), &data);
+    napi_status status = napi_get_named_property(env, obj, CERT_PRIVATE_KEY.c_str(), &data);
     if (status != napi_ok || data == nullptr) {
         LOGE("Failed to get private key property!");
         return false;
@@ -320,15 +319,14 @@ static bool GetPrivateKeyFromValue(napi_env env, napi_value obj, PrivateKeyInfo 
 static bool GetPrivateKeyPasswordFromValue(napi_env env, napi_value obj, PrivateKeyInfo **privateKey)
 {
     bool result = false;
-    napi_has_named_property(env, obj, CMS_GENERATOR_PRIVATE_KEY_PASSWORD.c_str(), &result);
+    napi_has_named_property(env, obj, CERT_PASSWORD.c_str(), &result);
     if (!result) {
-        LOGI("%s do not exist!", CMS_GENERATOR_PRIVATE_KEY_PASSWORD.c_str());
         return true;
     }
     napi_value password = nullptr;
-    napi_status status = napi_get_named_property(env, obj, CMS_GENERATOR_PRIVATE_KEY_PASSWORD.c_str(), &password);
+    napi_status status = napi_get_named_property(env, obj, CERT_PASSWORD.c_str(), &password);
     if (status != napi_ok || password == nullptr) {
-        LOGE("get property %s failed!", CMS_GENERATOR_PRIVATE_KEY_PASSWORD.c_str());
+        LOGE("get property %s failed!", CERT_PASSWORD.c_str());
         return false;
     }
     (*privateKey)->privateKeyPassword = CertGetStringFromValue(env, password);

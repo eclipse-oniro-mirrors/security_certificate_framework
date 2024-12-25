@@ -16,7 +16,6 @@
 #include "x509_distinguished_name_openssl.h"
 
 #include <securec.h>
-#include <openssl/x509.h>
 #include <openssl/x509v3.h>
 #include <openssl/evp.h>
 #include <openssl/pem.h>
@@ -32,11 +31,6 @@
 #include "certificate_openssl_common.h"
 
 #define X509_DISTINGUISHED_NAME_OPENSSL_CLASS "X509DistinguishedNameOpensslClass"
-
-typedef struct {
-    HcfX509DistinguishedNameSpi base;
-    X509_NAME *name;
-} HcfX509DistinguishedNameOpensslImpl;
 
 static const char *GetX509DistinguishedNameClass(void)
 {

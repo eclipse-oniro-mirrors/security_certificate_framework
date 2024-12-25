@@ -32,6 +32,12 @@
 #include "napi_x509_distinguished_name.h"
 #include "napi_cert_extension.h"
 
+#include "x509_csr.h"
+#include "x509_certificate.h"
+#include "securec.h"
+#include "cf_blob.h"
+#include "cf_param.h"
+
 namespace OHOS {
 namespace CertFramework {
 thread_local napi_ref NapiX509Certificate::classRef_ = nullptr;
@@ -1455,10 +1461,412 @@ static napi_value X509CertConstructor(napi_env env, napi_callback_info info)
     return thisVar;
 }
 
+static void FreeCsrCfBlobArray(HcfAttributes *array, uint32_t arrayLen)
+{
+    if (array == NULL) {
+        return;
+    }
+
+    for (uint32_t i = 0; i < arrayLen; ++i) {
+        CfFree(array[i].attributeName);
+        CfFree(array[i].attributeValue);
+    }
+
+    CfFree(array);
+}
+
+static void FreeGenCsrConf(HcfGenCsrConf *conf)
+{
+    if (conf == nullptr) {
+        return;
+    }
+    if (conf->attribute.array != NULL) {
+        FreeCsrCfBlobArray(conf->attribute.array, conf->attribute.attributeSize);
+    }
+
+    if (conf->mdName != nullptr) {
+        CfFree(conf->mdName);
+        conf->mdName = nullptr;
+    }
+
+    CfFree(conf);
+}
+
+void FreePriKeyInfo(PrivateKeyInfo *privateKeyInfo)
+{
+    if (privateKeyInfo == nullptr) {
+        return;
+    }
+    if (privateKeyInfo->privateKey != nullptr) {
+        CfEncodingBlobDataFree(privateKeyInfo->privateKey);
+        privateKeyInfo->privateKey = nullptr;
+    }
+    if (privateKeyInfo->privateKeyPassword != nullptr) {
+        CfFree(static_cast<void *>(privateKeyInfo->privateKeyPassword));
+        privateKeyInfo->privateKeyPassword = nullptr;
+    }
+    CfFree(privateKeyInfo);
+}
+
+static char* AllocateAndCopyString(napi_env env, napi_value strValue, const std::string& fieldName)
+{
+    size_t strLen = 0;
+    if (napi_get_value_string_utf8(env, strValue, nullptr, 0, &strLen) != napi_ok) {
+        LOGE("get string length failed for %s", fieldName.c_str());
+        return nullptr;
+    }
+    if (strLen <= 0) {
+        LOGE("invalid string length for %s", fieldName.c_str());
+        return nullptr;
+    }
+    
+    char *buffer = static_cast<char *>(malloc(strLen + 1));
+    if (buffer == nullptr) {
+        LOGE("malloc failed for %s", fieldName.c_str());
+        return nullptr;
+    }
+    
+    if (napi_get_value_string_utf8(env, strValue, buffer, strLen + 1, &strLen) != napi_ok) {
+        LOGE("get string value failed for %s", fieldName.c_str());
+        free(buffer);
+        return nullptr;
+    }
+    
+    return buffer;
+}
+
+static bool GetX509CsrSubject(napi_env env, napi_value arg, HcfX509DistinguishedName **subject)
+{
+    napi_value value = nullptr;
+    if (napi_get_named_property(env, arg, CERT_CSR_CONF_SUBJECT.c_str(), &value) != napi_ok) {
+        LOGE("get subject property failed");
+        return false;
+    }
+    NapiX509DistinguishedName *x509NameClass = nullptr;
+    HcfX509DistinguishedName *distinguishedName = nullptr;
+    napi_unwrap(env, value, reinterpret_cast<void **>(&x509NameClass));
+    if (x509NameClass == nullptr) {
+        LOGE("x509NameClass is nullptr!");
+        return false;
+    }
+    distinguishedName = x509NameClass->GetX509DistinguishedName();
+    if (distinguishedName == nullptr) {
+        LOGE("distinguishedName is nullptr!");
+        return false;
+    }
+    *subject = distinguishedName;
+    return true;
+}
+
+static bool ValidateArrayInput(napi_env env, napi_value object, uint32_t *length)
+{
+    bool isArray = false;
+    if (napi_is_array(env, object, &isArray) != napi_ok || !isArray) {
+        LOGE("not array!");
+        return false;
+    }
+
+    if (napi_get_array_length(env, object, length) != napi_ok || *length == 0) {
+        LOGE("array length is invalid!");
+        return false;
+    }
+    
+    if (*length > MAX_LEN_OF_ARRAY) {
+        LOGE("array length is invalid!");
+        return false;
+    }
+    return true;
+}
+
+static bool GetStringFromValue(napi_env env, napi_value value, char **outStr)
+{
+    size_t strLen;
+    if (napi_get_value_string_utf8(env, value, nullptr, 0, &strLen) != napi_ok) {
+        LOGE("get string length failed");
+        return false;
+    }
+    
+    if (strLen >= CF_PARAM_SET_MAX_SIZE) {
+        LOGE("string length would cause overflow");
+        return false;
+    }
+    *outStr = static_cast<char *>(CfMalloc(strLen + 1, 0));
+    if (*outStr == nullptr ||
+        napi_get_value_string_utf8(env, value, *outStr, strLen + 1, nullptr) != napi_ok) {
+        LOGE("get string value failed");
+        CfFree(*outStr);
+        return false;
+    }
+    return true;
+}
+
+static bool ProcessArrayElement(napi_env env, napi_value value, HcfAttributesArray *attributeArray, uint32_t length)
+{
+    attributeArray->attributeSize = length;
+    attributeArray->array = static_cast<HcfAttributes *>(CfMalloc(length * sizeof(HcfAttributes), 0));
+    attributeArray->array->attributeName = static_cast<char *>(CfMalloc(sizeof(char *), 0));
+    attributeArray->array->attributeValue = static_cast<char *>(CfMalloc(sizeof(char *), 0));
+    if (attributeArray->array->attributeName == nullptr || attributeArray->array->attributeValue == nullptr) {
+        LOGE("malloc failed");
+        CfFree(attributeArray->array->attributeName);
+        CfFree(attributeArray->array->attributeValue);
+        CfFree(attributeArray->array);
+        LOGE("malloc failed");
+        return false;
+    }
+    for (uint32_t i = 0; i < length; i++) {
+        napi_value element;
+        if (napi_get_element(env, value, i, &element) == napi_ok) {
+            napi_value obj = GetProp(env, element, CERT_ATTRIBUTE_TYPE.c_str());
+            if (obj == nullptr || !GetStringFromValue(env, obj, &attributeArray->array[i].attributeName)) {
+                LOGE("Failed to get type!");
+                CfFree(attributeArray->array[i].attributeName);
+                CfFree(attributeArray->array[i].attributeValue);
+                CfFree(attributeArray->array);
+                return false;
+            }
+            obj = GetProp(env, element, CERT_ATTRIBUTE_VALUE.c_str());
+            if (obj == nullptr || !GetStringFromValue(env, obj, &attributeArray->array[i].attributeValue)) {
+                LOGE("Failed to get value!");
+                CfFree(attributeArray->array[i].attributeName);
+                CfFree(attributeArray->array[i].attributeValue);
+                CfFree(attributeArray->array);
+                return false;
+            }
+        }
+    }
+        
+    return true;
+}
+
+static bool GetX509CsrAttributeArray(napi_env env, napi_value object, HcfAttributesArray *attributeArray)
+{
+    napi_value value = nullptr;
+    bool hasProperty = false;
+
+    napi_status status = napi_has_named_property(env, object, CERT_CSR_CONF_ATTRIBUTES.c_str(), &hasProperty);
+    if (status != napi_ok) {
+        LOGE("check attributes property failed");
+        return false;
+    }
+
+    if (!hasProperty) {
+        LOGD("attributes property not found, it's optional");
+        attributeArray->attributeSize = 0;
+        attributeArray->array = nullptr;
+        return true;
+    }
+    if (napi_get_named_property(env, object, CERT_CSR_CONF_ATTRIBUTES.c_str(), &value) != napi_ok) {
+        LOGE("get attributes property failed");
+        return false;
+    }
+    uint32_t length;
+    if (!ValidateArrayInput(env, value, &length)) {
+        LOGE("validate array input failed");
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "validate array input failed"));
+        return false;
+    }
+    if (!ProcessArrayElement(env, value, attributeArray, length)) {
+        LOGE("get attributeArray failed.");
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get attribute array failed"));
+        return false;
+    }
+    return true;
+}
+
+static bool IsValidMdName(const char *mdName)
+{
+    const char* validNames[] = {"SHA1", "SHA256", "SHA384", "SHA512"};
+    const int validNamesCount = sizeof(validNames) / sizeof(validNames[0]);
+
+    for (int i = 0; i < validNamesCount; i++) {
+        if (strcasecmp(mdName, validNames[i]) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool GetX509CsrMdName(napi_env env, napi_value arg, char **mdName)
+{
+    napi_value value = nullptr;
+    if (napi_get_named_property(env, arg, CERT_MDNAME.c_str(), &value) != napi_ok) {
+        LOGE("get mdName property failed");
+        return false;
+    }
+    char *tmpMdName = AllocateAndCopyString(env, value, CERT_MDNAME);
+    if (tmpMdName == nullptr) {
+        return false;
+    }
+    if (!IsValidMdName(tmpMdName)) {
+        CfFree(tmpMdName);
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "invalid mdName"));
+        return false;
+    }
+    *mdName = tmpMdName;
+    return true;
+}
+
+static bool GetX509CsrIsPem(napi_env env, napi_value arg, bool *isPem)
+{
+    napi_value value = nullptr;
+    bool hasProperty = false;
+    napi_status status = napi_has_named_property(env, arg, CERT_CSR_CONF_OUT_FORMAT.c_str(), &hasProperty);
+    if (status != napi_ok) {
+        LOGE("check outFormat property failed");
+        return false;
+    }
+
+    if (!hasProperty) {
+        LOGD("outFormat property not found, use default PEM format");
+        *isPem = true;
+        return true;
+    }
+    if (napi_get_named_property(env, arg, CERT_CSR_CONF_OUT_FORMAT.c_str(), &value) != napi_ok) {
+        LOGE("get outFormat property failed");
+        return false;
+    }
+    uint32_t format = 0;
+    if (napi_get_value_uint32(env, value, &format) != napi_ok) {
+        LOGE("get format value failed");
+        return false;
+    }
+    switch (format) {
+        case 0:
+            *isPem = true;
+            break;
+        case 1:
+            *isPem = false;
+            break;
+        default:
+            napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "invalid format value"));
+            return false;
+    }
+    return true;
+}
+
+static bool BuildX509CsrConf(napi_env env, napi_value arg, HcfGenCsrConf **conf)
+{
+    napi_valuetype valueType;
+    napi_typeof(env, arg, &valueType);
+    if (valueType != napi_object) {
+        LOGE("wrong argument type. expect object type. [Type]: %d", valueType);
+        return false;
+    }
+    HcfGenCsrConf *tmpConf = static_cast<HcfGenCsrConf *>(CfMalloc(sizeof(HcfGenCsrConf), 0));
+    if (tmpConf == nullptr) {
+        LOGE("malloc conf failed");
+        return false;
+    }
+
+    if (!GetX509CsrSubject(env, arg, &tmpConf->subject)) {
+        return false;
+    }
+    if (!GetX509CsrAttributeArray(env, arg, &tmpConf->attribute)) {
+        FreeGenCsrConf(tmpConf);
+        return false;
+    }
+    if (!GetX509CsrMdName(env, arg, &tmpConf->mdName)) {
+        FreeGenCsrConf(tmpConf);
+        return false;
+    }
+    if (!GetX509CsrIsPem(env, arg, &tmpConf->isPem)) {
+        FreeGenCsrConf(tmpConf);
+        return false;
+    }
+    *conf = tmpConf;
+    return true;
+}
+
+static napi_value CreatePemResult(napi_env env, const CfBlob &csrBlob)
+{
+    napi_value result = nullptr;
+    napi_status status = napi_create_string_utf8(env, reinterpret_cast<char *>(csrBlob.data), csrBlob.size, &result);
+    if (status != napi_ok) {
+        LOGE("create string failed");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_CRYPTO_OPERATION, "create string failed!"));
+        return nullptr;
+    }
+    return result;
+}
+
+static napi_value CreateDerResult(napi_env env, const CfBlob &csrBlob)
+{
+    napi_value result = nullptr;
+    napi_value arrayBuffer;
+    void* bufferData;
+   
+    napi_create_arraybuffer(env, csrBlob.size, &bufferData, &arrayBuffer);
+    if (memcpy_s(bufferData, csrBlob.size, csrBlob.data, csrBlob.size) != EOK) {
+        LOGE("memcpy_s csrString to buffer failed!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_COPY, "copy memory failed!"));
+        return nullptr;
+    }
+   
+    napi_status status = napi_create_typedarray(env, napi_uint8_array, csrBlob.size, arrayBuffer, 0, &result);
+    if (status != napi_ok) {
+        LOGE("create uint8 array failed");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_CRYPTO_OPERATION, "create array failed!"));
+        return nullptr;
+    }
+    return result;
+}
+
+static napi_value GenerateCsr(napi_env env, size_t argc, napi_value param1, napi_value param2)
+{
+    if (!CertCheckArgsCount(env, argc, ARGS_SIZE_TWO, false)) {
+        LOGE("check args count failed");
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "check args count failed!"));
+        return nullptr;
+    }
+    PrivateKeyInfo *privateKey = nullptr;
+    if (!GetPrivateKeyInfoFromValue(env, param1, &privateKey)) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get private key info from data failed!"));
+        LOGE("get private key info from data failed!");
+        return nullptr;
+    }
+    HcfGenCsrConf *conf = nullptr;
+    if (!BuildX509CsrConf(env, param2, &conf)) {
+        LOGE("get csr conf failed");
+        FreePriKeyInfo(privateKey);
+        return nullptr;
+    }
+    CfBlob csrBlob = {0};
+    CfResult ret = HcfX509CertificateGenCsr(privateKey, conf, &csrBlob);
+    if (ret != CF_SUCCESS) {
+        LOGE("generate csr failed, ret: %d", ret);
+        FreeGenCsrConf(conf);
+        FreePriKeyInfo(privateKey);
+        napi_throw(env, CertGenerateBusinessError(env, ret, "generate csr failed!"));
+        return nullptr;
+    }
+    napi_value result = conf->isPem ? CreatePemResult(env, csrBlob) : CreateDerResult(env, csrBlob);
+    if (result == nullptr) {
+        FreePriKeyInfo(privateKey);
+        FreeGenCsrConf(conf);
+        CfBlobDataFree(&csrBlob);
+    }
+    
+    FreePriKeyInfo(privateKey);
+    FreeGenCsrConf(conf);
+    CfBlobDataFree(&csrBlob);
+    return result;
+}
+
+napi_value NapiX509Certificate::NapiGenerateCsr(napi_env env, napi_callback_info info)
+{
+    size_t argc = ARGS_SIZE_TWO;
+    napi_value argv[ARGS_SIZE_TWO] = { nullptr };
+    napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
+    napi_value instance = GenerateCsr(env, argc, argv[PARAM0], argv[PARAM1]);
+    return instance;
+}
+
 void NapiX509Certificate::DefineX509CertJSClass(napi_env env, napi_value exports)
 {
     napi_property_descriptor desc[] = {
         DECLARE_NAPI_FUNCTION("createX509Cert", NapiCreateX509Cert),
+        DECLARE_NAPI_FUNCTION("generateCsr", NapiGenerateCsr),
     };
     napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
 
