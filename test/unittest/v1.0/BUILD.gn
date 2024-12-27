@@ -46,6 +46,7 @@ ohos_unittest("cf_version1_test") {
     "src/crypto_x509_certificate_test_part3.cpp",
     "src/crypto_x509_crl_test.cpp",
     "src/crypto_x509_crl_test_part2.cpp",
+    "src/crypto_x509_csr_test.cpp",
     "src/crypto_x509_test_common.cpp",
     "src/x509_distinguished_name_test.cpp",
   ]
@@ -69,6 +70,7 @@ ohos_unittest("cf_version1_test") {
     "../../../frameworks/adapter/v1.0/src/x509_certificate_openssl.c",
     "../../../frameworks/adapter/v1.0/src/x509_crl_entry_openssl.c",
     "../../../frameworks/adapter/v1.0/src/x509_crl_openssl.c",
+    "../../../frameworks/adapter/v1.0/src/x509_csr_openssl.c",
     "../../../frameworks/adapter/v1.0/src/x509_distinguished_name_openssl.c",
   ]
 

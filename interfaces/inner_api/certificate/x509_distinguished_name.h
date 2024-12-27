@@ -24,7 +24,6 @@
 #include "cf_result.h"
 
 typedef struct HcfX509DistinguishedName HcfX509DistinguishedName;
-
 struct HcfX509DistinguishedName {
     CfObjectBase base;
 

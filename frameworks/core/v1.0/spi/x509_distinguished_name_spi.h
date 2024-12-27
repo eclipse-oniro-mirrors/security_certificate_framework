@@ -20,6 +20,8 @@
 #include "cf_object_base.h"
 #include "cf_result.h"
 
+#include "x509_distinguished_name.h"
+
 typedef struct HcfX509DistinguishedNameSpi HcfX509DistinguishedNameSpi;
 
 struct HcfX509DistinguishedNameSpi {
@@ -29,5 +31,13 @@ struct HcfX509DistinguishedNameSpi {
 
     CfResult (*engineGetName)(HcfX509DistinguishedNameSpi *self, CfBlob *type, CfBlob *out, CfArray *outArr);
 };
+
+typedef struct HcfX509DistinguishedNameImpl HcfX509DistinguishedNameImpl;
+struct HcfX509DistinguishedNameImpl {
+    HcfX509DistinguishedName base;
+    HcfX509DistinguishedNameSpi *spiObj;
+    const char *certType;
+};
+
 
 #endif // CF_X509_DISTINGUISHED_NAME_SPI_H

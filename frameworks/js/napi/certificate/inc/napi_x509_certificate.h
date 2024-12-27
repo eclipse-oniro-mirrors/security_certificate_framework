@@ -34,6 +34,7 @@ public:
     static void CreateX509CertExecute(napi_env env, void *data);
     static void CreateX509CertComplete(napi_env env, napi_status status, void *data);
     static napi_value CreateX509Cert(napi_env env);
+    static napi_value NapiGenerateCsr(napi_env env, napi_callback_info info);
 
     napi_value Verify(napi_env env, napi_callback_info info);
     napi_value GetEncoded(napi_env env, napi_callback_info info);

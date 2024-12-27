@@ -24,12 +24,6 @@
 #include "cf_type.h"
 #include "x509_certificate.h"
 
-typedef struct PrivateKeyInfo PrivateKeyInfo;
-struct PrivateKeyInfo {
-    CfEncodingBlob *privateKey;
-    char *privateKeyPassword;
-};
-
 typedef struct HcfCmsSignerOptions HcfCmsSignerOptions;
 struct HcfCmsSignerOptions {
     char *mdName;

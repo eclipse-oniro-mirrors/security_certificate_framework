@@ -21,6 +21,13 @@
 #include "cf_result.h"
 #include "x509_cert_match_parameters.h"
 #include "x509_distinguished_name.h"
+#include "x509_csr.h"
+
+typedef struct PrivateKeyInfo PrivateKeyInfo;
+struct PrivateKeyInfo {
+    CfEncodingBlob *privateKey;
+    char *privateKeyPassword;
+};
 
 typedef struct HcfX509Certificate HcfX509Certificate;
 
@@ -116,6 +123,7 @@ extern "C" {
 #endif
 
 CfResult HcfX509CertificateCreate(const CfEncodingBlob *inStream, HcfX509Certificate **returnObj);
+CfResult HcfX509CertificateGenCsr(PrivateKeyInfo *privateKey, const HcfGenCsrConf *conf, CfBlob *csrBlob);
 
 #ifdef __cplusplus
 }

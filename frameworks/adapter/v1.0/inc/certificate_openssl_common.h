@@ -22,6 +22,7 @@
 #include "cf_blob.h"
 #include "cf_result.h"
 #include "x509_cert_match_parameters.h"
+#include "x509_distinguished_name_spi.h"
 
 
 #define CF_OPENSSL_SUCCESS 1 /* openssl return 1: success */
@@ -29,6 +30,12 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+typedef struct HcfX509DistinguishedNameOpensslImpl HcfX509DistinguishedNameOpensslImpl;
+struct HcfX509DistinguishedNameOpensslImpl {
+    HcfX509DistinguishedNameSpi base;
+    X509_NAME *name;
+};
 
 typedef enum {
     NAME_TYPE_SUBJECT,

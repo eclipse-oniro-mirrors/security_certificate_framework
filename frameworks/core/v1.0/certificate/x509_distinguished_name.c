@@ -28,12 +28,6 @@
 typedef CfResult (*HcfX509DistinguishedNameSpiCreateFunc)(const CfBlob *, const bool, HcfX509DistinguishedNameSpi **);
 
 typedef struct {
-    HcfX509DistinguishedName base;
-    HcfX509DistinguishedNameSpi *spiObj;
-    const char *certType;
-} HcfX509DistinguishedNameImpl;
-
-typedef struct {
     HcfX509DistinguishedNameSpiCreateFunc createFunc;
 } HcfX509DistinguishedNameFuncSet;
 
