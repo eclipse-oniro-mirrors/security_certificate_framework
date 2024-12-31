@@ -252,11 +252,11 @@ static char g_testRsaKeyNoPasswordPem[] =
 "dxobHekcOKGQKEvlFnU3POLP5yGAFHLVKy6Eu7vrPdjX8TECQQDyj9RkA85gFwye\r\n"
 "8Kud5Q6Ddl0ForJN2WEpV4kaTPZPON7bYVlBYslWtsQwnvW8+B96dp5NFdHPM4Dw\r\n"
 "mS1md3BzAkEAyNqP0Lhenpu068bNVkNxiuTj12WZ6FGp1+9l42dnjgl3aM0d4TIr\r\n"
-"IOXNlk5bgXODiIUZUwQ/3TQdcXsd7YQ7XQJAEISo8xKrSDHpox1CoqMJpPw3g327\r\n" 
+"IOXNlk5bgXODiIUZUwQ/3TQdcXsd7YQ7XQJAEISo8xKrSDHpox1CoqMJpPw3g327\r\n"
 "5L9L9ZPHe2oIUAbQbmInwOMoUOZrX+BDXdYL1rwjNZ6pxhF802WrCNJTbwJBAKSR\r\n"
 "N56bQaORDobUh6+zaNeVvPziWV1Zc+DiXMgbFGTzaqwqy92U3nOA9pa9swn43H/C\r\n"
 "FkLHy4/xwGIXryjJ3F0CQA3ieCRmYxrLiYQkxYyjBE4s8vV55Ldz0qNJTG4NvtgS\r\n"
-"uvZuFdOpke8LnfL4lCVzTitVsvHh4UT9XGrqhPDHIxU=\r\n" 
+"uvZuFdOpke8LnfL4lCVzTitVsvHh4UT9XGrqhPDHIxU=\r\n"
 "-----END RSA PRIVATE KEY-----\r\n";
 
 static uint8_t g_testRsaKeyNoPasswordDer[] = {
