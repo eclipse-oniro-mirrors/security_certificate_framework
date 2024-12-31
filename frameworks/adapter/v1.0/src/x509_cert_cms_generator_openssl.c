@@ -89,7 +89,7 @@ static CfResult GetHashDigest(const char *mdName, const EVP_MD **md)
     return CF_SUCCESS;
 }
 
-static void GetSignerFlags(const HcfCmsSignerOptions *options, int *tflags)
+static void GetSignerFlags(const HcfCmsSignerOptions *options, unsigned int *tflags)
 {
     if (!(options->addCert)) {
         *tflags |= SMIME_NOCERTS;
@@ -238,7 +238,7 @@ static CfResult AddSignerOpenssl(HcfCmsGeneratorSpi *self, const HcfCertificate 
         return ret;
     }
 
-    int tflags = 0;
+    unsigned int tflags = 0;
     GetSignerFlags(options, &tflags);
 
     EVP_PKEY *pkey = NULL;
@@ -381,7 +381,7 @@ static CfResult DoFinalOpenssl(HcfCmsGeneratorSpi *self, const CfBlob *content, 
         CfPrintOpensslError();
         return CF_ERR_CRYPTO_OPERATION;
     }
-    int flags = 0;
+    unsigned int flags = 0;
     if (options->dataFormat == BINARY) {
         flags |= SMIME_BINARY;
     } else if (options->dataFormat == TEXT) {
