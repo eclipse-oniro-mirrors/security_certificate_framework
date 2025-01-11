@@ -310,9 +310,6 @@ static void FreeHcfRevocationCheckParam(HcfRevocationCheckParam *param)
         CfFree(param->ocspRequestExtension);
     }
     CfBlobFree(&param->ocspResponderURI);
-    if (param->ocspResponderCert != nullptr) {
-        CfObjDestroy(param->ocspResponderCert);
-    }
     CfBlobFree(&param->ocspResponses);
     CfBlobFree(&param->crlDownloadURI);
     if (param->options != nullptr) {
@@ -347,6 +344,7 @@ static bool GetRevocationCheckParam(napi_env env, napi_value arg, HcfRevocationC
     if (!GetRevocationDetail(env, rckObj, out)) {
         LOGE("Failed to get revocation detail!");
         FreeHcfRevocationCheckParam(out);
+        out = nullptr;
         return false;
     }
 
@@ -444,6 +442,9 @@ void FreeX509CertChainValidateParams(HcfX509CertChainValidateParams &param)
         CfFree(param.keyUsage);
         param.keyUsage = nullptr;
     }
+
+    FreeHcfRevocationCheckParam(param.revocationCheckParam);
+    param.revocationCheckParam = nullptr;
 }
 
 void FreeTrustAnchorArray(HcfX509TrustAnchorArray *trustAnchorArray, bool freeCertFlag)
