@@ -64,6 +64,15 @@ static bool GetArrayLength(napi_env env, napi_value arg, uint32_t &length)
     return true;
 }
 
+static void FreeTrustAnchorArray(HcfX509TrustAnchorArray *&trustAnchors)
+{
+    for (uint32_t i = 0; i < trustAnchors->count; ++i) {
+        FreeX509TrustAnchorObj(trustAnchors->data[i]);
+    }
+    CfFree(trustAnchors);
+    trustAnchors = nullptr;
+}
+
 static bool GetX509TrustAnchorArray(napi_env env, napi_value arg, HcfX509TrustAnchorArray *&out)
 {
     napi_value obj = GetProp(env, arg, CERT_CHAIN_VALIDATE_TAG_TRUSTANCHORS.c_str());
@@ -96,20 +105,17 @@ static bool GetX509TrustAnchorArray(napi_env env, napi_value arg, HcfX509TrustAn
         napi_value element;
         if (napi_get_element(env, obj, i, &element) != napi_ok) {
             LOGE("get element failed!");
-            CfFree(out->data);
-            CfFree(out);
-            out = nullptr;
+            FreeTrustAnchorArray(out);
             return false;
         }
 
         if (!BuildX509TrustAnchorObj(env, element, out->data[i])) {
-            LOGE("get element failed!");
-            CfFree(out->data);
-            CfFree(out);
-            out = nullptr;
+            LOGE("build x509 trust anchor obj failed!");
+            FreeTrustAnchorArray(out);
             return false;
         }
     }
+    out->count = length;
     return true;
 }
 

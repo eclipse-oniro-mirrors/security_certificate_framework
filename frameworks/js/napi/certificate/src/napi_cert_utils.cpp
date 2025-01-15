@@ -353,6 +353,23 @@ bool GetPrivateKeyInfoFromValue(napi_env env, napi_value obj, PrivateKeyInfo **p
     return true;
 }
 
+void FreePrivateKeyInfo(PrivateKeyInfo *privateKey)
+{
+    if (privateKey != nullptr) {
+        if (privateKey->privateKey != nullptr) {
+            memset_s(privateKey->privateKey->data, privateKey->privateKey->len, 0, privateKey->privateKey->len);
+            CF_FREE_PTR(privateKey->privateKey->data);
+            CF_FREE_PTR(privateKey->privateKey);
+        }
+        if (privateKey->privateKeyPassword != nullptr) {
+            (void)memset_s(privateKey->privateKeyPassword, strlen(privateKey->privateKeyPassword), 0,
+                strlen(privateKey->privateKeyPassword));
+            CF_FREE_PTR(privateKey->privateKeyPassword);
+        }
+        CF_FREE_PTR(privateKey);
+    }
+}
+
 static bool GetMdName(napi_env env, napi_value arg, char **mdName)
 {
     bool result = false;
