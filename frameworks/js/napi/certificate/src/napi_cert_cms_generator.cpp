@@ -103,27 +103,6 @@ NapiCertCmsGenerator::~NapiCertCmsGenerator()
     CfObjDestroy(this->cmsGenerator_);
 }
 
-static void FreePrivateKeyInfo(PrivateKeyInfo *privateKey)
-{
-    if (privateKey != nullptr) {
-        if (privateKey->privateKey != nullptr) {
-            memset_s(privateKey->privateKey->data, privateKey->privateKey->len, 0, privateKey->privateKey->len);
-            CfFree(privateKey->privateKey->data);
-            privateKey->privateKey->data = nullptr;
-            CfFree(privateKey->privateKey);
-            privateKey->privateKey = nullptr;
-        }
-        if (privateKey->privateKeyPassword != nullptr) {
-            (void)memset_s(privateKey->privateKeyPassword, strlen(privateKey->privateKeyPassword), 0,
-                strlen(privateKey->privateKeyPassword));
-            CfFree((void *)privateKey->privateKeyPassword);
-            privateKey->privateKeyPassword = nullptr;
-        }
-        CfFree(privateKey);
-        privateKey = nullptr;
-    }
-}
-
 napi_value NapiCertCmsGenerator::AddSigner(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;

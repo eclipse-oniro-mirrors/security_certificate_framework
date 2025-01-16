@@ -1492,22 +1492,6 @@ static void FreeGenCsrConf(HcfGenCsrConf *conf)
     CfFree(conf);
 }
 
-void FreePriKeyInfo(PrivateKeyInfo *privateKeyInfo)
-{
-    if (privateKeyInfo == nullptr) {
-        return;
-    }
-    if (privateKeyInfo->privateKey != nullptr) {
-        CfEncodingBlobDataFree(privateKeyInfo->privateKey);
-        privateKeyInfo->privateKey = nullptr;
-    }
-    if (privateKeyInfo->privateKeyPassword != nullptr) {
-        CfFree(static_cast<void *>(privateKeyInfo->privateKeyPassword));
-        privateKeyInfo->privateKeyPassword = nullptr;
-    }
-    CfFree(privateKeyInfo);
-}
-
 static char* AllocateAndCopyString(napi_env env, napi_value strValue, const std::string& fieldName)
 {
     size_t strLen = 0;
@@ -1602,15 +1586,8 @@ static bool GetStringFromValue(napi_env env, napi_value value, char **outStr)
 
 static bool ProcessArrayElement(napi_env env, napi_value value, HcfAttributesArray *attributeArray, uint32_t length)
 {
-    attributeArray->attributeSize = length;
-    attributeArray->array = static_cast<HcfAttributes *>(CfMalloc(length * sizeof(HcfAttributes), 0));
-    attributeArray->array->attributeName = static_cast<char *>(CfMalloc(sizeof(char *), 0));
-    attributeArray->array->attributeValue = static_cast<char *>(CfMalloc(sizeof(char *), 0));
-    if (attributeArray->array->attributeName == nullptr || attributeArray->array->attributeValue == nullptr) {
-        LOGE("malloc failed");
-        CfFree(attributeArray->array->attributeName);
-        CfFree(attributeArray->array->attributeValue);
-        CfFree(attributeArray->array);
+    HcfAttributes *array = static_cast<HcfAttributes *>(CfMalloc(length * sizeof(HcfAttributes), 0));
+    if (array == nullptr) {
         LOGE("malloc failed");
         return false;
     }
@@ -1618,24 +1595,21 @@ static bool ProcessArrayElement(napi_env env, napi_value value, HcfAttributesArr
         napi_value element;
         if (napi_get_element(env, value, i, &element) == napi_ok) {
             napi_value obj = GetProp(env, element, CERT_ATTRIBUTE_TYPE.c_str());
-            if (obj == nullptr || !GetStringFromValue(env, obj, &attributeArray->array[i].attributeName)) {
+            if (obj == nullptr || !GetStringFromValue(env, obj, &array[i].attributeName)) {
                 LOGE("Failed to get type!");
-                CfFree(attributeArray->array[i].attributeName);
-                CfFree(attributeArray->array[i].attributeValue);
-                CfFree(attributeArray->array);
+                FreeCsrCfBlobArray(array, length);
                 return false;
             }
             obj = GetProp(env, element, CERT_ATTRIBUTE_VALUE.c_str());
-            if (obj == nullptr || !GetStringFromValue(env, obj, &attributeArray->array[i].attributeValue)) {
+            if (obj == nullptr || !GetStringFromValue(env, obj, &array[i].attributeValue)) {
                 LOGE("Failed to get value!");
-                CfFree(attributeArray->array[i].attributeName);
-                CfFree(attributeArray->array[i].attributeValue);
-                CfFree(attributeArray->array);
+                FreeCsrCfBlobArray(array, length);
                 return false;
             }
         }
     }
-        
+    attributeArray->array = array;
+    attributeArray->attributeSize = length;
     return true;
 }
 
@@ -1827,8 +1801,9 @@ static napi_value GenerateCsr(napi_env env, size_t argc, napi_value param1, napi
     }
     HcfGenCsrConf *conf = nullptr;
     if (!BuildX509CsrConf(env, param2, &conf)) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get csr conf failed"));
         LOGE("get csr conf failed");
-        FreePriKeyInfo(privateKey);
+        FreePrivateKeyInfo(privateKey);
         return nullptr;
     }
     CfBlob csrBlob = {0};
@@ -1836,18 +1811,12 @@ static napi_value GenerateCsr(napi_env env, size_t argc, napi_value param1, napi
     if (ret != CF_SUCCESS) {
         LOGE("generate csr failed, ret: %d", ret);
         FreeGenCsrConf(conf);
-        FreePriKeyInfo(privateKey);
+        FreePrivateKeyInfo(privateKey);
         napi_throw(env, CertGenerateBusinessError(env, ret, "generate csr failed!"));
         return nullptr;
     }
     napi_value result = conf->isPem ? CreatePemResult(env, csrBlob) : CreateDerResult(env, csrBlob);
-    if (result == nullptr) {
-        FreePriKeyInfo(privateKey);
-        FreeGenCsrConf(conf);
-        CfBlobDataFree(&csrBlob);
-    }
-    
-    FreePriKeyInfo(privateKey);
+    FreePrivateKeyInfo(privateKey);
     FreeGenCsrConf(conf);
     CfBlobDataFree(&csrBlob);
     return result;

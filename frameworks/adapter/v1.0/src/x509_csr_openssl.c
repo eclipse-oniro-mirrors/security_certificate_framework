@@ -95,7 +95,6 @@ static CfResult LoadPrivateKey(EVP_PKEY **pkey, PrivateKeyInfo *privateKeyInfo)
 {
     const char *keytype = "RSA";
     const char *inputType = (privateKeyInfo->privateKey->encodingFormat == CF_FORMAT_PEM) ? "PEM" : "DER";
-    LOGD("!!!cert test input type is %s", inputType);
     OSSL_DECODER_CTX *ctx = OSSL_DECODER_CTX_new_for_pkey(pkey, inputType, NULL, keytype,
         OSSL_KEYMGMT_SELECT_PRIVATE_KEY, NULL, NULL);
     if (ctx == NULL) {
@@ -135,14 +134,18 @@ static CfResult WriteCsrToString(BIO *out, bool isPem, X509_REQ *req, CfBlob *cs
         return CF_ERR_CRYPTO_OPERATION;
     }
 
-    size_t csrLen = BIO_pending(out);
+    int csrLen = BIO_pending(out);
+    if (csrLen <= 0) {
+        LOGE("BIO_pending failed");
+        return CF_INVALID_PARAMS;
+    }
     csrBlob->data = (uint8_t *)OPENSSL_malloc(csrLen);
     if (csrBlob->data == NULL) {
         LOGE("OPENSSL_malloc failed");
         return CF_ERR_MALLOC;
     }
 
-    if (BIO_read(out, csrBlob->data, csrLen) != (int)csrLen) {
+    if (BIO_read(out, csrBlob->data, csrLen) != csrLen) {
         OPENSSL_free(csrBlob->data);
         csrBlob->data = NULL;
         LOGE("BIO_read failed");
