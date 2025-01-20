@@ -882,7 +882,8 @@ static CfResult ValidateOcspLocal(OcspLocalParam localParam, STACK_OF(X509) *x50
     }
     HcfRevocationCheckParam *revo = params->revocationCheckParam;
     if (localParam.resp == NULL && revo->ocspResponses != NULL) {
-        rsp = d2i_OCSP_RESPONSE(NULL, (const unsigned char **)&(revo->ocspResponses->data), revo->ocspResponses->size);
+        const unsigned char *p = revo->ocspResponses->data;
+        rsp = d2i_OCSP_RESPONSE(NULL, &p, revo->ocspResponses->size);
         localParam.resp = rsp;
     }
     if (localParam.resp == NULL) {
@@ -895,12 +896,11 @@ static CfResult ValidateOcspLocal(OcspLocalParam localParam, STACK_OF(X509) *x50
         return CF_ERR_CRYPTO_OPERATION;
     }
     OCSP_BASICRESP *bs = OCSP_response_get1_basic(localParam.resp);
+    OCSP_RESPONSE_free(rsp);
     if (bs == NULL) {
         LOGE("Error parsing response!");
-        OCSP_RESPONSE_free(rsp);
         return CF_ERR_CRYPTO_OPERATION;
     }
-    OCSP_RESPONSE_free(rsp);
     if (localParam.req != NULL && ((i = OCSP_check_nonce(localParam.req, bs)) <= 0)) {
         if (i == -1) {
             LOGW("No nonce in response!");
@@ -1027,9 +1027,8 @@ static CfResult SetRequestData(HcfRevocationCheckParam *revo, OCSP_REQUEST *req,
 
     if (revo->ocspRequestExtension != NULL) {
         for (size_t i = 0; i < revo->ocspRequestExtension->count; i++) {
-            X509_EXTENSION *ext =
-                d2i_X509_EXTENSION(NULL, (const unsigned char **)&(revo->ocspRequestExtension->data[i].data),
-                    revo->ocspRequestExtension->data[i].size);
+            const unsigned char *p = revo->ocspRequestExtension->data[i].data;
+            X509_EXTENSION *ext = d2i_X509_EXTENSION(NULL, &p, revo->ocspRequestExtension->data[i].size);
             if (ext == NULL) {
                 return CF_INVALID_PARAMS;
             }
