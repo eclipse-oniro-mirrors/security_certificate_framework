@@ -30,7 +30,7 @@
 #include <openssl/x509v3.h>
 #include <securec.h>
 
-#include "cert_crl_common.h"
+#include "x509_certificate_create.h"
 #include "certificate_openssl_class.h"
 #include "certificate_openssl_common.h"
 #include "cf_blob.h"
@@ -149,14 +149,14 @@ static CfResult GetCertlist(HcfX509CertChainSpi *self, HcfX509CertificateArray *
         if (cert == NULL) {
             LOGE("sk X509 value is null, failed!");
             CfPrintOpensslError();
-            FreeCertArrayData(certsList);
+            FreeCertificateArray(certsList);
             return CF_ERR_CRYPTO_OPERATION;
         }
         HcfX509Certificate *x509Cert = NULL;
         res = X509ToHcfX509Certificate(cert, &x509Cert);
         if (res != CF_SUCCESS) {
             LOGE("convert x509 to HcfX509Certificate failed!");
-            FreeCertArrayData(certsList);
+            FreeCertificateArray(certsList);
             return res;
         }
         certsList->data[i] = x509Cert;
@@ -416,15 +416,19 @@ static CfResult CopyHcfX509TrustAnchor(const HcfX509TrustAnchor *inputAnchor, Hc
     CfBlob *nameConstraints = inputAnchor->nameConstraints;
     CfResult res = CF_SUCCESS;
     if (CACert != NULL) {
+        HcfX509CertCreateFunc func = GetHcfX509CertCreateFunc();
+        if (func == NULL) {
+            LOGE("HcfX509CertificateCreate is null.");
+            return CF_NULL_POINTER;
+        }
         CfEncodingBlob encodedByte = { NULL, 0, CF_FORMAT_DER };
         CACert->base.getEncoded((HcfCertificate *)CACert, &encodedByte);
-        res = HcfX509CertificateCreate(&encodedByte, &outAnchor->CACert);
+        res = func(&encodedByte, &outAnchor->CACert);
+        CfFree(encodedByte.data);
         if (res != CF_SUCCESS) {
             LOGE("HcfX509CertificateCreate fail, res : %d!", res);
-            CfFree(encodedByte.data);
             return CF_ERR_MALLOC;
         }
-        CfFree(encodedByte.data);
     }
     if (CAPubKey != NULL) {
         res = DeepCopyBlobToBlob(CAPubKey, &outAnchor->CAPubKey);

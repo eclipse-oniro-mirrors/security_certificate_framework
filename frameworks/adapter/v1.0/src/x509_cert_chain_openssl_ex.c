@@ -24,6 +24,7 @@
 #include "utils.h"
 #include <securec.h>
 #include "x509_cert_chain_spi.h"
+#include "x509_certificate_create.h"
 #include <openssl/pem.h>
 #include <openssl/pkcs12.h>
 
@@ -140,7 +141,7 @@ X509 *GetX509FromHcfX509Certificate(const HcfCertificate *cert)
     return realCert->x509;
 }
 
-static void FreeCertArrayData(HcfX509CertificateArray *certs)
+void FreeCertificateArray(HcfX509CertificateArray *certs)
 {
     if (certs == NULL || certs->data == NULL) {
         return;
@@ -171,24 +172,24 @@ static CfResult GetCertChainFromCollection(const HcfX509CertChainBuildParameters
             X509 *cert = GetX509FromHcfX509Certificate((HcfCertificate *)retCerts.data[j]);
             if (cert == NULL) {
                 LOGE("GetX509Cert from inParams failed!");
-                FreeCertArrayData(&retCerts);
+                FreeCertificateArray(&retCerts);
                 return CF_INVALID_PARAMS;
             }
 
             X509 *certDup = X509_dup(cert);
             if (certDup == NULL) {
                 LOGE("Memory allocation failure!");
-                FreeCertArrayData(&retCerts);
+                FreeCertificateArray(&retCerts);
                 return CF_ERR_MALLOC;
             }
             if (sk_X509_push(certStack, certDup) <= 0) {
                 LOGE("Push cert to SK failed!");
                 X509_free(certDup);
-                FreeCertArrayData(&retCerts);
+                FreeCertificateArray(&retCerts);
                 return CF_ERR_CRYPTO_OPERATION;
             }
         }
-        FreeCertArrayData(&retCerts);
+        FreeCertificateArray(&retCerts);
     }
     return CF_SUCCESS;
 }
@@ -239,6 +240,12 @@ CfResult X509ToHcfX509Certificate(X509 *cert, HcfX509Certificate **returnObj)
         return CF_INVALID_PARAMS;
     }
 
+    HcfX509CertCreateFunc func = GetHcfX509CertCreateFunc();
+    if (func == NULL) {
+        LOGE("HcfX509CertificateCreate is null.");
+        return CF_NULL_POINTER;
+    }
+
     int dataLength = 0;
     uint8_t *certData = GetX509EncodedDataStream(cert, &dataLength);
     if (certData == NULL) {
@@ -248,15 +255,14 @@ CfResult X509ToHcfX509Certificate(X509 *cert, HcfX509Certificate **returnObj)
 
     HcfX509Certificate *x509cert = NULL;
     CfEncodingBlob encodingBlob = { certData, dataLength, CF_FORMAT_DER };
-    CfResult res = HcfX509CertificateCreate(&encodingBlob, &x509cert);
+    CfResult res = func(&encodingBlob, &x509cert);
+    CfFree(certData);
     if (res != CF_SUCCESS) {
         LOGE("HcfX509CertificateCreate fail, res : %d!", res);
-        CfFree(certData);
         return CF_ERR_MALLOC;
     }
 
     *returnObj = x509cert;
-    CfFree(certData);
     return res;
 }
 
