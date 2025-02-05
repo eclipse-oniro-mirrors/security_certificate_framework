@@ -46,6 +46,7 @@ void FreeHcfX509P12Collection(HcfX509P12Collection *p12Collection);
 CfResult AllocateAndConvertCert(X509 *cert, HcfX509P12Collection *collection, bool isGet);
 CfResult AllocateAndConvertPkey(EVP_PKEY *pkey, HcfX509P12Collection *collection, bool isGet);
 CfResult AllocateAndConvertCertStack(STACK_OF(X509) *ca, HcfX509P12Collection *collection, bool isGet);
+void FreeCertificateArray(HcfX509CertificateArray *certs);
 #ifdef __cplusplus
 }
 #endif
