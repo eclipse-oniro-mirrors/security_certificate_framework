@@ -467,7 +467,7 @@ HWTEST_F(CryptoX509CertChainTestPart2, ValidateOpensslRevocationOnLineTest009, T
     (void)HcfX509CertificateCreate(&g_inStreamOcspResponderCert, &(params.revocationCheckParam->ocspResponderCert));
     ASSERT_NE(params.revocationCheckParam->ocspResponderCert, nullptr);
     ret = g_certChainPemSpi163->engineValidate(g_certChainPemSpi163, &params, &result);
-    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+    EXPECT_EQ(ret, CF_SUCCESS);
     FreeValidateResult(result);
 
     FreeTrustAnchorArr(trustAnchorArray);
