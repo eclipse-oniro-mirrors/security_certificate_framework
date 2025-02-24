@@ -2393,6 +2393,8 @@ HWTEST_F(CryptoX509CertChainTest, HcfParsePKCS12Test002, TestSize.Level0)
         .WillRepeatedly(Invoke(__real_PKCS12_parse));
     result = HcfParsePKCS12(&keyStore, &conf, &p12Collection);
     EXPECT_EQ(result, CF_SUCCESS);
+    FreeHcfX509P12Collection(p12Collection);
+    p12Collection = NULL;
     X509OpensslMock::SetMockFlag(false);
 
     X509OpensslMock::SetMockFlag(true);
@@ -2401,6 +2403,8 @@ HWTEST_F(CryptoX509CertChainTest, HcfParsePKCS12Test002, TestSize.Level0)
         .WillRepeatedly(Invoke(__real_PKCS12_parse));
     result = HcfParsePKCS12(&keyStore, &conf, &p12Collection);
     EXPECT_EQ(result, CF_SUCCESS);
+    FreeHcfX509P12Collection(p12Collection);
+    p12Collection = NULL;
     X509OpensslMock::SetMockFlag(false);
 
     X509OpensslMock::SetMockFlag(true);
@@ -2409,6 +2413,8 @@ HWTEST_F(CryptoX509CertChainTest, HcfParsePKCS12Test002, TestSize.Level0)
         .WillRepeatedly(Invoke(__real_PKCS12_parse));
     result = HcfParsePKCS12(&keyStore, &conf, &p12Collection);
     EXPECT_EQ(result, CF_SUCCESS);
+    FreeHcfX509P12Collection(p12Collection);
+    p12Collection = NULL;
     X509OpensslMock::SetMockFlag(false);
 }
 
@@ -2432,6 +2438,8 @@ HWTEST_F(CryptoX509CertChainTest, HcfParsePKCS12Test003, TestSize.Level0)
         .WillRepeatedly(Invoke(__real_OPENSSL_sk_num));
     CfResult result = HcfParsePKCS12(&keyStore, &conf, &p12Collection);
     EXPECT_EQ(result, CF_SUCCESS);
+    FreeHcfX509P12Collection(p12Collection);
+    p12Collection = NULL;
     X509OpensslMock::SetMockFlag(false);
 
     SetMockFlag(true);
@@ -2443,12 +2451,16 @@ HWTEST_F(CryptoX509CertChainTest, HcfParsePKCS12Test003, TestSize.Level0)
     SetMockMallocIndex(1);
     result = HcfParsePKCS12(&keyStore, &conf, &p12Collection);
     EXPECT_EQ(result, CF_SUCCESS);
+    FreeHcfX509P12Collection(p12Collection);
+    p12Collection = NULL;
     EndRecordMallocNum();
 
     StartRecordMallocNum();
     SetMockMallocIndex(2);
     result = HcfParsePKCS12(&keyStore, &conf, &p12Collection);
     EXPECT_EQ(result, CF_SUCCESS);
+    FreeHcfX509P12Collection(p12Collection);
+    p12Collection = NULL;
     EndRecordMallocNum();
 }
 
