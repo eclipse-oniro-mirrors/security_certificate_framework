@@ -104,7 +104,7 @@ void X509CertificateGenCsrTest::TearDown() {}
 
 HWTEST_F(X509CertificateGenCsrTest, X509CsrTest001, TestSize.Level0)
 {
-    HcfGenCsrConf *csrConf = new HcfGenCsrConf();
+    HcfGenCsrConf *csrConf = (HcfGenCsrConf *)CfMalloc(sizeof(HcfGenCsrConf), 0);
     char mdname[] = "SHA256";
     char attributeName[] = "challengePassword";
     char attributeValue[] = "test123456";
@@ -113,16 +113,16 @@ HWTEST_F(X509CertificateGenCsrTest, X509CsrTest001, TestSize.Level0)
     csrConf->isPem = true;
     csrConf->mdName = reinterpret_cast<char *>(mdname);
     
-    HcfAttributesArray *attributeArray = new HcfAttributesArray();
-    attributeArray->array = new HcfAttributes[1];
+    HcfAttributesArray *attributeArray = (HcfAttributesArray *)CfMalloc(sizeof(HcfAttributesArray), 0);
+    attributeArray->array = (HcfAttributes *)CfMalloc(sizeof(HcfAttributes), 0);
     attributeArray->attributeSize = 1;
-    attributeArray->array[0].attributeName = reinterpret_cast<char *>(attributeName);
-    attributeArray->array[0].attributeValue = reinterpret_cast<char *>(attributeValue);
+    attributeArray->array->attributeName = reinterpret_cast<char *>(attributeName);
+    attributeArray->array->attributeValue = reinterpret_cast<char *>(attributeValue);
     csrConf->attribute.array = attributeArray->array;
     csrConf->attribute.attributeSize = attributeArray->attributeSize;
     
-    PrivateKeyInfo *privateKey = new PrivateKeyInfo();
-    privateKey->privateKey = new CfEncodingBlob();
+    PrivateKeyInfo *privateKey = (PrivateKeyInfo *)CfMalloc(sizeof(PrivateKeyInfo), 0);
+    privateKey->privateKey = (CfEncodingBlob *)CfMalloc(sizeof(CfEncodingBlob), 0);
     privateKey->privateKey->data = static_cast<uint8_t *>(malloc(g_rsaPrikey.length() + 1));
     privateKey->privateKey->encodingFormat = CF_FORMAT_PEM;
     if (privateKey->privateKey->data != nullptr) {
@@ -139,22 +139,23 @@ HWTEST_F(X509CertificateGenCsrTest, X509CsrTest001, TestSize.Level0)
     EXPECT_TRUE(strstr(csrString, "BEGIN CERTIFICATE REQUEST") != nullptr);
     EXPECT_TRUE(strstr(csrString, "END CERTIFICATE REQUEST") != nullptr);
 
-    delete[] attributeArray->array;
-    delete attributeArray;
-    delete privateKey->privateKey;
-    delete privateKey;
-    delete csrConf;
+    CfFree(attributeArray->array);
+    CfFree(attributeArray);
+    CfFree(privateKey->privateKey->data);
+    CfFree(privateKey->privateKey);
+    CfFree(privateKey);
+    CfFree(csrConf);
     CfBlobDataFree(&csrBlob);
 }
 
 HWTEST_F(X509CertificateGenCsrTest, X509CsrTest002, TestSize.Level0)
 {
-    HcfGenCsrConf *csrConf = new HcfGenCsrConf();
+    HcfGenCsrConf *csrConf = (HcfGenCsrConf *)CfMalloc(sizeof(HcfGenCsrConf), 0);
     csrConf->subject = g_x509Name;
     csrConf->isPem = true;
     
-    PrivateKeyInfo *privateKey = new PrivateKeyInfo();
-    privateKey->privateKey = new CfEncodingBlob();
+    PrivateKeyInfo *privateKey = (PrivateKeyInfo *)CfMalloc(sizeof(PrivateKeyInfo), 0);
+    privateKey->privateKey = (CfEncodingBlob *)CfMalloc(sizeof(CfEncodingBlob), 0);
     privateKey->privateKey->data = static_cast<uint8_t *>(malloc(g_rsaPrikey.length() + 1));
     privateKey->privateKey->encodingFormat = CF_FORMAT_PEM;
     if (privateKey->privateKey->data != nullptr) {
@@ -166,23 +167,24 @@ HWTEST_F(X509CertificateGenCsrTest, X509CsrTest002, TestSize.Level0)
     CfBlob csrBlob = { 0 };
     EXPECT_EQ(HcfX509CertificateGenCsr(privateKey, csrConf, &csrBlob), CF_ERR_CRYPTO_OPERATION);
 
-    delete privateKey->privateKey;
-    delete privateKey;
-    delete csrConf;
+    CfFree(privateKey->privateKey->data);
+    CfFree(privateKey->privateKey);
+    CfFree(privateKey);
+    CfFree(csrConf);
     CfBlobDataFree(&csrBlob);
 }
 
 HWTEST_F(X509CertificateGenCsrTest, X509CsrTest003, TestSize.Level0)
 {
-    HcfGenCsrConf *csrConf = new HcfGenCsrConf();
-    PrivateKeyInfo *privateKey = new PrivateKeyInfo();
+    HcfGenCsrConf *csrConf = (HcfGenCsrConf *)CfMalloc(sizeof(HcfGenCsrConf), 0);
+    PrivateKeyInfo *privateKey = (PrivateKeyInfo *)CfMalloc(sizeof(PrivateKeyInfo), 0);
     CfBlob csrBlob = { 0 };
     EXPECT_EQ(HcfX509CertificateGenCsr(nullptr, csrConf, &csrBlob), CF_INVALID_PARAMS);
     EXPECT_EQ(HcfX509CertificateGenCsr(privateKey, nullptr, &csrBlob), CF_INVALID_PARAMS);
     EXPECT_EQ(HcfX509CertificateGenCsr(privateKey, csrConf, nullptr), CF_INVALID_PARAMS);
 
-    delete privateKey;
-    delete csrConf;
+    CfFree(privateKey);
+    CfFree(csrConf);
 }
 
 HWTEST_F(X509CertificateGenCsrTest, X509CsrTest004, TestSize.Level0)
@@ -190,13 +192,13 @@ HWTEST_F(X509CertificateGenCsrTest, X509CsrTest004, TestSize.Level0)
     const char* digestAlgorithms[] = {"SHA256", "SHA384", "SHA512"};
     
     for (const auto& digest : digestAlgorithms) {
-        HcfGenCsrConf *csrConf = new HcfGenCsrConf();
+        HcfGenCsrConf *csrConf = (HcfGenCsrConf *)CfMalloc(sizeof(HcfGenCsrConf), 0);
         csrConf->subject = g_x509Name;
         csrConf->isPem = true;
         csrConf->mdName = const_cast<char*>(digest);
         
-        PrivateKeyInfo *privateKey = new PrivateKeyInfo();
-        privateKey->privateKey = new CfEncodingBlob();
+        PrivateKeyInfo *privateKey = (PrivateKeyInfo *)CfMalloc(sizeof(PrivateKeyInfo), 0);
+        privateKey->privateKey = (CfEncodingBlob *)CfMalloc(sizeof(CfEncodingBlob), 0);
         privateKey->privateKey->data = static_cast<uint8_t *>(malloc(g_rsaPrikey.length() + 1));
         privateKey->privateKey->encodingFormat = CF_FORMAT_PEM;
         if (privateKey->privateKey->data != nullptr) {
@@ -208,9 +210,10 @@ HWTEST_F(X509CertificateGenCsrTest, X509CsrTest004, TestSize.Level0)
         CfBlob csrBlob = { 0 };
         EXPECT_EQ(HcfX509CertificateGenCsr(privateKey, csrConf, &csrBlob), CF_SUCCESS);
 
-        delete privateKey->privateKey;
-        delete privateKey;
-        delete csrConf;
+        CfFree(privateKey->privateKey->data);
+        CfFree(privateKey->privateKey);
+        CfFree(privateKey);
+        CfFree(csrConf);
         CfBlobDataFree(&csrBlob);
     }
 }
@@ -230,7 +233,7 @@ HWTEST_F(X509CertificateGenCsrTest, X509CsrTest005, TestSize.Level0)
     const size_t attributeCount = sizeof(testAttributes) / sizeof(TestAttribute);
 
     for (size_t i = 0; i < attributeCount; i++) {
-        HcfGenCsrConf *csrConf = new HcfGenCsrConf();
+        HcfGenCsrConf *csrConf = (HcfGenCsrConf *)CfMalloc(sizeof(HcfGenCsrConf), 0);
         char mdname[] = "SHA256";
         
         csrConf->subject = g_x509Name;
@@ -238,17 +241,17 @@ HWTEST_F(X509CertificateGenCsrTest, X509CsrTest005, TestSize.Level0)
         csrConf->mdName = reinterpret_cast<char *>(mdname);
         
 
-        HcfAttributesArray *attributeArray = new HcfAttributesArray();
-        attributeArray->array = new HcfAttributes[1];
+        HcfAttributesArray *attributeArray = (HcfAttributesArray *)CfMalloc(sizeof(HcfAttributesArray), 0);
+        attributeArray->array = (HcfAttributes *)CfMalloc(sizeof(HcfAttributes), 0);
         attributeArray->attributeSize = 1;
-        attributeArray->array[0].attributeName = const_cast<char*>(testAttributes[i].name);
-        attributeArray->array[0].attributeValue = const_cast<char*>(testAttributes[i].value);
+        attributeArray->array->attributeName = const_cast<char*>(testAttributes[i].name);
+        attributeArray->array->attributeValue = const_cast<char*>(testAttributes[i].value);
         csrConf->attribute.array = attributeArray->array;
         csrConf->attribute.attributeSize = attributeArray->attributeSize;
         
 
-        PrivateKeyInfo *privateKey = new PrivateKeyInfo();
-        privateKey->privateKey = new CfEncodingBlob();
+        PrivateKeyInfo *privateKey = (PrivateKeyInfo *)CfMalloc(sizeof(PrivateKeyInfo), 0);
+        privateKey->privateKey = (CfEncodingBlob *)CfMalloc(sizeof(CfEncodingBlob), 0);
         privateKey->privateKey->data = static_cast<uint8_t *>(malloc(g_rsaPrikey.length() + 1));
         privateKey->privateKey->encodingFormat = CF_FORMAT_PEM;
         if (privateKey->privateKey->data != nullptr) {
@@ -266,11 +269,12 @@ HWTEST_F(X509CertificateGenCsrTest, X509CsrTest005, TestSize.Level0)
         EXPECT_TRUE(strstr(csrString, "END CERTIFICATE REQUEST") != nullptr);
 
 
-        delete[] attributeArray->array;
-        delete attributeArray;
-        delete privateKey->privateKey;
-        delete privateKey;
-        delete csrConf;
+        CfFree(attributeArray->array);
+        CfFree(attributeArray);
+        CfFree(privateKey->privateKey->data);
+        CfFree(privateKey->privateKey);
+        CfFree(privateKey);
+        CfFree(csrConf);
         CfBlobDataFree(&csrBlob);
     }
 }
@@ -278,7 +282,7 @@ HWTEST_F(X509CertificateGenCsrTest, X509CsrTest005, TestSize.Level0)
 
 HWTEST_F(X509CertificateGenCsrTest, X509CsrTest006, TestSize.Level0)
 {
-    HcfGenCsrConf *csrConf = new HcfGenCsrConf();
+    HcfGenCsrConf *csrConf = (HcfGenCsrConf *)CfMalloc(sizeof(HcfGenCsrConf), 0);
     char mdname[] = "SHA256";
     
     csrConf->subject = g_x509Name;
@@ -286,7 +290,7 @@ HWTEST_F(X509CertificateGenCsrTest, X509CsrTest006, TestSize.Level0)
     csrConf->mdName = reinterpret_cast<char *>(mdname);
     
 
-    HcfAttributesArray *attributeArray = new HcfAttributesArray();
+    HcfAttributesArray *attributeArray = (HcfAttributesArray *)CfMalloc(sizeof(HcfAttributesArray), 0);
     attributeArray->array = new HcfAttributes[3];
     attributeArray->attributeSize = 3;
 
@@ -306,8 +310,8 @@ HWTEST_F(X509CertificateGenCsrTest, X509CsrTest006, TestSize.Level0)
     csrConf->attribute.attributeSize = attributeArray->attributeSize;
     
 
-    PrivateKeyInfo *privateKey = new PrivateKeyInfo();
-    privateKey->privateKey = new CfEncodingBlob();
+    PrivateKeyInfo *privateKey = (PrivateKeyInfo *)CfMalloc(sizeof(PrivateKeyInfo), 0);
+    privateKey->privateKey = (CfEncodingBlob *)CfMalloc(sizeof(CfEncodingBlob), 0);
     privateKey->privateKey->data = static_cast<uint8_t *>(malloc(g_rsaPrikey.length() + 1));
     privateKey->privateKey->encodingFormat = CF_FORMAT_PEM;
     if (privateKey->privateKey->data != nullptr) {
@@ -327,10 +331,11 @@ HWTEST_F(X509CertificateGenCsrTest, X509CsrTest006, TestSize.Level0)
 
 
     delete[] attributeArray->array;
-    delete attributeArray;
-    delete privateKey->privateKey;
-    delete privateKey;
-    delete csrConf;
+    CfFree(attributeArray);
+    CfFree(privateKey->privateKey->data);
+    CfFree(privateKey->privateKey);
+    CfFree(privateKey);
+    CfFree(csrConf);
     CfBlobDataFree(&csrBlob);
 }
 
@@ -349,12 +354,12 @@ HWTEST_F(X509CertificateGenCsrTest, X509CsrTest007, TestSize.Level0)
     };
 
     for (const auto& testCase : testCases) {
-        HcfGenCsrConf *csrConf = new HcfGenCsrConf();
+        HcfGenCsrConf *csrConf = (HcfGenCsrConf *)CfMalloc(sizeof(HcfGenCsrConf), 0);
         csrConf->subject = g_x509Name;
         csrConf->isPem = true;
         
-        PrivateKeyInfo *privateKey = new PrivateKeyInfo();
-        privateKey->privateKey = new CfEncodingBlob();
+        PrivateKeyInfo *privateKey = (PrivateKeyInfo *)CfMalloc(sizeof(PrivateKeyInfo), 0);
+        privateKey->privateKey = (CfEncodingBlob *)CfMalloc(sizeof(CfEncodingBlob), 0);
         privateKey->privateKey->data = static_cast<uint8_t *>(malloc(testCase.privateKey.length() + 1));
         privateKey->privateKey->encodingFormat = CF_FORMAT_PEM;
         if (privateKey->privateKey->data != nullptr) {
@@ -376,16 +381,17 @@ HWTEST_F(X509CertificateGenCsrTest, X509CsrTest007, TestSize.Level0)
             EXPECT_TRUE(strstr(csrString, "BEGIN CERTIFICATE REQUEST") != nullptr);
         }
 
-        delete privateKey->privateKey;
-        delete privateKey;
-        delete csrConf;
+        CfFree(privateKey->privateKey->data);
+        CfFree(privateKey->privateKey);
+        CfFree(privateKey);
+        CfFree(csrConf);
         CfBlobDataFree(&csrBlob);
     }
 }
 
 HWTEST_F(X509CertificateGenCsrTest, X509CsrTest008, TestSize.Level0)
 {
-    HcfGenCsrConf *csrConf = new HcfGenCsrConf();
+    HcfGenCsrConf *csrConf = (HcfGenCsrConf *)CfMalloc(sizeof(HcfGenCsrConf), 0);
     csrConf->subject = g_x509Name;
     csrConf->isPem = true;
 
@@ -402,8 +408,8 @@ HWTEST_F(X509CertificateGenCsrTest, X509CsrTest008, TestSize.Level0)
     };
 
     for (const auto& testCase : testCases) {
-        PrivateKeyInfo *privateKey = new PrivateKeyInfo();
-        privateKey->privateKey = new CfEncodingBlob();
+        PrivateKeyInfo *privateKey = (PrivateKeyInfo *)CfMalloc(sizeof(PrivateKeyInfo), 0);
+        privateKey->privateKey = (CfEncodingBlob *)CfMalloc(sizeof(CfEncodingBlob), 0);
         privateKey->privateKey->data = static_cast<uint8_t *>(malloc(g_rsaPrikeyWithPass.length() + 1));
         privateKey->privateKey->encodingFormat = CF_FORMAT_PEM;
         if (privateKey->privateKey->data != nullptr) {
@@ -417,21 +423,22 @@ HWTEST_F(X509CertificateGenCsrTest, X509CsrTest008, TestSize.Level0)
         CfBlob csrBlob = { 0 };
         EXPECT_EQ(HcfX509CertificateGenCsr(privateKey, csrConf, &csrBlob), testCase.expectedResult);
 
-        delete privateKey->privateKey;
-        delete privateKey;
+        CfFree(privateKey->privateKey->data);
+        CfFree(privateKey->privateKey);
+        CfFree(privateKey);
         CfBlobDataFree(&csrBlob);
     }
 
-    delete csrConf;
+    CfFree(csrConf);
 }
 
 HWTEST_F(X509CertificateGenCsrTest, X509CsrTest009, TestSize.Level0)
 {
-    HcfGenCsrConf *csrConf = new HcfGenCsrConf();
+    HcfGenCsrConf *csrConf = (HcfGenCsrConf *)CfMalloc(sizeof(HcfGenCsrConf), 0);
     csrConf->subject = g_x509Name;
     csrConf->isPem = true;
-    PrivateKeyInfo *privateKey = new PrivateKeyInfo();
-    privateKey->privateKey = new CfEncodingBlob();
+    PrivateKeyInfo *privateKey = (PrivateKeyInfo *)CfMalloc(sizeof(PrivateKeyInfo), 0);
+    privateKey->privateKey = (CfEncodingBlob *)CfMalloc(sizeof(CfEncodingBlob), 0);
     privateKey->privateKey->data = nullptr;
     privateKey->privateKey->len = 0;
     privateKey->privateKey->encodingFormat = CF_FORMAT_PEM;
@@ -439,21 +446,22 @@ HWTEST_F(X509CertificateGenCsrTest, X509CsrTest009, TestSize.Level0)
     CfBlob csrBlob = { 0 };
     EXPECT_EQ(HcfX509CertificateGenCsr(privateKey, csrConf, &csrBlob), CF_ERR_CRYPTO_OPERATION);
 
-    delete privateKey->privateKey;
-    delete privateKey;
+    CfFree(privateKey->privateKey->data);
+    CfFree(privateKey->privateKey);
+    CfFree(privateKey);
     CfBlobDataFree(&csrBlob);
 
-    delete csrConf;
+    CfFree(csrConf);
 }
 
 HWTEST_F(X509CertificateGenCsrTest, X509CsrTest010, TestSize.Level0)
 {
-    HcfGenCsrConf *csrConf = new HcfGenCsrConf();
+    HcfGenCsrConf *csrConf = (HcfGenCsrConf *)CfMalloc(sizeof(HcfGenCsrConf), 0);
     csrConf->subject = g_x509Name;
     csrConf->isPem = true;
 
-    PrivateKeyInfo *privateKey = new PrivateKeyInfo();
-    privateKey->privateKey = new CfEncodingBlob();
+    PrivateKeyInfo *privateKey = (PrivateKeyInfo *)CfMalloc(sizeof(PrivateKeyInfo), 0);
+    privateKey->privateKey = (CfEncodingBlob *)CfMalloc(sizeof(CfEncodingBlob), 0);
     privateKey->privateKey->data = static_cast<uint8_t *>(malloc(1));
     privateKey->privateKey->len = 0;
     privateKey->privateKey->encodingFormat = CF_FORMAT_PEM;
@@ -461,20 +469,21 @@ HWTEST_F(X509CertificateGenCsrTest, X509CsrTest010, TestSize.Level0)
     CfBlob csrBlob = { 0 };
     EXPECT_EQ(HcfX509CertificateGenCsr(privateKey, csrConf, &csrBlob), CF_ERR_CRYPTO_OPERATION);
 
-    delete privateKey->privateKey;
-    delete privateKey;
-    delete csrConf;
+    CfFree(privateKey->privateKey->data);
+    CfFree(privateKey->privateKey);
+    CfFree(privateKey);
+    CfFree(csrConf);
     CfBlobDataFree(&csrBlob);
 }
 
 HWTEST_F(X509CertificateGenCsrTest, X509CsrTest011, TestSize.Level0)
 {
-    HcfGenCsrConf *csrConf = new HcfGenCsrConf();
+    HcfGenCsrConf *csrConf = (HcfGenCsrConf *)CfMalloc(sizeof(HcfGenCsrConf), 0);
     csrConf->subject = g_x509Name;
     csrConf->isPem = true;
 
-    PrivateKeyInfo *privateKey = new PrivateKeyInfo();
-    privateKey->privateKey = new CfEncodingBlob();
+    PrivateKeyInfo *privateKey = (PrivateKeyInfo *)CfMalloc(sizeof(PrivateKeyInfo), 0);
+    privateKey->privateKey = (CfEncodingBlob *)CfMalloc(sizeof(CfEncodingBlob), 0);
     privateKey->privateKey->data = static_cast<uint8_t *>(malloc(g_rsaPrikeyWithPass.length() + 1));
     privateKey->privateKey->encodingFormat = CF_FORMAT_PEM;
     if (privateKey->privateKey->data != nullptr) {
@@ -489,9 +498,10 @@ HWTEST_F(X509CertificateGenCsrTest, X509CsrTest011, TestSize.Level0)
     CfBlob csrBlob = { 0 };
     EXPECT_EQ(HcfX509CertificateGenCsr(privateKey, csrConf, &csrBlob), CF_ERR_CRYPTO_OPERATION);
 
-    delete privateKey->privateKey;
-    delete privateKey;
-    delete csrConf;
+    CfFree(privateKey->privateKey->data);
+    CfFree(privateKey->privateKey);
+    CfFree(privateKey);
+    CfFree(csrConf);
     CfBlobDataFree(&csrBlob);
 }
 
