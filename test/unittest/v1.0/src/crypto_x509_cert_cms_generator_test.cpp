@@ -770,12 +770,16 @@ HWTEST_F(CryptoX509CertCmsGeneratorTest, AddCert001, TestSize.Level0)
     res = cmsGenerator->addCert(cmsGenerator, &(x509Cert->base));
     EXPECT_EQ(res, CF_SUCCESS);
 
+    CfObjDestroy(x509Cert);
+
     ret = HcfX509CertificateCreate(&g_inCertPasswordPemStream, &x509Cert);
     EXPECT_EQ(ret, CF_SUCCESS);
     ASSERT_NE(x509Cert, nullptr);
 
     res = cmsGenerator->addCert(cmsGenerator, &(x509Cert->base));
     EXPECT_EQ(res, CF_SUCCESS);
+
+    CfObjDestroy(x509Cert);
 
     ret = HcfX509CertificateCreate(&g_inCertNoPasswordPemStream, &x509Cert);
     EXPECT_EQ(ret, CF_SUCCESS);
@@ -858,6 +862,7 @@ HWTEST_F(CryptoX509CertCmsGeneratorTest, DoFinal001, TestSize.Level0)
     CfFree(options);
     CfFree(cmsOptions);
     CfObjDestroy(x509Cert);
+    CfBlobDataClearAndFree(&out);
     CfObjDestroy(cmsGenerator);
 }
 
@@ -901,6 +906,7 @@ HWTEST_F(CryptoX509CertCmsGeneratorTest, DoFinal002, TestSize.Level0)
     CfFree(options);
     CfFree(cmsOptions);
     CfObjDestroy(x509Cert);
+    CfBlobDataClearAndFree(&out);
     CfObjDestroy(cmsGenerator);
 }
 
@@ -944,6 +950,7 @@ HWTEST_F(CryptoX509CertCmsGeneratorTest, DoFinal003, TestSize.Level0)
     CfFree(options);
     CfFree(cmsOptions);
     CfObjDestroy(x509Cert);
+    CfBlobDataClearAndFree(&out);
     CfObjDestroy(cmsGenerator);
 }
 
@@ -987,6 +994,7 @@ HWTEST_F(CryptoX509CertCmsGeneratorTest, DoFinal004, TestSize.Level0)
     CfFree(options);
     CfFree(cmsOptions);
     CfObjDestroy(x509Cert);
+    CfBlobDataClearAndFree(&out);
     CfObjDestroy(cmsGenerator);
 }
 
