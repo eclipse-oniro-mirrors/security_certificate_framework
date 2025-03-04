@@ -934,7 +934,7 @@ bool GetMaxlength(napi_env env, napi_value obj, HcfX509CertChainBuildParameters 
     napi_valuetype valueType;
     napi_typeof(env, data, &valueType);
     if ((valueType != napi_number) && (valueType != napi_undefined) && (valueType != napi_null)) {
-        LOGE("%s valueType is null or undefined.", CERT_TAG_MAX_LENGTH.c_str());
+        LOGE("%{public}s valueType is null or undefined.", CERT_TAG_MAX_LENGTH.c_str());
         return false;
     }
     napi_get_value_uint32(env, data, reinterpret_cast<uint32_t *>(&((*bulidParams)->maxlength)));

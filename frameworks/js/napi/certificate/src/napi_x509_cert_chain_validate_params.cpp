@@ -480,7 +480,7 @@ bool BuildX509CertChainValidateParams(napi_env env, napi_value arg, HcfX509CertC
     napi_valuetype type;
     napi_typeof(env, arg, &type);
     if (type != napi_object) {
-        LOGE("wrong argument type. expect string type. [Type]: %d", type);
+        LOGE("wrong argument type. expect string type. [Type]: %{public}d", type);
         return false;
     }
 

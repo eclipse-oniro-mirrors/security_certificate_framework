@@ -21,18 +21,9 @@
 
 #ifdef HILOG_ENABLE
 
-enum CfLogLevel {
-    CF_LOG_LEVEL_I,
-    CF_LOG_LEVEL_E,
-    CF_LOG_LEVEL_W,
-    CF_LOG_LEVEL_D,
-};
-
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-void CfLog(uint32_t logLevel, const char *funcName, uint32_t lineNo, const char *format, ...);
 
 #ifdef __cplusplus
 }
@@ -45,10 +36,14 @@ void CfLog(uint32_t logLevel, const char *funcName, uint32_t lineNo, const char 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN 0xD002F17 /* CertFramework's domain id */
 
-#define CF_LOG_I(...) CfLog(CF_LOG_LEVEL_I, __func__, __LINE__, __VA_ARGS__)
-#define CF_LOG_W(...) CfLog(CF_LOG_LEVEL_W, __func__, __LINE__, __VA_ARGS__)
-#define CF_LOG_E(...) CfLog(CF_LOG_LEVEL_E, __func__, __LINE__, __VA_ARGS__)
-#define CF_LOG_D(...) CfLog(CF_LOG_LEVEL_D, __func__, __LINE__, __VA_ARGS__)
+#define CF_LOG_D(fmt, ...) \
+HILOG_DEBUG(LOG_CORE, "%{public}s[%{public}u]: " fmt "\n", __FUNCTION__, __LINE__, ##__VA_ARGS__)
+#define CF_LOG_I(fmt, ...) \
+HILOG_INFO(LOG_CORE, "%{public}s[%{public}u]: " fmt "\n", __FUNCTION__, __LINE__, ##__VA_ARGS__)
+#define CF_LOG_W(fmt, ...) \
+HILOG_WARN(LOG_CORE, "%{public}s[%{public}u]: " fmt "\n", __FUNCTION__, __LINE__, ##__VA_ARGS__)
+#define CF_LOG_E(fmt, ...) \
+HILOG_ERROR(LOG_CORE, "%{public}s[%{public}u]: " fmt "\n", __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
 #else
 

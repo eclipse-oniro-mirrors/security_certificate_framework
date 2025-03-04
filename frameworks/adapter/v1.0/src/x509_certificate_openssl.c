@@ -1915,7 +1915,8 @@ static CfResult MatchX509Openssl(HcfX509CertificateSpi *self, const HcfX509CertM
 static CfResult DeepCopyURIs(ASN1_STRING *uri, uint32_t index, CfArray *outURI)
 {
     if (index >= outURI->count) { /* exceed the maximum memory capacity. */
-        LOGE("exceed the maximum memory capacity, uriCount = %u, malloc count = %u", index, outURI->count);
+        LOGE("exceed the maximum memory capacity, uriCount = %{public}u, malloc count = %{public}u",
+            index, outURI->count);
         return CF_ERR_CRYPTO_OPERATION;
     }
 
@@ -1928,7 +1929,7 @@ static CfResult DeepCopyURIs(ASN1_STRING *uri, uint32_t index, CfArray *outURI)
     uint32_t uriLen = strlen(str) + 1;
     outURI->data[index].data = (uint8_t *)CfMalloc(uriLen, 0);
     if (outURI->data[index].data == NULL) {
-        LOGE("Failed to malloc for outURI[%u]!", index);
+        LOGE("Failed to malloc for outURI[%{public}u]!", index);
         return CF_ERR_MALLOC;
     }
     (void)memcpy_s(outURI->data[index].data, uriLen, str, uriLen);
@@ -1946,14 +1947,14 @@ static CfResult GetDpURIFromGenName(GENERAL_NAME *genName, bool isFormatOutURI, 
     }
 
     if (type != GEN_URI) {
-        LOGI("not URI type, type is %d", type);
+        LOGI("not URI type, type is %{public}d", type);
         return CF_SUCCESS;
     }
 
     if (isFormatOutURI) {
         CfResult ret = DeepCopyURIs(uri, *uriCount, outURI);
         if (ret != CF_SUCCESS) {
-            LOGE("copy URI[%u] failed", *uriCount);
+            LOGE("copy URI[%{public}u] failed", *uriCount);
             return ret;
         }
     }
@@ -2019,7 +2020,7 @@ static CfResult GetCRLDpURI(STACK_OF(DIST_POINT) *crlDp, CfArray *outURI)
     uint32_t uriCount = 0;
     CfResult ret = GetDpURI(crlDp, dpNumber, false, &uriCount, outURI);
     if (ret != CF_SUCCESS) {
-        LOGE("get dp URI count failed, ret = %d", ret);
+        LOGE("get dp URI count failed, ret = %{public}d", ret);
         return ret;
     }
     if (uriCount == 0) {
@@ -2027,7 +2028,7 @@ static CfResult GetCRLDpURI(STACK_OF(DIST_POINT) *crlDp, CfArray *outURI)
         return CF_NOT_EXIST;
     }
     if (uriCount > CF_MAX_URI_COUNT) {
-        LOGE("uriCount[%u] exceed max count", uriCount);
+        LOGE("uriCount[%{public}u] exceed max count", uriCount);
         return CF_ERR_CRYPTO_OPERATION;
     }
 
@@ -2044,7 +2045,7 @@ static CfResult GetCRLDpURI(STACK_OF(DIST_POINT) *crlDp, CfArray *outURI)
     uriCount = 0;
     ret = GetDpURI(crlDp, dpNumber, true, &uriCount, outURI);
     if (ret != CF_SUCCESS) {
-        LOGE("get dp URI format failed, ret = %d", ret);
+        LOGE("get dp URI format failed, ret = %{public}d", ret);
         CfArrayDataClearAndFree(outURI);
         return ret;
     }

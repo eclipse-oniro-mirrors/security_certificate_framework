@@ -172,7 +172,8 @@ static CfResult ValidateCertChainInner(CertsInfo *certs, uint32_t certNum)
         if (resOpenssl != CF_OPENSSL_SUCCESS) {
             int32_t errCode = X509_STORE_CTX_get_error(verifyCtx);
             const char *pChError = X509_verify_cert_error_string(errCode);
-            LOGE("Failed to verify cert, openssl openssl error code = %d, error msg:%s.", errCode, pChError);
+            LOGE("Failed to verify cert, openssl openssl error code = %{public}d, error msg:%{public}s.",
+                errCode, pChError);
             res = ConvertOpensslErrorMsg(errCode);
             break;
         }
@@ -213,12 +214,12 @@ static CfResult Validate(HcfCertChainValidatorSpi *self, const CfArray *certsLis
     CertsInfo *certs = NULL;
     CfResult res = InitX509Certs(certsList, &certs);
     if (res != CF_SUCCESS) {
-        LOGE("Failed to init certs, res = %d.", res);
+        LOGE("Failed to init certs, res = %{public}d.", res);
         return res;
     }
     res = ValidateCertChain(certs, certsList->count, certsList->format);
     if (res != CF_SUCCESS) {
-        LOGE("Failed to validate cert chain, res = %d.", res);
+        LOGE("Failed to validate cert chain, res = %{public}d.", res);
     }
     FreeX509Certs(&certs, certsList->count);
     return res;

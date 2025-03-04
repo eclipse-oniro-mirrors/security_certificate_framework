@@ -71,15 +71,15 @@ static int32_t CfCertGetItem(const CfCertObjStruct *obj, const CfParamSet *in, C
     CfParam *tmpParam = NULL;
     int32_t ret = CfGetParam(in, CF_TAG_PARAM0_INT32, &tmpParam);
     if (ret != CF_SUCCESS) {
-        CF_LOG_E("get item id failed, ret = %d", ret);
+        CF_LOG_E("get item id failed, ret = %{public}d", ret);
         return ret;
     }
 
-    CF_LOG_I("cert get type = 0x%x", tmpParam->int32Param);
+    CF_LOG_I("cert get type = 0x%{public}x", tmpParam->int32Param);
     CfBlob itemValue = { 0, NULL };
     ret = obj->func.adapterGetItem(obj->adapterRes, (CfItemId)tmpParam->int32Param, &itemValue);
     if (ret != CF_SUCCESS) {
-        CF_LOG_E("adapter get item failed, ret = %d", ret);
+        CF_LOG_E("adapter get item failed, ret = %{public}d", ret);
         return ret;
     }
 
@@ -108,7 +108,7 @@ int32_t CfCertGet(const CfBase *obj, const CfParamSet *in, CfParamSet **out)
     CfParam *tmpParam = NULL;
     int32_t ret = CfGetParam(in, CF_TAG_GET_TYPE, &tmpParam);
     if (ret != CF_SUCCESS) {
-        CF_LOG_E("get param item type failed, ret = %d", ret);
+        CF_LOG_E("get param item type failed, ret = %{public}d", ret);
         return ret;
     }
 
@@ -116,7 +116,7 @@ int32_t CfCertGet(const CfBase *obj, const CfParamSet *in, CfParamSet **out)
         case CF_GET_TYPE_CERT_ITEM:
             return CfCertGetItem(tmp, in, out);
         default:
-            CF_LOG_E("cert get type invalid, type = %d", tmpParam->int32Param);
+            CF_LOG_E("cert get type invalid, type = %{public}d", tmpParam->int32Param);
             return CF_NOT_SUPPORT;
     }
 }

@@ -71,14 +71,14 @@ static int32_t CfExtGetItem(const CfExtensionObjStruct *obj, const CfParamSet *i
     CfParam *tmpParam = NULL;
     int32_t ret = CfGetParam(in, CF_TAG_PARAM0_INT32, &tmpParam);
     if (ret != CF_SUCCESS) {
-        CF_LOG_E("ext get item failed, ret = %d", ret);
+        CF_LOG_E("ext get item failed, ret = %{public}d", ret);
         return ret;
     }
 
     CfBlob itemRes = { 0, NULL };
     ret = obj->func.adapterGetItem(obj->adapterRes, (CfItemId)tmpParam->int32Param, &itemRes);
     if (ret != CF_SUCCESS) {
-        CF_LOG_E("ext adapter get item failed, ret = %d", ret);
+        CF_LOG_E("ext adapter get item failed, ret = %{public}d", ret);
         return ret;
     }
 
@@ -96,14 +96,14 @@ static int32_t CfExtGetOids(const CfExtensionObjStruct *obj, const CfParamSet *i
     CfParam *oidTypeParam = NULL;
     int32_t ret = CfGetParam(in, CF_TAG_PARAM0_INT32, &oidTypeParam);
     if (ret != CF_SUCCESS) {
-        CF_LOG_E("get oid type failed, ret = %d", ret);
+        CF_LOG_E("get oid type failed, ret = %{public}d", ret);
         return ret;
     }
 
     CfBlobArray oids = { NULL, 0 };
     ret = obj->func.adapterGetOids(obj->adapterRes, (CfExtensionOidType)oidTypeParam->int32Param, &oids);
     if (ret != CF_SUCCESS) {
-        CF_LOG_E("adapter get oids failed, ret = %d", ret);
+        CF_LOG_E("adapter get oids failed, ret = %{public}d", ret);
         return ret;
     }
 
@@ -117,14 +117,14 @@ static int32_t CfExtGetEntry(const CfExtensionObjStruct *obj, const CfParamSet *
     CfParam *entryTypeParam = NULL;
     int32_t ret = CfGetParam(in, CF_TAG_PARAM0_INT32, &entryTypeParam);
     if (ret != CF_SUCCESS) {
-        CF_LOG_E("get entry type failed, ret = %d", ret);
+        CF_LOG_E("get entry type failed, ret = %{public}d", ret);
         return ret;
     }
 
     CfParam *oidParam = NULL;
     ret = CfGetParam(in, CF_TAG_PARAM1_BUFFER, &oidParam);
     if (ret != CF_SUCCESS) {
-        CF_LOG_E("get oid failed, ret = %d", ret);
+        CF_LOG_E("get oid failed, ret = %{public}d", ret);
         return ret;
     }
 
@@ -132,7 +132,7 @@ static int32_t CfExtGetEntry(const CfExtensionObjStruct *obj, const CfParamSet *
     ret = obj->func.adapterGetEntry(obj->adapterRes, (CfExtensionEntryType)entryTypeParam->int32Param,
         &oidParam->blob, &entryValue);
     if (ret != CF_SUCCESS) {
-        CF_LOG_E("adapter get entry failed, ret = %d", ret);
+        CF_LOG_E("adapter get entry failed, ret = %{public}d", ret);
         return ret;
     }
 
@@ -161,7 +161,7 @@ int32_t CfExtensionGet(const CfBase *obj, const CfParamSet *in, CfParamSet **out
     CfParam *tmpParam = NULL;
     int32_t ret = CfGetParam(in, CF_TAG_GET_TYPE, &tmpParam);
     if (ret != CF_SUCCESS) {
-        CF_LOG_E("get type failed, ret = %d", ret);
+        CF_LOG_E("get type failed, ret = %{public}d", ret);
         return ret;
     }
 
@@ -173,7 +173,7 @@ int32_t CfExtensionGet(const CfBase *obj, const CfParamSet *in, CfParamSet **out
         case CF_GET_TYPE_EXT_ENTRY:
             return CfExtGetEntry(tmp, in, out);
         default:
-            CF_LOG_E("extension get type invalid, type = %d", tmpParam->int32Param);
+            CF_LOG_E("extension get type invalid, type = %{public}d", tmpParam->int32Param);
             return CF_NOT_SUPPORT;
     }
 }
@@ -194,7 +194,7 @@ int32_t CfExtensionCheck(const CfBase *obj, const CfParamSet *in, CfParamSet **o
     CfParam *tmpParam = NULL;
     int32_t ret = CfGetParam(in, CF_TAG_CHECK_TYPE, &tmpParam);
     if (ret != CF_SUCCESS) {
-        CF_LOG_E("get check type failed, ret = %d", ret);
+        CF_LOG_E("get check type failed, ret = %{public}d", ret);
         return ret;
     }
 
@@ -225,7 +225,7 @@ int32_t CfExtensionCheck(const CfBase *obj, const CfParamSet *in, CfParamSet **o
         return CfConstructParamSetOut(params, sizeof(params) / sizeof(CfParam), out);
     }
 
-    CF_LOG_E("extension check type invalid, type = %d", tmpParam->int32Param);
+    CF_LOG_E("extension check type invalid, type = %{public}d", tmpParam->int32Param);
     return CF_NOT_SUPPORT;
 }
 

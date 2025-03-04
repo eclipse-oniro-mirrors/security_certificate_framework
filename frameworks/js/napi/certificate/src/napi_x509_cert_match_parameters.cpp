@@ -183,7 +183,7 @@ static bool GetMatchAllSubjectAltNames(napi_env env, napi_value arg, bool &out)
     napi_valuetype valueType;
     napi_typeof(env, obj, &valueType);
     if (valueType != napi_boolean) {
-        LOGE("Get %s obj is not bool!", CERT_MATCH_TAG_MATCH_ALL_SUBJECT.c_str());
+        LOGE("Get %{public}s obj is not bool!", CERT_MATCH_TAG_MATCH_ALL_SUBJECT.c_str());
         return false;
     }
 
@@ -300,7 +300,7 @@ bool BuildX509CertMatchParamsV1(napi_env env, napi_value arg, HcfX509CertMatchPa
     napi_valuetype type;
     napi_typeof(env, arg, &type);
     if (type != napi_object) {
-        LOGE("Wrong argument type. expect object type. [Type]: %d", type);
+        LOGE("Wrong argument type. expect object type. [Type]: %{public}d", type);
         return false;
     }
     if (!GetValidDate(env, arg, matchParams->validDate)) {
@@ -335,7 +335,7 @@ bool BuildX509CertMatchParamsV2(napi_env env, napi_value arg, HcfX509CertMatchPa
     napi_valuetype type;
     napi_typeof(env, arg, &type);
     if (type != napi_object) {
-        LOGE("Wrong argument type. expect object type. [Type]: %d", type);
+        LOGE("Wrong argument type. expect object type. [Type]: %{public}d", type);
         return false;
     }
     if (!GetSubjectAltNamesArray(env, arg, matchParams->subjectAlternativeNames)) {
@@ -373,7 +373,7 @@ bool BuildX509CertMatchParams(napi_env env, napi_value arg, HcfX509CertMatchPara
     napi_valuetype type;
     napi_typeof(env, arg, &type);
     if (type != napi_object) {
-        LOGE("wrong argument type. expect object type. [Type]: %d", type);
+        LOGE("wrong argument type. expect object type. [Type]: %{public}d", type);
         return false;
     }
     if (!BuildX509CertMatchParamsV1(env, arg, matchParams)) {

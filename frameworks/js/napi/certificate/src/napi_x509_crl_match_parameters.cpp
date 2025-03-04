@@ -108,7 +108,7 @@ bool BuildX509CrlMatchParams(napi_env env, napi_value arg, HcfX509CrlMatchParams
     napi_valuetype type;
     napi_typeof(env, arg, &type);
     if (type != napi_object) {
-        LOGE("wrong argument type. expect object type. [Type]: %d", type);
+        LOGE("wrong argument type. expect object type. [Type]: %{public}d", type);
         return false;
     }
     if (!GetX509Cert(env, arg, matchParams->x509Cert)) {

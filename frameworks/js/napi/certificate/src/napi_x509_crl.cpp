@@ -507,7 +507,7 @@ static bool GetCrlSerialNumberFromNapiValue(napi_env env, napi_value arg, CfBlob
     napi_typeof(env, arg, &valueType);
     if (valueType != napi_number) {
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "param type error"));
-        LOGE("wrong argument type. expect int type. [Type]: %d", valueType);
+        LOGE("wrong argument type. expect int type. [Type]: %{public}d", valueType);
         return false;
     }
 
