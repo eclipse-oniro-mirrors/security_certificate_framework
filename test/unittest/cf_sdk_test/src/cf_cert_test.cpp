@@ -194,7 +194,8 @@ HWTEST_F(CfCertTest, CfCertTest006, TestSize.Level0)
     CfParam params[] = {
         { .tag = CF_TAG_CHECK_TYPE, .int32Param = 0 }, /* reserve test */
     };
-    CommonTest(CF_OBJ_TYPE_CERT, &g_cert[0], params, sizeof(params) / sizeof(CfParam), &outParamSet);
+    int32_t ret = CommonTest(CF_OBJ_TYPE_CERT, &g_cert[0], params, sizeof(params) / sizeof(CfParam), &outParamSet);
+    EXPECT_EQ(ret, CF_SUCCESS);
     CfFreeParamSet(&outParamSet);
 }
 
