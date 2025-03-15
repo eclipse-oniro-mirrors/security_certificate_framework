@@ -13,7 +13,7 @@
 
 import("//build/test.gni")
 
-module_output_path = "certificate_framework/certificate_framework_test"
+module_output_path = "certificate_framework/certificate_framework"
 
 ohos_unittest("cf_version1_test") {
   testonly = true
