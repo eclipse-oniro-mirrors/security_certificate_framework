@@ -889,7 +889,9 @@ static napi_value ParsePKCS12WithKeyStore(napi_env env, size_t argc, napi_value 
         LOGE("Failed to build instance!");
         return nullptr;
     }
-
+    CfBlobFree(&keyStore);
+    FreeHcfParsePKCS12Conf(conf);
+    CfBlobFree(&p12Collection->prikey);
     return instance;
 }
 
