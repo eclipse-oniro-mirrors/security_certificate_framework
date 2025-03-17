@@ -1734,6 +1734,7 @@ static bool BuildX509CsrConf(napi_env env, napi_value arg, HcfGenCsrConf **conf)
     }
 
     if (!GetX509CsrSubject(env, arg, &tmpConf->subject)) {
+        CfFree(tmpConf);
         return false;
     }
     if (!GetX509CsrAttributeArray(env, arg, &tmpConf->attribute)) {
