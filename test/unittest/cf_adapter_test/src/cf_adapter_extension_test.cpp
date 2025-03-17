@@ -1010,7 +1010,7 @@ HWTEST_F(CfAdapterExtensionTest, OpensslCheckCATest011, TestSize.Level0)
     for (uint32_t i = 0; i < PERFORMANCE_COUNT; ++i) { /* run 1000 times */
         int32_t pathLen = 0;
         ret = CfOpensslCheckCA(extsObj011, &pathLen);
-        EXPECT_EQ(ret, CF_SUCCESS) << "Normal adapter extension object check CA  test failed, recode:" << ret;
+        EXPECT_EQ(ret, CF_SUCCESS) << "Normal adapter extension object check CA test failed, recode:" << ret;
     }
 
     CfOpensslDestoryExtension(&extsObj011);
@@ -1031,7 +1031,7 @@ HWTEST_F(CfAdapterExtensionTest, OpensslGetExtensionItemTest001, TestSize.Level0
     CfBlob blob = {g_extension[1].len, g_extension[1].data};
     CfBlob outBlob = { 0, nullptr };
     ret = CfOpensslGetExtensionItem(obj001, CF_ITEM_ENCODED, &outBlob);
-    EXPECT_EQ(ret, CF_SUCCESS) << "Normal adapter extension object get extension encoded  test failed, recode:" << ret;
+    EXPECT_EQ(ret, CF_SUCCESS) << "Normal adapter extension object get extension encoded test failed, recode:" << ret;
     EXPECT_EQ(true, CompareBlob(&outBlob, &blob)) <<
         "Normal adapter extension object get extension encoded test failed, get outBlob faield";
     CF_FREE_BLOB(outBlob);
@@ -1053,7 +1053,7 @@ HWTEST_F(CfAdapterExtensionTest, OpensslGetExtensionItemTest002, TestSize.Level0
     CfBlob outBlob = { 0, nullptr };
     ret = CfOpensslGetExtensionItem(obj002, CF_ITEM_PUBLIC_KEY, &outBlob); /* id is invalid */
     EXPECT_EQ(ret, CF_INVALID_PARAMS) <<
-        "Abnormal adapter extension object get extension encoded  test failed, recode:" << ret;
+        "Abnormal adapter extension object get extension encoded test failed, recode:" << ret;
 
     CF_FREE_BLOB(outBlob);
     CfOpensslDestoryExtension(&obj002);
@@ -1073,7 +1073,7 @@ HWTEST_F(CfAdapterExtensionTest, OpensslGetExtensionItemTest003, TestSize.Level0
 
     ret = CfOpensslGetExtensionItem(obj003, CF_ITEM_ENCODED, nullptr); /* outBlob is null */
     EXPECT_EQ(ret, CF_INVALID_PARAMS) <<
-        "Abnormal adapter extension object get extension encoded  test failed, recode:" << ret;
+        "Abnormal adapter extension object get extension encoded test failed, recode:" << ret;
 
     CfOpensslDestoryExtension(&obj003);
 }
@@ -1089,7 +1089,7 @@ HWTEST_F(CfAdapterExtensionTest, OpensslGetExtensionItemTest004, TestSize.Level0
     CfBlob outBlob = { 0, nullptr };
     int32_t ret = CfOpensslGetExtensionItem(nullptr, CF_ITEM_ENCODED, &outBlob); /* object is null */
     EXPECT_EQ(ret, CF_INVALID_PARAMS) <<
-        "Abnormal adapter extension object get extension encoded  test failed, recode:" << ret;
+        "Abnormal adapter extension object get extension encoded test failed, recode:" << ret;
     CF_FREE_BLOB(outBlob);
 }
 
@@ -1111,7 +1111,7 @@ HWTEST_F(CfAdapterExtensionTest, OpensslGetExtensionItemTest005, TestSize.Level0
     CfBlob outBlob = { 0, nullptr };
     ret = CfOpensslGetExtensionItem(obj005, CF_ITEM_ENCODED, &outBlob);
     EXPECT_EQ(ret, CF_INVALID_PARAMS) <<
-        "Abnormal adapter extension object get extension encoded  test failed, recode:" << ret;
+        "Abnormal adapter extension object get extension encoded test failed, recode:" << ret;
 
     CF_FREE_BLOB(outBlob);
     obj005->type = correctType;
@@ -1162,7 +1162,7 @@ HWTEST_F(CfAdapterExtensionTest, OpensslGetExtensionItemTest007, TestSize.Level0
         CfBlob outBlob = { 0, nullptr };
         ret = CfOpensslGetExtensionItem(obj007, CF_ITEM_ENCODED, &outBlob);
         EXPECT_EQ(ret, CF_SUCCESS) <<
-            "Normal adapter extension object get extension encoded  test failed, recode:" << ret;
+            "Normal adapter extension object get extension encoded test failed, recode:" << ret;
         EXPECT_EQ(true, CompareBlob(&outBlob, &blob)) <<
             "Normal adapter extension object get extension encoded test failed, get outBlob faield";
         CF_FREE_BLOB(outBlob);

@@ -37,7 +37,7 @@ struct HcfX509DistinguishedName {
 typedef struct HcfX509Attribute HcfX509Attribute;
 struct HcfX509Attribute {
     CfBlob *AttributeType;           // AttributeType : Uint8Array DER format
-    CfBlob *AttributeValue;          // AttributeValue : Uint8Array  DER format
+    CfBlob *AttributeValue;          // AttributeValue : Uint8Array DER format
 };
 
 typedef struct {
