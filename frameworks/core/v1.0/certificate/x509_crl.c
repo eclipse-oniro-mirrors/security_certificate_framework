@@ -65,7 +65,7 @@ static const HcfX509CrlFuncSet *FindAbility(const char *certType)
             return &(X509_CRL_ABILITY_SET[i].funcSet);
         }
     }
-    LOGE("Cert not support! [cert]: %s", certType);
+    LOGE("Cert not support! [cert]: %{public}s", certType);
     return NULL;
 }
 

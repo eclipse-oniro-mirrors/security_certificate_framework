@@ -57,7 +57,7 @@ static const HcfX509CertificateFuncSet *FindAbility(const char *certType)
             return &(X509_CERTIFICATE_ABILITY_SET[i].funcSet);
         }
     }
-    LOGE("Cert not support! [cert]: %s", certType);
+    LOGE("Cert not support! [cert]: %{public}s", certType);
     return NULL;
 }
 
@@ -492,7 +492,7 @@ CfResult HcfX509CertificateGenCsr(PrivateKeyInfo *privateKey, const HcfGenCsrCon
 
     CfResult ret = GenerateX509Csr(privateKey, conf, csrBlob);
     if (ret != CF_SUCCESS) {
-        LOGE("Generate CSR failed, ret: %d", ret);
+        LOGE("Generate CSR failed, ret: %{public}d", ret);
         return ret;
     }
     return CF_SUCCESS;

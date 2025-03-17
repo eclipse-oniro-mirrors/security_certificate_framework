@@ -33,7 +33,7 @@ int32_t RegisterAbility(uint32_t id, CfBase *func)
         g_abilityList[i].func = func;
         return CF_SUCCESS;
     }
-    CF_LOG_E("register failed: exceed max number of abilities, id = %u", id);
+    CF_LOG_E("register failed: exceed max number of abilities, id = %{public}u", id);
     return CF_NOT_SUPPORT;
 }
 

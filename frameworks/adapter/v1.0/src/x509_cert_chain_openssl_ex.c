@@ -258,7 +258,7 @@ CfResult X509ToHcfX509Certificate(X509 *cert, HcfX509Certificate **returnObj)
     CfResult res = func(&encodingBlob, &x509cert);
     CfFree(certData);
     if (res != CF_SUCCESS) {
-        LOGE("HcfX509CertificateCreate fail, res : %d!", res);
+        LOGE("HcfX509CertificateCreate fail, res : %{public}d!", res);
         return CF_ERR_MALLOC;
     }
 

@@ -68,7 +68,7 @@ static const HcfCertChainFuncSet *FindAbility(const char *certType)
             return &(X509_CERT_CHAIN_ABILITY_SET[i].funcSet);
         }
     }
-    LOGE("Cert not support! [cert]: %s", certType);
+    LOGE("Cert not support! [cert]: %{public}s", certType);
     return NULL;
 }
 

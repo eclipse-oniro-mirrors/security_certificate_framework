@@ -1496,22 +1496,22 @@ static char* AllocateAndCopyString(napi_env env, napi_value strValue, const std:
 {
     size_t strLen = 0;
     if (napi_get_value_string_utf8(env, strValue, nullptr, 0, &strLen) != napi_ok) {
-        LOGE("get string length failed for %s", fieldName.c_str());
+        LOGE("get string length failed for %{public}s", fieldName.c_str());
         return nullptr;
     }
     if (strLen <= 0) {
-        LOGE("invalid string length for %s", fieldName.c_str());
+        LOGE("invalid string length for %{public}s", fieldName.c_str());
         return nullptr;
     }
     
     char *buffer = static_cast<char *>(malloc(strLen + 1));
     if (buffer == nullptr) {
-        LOGE("malloc failed for %s", fieldName.c_str());
+        LOGE("malloc failed for %{public}s", fieldName.c_str());
         return nullptr;
     }
     
     if (napi_get_value_string_utf8(env, strValue, buffer, strLen + 1, &strLen) != napi_ok) {
-        LOGE("get string value failed for %s", fieldName.c_str());
+        LOGE("get string value failed for %{public}s", fieldName.c_str());
         free(buffer);
         return nullptr;
     }
@@ -1724,7 +1724,7 @@ static bool BuildX509CsrConf(napi_env env, napi_value arg, HcfGenCsrConf **conf)
     napi_valuetype valueType;
     napi_typeof(env, arg, &valueType);
     if (valueType != napi_object) {
-        LOGE("wrong argument type. expect object type. [Type]: %d", valueType);
+        LOGE("wrong argument type. expect object type. [Type]: %{public}d", valueType);
         return false;
     }
     HcfGenCsrConf *tmpConf = static_cast<HcfGenCsrConf *>(CfMalloc(sizeof(HcfGenCsrConf), 0));
@@ -1809,7 +1809,7 @@ static napi_value GenerateCsr(napi_env env, size_t argc, napi_value param1, napi
     CfBlob csrBlob = {0};
     CfResult ret = HcfX509CertificateGenCsr(privateKey, conf, &csrBlob);
     if (ret != CF_SUCCESS) {
-        LOGE("generate csr failed, ret: %d", ret);
+        LOGE("generate csr failed, ret: %{public}d", ret);
         FreeGenCsrConf(conf);
         FreePrivateKeyInfo(privateKey);
         napi_throw(env, CertGenerateBusinessError(env, ret, "generate csr failed!"));

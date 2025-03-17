@@ -195,7 +195,7 @@ int32_t CfAddParams(CfParamSet *paramSet, const CfParam *params, uint32_t paramC
 
     for (uint32_t i = 0; i < paramCnt; i++) {
         if (paramSet->paramSetSize > CF_PARAM_SET_MAX_SIZE) {
-            CF_LOG_E("params size[%u] too large!", paramSet->paramSetSize);
+            CF_LOG_E("params size[%{public}u] too large!", paramSet->paramSetSize);
             return CF_INVALID_PARAMS;
         }
         paramSet->paramSetSize += sizeof(CfParam);

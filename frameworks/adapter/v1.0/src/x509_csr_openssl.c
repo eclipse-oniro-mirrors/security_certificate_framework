@@ -164,7 +164,7 @@ static CfResult SetupCsrPubKeyAndSign(X509_REQ *req, EVP_PKEY *pkey, const HcfGe
     }
     const EVP_MD *md = EVP_get_digestbyname(conf->mdName);
     if (md == NULL) {
-        LOGE("Unsupported digest algorithm: %s", conf->mdName);
+        LOGE("Unsupported digest algorithm: %{public}s", conf->mdName);
         CfPrintOpensslError();
         return CF_ERR_CRYPTO_OPERATION;
     }

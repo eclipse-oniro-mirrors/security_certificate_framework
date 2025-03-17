@@ -57,7 +57,7 @@ static const HcfCertChainValidatorFuncSet *FindAbility(const char *algorithm)
             return &(CERT_PATH_VALIDATOR_ABILITY_SET[i].funcSet);
         }
     }
-    LOGE("Algorithm for certChain validator is not support! [algorithm]: %s", algorithm);
+    LOGE("Algorithm for certChain validator is not support! [algorithm]: %{public}s", algorithm);
     return NULL;
 }
 
@@ -103,7 +103,7 @@ static CfResult ConvertCertBuffer2List(const HcfCertChainData *certChainData, Cf
         msg = msg + LV_LENGTH_LEN;
         certsList->data[index].data = (uint8_t *)CfMalloc(entryLen, 0);
         if (certsList->data[index].data == NULL) {
-            LOGE("Failed to malloc data for cert, index = %u.", index);
+            LOGE("Failed to malloc data for cert, index = %{public}u.", index);
             res = CF_ERR_MALLOC;
             break;
         }

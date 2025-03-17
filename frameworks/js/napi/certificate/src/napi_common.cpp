@@ -36,7 +36,7 @@ static bool GetCallback(napi_env env, napi_value object, napi_ref *callBack)
     }
 
     if (valueType != napi_function) {
-        CF_LOG_E("wrong argument type. expect callback type. [Type]: %d", valueType);
+        CF_LOG_E("wrong argument type. expect callback type. [Type]: %{public}d", valueType);
         return false;
     }
 
@@ -120,7 +120,7 @@ int32_t GetBlobArrayFromParamSet(const CfParamSet *paramSet, CfArray *outArray)
 
     for (uint32_t i = 0; i < oidsCnt; ++i) {
         if (paramSet->params[i + 1].tag != CF_TAG_RESULT_BYTES) { /* index of blob is 1-based */
-            CF_LOG_E("params[%u] is invalid", i);
+            CF_LOG_E("params[%{public}u] is invalid", i);
             FreeCfBlobArray(blobs, i);
             return CF_INVALID_PARAMS;
         }
@@ -128,7 +128,7 @@ int32_t GetBlobArrayFromParamSet(const CfParamSet *paramSet, CfArray *outArray)
         uint32_t size = paramSet->params[i + 1].blob.size;
         blobs[i].data = static_cast<uint8_t *>(CfMalloc(size, 0));
         if (blobs[i].data == nullptr) {
-            CF_LOG_E("Failed to malloc blob[%u].data", i);
+            CF_LOG_E("Failed to malloc blob[%{public}u].data", i);
             FreeCfBlobArray(blobs, i);
             return CF_ERR_MALLOC;
         }

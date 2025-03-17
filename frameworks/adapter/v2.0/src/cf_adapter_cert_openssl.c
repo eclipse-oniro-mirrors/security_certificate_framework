@@ -38,7 +38,7 @@ static void CfPrintOpensslError(void)
     unsigned long errCode = ERR_get_error();
     ERR_error_string_n(errCode, szErr, CF_OPENSSL_ERROR_LEN);
 
-    CF_LOG_E("[Openssl]: engine fail, error code = %lu, error string = %s", errCode, szErr);
+    CF_LOG_E("[Openssl]: engine fail, error code = %{public}lu, error string = %{public}s", errCode, szErr);
 }
 
 static int32_t DeepCopyDataToBlob(const unsigned char *data, uint32_t len, CfBlob *outBlob)
@@ -113,7 +113,7 @@ void CfOpensslDestoryCert(CfBase **object)
 
     CfOpensslCertObj *certObj = (CfOpensslCertObj *)*object;
     if (certObj->base.type != CF_MAGIC(CF_MAGIC_TYPE_ADAPTER_RESOURCE, CF_OBJ_TYPE_CERT)) {
-        CF_LOG_E("the object is invalid , type = %lu", certObj->base.type);
+        CF_LOG_E("the object is invalid , type = %{public}lu", certObj->base.type);
         return;
     }
 
@@ -144,7 +144,7 @@ static int32_t GetCertTbs(const CfOpensslCertObj *certObj, CfBlob *outBlob)
     unsigned char *out = NULL;
     int len = i2d_re_X509_tbs(tmp, &out);
     if (len <= 0) {
-        CF_LOG_E("Failed to convert internal tbs to der format, tbs len is : %d", len);
+        CF_LOG_E("Failed to convert internal tbs to der format, tbs len is : %{public}d", len);
         X509_free(tmp);
         return CF_ERR_CRYPTO_OPERATION;
     }
@@ -167,7 +167,7 @@ static int32_t GetCertIssuerUniqueId(const CfOpensslCertObj *certObj, CfBlob *ou
     unsigned char *out = NULL;
     int len = i2d_ASN1_BIT_STRING((ASN1_BIT_STRING *)issuerUid, &out);
     if (len <= 0) {
-        CF_LOG_E("Failed to convert internal issuerUid to der format, issuerUid len is : %d", len);
+        CF_LOG_E("Failed to convert internal issuerUid to der format, issuerUid len is : %{public}d", len);
         return CF_ERR_CRYPTO_OPERATION;
     }
 
@@ -188,7 +188,7 @@ static int32_t GetCertSubjectUniqueId(const CfOpensslCertObj *certObj, CfBlob *o
     unsigned char *out = NULL;
     int len = i2d_ASN1_BIT_STRING((ASN1_BIT_STRING *)subjectUid, &out);
     if (len <= 0) {
-        CF_LOG_E("Failed to convert internal subjectUid to der format, subjectUid len is : %d", len);
+        CF_LOG_E("Failed to convert internal subjectUid to der format, subjectUid len is : %{public}d", len);
         return CF_ERR_CRYPTO_OPERATION;
     }
 
@@ -268,7 +268,7 @@ int32_t CfOpensslGetCertItem(const CfBase *object, CfItemId id, CfBlob *outBlob)
     const CfOpensslCertObj *certObj = (const CfOpensslCertObj *)object;
     if (certObj->base.type != CF_MAGIC(CF_MAGIC_TYPE_ADAPTER_RESOURCE, CF_OBJ_TYPE_CERT) ||
         certObj->x509Cert == NULL) {
-        CF_LOG_E("the object is invalid , type = %lu", certObj->base.type);
+        CF_LOG_E("the object is invalid , type = %{public}lu", certObj->base.type);
         return CF_INVALID_PARAMS;
     }
 
@@ -284,7 +284,7 @@ int32_t CfOpensslGetCertItem(const CfBase *object, CfItemId id, CfBlob *outBlob)
         case CF_ITEM_PUBLIC_KEY:
             return GetCertPubKey(certObj, outBlob);
         default:
-            CF_LOG_E("the value of id is wrong, id = %d", (int32_t)id);
+            CF_LOG_E("the value of id is wrong, id = %{public}d", (int32_t)id);
             return CF_INVALID_PARAMS;
     }
 }

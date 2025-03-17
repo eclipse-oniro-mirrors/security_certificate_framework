@@ -21,7 +21,6 @@ crypto_framwork_common_inc_path = [
 framework_common_util_files = [
   "v1.0/src/cf_blob.c",
   "v1.0/src/utils.c",
-  "v1.0/src/cf_log.c",
   "v1.0/src/cf_memory.c",
   "v1.0/src/cf_object_base.c",
   "v1.0/src/cf_check.c",

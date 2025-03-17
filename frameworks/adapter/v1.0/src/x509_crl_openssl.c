@@ -378,13 +378,13 @@ static CfResult GetRevokedCert(HcfX509CrlSpi *self, const CfBlob *serialNumber, 
     BN_free(bigNum);
     ASN1_INTEGER_free(serial);
     if (opensslRes != CF_OPENSSL_SUCCESS) {
-        LOGE("Get revoked certificate fail, res : %d!", opensslRes);
+        LOGE("Get revoked certificate fail, res : %{public}d!", opensslRes);
         CfPrintOpensslError();
         return CF_ERR_CRYPTO_OPERATION;
     }
     CfResult res = HcfCX509CRLEntryCreate(rev, entryOut, ((HcfX509CRLOpensslImpl *)self)->certIssuer);
     if (res != CF_SUCCESS) {
-        LOGE("X509 CRL entry create fail, res : %d!", res);
+        LOGE("X509 CRL entry create fail, res : %{public}d!", res);
         return res;
     }
     return CF_SUCCESS;
@@ -413,13 +413,13 @@ static CfResult GetRevokedCertWithCert(HcfX509CrlSpi *self, HcfX509Certificate *
     X509_REVOKED *revokedRet = NULL;
     int32_t opensslRes = X509_CRL_get0_by_cert(crl, &revokedRet, certOpenssl);
     if (opensslRes != CF_OPENSSL_SUCCESS) {
-        LOGE("Get revoked certificate with cert fail, res : %d!", opensslRes);
+        LOGE("Get revoked certificate with cert fail, res : %{public}d!", opensslRes);
         CfPrintOpensslError();
         return CF_ERR_CRYPTO_OPERATION;
     }
     CfResult res = HcfCX509CRLEntryCreate(revokedRet, entryOut, ((HcfX509CRLOpensslImpl *)self)->certIssuer);
     if (res != CF_SUCCESS) {
-        LOGE("X509 CRL entry create fail, res : %d!", res);
+        LOGE("X509 CRL entry create fail, res : %{public}d!", res);
         return res;
     }
     return CF_SUCCESS;
@@ -437,7 +437,7 @@ static CfResult DeepCopyRevokedCertificates(
     HcfX509CrlEntry *crlEntry = NULL;
     CfResult res = HcfCX509CRLEntryCreate(rev, &crlEntry, ((HcfX509CRLOpensslImpl *)self)->certIssuer);
     if (res != CF_SUCCESS || crlEntry == NULL) {
-        LOGE("X509 CRL entry create fail, res : %d!", res);
+        LOGE("X509 CRL entry create fail, res : %{public}d!", res);
         return res;
     }
     entrysOut->data[i].data = (uint8_t *)crlEntry;

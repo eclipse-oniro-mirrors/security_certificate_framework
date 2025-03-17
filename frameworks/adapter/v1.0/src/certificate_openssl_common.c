@@ -66,7 +66,7 @@ const char *GetAlgorithmName(const char *oid)
             return g_oidToNameMap[i].algorithmName;
         }
     }
-    LOGE("Can not find algorithmName! [oid]: %s", oid);
+    LOGE("Can not find algorithmName! [oid]: %{public}s", oid);
     return NULL;
 }
 
@@ -78,7 +78,7 @@ void CfPrintOpensslError(void)
     errCode = ERR_get_error();
     ERR_error_string_n(errCode, szErr, LOG_PRINT_MAX_LEN);
 
-    LOGE("[Openssl]: engine fail, error code = %lu, error string = %s", errCode, szErr);
+    LOGE("[Openssl]: engine fail, error code = %{public}lu, error string = %{public}s", errCode, szErr);
 }
 
 CfResult DeepCopyDataToBlob(const unsigned char *data, uint32_t len, CfBlob *outBlob)

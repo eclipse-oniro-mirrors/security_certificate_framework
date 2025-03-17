@@ -112,7 +112,7 @@ napi_value NapiCertCmsGenerator::AddSigner(napi_env env, napi_callback_info info
     napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr);
     if (argc != expectedArgc) {
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "wrong argument num."));
-        LOGE("wrong argument num. require %d arguments. [Argc]: %zu!", ARGS_SIZE_THREE, argc);
+        LOGE("wrong argument num. require %{public}zu arguments. [Argc]: %{public}zu!", ARGS_SIZE_THREE, argc);
         return nullptr;
     }
 
@@ -233,7 +233,7 @@ static bool BuildCmsDoFinalCtx(napi_env env, napi_callback_info info, CmsDoFinal
     napi_value argv[ARGS_SIZE_TWO] = { nullptr };
     napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr);
     if ((argc != expectedArgc) && (argc != (expectedArgc - 1))) {
-        LOGE("wrong argument num. require %zu arguments. [Argc]: %zu!", expectedArgc, argc);
+        LOGE("wrong argument num. require %{public}zu arguments. [Argc]: %{public}zu!", expectedArgc, argc);
         return false;
     }
     NapiCertCmsGenerator *napiCmsGenerator = nullptr;
@@ -393,7 +393,7 @@ napi_value NapiCertCmsGenerator::DoFinalSync(napi_env env, napi_callback_info in
     napi_value argv[ARGS_SIZE_TWO] = { nullptr };
     napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr);
     if ((argc != expectedArgc) && (argc != (expectedArgc - 1))) {
-        LOGE("wrong argument num. require %zu arguments. [Argc]: %zu!", expectedArgc, argc);
+        LOGE("wrong argument num. require %{public}zu arguments. [Argc]: %{public}zu!", expectedArgc, argc);
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "wrong argument num."));
         return nullptr;
     }

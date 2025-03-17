@@ -164,7 +164,7 @@ static char *CertGetStringFromValue(napi_env env, napi_value arg)
     napi_typeof(env, arg, &valueType);
     if (valueType != napi_string) {
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "param type is not string"));
-        LOGE("wrong argument type. expect string type. [Type]: %d", valueType);
+        LOGE("wrong argument type. expect string type. [Type]: %{public}d", valueType);
         return nullptr;
     }
 
@@ -326,7 +326,7 @@ static bool GetPrivateKeyPasswordFromValue(napi_env env, napi_value obj, Private
     napi_value password = nullptr;
     napi_status status = napi_get_named_property(env, obj, CERT_PASSWORD.c_str(), &password);
     if (status != napi_ok || password == nullptr) {
-        LOGE("get property %s failed!", CERT_PASSWORD.c_str());
+        LOGE("get property %{public}s failed!", CERT_PASSWORD.c_str());
         return false;
     }
     (*privateKey)->privateKeyPassword = CertGetStringFromValue(env, password);
@@ -375,19 +375,19 @@ static bool GetMdName(napi_env env, napi_value arg, char **mdName)
     bool result = false;
     napi_has_named_property(env, arg, CMS_GENERATOR_MDNAME.c_str(), &result);
     if (!result) {
-        LOGI("%s do not exist!", CMS_GENERATOR_MDNAME.c_str());
+        LOGI("%{public}s do not exist!", CMS_GENERATOR_MDNAME.c_str());
         return false;
     }
     napi_value obj = nullptr;
     napi_status status = napi_get_named_property(env, arg, CMS_GENERATOR_MDNAME.c_str(), &obj);
     if (status != napi_ok || obj == nullptr) {
-        LOGE("get property %s failed!", CMS_GENERATOR_MDNAME.c_str());
+        LOGE("get property %{public}s failed!", CMS_GENERATOR_MDNAME.c_str());
         return false;
     }
     napi_valuetype valueType;
     napi_typeof(env, obj, &valueType);
     if (valueType == napi_undefined) {
-        LOGE("%s valueType is null or undefined.", CMS_GENERATOR_MDNAME.c_str());
+        LOGE("%{public}s valueType is null or undefined.", CMS_GENERATOR_MDNAME.c_str());
         return false;
     }
     *mdName = CertGetStringFromValue(env, obj);
@@ -399,20 +399,20 @@ static bool GetAddCert(napi_env env, napi_value arg, bool *addCert)
     bool result = false;
     napi_has_named_property(env, arg, CMS_GENERATOR_ADD_CERT.c_str(), &result);
     if (!result) {
-        LOGI("%s do not exist!", CMS_GENERATOR_ADD_CERT.c_str());
+        LOGI("%{public}s do not exist!", CMS_GENERATOR_ADD_CERT.c_str());
         *addCert = true;
         return true;
     }
     napi_value obj = nullptr;
     napi_status status = napi_get_named_property(env, arg, CMS_GENERATOR_ADD_CERT.c_str(), &obj);
     if (status != napi_ok || obj == nullptr) {
-        LOGE("get property %s failed!", CMS_GENERATOR_ADD_CERT.c_str());
+        LOGE("get property %{public}s failed!", CMS_GENERATOR_ADD_CERT.c_str());
         return false;
     }
     napi_valuetype valueType;
     napi_typeof(env, obj, &valueType);
     if (valueType == napi_undefined) {
-        LOGE("%s valueType is null or undefined.", CMS_GENERATOR_ADD_CERT.c_str());
+        LOGE("%{public}s valueType is null or undefined.", CMS_GENERATOR_ADD_CERT.c_str());
         return false;
     }
     napi_get_value_bool(env, obj, addCert);
@@ -424,20 +424,20 @@ static bool GetAddSmimeCapAttr(napi_env env, napi_value arg, bool *addSmimeCapAt
     bool result = false;
     napi_has_named_property(env, arg, CMS_GENERATOR_ADD_SMIME_CAP_ATTR.c_str(), &result);
     if (!result) {
-        LOGI("%s do not exist!", CMS_GENERATOR_ADD_SMIME_CAP_ATTR.c_str());
+        LOGI("%{public}s do not exist!", CMS_GENERATOR_ADD_SMIME_CAP_ATTR.c_str());
         *addSmimeCapAttr = true;
         return true;
     }
     napi_value obj = nullptr;
     napi_status status = napi_get_named_property(env, arg, CMS_GENERATOR_ADD_SMIME_CAP_ATTR.c_str(), &obj);
     if (status != napi_ok || obj == nullptr) {
-        LOGE("get property %s failed!", CMS_GENERATOR_ADD_SMIME_CAP_ATTR.c_str());
+        LOGE("get property %{public}s failed!", CMS_GENERATOR_ADD_SMIME_CAP_ATTR.c_str());
         return false;
     }
     napi_valuetype valueType;
     napi_typeof(env, obj, &valueType);
     if (valueType == napi_undefined) {
-        LOGE("%s valueType is null or undefined.", CMS_GENERATOR_ADD_SMIME_CAP_ATTR.c_str());
+        LOGE("%{public}s valueType is null or undefined.", CMS_GENERATOR_ADD_SMIME_CAP_ATTR.c_str());
         return false;
     }
     napi_get_value_bool(env, obj, addSmimeCapAttr);
@@ -449,20 +449,20 @@ static bool GetAddAttr(napi_env env, napi_value arg, bool *addAttr)
     bool result = false;
     napi_has_named_property(env, arg, CMS_GENERATOR_ADD_ATTR.c_str(), &result);
     if (!result) {
-        LOGI("%s do not exist!", CMS_GENERATOR_ADD_ATTR.c_str());
+        LOGI("%{public}s do not exist!", CMS_GENERATOR_ADD_ATTR.c_str());
         *addAttr = true;
         return true;
     }
     napi_value obj = nullptr;
     napi_status status = napi_get_named_property(env, arg, CMS_GENERATOR_ADD_ATTR.c_str(), &obj);
     if (status != napi_ok || obj == nullptr) {
-        LOGE("get property %s failed!", CMS_GENERATOR_ADD_ATTR.c_str());
+        LOGE("get property %{public}s failed!", CMS_GENERATOR_ADD_ATTR.c_str());
         return false;
     }
     napi_valuetype valueType;
     napi_typeof(env, obj, &valueType);
     if (valueType == napi_undefined) {
-        LOGE("%s valueType is null or undefined.", CMS_GENERATOR_ADD_ATTR.c_str());
+        LOGE("%{public}s valueType is null or undefined.", CMS_GENERATOR_ADD_ATTR.c_str());
         return false;
     }
     napi_get_value_bool(env, obj, addAttr);
@@ -474,7 +474,7 @@ static bool BuildCmsSignerOptions(napi_env env, napi_value obj, HcfCmsSignerOpti
     napi_valuetype type;
     napi_typeof(env, obj, &type);
     if (type != napi_object) {
-        LOGE("wrong argument type. expect object type. [Type]: %d", type);
+        LOGE("wrong argument type. expect object type. [Type]: %{public}d", type);
         return false;
     }
     if (!GetMdName(env, obj, &options->mdName)) {
@@ -514,19 +514,19 @@ static bool GetFormat(napi_env env, napi_value arg, HcfCmsFormat *format)
     bool result = false;
     napi_has_named_property(env, arg, CMS_GENERATOR_OUT_FORMAT.c_str(), &result);
     if (!result) {
-        LOGI("%s do not exist!", CMS_GENERATOR_OUT_FORMAT.c_str());
+        LOGI("%{public}s do not exist!", CMS_GENERATOR_OUT_FORMAT.c_str());
         return true;
     }
     napi_value obj = nullptr;
     napi_status status = napi_get_named_property(env, arg, CMS_GENERATOR_OUT_FORMAT.c_str(), &obj);
     if (status != napi_ok || obj == nullptr) {
-        LOGE("get property %s failed!", CMS_GENERATOR_OUT_FORMAT.c_str());
+        LOGE("get property %{public}s failed!", CMS_GENERATOR_OUT_FORMAT.c_str());
         return false;
     }
     napi_valuetype valueType;
     napi_typeof(env, obj, &valueType);
     if (valueType == napi_undefined) {
-        LOGE("%s valueType is null or undefined.", CMS_GENERATOR_OUT_FORMAT.c_str());
+        LOGE("%{public}s valueType is null or undefined.", CMS_GENERATOR_OUT_FORMAT.c_str());
         return false;
     }
     napi_get_value_uint32(env, obj, reinterpret_cast<uint32_t *>(format));
@@ -538,19 +538,19 @@ static bool GetIsDetachedContent(napi_env env, napi_value arg, bool *isDetachedC
     bool result = false;
     napi_has_named_property(env, arg, CMS_GENERATOR_IS_DETACHED_CONTENT.c_str(), &result);
     if (!result) {
-        LOGI("%s do not exist!", CMS_GENERATOR_IS_DETACHED_CONTENT.c_str());
+        LOGI("%{public}s do not exist!", CMS_GENERATOR_IS_DETACHED_CONTENT.c_str());
         return true;
     }
     napi_value obj = nullptr;
     napi_status status = napi_get_named_property(env, arg, CMS_GENERATOR_IS_DETACHED_CONTENT.c_str(), &obj);
     if (status != napi_ok || obj == nullptr) {
-        LOGE("get property %s failed!", CMS_GENERATOR_IS_DETACHED_CONTENT.c_str());
+        LOGE("get property %{public}s failed!", CMS_GENERATOR_IS_DETACHED_CONTENT.c_str());
         return false;
     }
     napi_valuetype valueType;
     napi_typeof(env, obj, &valueType);
     if (valueType == napi_undefined) {
-        LOGE("%s valueType is null or undefined.", CMS_GENERATOR_IS_DETACHED_CONTENT.c_str());
+        LOGE("%{public}s valueType is null or undefined.", CMS_GENERATOR_IS_DETACHED_CONTENT.c_str());
         return false;
     }
     napi_get_value_bool(env, obj, isDetachedContent);
@@ -562,19 +562,19 @@ static bool GetContentDataFormat(napi_env env, napi_value arg, HcfCmsContentData
     bool result = false;
     napi_has_named_property(env, arg, CMS_GENERATOR_CONTENT_DATA_FORMAT.c_str(), &result);
     if (!result) {
-        LOGI("%s do not exist!", CMS_GENERATOR_CONTENT_DATA_FORMAT.c_str());
+        LOGI("%{public}s do not exist!", CMS_GENERATOR_CONTENT_DATA_FORMAT.c_str());
         return true;
     }
     napi_value obj = nullptr;
     napi_status status = napi_get_named_property(env, arg, CMS_GENERATOR_CONTENT_DATA_FORMAT.c_str(), &obj);
     if (status != napi_ok || obj == nullptr) {
-        LOGE("get property %s failed!", CMS_GENERATOR_CONTENT_DATA_FORMAT.c_str());
+        LOGE("get property %{public}s failed!", CMS_GENERATOR_CONTENT_DATA_FORMAT.c_str());
         return false;
     }
     napi_valuetype valueType;
     napi_typeof(env, obj, &valueType);
     if (valueType == napi_undefined) {
-        LOGE("%s valueType is null or undefined.", CMS_GENERATOR_CONTENT_DATA_FORMAT.c_str());
+        LOGE("%{public}s valueType is null or undefined.", CMS_GENERATOR_CONTENT_DATA_FORMAT.c_str());
         return false;
     }
     napi_get_value_uint32(env, obj, reinterpret_cast<uint32_t *>(dataFormat));
@@ -586,7 +586,7 @@ bool GetCmsGeneratorOptionsFromValue(napi_env env, napi_value obj, HcfCmsGenerat
     napi_valuetype type;
     napi_typeof(env, obj, &type);
     if (type != napi_object) {
-        LOGE("wrong argument type. expect object type. [Type]: %d", type);
+        LOGE("wrong argument type. expect object type. [Type]: %{public}d", type);
         return false;
     }
     if (!GetContentDataFormat(env, obj, &(*options)->dataFormat)) {
@@ -833,7 +833,7 @@ CfBlob *CertGetBlobFromStringJSParams(napi_env env, napi_value arg)
     napi_typeof(env, arg, &valueType);
     if (valueType != napi_string) {
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "param type is not string"));
-        LOGE("wrong argument type. expect string type. [Type]: %d", valueType);
+        LOGE("wrong argument type. expect string type. [Type]: %{public}d", valueType);
         return nullptr;
     }
 
@@ -882,23 +882,23 @@ napi_value GetProp(napi_env env, napi_value arg, const char *name)
     bool result = false;
     napi_has_named_property(env, arg, name, &result);
     if (!result) {
-        LOGI("%s do not exist!", name);
+        LOGI("%{public}s do not exist!", name);
         return nullptr;
     }
     napi_value obj = nullptr;
     napi_status status = napi_get_named_property(env, arg, name, &obj);
     if (status != napi_ok || obj == nullptr) {
-        LOGI("get property %s failed!", name);
+        LOGI("get property %{public}s failed!", name);
         return nullptr;
     }
     napi_valuetype valueType;
     napi_typeof(env, obj, &valueType);
     if (valueType == napi_undefined) {
-        LOGI("%s valueType is null or undefined.", name);
+        LOGI("%{public}s valueType is null or undefined.", name);
         return nullptr;
     }
 
-    LOGI("%s is not null!", name);
+    LOGI("%{public}s is not null!", name);
     return obj;
 }
 
@@ -1163,7 +1163,7 @@ bool CertGetBlobFromBigIntJSParams(napi_env env, napi_value arg, CfBlob &outBlob
     napi_typeof(env, arg, &valueType);
     if (valueType != napi_bigint) {
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "param type error"));
-        LOGE("Wrong argument type. expect int type. [Type]: %d", valueType);
+        LOGE("Wrong argument type. expect int type. [Type]: %{public}d", valueType);
         return false;
     }
 
@@ -1202,7 +1202,7 @@ bool CertGetSerialNumberFromBigIntJSParams(napi_env env, napi_value arg, CfBlob 
     napi_typeof(env, arg, &valueType);
     if (valueType != napi_bigint) {
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "param type error"));
-        LOGE("wrong argument type. expect int type. [Type]: %d", valueType);
+        LOGE("wrong argument type. expect int type. [Type]: %{public}d", valueType);
         return false;
     }
 
@@ -1214,7 +1214,7 @@ bool CertGetSerialNumberFromBigIntJSParams(napi_env env, napi_value arg, CfBlob 
     }
     if (wordCount == 0 || wordCount > (MAX_SN_BYTE_CNT / sizeof(int64_t))) {
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get serialNum len failed"));
-        LOGE("can not get wordCount, wordCount = %u", wordCount);
+        LOGE("can not get wordCount, wordCount = %{public}zu", wordCount);
         return false;
     }
 
@@ -1225,7 +1225,7 @@ bool CertGetSerialNumberFromBigIntJSParams(napi_env env, napi_value arg, CfBlob 
     if (napi_get_value_bigint_words(env, arg, &sign, &wordCount, reinterpret_cast<uint64_t *>(serialBuf)) != napi_ok ||
         sign > 0) {
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get serialNum len failed"));
-        LOGE("can not get bigint value, sign = %d", sign); // sign 0 : positive, sign 1 : negative
+        LOGE("can not get bigint value, sign = %{public}d", sign); // sign 0 : positive, sign 1 : negative
         return false;
     }
     outBlob.data = static_cast<uint8_t *>(CfMalloc(serialLen, 0));
@@ -1249,7 +1249,7 @@ bool CertGetStringFromJSParams(napi_env env, napi_value arg, string &returnStr)
     napi_typeof(env, arg, &valueType);
     if (valueType != napi_string) {
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "param type is not string"));
-        LOGE("wrong argument type. expect string type. [Type]: %d", valueType);
+        LOGE("wrong argument type. expect string type. [Type]: %{public}d", valueType);
         return false;
     }
 
@@ -1273,7 +1273,7 @@ bool CertGetInt32FromJSParams(napi_env env, napi_value arg, int32_t &returnInt)
     napi_typeof(env, arg, &valueType);
     if (valueType != napi_number) {
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "param type is not number"));
-        LOGE("wrong argument type. expect int type. [Type]: %d", valueType);
+        LOGE("wrong argument type. expect int type. [Type]: %{public}d", valueType);
         return false;
     }
 
@@ -1290,7 +1290,7 @@ bool CertGetCallbackFromJSParams(napi_env env, napi_value arg, napi_ref *returnC
     napi_typeof(env, arg, &valueType);
     if (valueType != napi_function) {
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "param type is not function"));
-        LOGE("wrong argument type. expect callback type. [Type]: %d", valueType);
+        LOGE("wrong argument type. expect callback type. [Type]: %{public}d", valueType);
         return false;
     }
 
@@ -1377,7 +1377,7 @@ bool GetBoolFromNapiValue(napi_env env, napi_value arg, bool &out, const char *n
     napi_valuetype valueType;
     napi_typeof(env, obj, &valueType);
     if (valueType != napi_boolean) {
-        LOGE("Get %s obj is not bool!", name);
+        LOGE("Get %{public}s obj is not bool!", name);
         return false;
     }
 

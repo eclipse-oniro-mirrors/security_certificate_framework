@@ -111,7 +111,7 @@ void CfOpensslDestoryExtension(CfBase **object)
 
     CfOpensslExtensionObj *extsObj = (CfOpensslExtensionObj *)*object;
     if (extsObj->base.type != CF_MAGIC(CF_MAGIC_TYPE_ADAPTER_RESOURCE, CF_OBJ_TYPE_EXTENSION)) {
-        CF_LOG_E("the object is invalid , type = %lu", extsObj->base.type);
+        CF_LOG_E("the object is invalid , type = %{public}lu", extsObj->base.type);
         return;
     }
 
@@ -127,7 +127,7 @@ static int32_t CheckObjectAndGetExts(const CfBase *object, X509_EXTENSIONS **ext
 {
     CfOpensslExtensionObj *extsObj = (CfOpensslExtensionObj *)object;
     if (extsObj->base.type != CF_MAGIC(CF_MAGIC_TYPE_ADAPTER_RESOURCE, CF_OBJ_TYPE_EXTENSION)) {
-        CF_LOG_E("the object is invalid , type = %lu", extsObj->base.type);
+        CF_LOG_E("the object is invalid , type = %{public}lu", extsObj->base.type);
         return CF_INVALID_PARAMS;
     }
 
@@ -170,7 +170,7 @@ static int32_t GetExtensionIndexArray(const X509_EXTENSIONS *exts, CfExtensionOi
 
         X509_EXTENSION *ex = sk_X509_EXTENSION_value(exts, i);
         if (ex == NULL) {
-            CF_LOG_E("Failed to get exts [%u] value", i);
+            CF_LOG_E("Failed to get exts [%{public}u] value", i);
             return CF_ERR_CRYPTO_OPERATION;
         }
 
@@ -222,7 +222,7 @@ static int32_t DeepCopyOidsToOut(const X509_EXTENSIONS *exts, const uint32_t *id
 
         X509_EXTENSION *ex = sk_X509_EXTENSION_value(exts, index);
         if (ex == NULL) {
-            CF_LOG_E("Failed to get exts [%u] value", index);
+            CF_LOG_E("Failed to get exts [%{public}u] value", index);
             FreeCfBlobArray(dataArray, i);
             return CF_ERR_CRYPTO_OPERATION;
         }
@@ -230,14 +230,14 @@ static int32_t DeepCopyOidsToOut(const X509_EXTENSIONS *exts, const uint32_t *id
         char oid[MAX_LEN_OID] = { 0 };
         int32_t oidLen = OBJ_obj2txt(oid, MAX_LEN_OID, X509_EXTENSION_get_object(ex), 1);
         if ((oidLen <= 0) || (oidLen >= MAX_LEN_OID)) {
-            CF_LOG_E("Failed to get oid[%u]", index);
+            CF_LOG_E("Failed to get oid[%{public}u]", index);
             FreeCfBlobArray(dataArray, i);
             return CF_ERR_CRYPTO_OPERATION;
         }
 
         int32_t ret = DeepCopyDataToOutblob(oid, strlen(oid), &dataArray[i]);
         if (ret != CF_SUCCESS) {
-            CF_LOG_E("Failed to copy oid[%u]", index);
+            CF_LOG_E("Failed to copy oid[%{public}u]", index);
             FreeCfBlobArray(dataArray, i);
             return ret;
         }
@@ -294,14 +294,14 @@ int32_t CfOpensslHasUnsupportedCriticalExtension(const CfBase *object, bool *out
 
     int32_t extNums = sk_X509_EXTENSION_num(exts);
     if ((extNums <= 0) || (extNums > MAX_COUNT_OID)) {
-        CF_LOG_E("Failed to get extension numbers, extNums = %d", extNums);
+        CF_LOG_E("Failed to get extension numbers, extNums = %{public}d", extNums);
         return CF_ERR_CRYPTO_OPERATION;
     }
 
     for (uint32_t i = 0; i < (uint32_t)extNums; ++i) {
         X509_EXTENSION *ex = sk_X509_EXTENSION_value(exts, i);
         if (ex == NULL) {
-            CF_LOG_E("Failed to get exts [%u] value", i);
+            CF_LOG_E("Failed to get exts [%{public}u] value", i);
             return CF_ERR_CRYPTO_OPERATION;
         }
 
@@ -325,7 +325,7 @@ int32_t CfOpensslHasUnsupportedCriticalExtension(const CfBase *object, bool *out
             }
         }
         if (!match) {
-            CF_LOG_I("extension oid [%s] is not supported.", oid);
+            CF_LOG_I("extension oid [%{public}s] is not supported.", oid);
             *out = true;
             return CF_SUCCESS;
         }
@@ -365,7 +365,7 @@ static int32_t FoundExtMatchedNid(const X509_EXTENSIONS *exts, int targetNid, X5
     for (int i = 0; i < extNums; ++i) {
         X509_EXTENSION *ex = sk_X509_EXTENSION_value(exts, i);
         if (ex == NULL) {
-            CF_LOG_E("Failed to get exts [%d] value", i);
+            CF_LOG_E("Failed to get exts [%{public}d] value", i);
             return CF_ERR_CRYPTO_OPERATION;
         }
 

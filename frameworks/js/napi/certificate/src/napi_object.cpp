@@ -191,7 +191,7 @@ static int32_t AddParams(const vector<CfParam> &params, CfParamSet *&paramSet)
     for (uint32_t i = 0; i < paramCount; ++i) {
         int32_t ret = CfAddParams(paramSet, param, 1);
         if (ret != CF_SUCCESS) {
-            CF_LOG_E("add param[%u] failed", i);
+            CF_LOG_E("add param[%{public}u] failed", i);
             return ret;
         }
         param++;
@@ -297,7 +297,7 @@ static int32_t GetInParamSet(napi_env env, napi_callback_info info, int32_t opTy
         ret = GetInputParams(env, argv[i], i, params);
         if (ret != CF_SUCCESS) {
             FreeParsedParams(params);
-            CF_LOG_E("param[%u] invalid", i);
+            CF_LOG_E("param[%{public}zu] invalid", i);
             return ret;
         }
     }
@@ -340,7 +340,7 @@ static int32_t CheckResultType(const CfParamSet *paramSet, CfTag resultType)
     }
 
     if (resultTypeParam->int32Param != (resultType & CF_TAG_TYPE_MASK)) {
-        CF_LOG_E("result type[0x%x] is not [0x%x].", resultTypeParam->int32Param, resultType);
+        CF_LOG_E("result type[0x%{public}x] is not [0x%{public}x].", resultTypeParam->int32Param, resultType);
         return CF_INVALID_PARAMS;
     }
 
@@ -365,7 +365,7 @@ static napi_value ConvertToNapiValue(napi_env env, int32_t opType, int32_t typeV
     CfParam *resultParam = NULL;
     ret = CfGetParam(paramSet, resultType, &resultParam);
     if (ret != CF_SUCCESS) {
-        CF_LOG_E("get [0x%x] from param failed.", resultType);
+        CF_LOG_E("get [0x%{public}x] from param failed.", resultType);
         return nullptr;
     }
 
@@ -399,7 +399,7 @@ static int32_t DoOperation(const CfObject *obj, int32_t opType, const CfParamSet
         ret = obj->check(obj, inParamSet, outParamSet);
     }
     if (ret != CF_SUCCESS) {
-        CF_LOG_E("do operation[%d] failed", opType);
+        CF_LOG_E("do operation[%{public}d] failed", opType);
     }
     return ret;
 }

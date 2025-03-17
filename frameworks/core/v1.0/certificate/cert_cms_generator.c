@@ -52,7 +52,7 @@ static const HcfCmsGeneratorFuncSet *FindAbility(HcfCmsContentType type)
             return &(CERT_PATH_CMS_GENERATOR_ABILITY_SET[i].funcSet);
         }
     }
-    LOGE("Type for certCmsGenerator is not support! [type]: %d", type);
+    LOGE("Type for certCmsGenerator is not support! [type]: %{public}d", type);
     return NULL;
 }
 

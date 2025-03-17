@@ -70,7 +70,7 @@ static void CfLifeDestroy(CfObject **object)
 
 CF_API_EXPORT int32_t CfCreate(CfObjectType objType, const CfEncodingBlob *in, CfObject **object)
 {
-    CF_LOG_I("enter: create object [%d]", objType);
+    CF_LOG_I("enter: create object [%{public}d]", objType);
     if ((in == NULL) || (object == NULL)) {
         CF_LOG_E("input params invalid");
         return CF_NULL_POINTER;
@@ -90,7 +90,7 @@ CF_API_EXPORT int32_t CfCreate(CfObjectType objType, const CfEncodingBlob *in, C
 
     int32_t ret = func->create(in, &tmp->base);
     if (ret != CF_SUCCESS) {
-        CF_LOG_E("create object resource failed, ret = %d", ret);
+        CF_LOG_E("create object resource failed, ret = %{public}d", ret);
         CfFree(tmp);
         return ret;
     }

@@ -89,7 +89,6 @@ ohos_unittest("cf_version1_test") {
 
   sources += [
     "../../../frameworks/common/v1.0/src/cf_blob.c",
-    "../../../frameworks/common/v1.0/src/cf_log.c",
     "../../../frameworks/common/v1.0/src/cf_object_base.c",
     "../../../frameworks/common/v1.0/src/utils.c",
     "src/memory_mock.c",

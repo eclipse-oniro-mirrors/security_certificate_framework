@@ -267,7 +267,8 @@ static CfResult VerifyCertChain(X509 *mostTrustCert, STACK_OF(X509) *x509CertCha
         } else {
             int32_t errCode = X509_STORE_CTX_get_error(ctx);
             const char *pChError = X509_verify_cert_error_string(errCode);
-            LOGE("Failed to verify cert, openssl openssl error code = %d, error msg:%s.", errCode, pChError);
+            LOGE("Failed to verify cert, openssl openssl error code = %{public}d, error msg:%{public}s.",
+                errCode, pChError);
             res = ConvertOpensslErrorMsg(errCode);
         }
     }
@@ -334,7 +335,7 @@ static CfResult CheckOthersInTrustAnchor(const HcfX509TrustAnchor *anchor, X509 
             EVP_PKEY_free(pubKey);
             return res;
         }
-        LOGI("verify subject in trust anchor result: %d", compareSubjectFlag);
+        LOGI("verify subject in trust anchor result: %{public}d", compareSubjectFlag);
         *checkResult = compareSubjectFlag;
     } else {
         *checkResult = true;
@@ -426,7 +427,7 @@ static CfResult CopyHcfX509TrustAnchor(const HcfX509TrustAnchor *inputAnchor, Hc
         res = func(&encodedByte, &outAnchor->CACert);
         CfFree(encodedByte.data);
         if (res != CF_SUCCESS) {
-            LOGE("HcfX509CertificateCreate fail, res : %d!", res);
+            LOGE("HcfX509CertificateCreate fail, res : %{public}d!", res);
             return CF_ERR_MALLOC;
         }
     }
@@ -974,7 +975,7 @@ static bool ConnectToServer(BIO *bio, int tryNum)
             LOGE("OCSP connecte service failed.");
             CfPrintOpensslError();
             if (BIO_should_retry(bio)) {
-                LOGI("Try to connect service again, [%d]st.", num);
+                LOGI("Try to connect service again, [%{public}d]st.", num);
                 num--;
             } else {
                 break;
@@ -1736,7 +1737,7 @@ static int32_t CreateX509CertChainInner(const CfEncodingBlob *inData, STACK_OF(X
 
     int num = sk_X509_num(*certchainObj);
     if (num > MAX_CERT_NUM || num == 0) {
-        LOGE("certchain certs number :%d  invalid. create certChain failed! ", num);
+        LOGE("certchain certs number :%{public}d  invalid. create certChain failed! ", num);
         sk_X509_pop_free(*certchainObj, X509_free);
         *certchainObj = NULL;
         return CF_INVALID_PARAMS;
