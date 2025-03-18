@@ -31,7 +31,7 @@
 #include "cf_result.h"
 
 #define KEYUSAGE_SHIFT 8
-#define CRITICAL_SIZE  1
+#define CRITICAL_SIZE 1
 
 typedef struct {
     char *oid;
@@ -380,6 +380,7 @@ static int32_t FoundExtMatchedNid(const X509_EXTENSIONS *exts, int targetNid, X5
             return CF_SUCCESS;
         }
     }
+    CF_LOG_E("no found target nid.");
     return CF_NOT_EXIST;
 }
 
@@ -479,7 +480,7 @@ int32_t CfOpensslGetEntry(const CfBase *object, CfExtensionEntryType type, const
     X509_EXTENSION *found = NULL;
     ret = FoundExtMatchedNid(exts, targetNid, &found);
     if (ret != CF_SUCCESS) {
-        CF_LOG_E("no found target nid");
+        CF_LOG_E("call FoundExtMatchedNid failed.");
         return ret;
     }
 

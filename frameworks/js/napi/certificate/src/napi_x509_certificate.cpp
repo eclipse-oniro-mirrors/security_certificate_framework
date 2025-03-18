@@ -826,7 +826,7 @@ napi_value NapiX509Certificate::GetExtensionsObject(napi_env env, napi_callback_
     HcfX509Certificate *cert = GetX509Cert();
     CfResult ret = cert->getExtensionsObject(cert, &blob);
     if (ret != CF_SUCCESS) {
-        LOGE("get Extensions Object  failed!");
+        LOGE("get Extensions Object failed!");
         napi_throw(env, CertGenerateBusinessError(env, ret, "get Extensions Object failed"));
         return nullptr;
     }
@@ -946,7 +946,7 @@ napi_value NapiX509Certificate::GetCRLDistributionPointsURI(napi_env env, napi_c
     CfResult ret = cert->getCRLDistributionPointsURI(cert, array);
     if (ret != CF_SUCCESS) {
         napi_throw(env, CertGenerateBusinessError(env, ret, "get crl distribution points URI failed"));
-        LOGE("call get crl distribution points URI  failed!");
+        LOGE("call get crl distribution points URI failed!");
         CfFree(array);
         array = nullptr;
         return nullptr;

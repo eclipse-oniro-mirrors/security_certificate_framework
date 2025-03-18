@@ -455,7 +455,7 @@ HWTEST_F(CfExtensionTest, CfExtensionTest015, TestSize.Level0)
 
 /**
  * @tc.name: CfExtensionTest016
- * @tc.desc: ->check: adapter return error  g_extDataNoKeyUsage
+ * @tc.desc: ->check: adapter return error g_extDataNoKeyUsage
  * @tc.type: FUNC
  * @tc.require: AR000HS2SC /SR000HS2SB
  */

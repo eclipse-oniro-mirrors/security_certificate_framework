@@ -1737,7 +1737,7 @@ static int32_t CreateX509CertChainInner(const CfEncodingBlob *inData, STACK_OF(X
 
     int num = sk_X509_num(*certchainObj);
     if (num > MAX_CERT_NUM || num == 0) {
-        LOGE("certchain certs number :%{public}d  invalid. create certChain failed! ", num);
+        LOGE("certchain certs number :%{public}d invalid. create certChain failed! ", num);
         sk_X509_pop_free(*certchainObj, X509_free);
         *certchainObj = NULL;
         return CF_INVALID_PARAMS;

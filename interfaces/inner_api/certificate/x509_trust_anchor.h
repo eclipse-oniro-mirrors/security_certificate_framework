@@ -26,7 +26,7 @@ typedef struct HcfX509TrustAnchor HcfX509TrustAnchor;
 struct HcfX509TrustAnchor {
     CfBlob *CAPubKey;           // CAPubKey : Uint8Array DER format
     HcfX509Certificate *CACert; // CACert : X509Cert
-    CfBlob *CASubject;          // CASubject : Uint8Array  DER format
+    CfBlob *CASubject;          // CASubject : Uint8Array DER format
     CfBlob *nameConstraints;
 };
 

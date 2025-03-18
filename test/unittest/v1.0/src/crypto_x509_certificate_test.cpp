@@ -663,7 +663,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest004, TestSize.Level0)
     EXPECT_NE(ret, CF_SUCCESS);
 }
 
-/* self cert encodedBlob is not equal to  x509Cert */
+/* self cert encodedBlob is not equal to x509Cert */
 HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest005, TestSize.Level0)
 {
     HcfX509Certificate *x509Cert = nullptr;
@@ -685,7 +685,7 @@ HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest005, TestSize.Level0)
     CfObjDestroy(x509Cert);
 }
 
-/* self encodedBlob length equales to  x509Cert */
+/* self encodedBlob length equales to x509Cert */
 HWTEST_F(CryptoX509CertificateTest, MatchX509CertTest006, TestSize.Level0)
 {
     ASSERT_NE(g_x509CertObj, nullptr);

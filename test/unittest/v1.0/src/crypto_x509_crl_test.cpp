@@ -1077,7 +1077,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest162, TestSize.Level0)
     EXPECT_EQ(tbsCertListOut.data, nullptr);
 }
 
-// Test crl  getTbsInfo false
+// Test crl getTbsInfo false
 HWTEST_F(CryptoX509CrlTest, X509CrlTest163, TestSize.Level0)
 {
     ASSERT_NE(g_x509Crl, nullptr);
@@ -1304,7 +1304,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest209, TestSize.Level0)
     CfObjDestroy(crlEntry);
 }
 
-// Test crlEntry hasExtensions  while there is no extension in the crlEntry,return CF_SUCCESS
+// Test crlEntry hasExtensions while there is no extension in the crlEntry,return CF_SUCCESS
 HWTEST_F(CryptoX509CrlTest, X509CrlTest210, TestSize.Level0)
 {
     ASSERT_NE(g_x509Crl, nullptr);
@@ -1322,7 +1322,7 @@ HWTEST_F(CryptoX509CrlTest, X509CrlTest210, TestSize.Level0)
     CfObjDestroy(crlEntry);
 }
 
-// Test crlEntry hasExtensions  while there are extensions in the crlEntry,return CF_SUCCESS
+// Test crlEntry hasExtensions while there are extensions in the crlEntry,return CF_SUCCESS
 HWTEST_F(CryptoX509CrlTest, X509CrlTest211, TestSize.Level0)
 {
     HcfX509Crl *x509Crl = nullptr;
