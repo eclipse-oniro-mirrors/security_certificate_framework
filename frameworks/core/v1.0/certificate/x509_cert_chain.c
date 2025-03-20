@@ -232,6 +232,8 @@ CfResult HcfCertChainBuildResultCreate(
     implCertChain->base.base.getClass = GetCertChainClass;
     implCertChain->base.getCertList = GetCertList;
     implCertChain->base.validate = Validate;
+    implCertChain->base.toString = ToString;
+    implCertChain->base.hashCode = HashCode;
     implCertChain->spiObj = spiObj;
     impl->base.base.destroy = DestroyCertChain;
     impl->base.base.getClass = GetCertChainClass;
