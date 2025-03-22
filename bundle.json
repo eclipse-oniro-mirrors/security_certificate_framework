@@ -63,6 +63,9 @@
               ],
               "header_base": "//base/security/certificate_framework/interfaces/inner_api"
             }
+          },
+          {
+            "name": "//base/security/certificate_framework/frameworks/cj:cj_cert_ffi"
           }
         ],
         "test": [
