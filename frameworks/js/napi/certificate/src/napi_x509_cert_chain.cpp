@@ -892,6 +892,7 @@ static napi_value ParsePKCS12WithKeyStore(napi_env env, size_t argc, napi_value 
     CfBlobFree(&keyStore);
     FreeHcfParsePKCS12Conf(conf);
     CfBlobFree(&p12Collection->prikey);
+    CfFree(p12Collection);
     return instance;
 }
 
