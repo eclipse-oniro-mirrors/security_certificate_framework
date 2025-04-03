@@ -2011,6 +2011,8 @@ CfResult HcfX509CertChainByParamsSpiCreate(const HcfX509CertChainBuildParameters
     certChain->base.base.destroy = DestroyX509CertChain;
     certChain->base.engineGetCertList = GetCertlist;
     certChain->base.engineValidate = Validate;
+    certChain->base.engineToString = CfToString;
+    certChain->base.engineHashCode = CfHashCode;
     *spi = (HcfX509CertChainSpi *)certChain;
 
     return res;
