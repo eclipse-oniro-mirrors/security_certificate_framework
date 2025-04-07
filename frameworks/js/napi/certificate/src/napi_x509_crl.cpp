@@ -451,6 +451,22 @@ napi_value NapiX509Crl::GetIssuerDN(napi_env env, napi_callback_info info)
     return returnBlob;
 }
 
+napi_value NapiX509Crl::GetIssuerDNEx(napi_env env, napi_callback_info info, CfEncodinigType encodingType)
+{
+    HcfX509Crl *x509Crl = GetX509Crl();
+    CfBlob blob = { 0, nullptr };
+    CfResult ret = x509Crl->getIssuerNameEx(x509Crl, encodingType, &blob);
+    if (ret != CF_SUCCESS) {
+        napi_throw(env, CertGenerateBusinessError(env, ret, "getIssuerNameEx failed"));
+        LOGE("GetIssuerDNEx failed!");
+        return nullptr;
+    }
+    napi_value returnValue = nullptr;
+    napi_create_string_utf8(env, reinterpret_cast<char *>(blob.data), blob.size, &returnValue);
+    CfBlobDataFree(&blob);
+    return returnValue;
+}
+
 napi_value NapiX509Crl::GetThisUpdate(napi_env env, napi_callback_info info)
 {
     HcfX509Crl *x509Crl = GetX509Crl();
@@ -723,6 +739,22 @@ napi_value NapiX509Crl::ToString(napi_env env, napi_callback_info info)
     return returnBlob;
 }
 
+napi_value NapiX509Crl::ToStringEx(napi_env env, napi_callback_info info, CfEncodinigType encodingType)
+{
+    HcfX509Crl *x509Crl = GetX509Crl();
+    CfBlob blob = { 0, nullptr };
+    CfResult result = x509Crl->toStringEx(x509Crl, encodingType, &blob);
+    if (result != CF_SUCCESS) {
+        napi_throw(env, CertGenerateBusinessError(env, result, "ToStringEx failed"));
+        LOGE("ToStringEx failed!");
+        return nullptr;
+    }
+    napi_value returnBlob = nullptr;
+    napi_create_string_utf8(env, reinterpret_cast<char *>(blob.data), blob.size, &returnBlob);
+    CfBlobDataFree(&blob);
+    return returnBlob;
+}
+
 napi_value NapiX509Crl::HashCode(napi_env env, napi_callback_info info)
 {
     HcfX509Crl *x509Crl = GetX509Crl();
@@ -816,16 +848,16 @@ napi_value NapiX509Crl::GetExtensionsObject(napi_env env, napi_callback_info inf
 napi_value NapiX509Crl::GetIssuerX500DistinguishedName(napi_env env, napi_callback_info info)
 {
     HcfX509Crl *x509Crl = GetX509Crl();
-    CfBlob blob = { 0, nullptr };
-    CfResult ret = x509Crl->getIssuerName(x509Crl, &blob);
+    CfBlob *blob = nullptr;
+    CfResult ret = x509Crl->getIssuerNameDer(x509Crl, &blob);
     if (ret != CF_SUCCESS) {
         LOGE("getIssuerName failed!");
         napi_throw(env, CertGenerateBusinessError(env, ret, "get issuer name failed"));
         return nullptr;
     }
     HcfX509DistinguishedName *x509Name = nullptr;
-    ret = HcfX509DistinguishedNameCreate(&blob, true, &x509Name);
-    CfBlobDataFree(&blob);
+    ret = HcfX509DistinguishedNameCreate(blob, false, &x509Name);
+    CfBlobDataFree(blob);
     if (ret != CF_SUCCESS) {
         LOGE("HcfX509DistinguishedNameCreate failed");
         napi_throw(env, CertGenerateBusinessError(env, ret, "HcfX509DistinguishedNameCreate failed"));
@@ -1080,13 +1112,31 @@ static napi_value NapiGetVersion(napi_env env, napi_callback_info info)
 
 static napi_value NapiGetIssuerDN(napi_env env, napi_callback_info info)
 {
+    size_t argc = ARGS_SIZE_ONE;
     napi_value thisVar = nullptr;
-    napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+    napi_value argv[ARGS_SIZE_ONE] = { nullptr };
+    napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr);
+    if (argc != 0 && argc != ARGS_SIZE_ONE) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "wrong argument num!"));
+        LOGE("wrong argument num!");
+        return nullptr;
+    }
     NapiX509Crl *x509Crl = nullptr;
     napi_unwrap(env, thisVar, reinterpret_cast<void **>(&x509Crl));
     if (x509Crl == nullptr) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "x509Crl is nullptr!"));
         LOGE("x509Crl is nullptr!");
         return nullptr;
+    }
+
+    if (argc == ARGS_SIZE_ONE) {
+        CfEncodinigType encodingType;
+        if (napi_get_value_uint32(env, argv[PARAM0], reinterpret_cast<uint32_t *>(&encodingType)) != napi_ok) {
+            napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "napi_get_value_uint32 failed!"));
+            LOGE("napi_get_value_uint32 failed!");
+            return nullptr;
+        }
+        return x509Crl->GetIssuerDNEx(env, info, encodingType);
     }
     return x509Crl->GetIssuerDN(env, info);
 }
@@ -1223,13 +1273,30 @@ static napi_value NapiCRLGetTBSCertList(napi_env env, napi_callback_info info)
 
 static napi_value NapiToString(napi_env env, napi_callback_info info)
 {
+    size_t argc = ARGS_SIZE_ONE;
     napi_value thisVar = nullptr;
-    napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+    napi_value argv[ARGS_SIZE_ONE] = { nullptr };
+    napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr);
+    if (argc != 0 && argc != ARGS_SIZE_ONE) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "wrong argument num!"));
+        LOGE("wrong argument num!");
+        return nullptr;
+    }
     NapiX509Crl *x509Crl = nullptr;
     napi_unwrap(env, thisVar, reinterpret_cast<void **>(&x509Crl));
     if (x509Crl == nullptr) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "x509Crl is nullptr!"));
         LOGE("x509Crl is nullptr!");
         return nullptr;
+    }
+    if (argc == ARGS_SIZE_ONE) {
+        CfEncodinigType encodingType;
+        if (napi_get_value_uint32(env, argv[PARAM0], reinterpret_cast<uint32_t *>(&encodingType)) != napi_ok) {
+            napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "napi_get_value_uint32 failed!"));
+            LOGE("napi_get_value_uint32 failed!");
+            return nullptr;
+        }
+        return x509Crl->ToStringEx(env, info, encodingType);
     }
     return x509Crl->ToString(env, info);
 }

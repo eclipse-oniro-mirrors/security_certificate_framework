@@ -593,3 +593,30 @@ CfResult GetNameConstraintsFromX509(X509 *cert, CfBlob **name)
     (*name)->size = (uint32_t)size;
     return CF_SUCCESS;
 }
+
+CfResult CopyMemFromBIO(BIO *bio, CfBlob *outBlob)
+{
+    if (bio == NULL || outBlob == NULL) {
+        LOGE("Invalid input.");
+        return CF_INVALID_PARAMS;
+    }
+    int len = BIO_pending(bio);
+    if (len <= 0) {
+        LOGE("Bio len less than or equal to 0.");
+        return CF_INVALID_PARAMS;
+    }
+    uint8_t *buff = (uint8_t *)CfMalloc(len, 0);
+    if (buff == NULL) {
+        LOGE("Malloc mem for buff fail.");
+        return CF_ERR_MALLOC;
+    }
+    if (BIO_read(bio, buff, len) <= 0) {
+        LOGE("Bio read fail.");
+        CfPrintOpensslError();
+        CfFree(buff);
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    outBlob->size = len;
+    outBlob->data = buff;
+    return CF_SUCCESS;
+}

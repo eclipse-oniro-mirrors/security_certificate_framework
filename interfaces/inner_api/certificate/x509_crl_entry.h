@@ -21,6 +21,7 @@
 #include "cf_object_base.h"
 #include "cf_result.h"
 #include "x509_distinguished_name.h"
+#include "cf_type.h"
 
 typedef struct HcfX509CrlEntry HcfX509CrlEntry;
 
@@ -36,6 +37,12 @@ struct HcfX509CrlEntry {
 
     /** Gets the issuer of the x509 certificate described by this entry. */
     CfResult (*getCertIssuer)(HcfX509CrlEntry *self, CfBlob *encodedOut);
+
+    /** Gets the issuer utf8 of the x509 certificate described by this entry. */
+    CfResult (*getCertIssuerEx)(HcfX509CrlEntry *self, CfEncodinigType encodingType, CfBlob *encodedOut);
+
+    /** Gets the issuer der format of the x509 certificate described by this entry. */
+    CfResult (*getCertIssuerDer)(HcfX509CrlEntry *self, CfBlob **encodedOut);
 
     /** Get the revocation date from x509crl entry. */
     CfResult (*getRevocationDate)(HcfX509CrlEntry *self, CfBlob *out);

@@ -66,6 +66,7 @@ X509 *FindCertificateBySubject(STACK_OF(X509) * certs, X509_NAME *subjectName);
 CfResult GetPubKeyDataFromX509(X509 *x509, CfBlob **pub);
 CfResult GetSubjectNameFromX509(X509 *cert, CfBlob **sub);
 CfResult GetNameConstraintsFromX509(X509 *cert, CfBlob **name);
+CfResult CopyMemFromBIO(BIO *bio, CfBlob *outBlob);
 #ifdef __cplusplus
 }
 #endif
