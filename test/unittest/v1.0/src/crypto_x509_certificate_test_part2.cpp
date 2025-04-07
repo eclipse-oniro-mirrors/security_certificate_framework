@@ -412,6 +412,43 @@ static char g_certWithCrlDp101[] =
 "neDdISIVTtOvIqTB//4hVKu0IQ==\n"
 "-----END CERTIFICATE-----\n";
 
+static const char g_testUtf8CaCert[] =
+    "-----BEGIN CERTIFICATE-----\r\n"
+    "MIIDizCCAnOgAwIBAgIGAXKnJjrAMA0GCSqGSIb3DQEBCwUAMFwxCzAJBgNVBAYT\r\n"
+    "AkNOMQ8wDQYDVQQIDAbpmZXopb8xEjAQBgNVBAcMCeilv++/peWuiTEQMA4GA1UE\r\n"
+    "CgwH5rWLJeivlTEWMBQGA1UEAwwN5Lit5paHQOa1i+ivlTAeFw0yNDA1MTUwOTQx\r\n"
+    "NTFaFw0zNDA1MTMwOTQxNTFaMFwxCzAJBgNVBAYTAkNOMQ8wDQYDVQQIDAbpmZXo\r\n"
+    "pb8xEjAQBgNVBAcMCeilv++/peWuiTEQMA4GA1UECgwH5rWLJeivlTEWMBQGA1UE\r\n"
+    "AwwN5Lit5paHQOa1i+ivlTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEB\r\n"
+    "ANE1XpjR6Zrk2eJ6e9arl3S3KEQFNidC4wANm2uTAhRKWk9u3GQhyaMtJ44TCv7J\r\n"
+    "yG4j5Vn5dXHPELYhKrTUoG2vK7qYigDi2xh3VEQcc9yQGa/BMT2j2xoye62OXd4u\r\n"
+    "3SRKK7suAyBNFuYcOCe7bKaiWoQJJI3+EQjwWVUVcXLdW+spS4DvBA0ZATsZmrs+\r\n"
+    "4pw1q5U68pm5Fy0n14lCQohK1SdiaccAHK129bK5B5KHYuJZ9/jfJZn2zIv8qHV2\r\n"
+    "8NNccqBQS36rVGWfRkfSlHscfDhQ4ZxEhInayfu5BY0qxqLLFOtqeQGvmTTjGW/n\r\n"
+    "L2s47mL0/uWnpFlMJ7BxHoECAwEAAaNTMFEwHQYDVR0OBBYEFKsCCrUUhKQDw4Rl\r\n"
+    "ndlKCRybnupnMB8GA1UdIwQYMBaAFKsCCrUUhKQDw4RlndlKCRybnupnMA8GA1Ud\r\n"
+    "EwEB/wQFMAMBAf8wDQYJKoZIhvcNAQELBQADggEBACS1dPSJzMpoZaMohs7Kk0zE\r\n"
+    "e7Mv+iZElwDi3vfG11CynbOleIFEFGeixRTQyVW5SMmZGMdwaF3uD3Uoas7Q9G8d\r\n"
+    "NKZsJa0FeFg5aArBBr7ggbVTR5iEDs32cPr9ic/VDNBGqIcQmp10qvZ0cydK10Fl\r\n"
+    "g/0YJB1pw7zZwz+J5YgTKwkTAbtFLva6yqPno8HG+FruMXF3WxGAsLfIOjL9h7rU\r\n"
+    "jG5iRiA0WjdrKW4YTNNzjoez3SFx7/P7NWg1gp51HwBSL7mg+ctVjsG9G4xwhrLI\r\n"
+    "dcJFeuBWEaWbA6lAiW+lAcQKqqfolHOF7VMIB+ieIUR0cavlHEIGLYg/BL5VSKU=\r\n"
+    "-----END CERTIFICATE-----\r\n";
+
+static const char g_testUtf8CaCertNull[] =
+    "-----BEGIN CERTIFICATE-----\r\n"
+    "MIIBzjCCATegAwIBAgIGAXKnJjrAMA0GCSqGSIb3DQEBCwUAMAAwHhcNMjQwNTE1\r\n"
+    "MDkzMTQ1WhcNMzQwNTEzMDkzMTQ1WjAAMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCB\r\n"
+    "iQKBgQCyXbtKPbpKIvQSqFIKThMBHdPkquDJ/Lg8+PDbwP3s+AJ1b6fFhsB9s0oV\r\n"
+    "knmmYT1CYvN52RVYTJJDPFbEFsbBePQLG/OAaMKDg6SXieVgzbvx5MStJaBDvhqT\r\n"
+    "GwdzmxKfadghxdOfT65E4KENUipc2WI0/H2BqvwkXahIugBhJQIDAQABo1MwUTAd\r\n"
+    "BgNVHQ4EFgQUuMkml7Jx2h2A1dEuGt+SLUt2UV8wHwYDVR0jBBgwFoAUuMkml7Jx\r\n"
+    "2h2A1dEuGt+SLUt2UV8wDwYDVR0TAQH/BAUwAwEB/zANBgkqhkiG9w0BAQsFAAOB\r\n"
+    "gQAFSN+j8N5bORIt79WaM8rSgtKJspxagkyrQxbX6zerhYy1Jdakp/gk0mzjBllD\r\n"
+    "LS1tc0elUH9uBeGMNe0EHaFmIW+9ZyBHNSgC5kFO+c9foM5IlgX2rffgoyYhymzg\r\n"
+    "QjEAdY2Ni2kz9CUvUj8sy/vGtdOXkBFBpGrNUEKz4STKjA==\r\n"
+    "-----END CERTIFICATE-----\r\n";
+
 const CfEncodingBlob g_inStream = {
     .data = reinterpret_cast<uint8_t *>(g_certWithCrlDp1),
     .len = strlen(g_certWithCrlDp1) + 1,
@@ -934,5 +971,152 @@ HWTEST_F(CryptoX509CertificateTestPart2, HcfX509CertificateSpiEngineGetExtension
 
     ret = g_x509CertSpiObj->engineGetExtensionsObject(NULL, NULL);
     EXPECT_EQ(ret, CF_INVALID_PARAMS);
+}
+
+// Certificate issuerName contains Chinese and special characters.
+HWTEST_F(CryptoX509CertificateTestPart2, getX509CertUtf8Test001, TestSize.Level0)
+{
+    HcfX509Certificate *x509Cert = nullptr;
+    CfEncodingBlob inStream = { 0 };
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testUtf8CaCert));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testUtf8CaCert) + 1;
+    CfResult ret = HcfX509CertificateCreate(&inStream, &x509Cert);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    EXPECT_NE(x509Cert, nullptr);
+
+    CfBlob out = { 0 };
+    ret = x509Cert->getIssuerNameEx(x509Cert, CF_ENCODING_UTF8, &out);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    EXPECT_NE(out.data, nullptr);
+    CfBlobDataClearAndFree(&out);
+
+    ret = x509Cert->toStringEx(x509Cert, CF_ENCODING_UTF8, &out);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    EXPECT_NE(out.data, nullptr);
+    CfBlobDataClearAndFree(&out);
+
+    CfBlob *outData = nullptr;
+    ret = x509Cert->getIssuerNameDer(x509Cert, &outData);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    EXPECT_NE(outData->data, nullptr);
+
+    HcfX509DistinguishedName *x509Name = nullptr;
+    ret = HcfX509DistinguishedNameCreate(outData, false, &x509Name);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    EXPECT_NE(x509Name, nullptr);
+
+    ret = x509Name->getNameEx(x509Name, CF_ENCODING_UTF8, &out);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    EXPECT_NE(out.data, nullptr);
+
+    CfBlobFree(&outData);
+    CfBlobDataClearAndFree(&out);
+    CfObjDestroy(x509Name);
+    CfObjDestroy(x509Cert);
+}
+
+// Certificate issuerName is null.
+HWTEST_F(CryptoX509CertificateTestPart2, getX509CertUtf8Test002, TestSize.Level0)
+{
+    HcfX509Certificate *x509Cert = nullptr;
+    CfEncodingBlob inStream = { 0 };
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testUtf8CaCertNull));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testUtf8CaCertNull) + 1;
+    CfResult ret = HcfX509CertificateCreate(&inStream, &x509Cert);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    EXPECT_NE(x509Cert, nullptr);
+
+    CfBlob out = { 0 };
+    ret = x509Cert->getIssuerNameEx(x509Cert, CF_ENCODING_UTF8, &out);
+    EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
+    EXPECT_EQ(out.data, nullptr);
+
+    ret = x509Cert->toStringEx(x509Cert, CF_ENCODING_UTF8, &out);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    EXPECT_NE(out.data, nullptr);
+    CfBlobDataClearAndFree(&out);
+
+    CfBlob *outData = nullptr;
+    ret = x509Cert->getIssuerNameDer(x509Cert, &outData);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    EXPECT_NE(outData->data, nullptr);
+
+    HcfX509DistinguishedName *x509Name = nullptr;
+    ret = HcfX509DistinguishedNameCreate(outData, false, &x509Name);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    EXPECT_NE(x509Name, nullptr);
+
+    ret = x509Name->getNameEx(x509Name, CF_ENCODING_UTF8, &out);
+    EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
+
+    CfBlobFree(&outData);
+    CfBlobDataClearAndFree(&out);
+    CfObjDestroy(x509Cert);
+    CfObjDestroy(x509Name);
+}
+
+// invalid input.
+HWTEST_F(CryptoX509CertificateTestPart2, getX509CertUtf8Test003, TestSize.Level0)
+{
+    HcfX509Certificate *x509Cert = nullptr;
+    CfEncodingBlob inStream = { 0 };
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testUtf8CaCert));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testUtf8CaCert) + 1;
+    CfResult ret = HcfX509CertificateCreate(&inStream, &x509Cert);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    EXPECT_NE(x509Cert, nullptr);
+
+    CfBlob out = { 0 };
+    ret = x509Cert->getIssuerNameEx(nullptr, CF_ENCODING_UTF8, &out);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+    EXPECT_EQ(out.data, nullptr);
+
+    CfEncodinigType encodingType = static_cast<CfEncodinigType>(1);
+    ret = x509Cert->getIssuerNameEx(nullptr, encodingType, &out);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+    EXPECT_EQ(out.data, nullptr);
+
+    ret = x509Cert->getIssuerNameEx(x509Cert, CF_ENCODING_UTF8, nullptr);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+
+    ret = x509Cert->toStringEx(nullptr, CF_ENCODING_UTF8, &out);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+    EXPECT_EQ(out.data, nullptr);
+
+    ret = x509Cert->toStringEx(nullptr, encodingType, &out);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+    EXPECT_EQ(out.data, nullptr);
+
+    ret = x509Cert->toStringEx(x509Cert, CF_ENCODING_UTF8, nullptr);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+
+    CfBlob *outData = nullptr;
+    ret = x509Cert->getIssuerNameDer(x509Cert, &outData);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    EXPECT_NE(outData->data, nullptr);
+
+    HcfX509DistinguishedName *x509Name = nullptr;
+    ret = HcfX509DistinguishedNameCreate(outData, false, &x509Name);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    EXPECT_NE(x509Name, nullptr);
+
+    ret = x509Name->getNameEx(nullptr, CF_ENCODING_UTF8, &out);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+    EXPECT_EQ(out.data, nullptr);
+
+    ret = x509Name->getNameEx(x509Name, encodingType, &out);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+    EXPECT_EQ(out.data, nullptr);
+
+    ret = x509Name->getNameEx(x509Name, encodingType, nullptr);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+
+    CfBlobFree(&outData);
+    CfBlobDataClearAndFree(&out);
+    CfObjDestroy(x509Cert);
+    CfObjDestroy(x509Name);
 }
 }

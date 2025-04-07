@@ -41,7 +41,11 @@ struct HcfX509CertificateSpi {
 
     CfResult (*engineGetIssuerName)(HcfX509CertificateSpi *self, CfBlob *out);
 
+    CfResult (*engineGetIssuerNameDer)(HcfX509CertificateSpi *self, CfBlob **out);
+
     CfResult (*engineGetSubjectName)(HcfX509CertificateSpi *self, CfBlob *out);
+
+    CfResult (*engineGetSubjectNameDer)(HcfX509CertificateSpi *self, CfBlob **out);
 
     CfResult (*engineGetNotBeforeTime)(HcfX509CertificateSpi *self, CfBlob *outDate);
 
@@ -76,6 +80,10 @@ struct HcfX509CertificateSpi {
     CfResult (*engineGetCRLDistributionPointsURI)(HcfX509CertificateSpi *self, CfArray *outURI);
 
     CfResult (*engineGetSubjectNameEx)(HcfX509CertificateSpi *self, CfEncodinigType encodingType, CfBlob *out);
+
+    CfResult (*engineGetIssuerNameEx)(HcfX509CertificateSpi *self, CfEncodinigType encodingType, CfBlob *out);
+
+    CfResult (*engineToStringEx)(HcfX509CertificateSpi *self, CfEncodinigType encodingType, CfBlob *out);
 };
 
 #endif // CF_X509_CERTIFICATE_SPI_H

@@ -34,6 +34,8 @@ typedef struct {
     HcfX509CrlEntry base;
     X509_REVOKED *rev;
     CfBlob *certIssuer;
+    CfBlob *certIssuerUtf8;
+    X509_CRL *crl;
 } HcfX509CRLEntryOpensslImpl;
 
 static const char *GetClass(void)
@@ -142,6 +144,68 @@ static CfResult GetCertIssuer(HcfX509CrlEntry *self, CfBlob *encodedOut)
     }
     (void)memcpy_s(encodedOut->data, length, certIssuer->data, length);
     encodedOut->size = length;
+    return CF_SUCCESS;
+}
+
+static CfResult GetCertIssuerEx(HcfX509CrlEntry *self, CfEncodinigType encodingType, CfBlob *encodedOut)
+{
+    if ((self == NULL) || (encodedOut == NULL) || (encodingType != CF_ENCODING_UTF8)) {
+        LOGE("Invalid params for calling GetCertIssuerEx!");
+        return CF_INVALID_PARAMS;
+    }
+   
+    if (!CfIsClassMatch((CfObjectBase *)self, GetClass())) {
+        LOGE("Input wrong class type!");
+        return CF_INVALID_PARAMS;
+    }
+    CfBlob *certIssuer = ((HcfX509CRLEntryOpensslImpl *)self)->certIssuerUtf8;
+    if (!CfIsBlobValid(certIssuer)) {
+        LOGE("Get certIssuer fail! No certIssuer in CRL entry.");
+        return CF_NOT_SUPPORT;
+    }
+    uint32_t length = certIssuer->size;
+    encodedOut->data = (uint8_t *)CfMalloc(length, 0);
+    if (encodedOut->data == NULL) {
+        LOGE("Failed to malloc for encodedOut!");
+        return CF_ERR_MALLOC;
+    }
+    (void)memcpy_s(encodedOut->data, length, certIssuer->data, length);
+    encodedOut->size = length;
+    return CF_SUCCESS;
+}
+
+static CfResult GetCertIssuerDer(HcfX509CrlEntry *self, CfBlob **encodedOut)
+{
+    if ((self == NULL) || (encodedOut == NULL)) {
+        LOGE("Invalid params for calling GetCertIssuerEx!");
+        return CF_INVALID_PARAMS;
+    }
+   
+    if (!CfIsClassMatch((CfObjectBase *)self, GetClass())) {
+        LOGE("Input wrong class type!");
+        return CF_INVALID_PARAMS;
+    }
+    X509_CRL *crl = ((HcfX509CRLEntryOpensslImpl *)self)->crl;
+    X509_NAME *x509Name = X509_CRL_get_issuer(crl);
+    if (x509Name == NULL) {
+        LOGE("Failed to get issuer name!");
+        CfPrintOpensslError();
+        return CF_INVALID_PARAMS;
+    }
+    *encodedOut = (CfBlob *)CfMalloc(sizeof(CfBlob), 0);
+    if (*encodedOut == NULL) {
+        LOGE("Failed to malloc pub key!");
+        return CF_ERR_MALLOC;
+    }
+
+    int32_t size = i2d_X509_NAME(x509Name, &((*encodedOut)->data));
+    if (size <= 0) {
+        LOGE("Failed to get subject DER data!");
+        CfFree(*encodedOut);
+        *encodedOut = NULL;
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    (*encodedOut)->size = (uint32_t)size;
     return CF_SUCCESS;
 }
 
@@ -335,6 +399,24 @@ static CfResult DeepCopyCertIssuer(HcfX509CRLEntryOpensslImpl *returnCRLEntry, C
     return CF_SUCCESS;
 }
 
+static CfResult DeepCopyCertIssuerUtf8(HcfX509CRLEntryOpensslImpl *returnCRLEntry, CfBlob *certIssuerUtf8)
+{
+    returnCRLEntry->certIssuerUtf8 = (CfBlob *)CfMalloc(sizeof(CfBlob), 0);
+    if (returnCRLEntry->certIssuerUtf8 == NULL) {
+        LOGE("Failed to malloc certIssuerUtf8!");
+        return CF_ERR_MALLOC;
+    }
+    returnCRLEntry->certIssuerUtf8->size = certIssuerUtf8->size;
+    returnCRLEntry->certIssuerUtf8->data = (uint8_t *)CfMalloc(certIssuerUtf8->size, 0);
+    if (returnCRLEntry->certIssuerUtf8->data == NULL) {
+        LOGE("Failed to malloc certIssuerUtf8 data!");
+        return CF_ERR_MALLOC;
+    }
+    (void)memcpy_s(returnCRLEntry->certIssuerUtf8->data, certIssuerUtf8->size, certIssuerUtf8->data,
+        certIssuerUtf8->size);
+    return CF_SUCCESS;
+}
+
 static void Destroy(CfObjectBase *self)
 {
     if (self == NULL) {
@@ -356,10 +438,17 @@ static void Destroy(CfObjectBase *self)
         CfFree(realCrlEntry->certIssuer);
         realCrlEntry->certIssuer = NULL;
     }
+    if (realCrlEntry->certIssuerUtf8 != NULL) {
+        CfFree(realCrlEntry->certIssuerUtf8->data);
+        realCrlEntry->certIssuerUtf8->data = NULL;
+        CfFree(realCrlEntry->certIssuerUtf8);
+        realCrlEntry->certIssuerUtf8 = NULL;
+    }
     CfFree(realCrlEntry);
 }
 
-CfResult HcfCX509CRLEntryCreate(X509_REVOKED *rev, HcfX509CrlEntry **crlEntryOut, CfBlob *certIssuer)
+CfResult HcfCX509CRLEntryCreate(X509_REVOKED *rev, HcfX509CrlEntry **crlEntryOut, CfBlob *certIssuer,
+    CfBlob *certIssuerUtf8, X509_CRL *crl)
 {
     if ((rev == NULL) || (crlEntryOut == NULL) || certIssuer == NULL) {
         LOGE("Invalid params!");
@@ -380,11 +469,15 @@ CfResult HcfCX509CRLEntryCreate(X509_REVOKED *rev, HcfX509CrlEntry **crlEntryOut
     }
     returnCRLEntry->rev = tmp;
     returnCRLEntry->certIssuer = NULL;
+    returnCRLEntry->certIssuerUtf8 = NULL;
+    returnCRLEntry->crl = crl;
     returnCRLEntry->base.base.getClass = GetClass;
     returnCRLEntry->base.base.destroy = Destroy;
     returnCRLEntry->base.getEncoded = GetEncoded;
     returnCRLEntry->base.getSerialNumber = GetSerialNumber;
     returnCRLEntry->base.getCertIssuer = GetCertIssuer;
+    returnCRLEntry->base.getCertIssuerEx = GetCertIssuerEx;
+    returnCRLEntry->base.getCertIssuerDer = GetCertIssuerDer;
     returnCRLEntry->base.getRevocationDate = GetRevocationDate;
     returnCRLEntry->base.getExtensions = GetExtensions;
     returnCRLEntry->base.hasExtensions = HasExtensions;
@@ -393,6 +486,9 @@ CfResult HcfCX509CRLEntryCreate(X509_REVOKED *rev, HcfX509CrlEntry **crlEntryOut
     returnCRLEntry->base.getExtensionsObject = GetExtensionsObject;
     if (DeepCopyCertIssuer(returnCRLEntry, certIssuer) != CF_SUCCESS) {
         LOGI("No cert issuer find or deep copy cert issuer fail!");
+    }
+    if (DeepCopyCertIssuerUtf8(returnCRLEntry, certIssuerUtf8) != CF_SUCCESS) {
+        LOGI("No cert utf8 issuer find or deep copy cert utf8 issuer fail!");
     }
     *crlEntryOut = (HcfX509CrlEntry *)returnCRLEntry;
     return CF_SUCCESS;

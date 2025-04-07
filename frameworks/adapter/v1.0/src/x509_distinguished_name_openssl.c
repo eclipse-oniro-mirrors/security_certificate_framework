@@ -16,6 +16,7 @@
 #include "x509_distinguished_name_openssl.h"
 
 #include <securec.h>
+#include <openssl/x509.h>
 #include <openssl/x509v3.h>
 #include <openssl/evp.h>
 #include <openssl/pem.h>
@@ -187,6 +188,40 @@ static CfResult GetNameOpenssl(HcfX509DistinguishedNameSpi *self, CfBlob *type, 
     return GetNameTypeByOpenssl(realName, type, outArr);
 }
 
+static CfResult GetNameExOpenssl(HcfX509DistinguishedNameSpi *self, CfEncodinigType encodingType, CfBlob *out)
+{
+    if ((self == NULL) || (out == NULL) || (encodingType != CF_ENCODING_UTF8)) {
+        LOGE("The input data is null!");
+        return CF_INVALID_PARAMS;
+    }
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509DistinguishedNameClass())) {
+        LOGE("Input wrong class type!");
+        return CF_INVALID_PARAMS;
+    }
+    HcfX509DistinguishedNameOpensslImpl *realName = (HcfX509DistinguishedNameOpensslImpl *)self;
+    BIO *bio = BIO_new(BIO_s_mem());
+    if (bio == NULL) {
+        LOGE("BIO new fail.");
+        CfPrintOpensslError();
+        return CF_ERR_MALLOC;
+    }
+    int ret = X509_NAME_print_ex(bio, realName->name, 0, XN_FLAG_SEP_COMMA_PLUS | ASN1_STRFLGS_UTF8_CONVERT);
+    if (ret <= 0) {
+        LOGE("Failed to X509_NAME_print_ex in openssl!");
+        CfPrintOpensslError();
+        BIO_free(bio);
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    CfResult res = CopyMemFromBIO(bio, out);
+    if (res != CF_SUCCESS) {
+        LOGE("CopyMemFromBIO failed!");
+        BIO_free(bio);
+        return CF_ERR_COPY;
+    }
+    BIO_free(bio);
+    return CF_SUCCESS;
+}
+
 static CfResult SetValueToX509Name(X509_NAME *name, int chtype, char *typestr, unsigned char *valstr, int isMulti)
 {
     int nid = OBJ_txt2nid(typestr);
@@ -304,6 +339,7 @@ CfResult OpensslX509DistinguishedNameSpiCreate(const CfBlob *inStream, const boo
     }
 
     if (name == NULL) {
+        CfPrintOpensslError();
         LOGE("the name is null!");
         return CF_ERR_CRYPTO_OPERATION;
     }
@@ -321,6 +357,7 @@ CfResult OpensslX509DistinguishedNameSpiCreate(const CfBlob *inStream, const boo
     realName->base.base.destroy = DestroyX509DistinguishedNameOpenssl;
     realName->base.engineGetEncode = GetEncodeOpenssl;
     realName->base.engineGetName = GetNameOpenssl;
+    realName->base.engineGetNameEx = GetNameExOpenssl;
     *spi = (HcfX509DistinguishedNameSpi *)realName;
     return CF_SUCCESS;
 }
