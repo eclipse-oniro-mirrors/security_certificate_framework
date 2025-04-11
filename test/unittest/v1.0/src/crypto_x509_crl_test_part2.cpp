@@ -85,6 +85,17 @@ void CryptoX509CrlTestPart2::TearDownTestCase()
 void CryptoX509CrlTestPart2::SetUp() {}
 void CryptoX509CrlTestPart2::TearDown() {}
 
+static const char g_testUtf8CrlData[] =
+    "-----BEGIN X509 CRL-----\r\n"
+    "MIIBTDCBtgIBATANBgkqhkiG9w0BAQsFADBZMQswCQYDVQQGEwJDTjEPMA0GA1UE\r\n"
+    "CAwG6ZmV6KW/MQ8wDQYDVQQHDAbopb/lrokxDzANBgNVBAoMBua1i+ivlTEXMBUG\r\n"
+    "A1UEAwwO5Lit5paH5rWL6K+VIyMXDTI1MDMyNDA5MTExNVoXDTI1MDQyMzA5MTEx\r\n"
+    "NVowGTAXAgYBcqcmOsAXDTI1MDIyMDA2MTMwM1qgDjAMMAoGA1UdFAQDAgECMA0G\r\n"
+    "CSqGSIb3DQEBCwUAA4GBACedFnn4unfYLiRCl1ZAFXx6LFdX6U+IZ/buW44xKAWi\r\n"
+    "fyvcSxKIeGtMVjmQSs4HeNfNujIjaDN1+/J2nLSmHPiQ/c0LAc47zefVt2VnFuR4\r\n"
+    "TMUJEDUlnekYfDMxQqtihAO/Bpw33twK6otDvaAPm9vJoCu8JmGXxt6g+8vbYuNT\r\n"
+    "-----END X509 CRL-----\r\n";
+
 static const char *GetInvalidCrlClass(void)
 {
     return "INVALID_CRL_CLASS";
@@ -598,4 +609,171 @@ HWTEST_F(CryptoX509CrlTestPart2, HcfX509CrlSpiEngineGetExtensionsObjectTest001, 
     EXPECT_EQ(ret, CF_INVALID_PARAMS);
 }
 
+HWTEST_F(CryptoX509CrlTestPart2, X509CRLUtf8Test001, TestSize.Level0)
+{
+    CfEncodingBlob inStream = { 0 };
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testUtf8CrlData));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testUtf8CrlData) + 1;
+    HcfX509Crl *x509Crl = nullptr;
+    CfResult ret = HcfX509CrlCreate(&inStream, &x509Crl);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    EXPECT_NE(x509Crl, nullptr);
+
+    CfBlob out = { 0 };
+    ret = x509Crl->getIssuerNameEx(x509Crl, CF_ENCODING_UTF8, &out);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    EXPECT_NE(out.data, nullptr);
+    CfBlobDataClearAndFree(&out);
+
+    ret = x509Crl->toStringEx(x509Crl, CF_ENCODING_UTF8, &out);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    EXPECT_NE(out.data, nullptr);
+    CfBlobDataClearAndFree(&out);
+
+    CfBlob *outData = nullptr;
+    ret = x509Crl->getIssuerNameDer(x509Crl, &outData);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    EXPECT_NE(outData->data, nullptr);
+
+    HcfX509DistinguishedName *x509Name = nullptr;
+    ret = HcfX509DistinguishedNameCreate(outData, false, &x509Name);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    EXPECT_NE(x509Name, nullptr);
+
+    ret = x509Name->getNameEx(x509Name, CF_ENCODING_UTF8, &out);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    EXPECT_NE(out.data, nullptr);
+
+    CfBlobFree(&outData);
+    CfBlobDataClearAndFree(&out);
+    CfObjDestroy(x509Name);
+    CfObjDestroy(x509Crl);
+}
+
+// invalid input.
+HWTEST_F(CryptoX509CrlTestPart2, X509CRLUtf8Test002, TestSize.Level0)
+{
+    HcfX509Crl *x509Crl = nullptr;
+    CfEncodingBlob inStream = { 0 };
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testUtf8CrlData));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testUtf8CrlData) + 1;
+    CfResult ret = HcfX509CrlCreate(&inStream, &x509Crl);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    EXPECT_NE(x509Crl, nullptr);
+
+    CfBlob out = { 0 };
+    ret = x509Crl->getIssuerNameEx(nullptr, CF_ENCODING_UTF8, &out);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+    EXPECT_EQ(out.data, nullptr);
+
+    CfEncodinigType encodingType = static_cast<CfEncodinigType>(1);
+    ret = x509Crl->getIssuerNameEx(nullptr, encodingType, &out);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+    EXPECT_EQ(out.data, nullptr);
+
+    ret = x509Crl->getIssuerNameEx(x509Crl, CF_ENCODING_UTF8, nullptr);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+
+    ret = x509Crl->toStringEx(nullptr, CF_ENCODING_UTF8, &out);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+    EXPECT_EQ(out.data, nullptr);
+
+    ret = x509Crl->toStringEx(nullptr, encodingType, &out);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+    EXPECT_EQ(out.data, nullptr);
+
+    ret = x509Crl->toStringEx(x509Crl, CF_ENCODING_UTF8, nullptr);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+
+    CfBlob *outData = nullptr;
+    ret = x509Crl->getIssuerNameDer(x509Crl, &outData);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    EXPECT_NE(outData->data, nullptr);
+
+    HcfX509DistinguishedName *x509Name = nullptr;
+    ret = HcfX509DistinguishedNameCreate(outData, false, &x509Name);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    EXPECT_NE(x509Name, nullptr);
+
+    ret = x509Name->getNameEx(nullptr, CF_ENCODING_UTF8, &out);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+    EXPECT_EQ(out.data, nullptr);
+
+    ret = x509Name->getNameEx(x509Name, encodingType, &out);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+    EXPECT_EQ(out.data, nullptr);
+
+    ret = x509Name->getNameEx(x509Name, encodingType, nullptr);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+
+    CfBlobFree(&outData);
+    CfObjDestroy(x509Crl);
+    CfObjDestroy(x509Name);
+}
+
+HWTEST_F(CryptoX509CrlTestPart2, X509CRLEntryUtf8Test001, TestSize.Level0)
+{
+    CfEncodingBlob inStream = { 0 };
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testUtf8CrlData));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testUtf8CrlData) + 1;
+    HcfX509Crl *x509Crl = nullptr;
+    CfResult ret = HcfX509CrlCreate(&inStream, &x509Crl);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    EXPECT_NE(x509Crl, nullptr);
+
+    uint8_t testSN[] = { 0x01, 0x72, 0xA7, 0x26, 0x3A, 0xC0 };
+    CfBlob testSnBlob = { sizeof(testSN), testSN };
+    HcfX509CrlEntry *crlEntry = nullptr;
+    ret = x509Crl->getRevokedCert(x509Crl, &testSnBlob, &crlEntry);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    EXPECT_NE(crlEntry, nullptr);
+
+    CfBlob out = { 0, nullptr };
+    ret = crlEntry->getCertIssuerEx(crlEntry, CF_ENCODING_UTF8, &out);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    EXPECT_NE(out.data, nullptr);
+
+    CfBlobDataClearAndFree(&out);
+    CfObjDestroy(x509Crl);
+    CfObjDestroy(crlEntry);
+}
+
+// invalid input.
+HWTEST_F(CryptoX509CrlTestPart2, X509CRLEntryUtf8Test002, TestSize.Level0)
+{
+    CfEncodingBlob inStream = { 0 };
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testUtf8CrlData));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testUtf8CrlData) + 1;
+    HcfX509Crl *x509Crl = nullptr;
+    CfResult ret = HcfX509CrlCreate(&inStream, &x509Crl);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    EXPECT_NE(x509Crl, nullptr);
+
+    uint8_t testSN[] = { 0x01, 0x72, 0xA7, 0x26, 0x3A, 0xC0 };
+    CfBlob testSnBlob = { sizeof(testSN), testSN };
+    HcfX509CrlEntry *crlEntry = nullptr;
+    ret = x509Crl->getRevokedCert(x509Crl, &testSnBlob, &crlEntry);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    EXPECT_NE(crlEntry, nullptr);
+
+    CfBlob out = { 0, nullptr };
+    ret = crlEntry->getCertIssuerEx(crlEntry, CF_ENCODING_UTF8, nullptr);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+
+    CfEncodinigType encodingType = static_cast<CfEncodinigType>(1);
+    ret = crlEntry->getCertIssuerEx(crlEntry, encodingType, &out);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+    EXPECT_EQ(out.data, nullptr);
+
+    ret = crlEntry->getCertIssuerEx(nullptr, CF_ENCODING_UTF8, &out);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+    EXPECT_EQ(out.data, nullptr);
+
+    CfObjDestroy(x509Crl);
+    CfObjDestroy(crlEntry);
+}
 } // namespace

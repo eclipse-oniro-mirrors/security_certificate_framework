@@ -34,6 +34,7 @@ public:
     static napi_value CreateX509DistinguishedName(napi_env env);
 
     napi_value GetName(napi_env env, napi_callback_info info);
+    napi_value GetNameEx(napi_env env, napi_callback_info info, CfEncodinigType encodingType);
     napi_value GetEncoded(napi_env env, napi_callback_info info);
     HcfX509DistinguishedName *GetX509DistinguishedName()
     {

@@ -35,6 +35,7 @@ public:
     napi_value GetCrlEntrySerialNumber(napi_env env, napi_callback_info info);
     napi_value GetCRLEntrySerialNumber(napi_env env, napi_callback_info info);
     napi_value GetCertificateIssuer(napi_env env, napi_callback_info info);
+    napi_value GetCertificateIssuerEx(napi_env env, napi_callback_info info, CfEncodinigType encodingType);
     napi_value GetRevocationDate(napi_env env, napi_callback_info info);
     napi_value GetExtensions(napi_env env, napi_callback_info info);
     napi_value HasExtensions(napi_env env, napi_callback_info info);

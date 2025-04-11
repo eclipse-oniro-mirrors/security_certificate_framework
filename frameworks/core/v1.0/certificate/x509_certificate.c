@@ -174,6 +174,34 @@ static CfResult GetIssuerName(HcfX509Certificate *self, CfBlob *out)
         ((HcfX509CertificateImpl *)self)->spiObj, out);
 }
 
+static CfResult GetIssuerNameDer(HcfX509Certificate *self, CfBlob **out)
+{
+    if ((self == NULL) || (out == NULL)) {
+        LOGE("Invalid input parameter.");
+        return CF_INVALID_PARAMS;
+    }
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertificateClass())) {
+        LOGE("Class is not match.");
+        return CF_INVALID_PARAMS;
+    }
+    return ((HcfX509CertificateImpl *)self)->spiObj->engineGetIssuerNameDer(
+        ((HcfX509CertificateImpl *)self)->spiObj, out);
+}
+
+static CfResult GetIssuerNameEx(HcfX509Certificate *self, CfEncodinigType encodingType, CfBlob *out)
+{
+    if ((self == NULL) || (out == NULL) || (encodingType != CF_ENCODING_UTF8)) {
+        LOGE("Invalid input parameter or encodingType is not utf8.");
+        return CF_INVALID_PARAMS;
+    }
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertificateClass())) {
+        LOGE("Class is not match.");
+        return CF_INVALID_PARAMS;
+    }
+    return ((HcfX509CertificateImpl *)self)->spiObj->engineGetIssuerNameEx(
+        ((HcfX509CertificateImpl *)self)->spiObj, encodingType, out);
+}
+
 static CfResult GetSubjectName(HcfX509Certificate *self, CfBlob *out)
 {
     if ((self == NULL) || (out == NULL)) {
@@ -185,6 +213,20 @@ static CfResult GetSubjectName(HcfX509Certificate *self, CfBlob *out)
         return CF_INVALID_PARAMS;
     }
     return ((HcfX509CertificateImpl *)self)->spiObj->engineGetSubjectName(
+        ((HcfX509CertificateImpl *)self)->spiObj, out);
+}
+
+static CfResult GetSubjectNameDer(HcfX509Certificate *self, CfBlob **out)
+{
+    if ((self == NULL) || (out == NULL)) {
+        LOGE("Invalid input parameter.");
+        return CF_INVALID_PARAMS;
+    }
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertificateClass())) {
+        LOGE("Class is not match.");
+        return CF_INVALID_PARAMS;
+    }
+    return ((HcfX509CertificateImpl *)self)->spiObj->engineGetSubjectNameDer(
         ((HcfX509CertificateImpl *)self)->spiObj, out);
 }
 
@@ -398,6 +440,20 @@ static CfResult ToString(HcfX509Certificate *self, CfBlob *out)
         ((HcfX509CertificateImpl *)self)->spiObj, out);
 }
 
+static CfResult ToStringEx(HcfX509Certificate *self, CfEncodinigType encodingType, CfBlob *out)
+{
+    if (self == NULL || out == NULL || (encodingType != CF_ENCODING_UTF8)) {
+        LOGE("Invalid input parameter or encodingType is not utf8.");
+        return CF_INVALID_PARAMS;
+    }
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertificateClass())) {
+        LOGE("Class is not match.");
+        return CF_INVALID_PARAMS;
+    }
+    return ((HcfX509CertificateImpl *)self)->spiObj->engineToStringEx(
+        ((HcfX509CertificateImpl *)self)->spiObj, encodingType, out);
+}
+
 static CfResult HashCode(HcfX509Certificate *self, CfBlob *out)
 {
     if (self == NULL || out == NULL) {
@@ -437,7 +493,10 @@ static void HcfX509CertificateImplPack(HcfX509CertificateImpl *x509CertImpl, Hcf
     x509CertImpl->base.getVersion = GetVersion;
     x509CertImpl->base.getSerialNumber = GetSerialNumber;
     x509CertImpl->base.getIssuerName = GetIssuerName;
+    x509CertImpl->base.getIssuerNameDer = GetIssuerNameDer;
+    x509CertImpl->base.getIssuerNameEx = GetIssuerNameEx;
     x509CertImpl->base.getSubjectName = GetSubjectName;
+    x509CertImpl->base.getSubjectNameDer = GetSubjectNameDer;
     x509CertImpl->base.getSubjectNameEx = GetSubjectNameEx;
     x509CertImpl->base.getNotBeforeTime = GetNotBeforeTime;
     x509CertImpl->base.getNotAfterTime = GetNotAfterTime;
@@ -453,6 +512,7 @@ static void HcfX509CertificateImplPack(HcfX509CertificateImpl *x509CertImpl, Hcf
     x509CertImpl->base.getCRLDistributionPointsURI = GetCRLDistributionPointsURI;
     x509CertImpl->base.match = Match;
     x509CertImpl->base.toString = ToString;
+    x509CertImpl->base.toStringEx = ToStringEx;
     x509CertImpl->base.hashCode = HashCode;
     x509CertImpl->base.getExtensionsObject = GetExtensionsObject;
     x509CertImpl->spiObj = spiObj;

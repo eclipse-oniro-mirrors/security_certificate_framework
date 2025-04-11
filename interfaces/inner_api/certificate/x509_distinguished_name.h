@@ -22,6 +22,7 @@
 #include "cf_blob.h"
 #include "cf_object_base.h"
 #include "cf_result.h"
+#include "cf_type.h"
 
 typedef struct HcfX509DistinguishedName HcfX509DistinguishedName;
 struct HcfX509DistinguishedName {
@@ -32,6 +33,9 @@ struct HcfX509DistinguishedName {
 
     /** Get name from Distinguished Name. */
     CfResult (*getName)(HcfX509DistinguishedName *self, CfBlob *type, CfBlob *out, CfArray *outArr);
+
+    /** Get utf8 name from Distinguished Name. */
+    CfResult (*getNameEx)(HcfX509DistinguishedName *self, CfEncodinigType encodingType, CfBlob *out);
 };
 
 typedef struct HcfX509Attribute HcfX509Attribute;

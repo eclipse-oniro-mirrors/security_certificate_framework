@@ -26,7 +26,8 @@
 extern "C" {
 #endif
 
-CfResult HcfCX509CRLEntryCreate(X509_REVOKED *rev, HcfX509CrlEntry **crlEntryOut, CfBlob *certIssuer);
+CfResult HcfCX509CRLEntryCreate(X509_REVOKED *rev, HcfX509CrlEntry **crlEntryOut, CfBlob *certIssuer,
+    CfBlob *certIssuerUtf8, X509_CRL *crl);
 
 #ifdef __cplusplus
 }

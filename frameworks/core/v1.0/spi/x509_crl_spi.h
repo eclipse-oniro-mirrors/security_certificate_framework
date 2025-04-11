@@ -42,6 +42,8 @@ struct HcfX509CrlSpi {
 
     CfResult (*engineGetIssuerName)(HcfX509CrlSpi *self, CfBlob *out);
 
+    CfResult (*engineGetIssuerNameDer)(HcfX509CrlSpi *self, CfBlob **out);
+
     CfResult (*engineGetLastUpdate)(HcfX509CrlSpi *self, CfBlob *out);
 
     CfResult (*engineGetNextUpdate)(HcfX509CrlSpi *self, CfBlob *out);
@@ -72,6 +74,10 @@ struct HcfX509CrlSpi {
     CfResult (*engineHashCode)(HcfX509CrlSpi *self, CfBlob *out);
 
     CfResult (*engineGetExtensionsObject)(HcfX509CrlSpi *self, CfBlob *out);
+
+    CfResult (*engineGetIssuerNameEx)(HcfX509CrlSpi *self, CfEncodinigType encodingType, CfBlob *out);
+
+    CfResult (*engineToStringEx)(HcfX509CrlSpi *self, CfEncodinigType encodingType, CfBlob *out);
 };
 
 #endif // CF_X509_CRL_SPI_H
