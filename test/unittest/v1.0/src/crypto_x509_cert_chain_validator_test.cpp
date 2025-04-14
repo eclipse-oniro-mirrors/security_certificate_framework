@@ -259,11 +259,7 @@ void CryptoX509CertChainValidatorTest::TearDown()
 HWTEST_F(CryptoX509CertChainValidatorTest, GetAlgorithm001, TestSize.Level0)
 {
     const char *algo = g_validator->getAlgorithm(g_validator);
-    EXPECT_NE(algo, nullptr);
-    if (algo == nullptr) {
-        CfObjDestroy(g_validator);
-        return;
-    }
+    ASSERT_NE(algo, nullptr);
     string st("PKIX");
     ASSERT_STREQ(algo, st.c_str());
 }
@@ -294,9 +290,7 @@ HWTEST_F(CryptoX509CertChainValidatorTest, VerifyTest001, TestSize.Level0)
     uint32_t secondCaCertLen = strlen(g_testCertChainValidatorSecondCaCert) + 1;
     certsData.dataLen = CERT_HEADER_LEN + secondCaCertLen + CERT_HEADER_LEN + caCertLen;
     certsData.data = (uint8_t *)malloc(certsData.dataLen);
-    if (certsData.data == nullptr) {
-        return;
-    }
+    ASSERT_NE(certsData.data, nullptr);
     if (memcpy_s(certsData.data, CERT_HEADER_LEN + secondCaCertLen + CERT_HEADER_LEN + caCertLen,
         &secondCaCertLen, CERT_HEADER_LEN) != EOK) {
         goto OUT;
@@ -333,10 +327,7 @@ HWTEST_F(CryptoX509CertChainValidatorTest, VerifyTest002, TestSize.Level0)
     certsData.dataLen = CERT_HEADER_LEN + thirdCertLen + CERT_HEADER_LEN +
         secondCaCertLen + CERT_HEADER_LEN + caCertLen;
     certsData.data = (uint8_t *)malloc(certsData.dataLen);
-    EXPECT_NE(certsData.data, nullptr);
-    if (certsData.data == nullptr) {
-        return;
-    }
+    ASSERT_NE(certsData.data, nullptr);
     if (memcpy_s(certsData.data,
         CERT_HEADER_LEN + thirdCertLen + CERT_HEADER_LEN + secondCaCertLen + CERT_HEADER_LEN + caCertLen,
         &thirdCertLen, CERT_HEADER_LEN) != EOK) {
@@ -378,10 +369,7 @@ HWTEST_F(CryptoX509CertChainValidatorTest, VerifyTest003, TestSize.Level0)
     certsData.count = 3; /* level-3 cert chain. */
     certsData.dataLen = INVALID_MAX_CERT_LEN;
     certsData.data = (uint8_t *)malloc(certsData.dataLen);
-    EXPECT_NE(certsData.data, nullptr);
-    if (certsData.data == nullptr) {
-        return;
-    }
+    ASSERT_NE(certsData.data, nullptr);
 
     CfResult res = g_validator->validate(g_validator, &certsData);
     EXPECT_NE(res, CF_SUCCESS);
@@ -398,10 +386,7 @@ HWTEST_F(CryptoX509CertChainValidatorTest, VerifyTest004, TestSize.Level0)
     uint32_t caCertLen = strlen(g_testCertChainValidatorCaCert) + 1;
     certsData.dataLen = CERT_HEADER_LEN + caCertLen;
     certsData.data = (uint8_t *)malloc(certsData.dataLen);
-    EXPECT_NE(certsData.data, nullptr);
-    if (certsData.data == nullptr) {
-        return;
-    }
+    ASSERT_NE(certsData.data, nullptr);
     if (memcpy_s(certsData.data,
         CERT_HEADER_LEN + caCertLen, &caCertLen, CERT_HEADER_LEN) != EOK) {
         goto OUT;

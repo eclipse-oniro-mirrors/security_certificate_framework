@@ -407,10 +407,7 @@ HWTEST_F(CfParamTest, CfBuildParamSet003, TestSize.Level0)
 {
     CfParamSet *paramSet = nullptr;
     int32_t ret = CfInitParamSet(&paramSet);
-    EXPECT_EQ(ret, CF_SUCCESS);
-    if (ret != CF_SUCCESS) {
-        return;
-    }
+    ASSERT_EQ(ret, CF_SUCCESS);
     paramSet->paramSetSize = sizeof(CfParamSet) - 1;
 
     ret = CfBuildParamSet(&paramSet);
@@ -429,10 +426,7 @@ HWTEST_F(CfParamTest, CfBuildParamSet004, TestSize.Level0)
 {
     CfParamSet *paramSet = nullptr;
     int32_t ret = CfInitParamSet(&paramSet);
-    EXPECT_EQ(ret, CF_SUCCESS);
-    if (ret != CF_SUCCESS) {
-        return;
-    }
+    ASSERT_EQ(ret, CF_SUCCESS);
 
     uint8_t tempBuf[] = "this is for test020";
     paramSet->paramsCnt = 1;
@@ -457,10 +451,7 @@ HWTEST_F(CfParamTest, CfBuildParamSet005, TestSize.Level0)
 {
     CfParamSet *paramSet = nullptr;
     int32_t ret = CfInitParamSet(&paramSet);
-    EXPECT_EQ(ret, CF_SUCCESS);
-    if (ret != CF_SUCCESS) {
-        return;
-    }
+    ASSERT_EQ(ret, CF_SUCCESS);
 
     uint8_t tempBuf[] = "this is for test021";
     paramSet->paramsCnt = 1;
@@ -485,10 +476,7 @@ HWTEST_F(CfParamTest, CfBuildParamSet006, TestSize.Level0)
 {
     CfParamSet *paramSet = nullptr;
     int32_t ret = CfInitParamSet(&paramSet);
-    EXPECT_EQ(ret, CF_SUCCESS);
-    if (ret != CF_SUCCESS) {
-        return;
-    }
+    ASSERT_EQ(ret, CF_SUCCESS);
 
     uint8_t tempBuf[] = "this is for test022";
     paramSet->paramsCnt = 1;
