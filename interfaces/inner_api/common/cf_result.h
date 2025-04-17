@@ -33,6 +33,8 @@ typedef enum CfResult {
     CF_ERR_MALLOC = -20001,
     /* Indicates that memory copy fails. */
     CF_ERR_COPY = -20002,
+    /* Indicates that call napi api fails. */
+    CF_ERR_NAPI = -20003,
 
     /* Indicates that third part has something wrong. */
     CF_ERR_CRYPTO_OPERATION = -30001,
