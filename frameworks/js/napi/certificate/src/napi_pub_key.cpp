@@ -72,7 +72,7 @@ napi_value NapiPubKey::JsGetEncoded(napi_env env, napi_callback_info info)
     if (napiPubKey == nullptr) {
         LOGE("napiPubKey is nullptr!");
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI,
-            "Failed to invoke the ArkTS and C bridge libraries!"));
+            "Failed to convert parameters between ArkTS and C!"));
         return nullptr;
     }
     HcfPubKey *pubKey = napiPubKey->GetPubKey();
