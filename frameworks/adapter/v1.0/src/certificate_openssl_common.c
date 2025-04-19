@@ -598,12 +598,12 @@ CfResult CopyMemFromBIO(BIO *bio, CfBlob *outBlob)
 {
     if (bio == NULL || outBlob == NULL) {
         LOGE("Invalid input.");
-        return CF_INVALID_PARAMS;
+        return CF_ERR_INTERNAL;
     }
     int len = BIO_pending(bio);
     if (len <= 0) {
         LOGE("Bio len less than or equal to 0.");
-        return CF_INVALID_PARAMS;
+        return CF_ERR_INTERNAL;
     }
     uint8_t *buff = (uint8_t *)CfMalloc(len, 0);
     if (buff == NULL) {
