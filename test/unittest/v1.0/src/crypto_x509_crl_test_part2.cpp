@@ -665,27 +665,27 @@ HWTEST_F(CryptoX509CrlTestPart2, X509CRLUtf8Test002, TestSize.Level0)
 
     CfBlob out = { 0 };
     ret = x509Crl->getIssuerNameEx(nullptr, CF_ENCODING_UTF8, &out);
-    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+    EXPECT_EQ(ret, CF_ERR_INTERNAL);
     EXPECT_EQ(out.data, nullptr);
 
     CfEncodinigType encodingType = static_cast<CfEncodinigType>(1);
     ret = x509Crl->getIssuerNameEx(nullptr, encodingType, &out);
-    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+    EXPECT_EQ(ret, CF_ERR_INTERNAL);
     EXPECT_EQ(out.data, nullptr);
 
     ret = x509Crl->getIssuerNameEx(x509Crl, CF_ENCODING_UTF8, nullptr);
-    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+    EXPECT_EQ(ret, CF_ERR_INTERNAL);
 
     ret = x509Crl->toStringEx(nullptr, CF_ENCODING_UTF8, &out);
-    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+    EXPECT_EQ(ret, CF_ERR_INTERNAL);
     EXPECT_EQ(out.data, nullptr);
 
     ret = x509Crl->toStringEx(nullptr, encodingType, &out);
-    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+    EXPECT_EQ(ret, CF_ERR_INTERNAL);
     EXPECT_EQ(out.data, nullptr);
 
     ret = x509Crl->toStringEx(x509Crl, CF_ENCODING_UTF8, nullptr);
-    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+    EXPECT_EQ(ret, CF_ERR_INTERNAL);
 
     CfBlob *outData = nullptr;
     ret = x509Crl->getIssuerNameDer(x509Crl, &outData);
@@ -698,15 +698,15 @@ HWTEST_F(CryptoX509CrlTestPart2, X509CRLUtf8Test002, TestSize.Level0)
     EXPECT_NE(x509Name, nullptr);
 
     ret = x509Name->getNameEx(nullptr, CF_ENCODING_UTF8, &out);
-    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+    EXPECT_EQ(ret, CF_ERR_INTERNAL);
     EXPECT_EQ(out.data, nullptr);
 
     ret = x509Name->getNameEx(x509Name, encodingType, &out);
-    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+    EXPECT_EQ(ret, CF_ERR_PARAMETER_CHECK);
     EXPECT_EQ(out.data, nullptr);
 
     ret = x509Name->getNameEx(x509Name, encodingType, nullptr);
-    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+    EXPECT_EQ(ret, CF_ERR_INTERNAL);
 
     CfBlobFree(&outData);
     CfObjDestroy(x509Crl);
@@ -762,15 +762,15 @@ HWTEST_F(CryptoX509CrlTestPart2, X509CRLEntryUtf8Test002, TestSize.Level0)
 
     CfBlob out = { 0, nullptr };
     ret = crlEntry->getCertIssuerEx(crlEntry, CF_ENCODING_UTF8, nullptr);
-    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+    EXPECT_EQ(ret, CF_ERR_INTERNAL);
 
     CfEncodinigType encodingType = static_cast<CfEncodinigType>(1);
     ret = crlEntry->getCertIssuerEx(crlEntry, encodingType, &out);
-    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+    EXPECT_EQ(ret, CF_ERR_PARAMETER_CHECK);
     EXPECT_EQ(out.data, nullptr);
 
     ret = crlEntry->getCertIssuerEx(nullptr, CF_ENCODING_UTF8, &out);
-    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+    EXPECT_EQ(ret, CF_ERR_INTERNAL);
     EXPECT_EQ(out.data, nullptr);
 
     CfObjDestroy(x509Crl);

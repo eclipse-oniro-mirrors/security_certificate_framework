@@ -190,13 +190,17 @@ static CfResult GetNameOpenssl(HcfX509DistinguishedNameSpi *self, CfBlob *type, 
 
 static CfResult GetNameExOpenssl(HcfX509DistinguishedNameSpi *self, CfEncodinigType encodingType, CfBlob *out)
 {
-    if ((self == NULL) || (out == NULL) || (encodingType != CF_ENCODING_UTF8)) {
+    if ((self == NULL) || (out == NULL)) {
         LOGE("The input data is null!");
-        return CF_INVALID_PARAMS;
+        return CF_ERR_INTERNAL;
+    }
+    if (encodingType != CF_ENCODING_UTF8) {
+        LOGE("encodingType is not utf8!");
+        return CF_ERR_PARAMETER_CHECK;
     }
     if (!CfIsClassMatch((CfObjectBase *)self, GetX509DistinguishedNameClass())) {
         LOGE("Input wrong class type!");
-        return CF_INVALID_PARAMS;
+        return CF_ERR_INTERNAL;
     }
     HcfX509DistinguishedNameOpensslImpl *realName = (HcfX509DistinguishedNameOpensslImpl *)self;
     BIO *bio = BIO_new(BIO_s_mem());
@@ -216,7 +220,7 @@ static CfResult GetNameExOpenssl(HcfX509DistinguishedNameSpi *self, CfEncodinigT
     if (res != CF_SUCCESS) {
         LOGE("CopyMemFromBIO failed!");
         BIO_free(bio);
-        return CF_ERR_COPY;
+        return ret;
     }
     BIO_free(bio);
     return CF_SUCCESS;

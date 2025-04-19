@@ -273,7 +273,7 @@ napi_value NapiX509CrlEntry::GetCertificateIssuerEx(napi_env env, napi_callback_
     CfBlob blob = { 0, nullptr };
     CfResult ret = x509CrlEntry->getCertIssuerEx(x509CrlEntry, encodingType, &blob);
     if (ret != CF_SUCCESS) {
-        napi_throw(env, CertGenerateBusinessError(env, ret, "getcertissuerEx failed"));
+        napi_throw(env, CertGenerateBusinessError(env, ret, "getCertIssuerEx failed!"));
         LOGE("getcertissuerEx failed!");
         return nullptr;
     }
@@ -541,14 +541,21 @@ static napi_value NapiGetCertificateIssuer(napi_env env, napi_callback_info info
     NapiX509CrlEntry *x509CrlEntry = nullptr;
     napi_unwrap(env, thisVar, reinterpret_cast<void **>(&x509CrlEntry));
     if (x509CrlEntry == nullptr) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "x509CrlEntry is nullptr!"));
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "x509CrlEntry is nullptr!"));
         LOGE("x509CrlEntry is nullptr!");
         return nullptr;
     }
     if (argc == ARGS_SIZE_ONE) {
+        napi_valuetype valueType;
+        napi_typeof(env, argv[PARAM0], &valueType);
+        if ((valueType != napi_number)) {
+            napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "wrong argument type!"));
+            LOGE("wrong argument type!");
+            return nullptr;
+        }
         CfEncodinigType encodingType;
         if (napi_get_value_uint32(env, argv[PARAM0], reinterpret_cast<uint32_t *>(&encodingType)) != napi_ok) {
-            napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "napi_get_value_uint32 failed!"));
+            napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "napi_get_value_uint32 failed!"));
             LOGE("napi_get_value_uint32 failed!");
             return nullptr;
         }

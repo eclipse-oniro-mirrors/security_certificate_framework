@@ -105,13 +105,17 @@ static CfResult GetName(HcfX509DistinguishedName *self, CfBlob *type, CfBlob *ou
 
 static CfResult GetNameEx(HcfX509DistinguishedName *self, CfEncodinigType encodingType, CfBlob *out)
 {
-    if ((self == NULL) || (out == NULL) || (encodingType != CF_ENCODING_UTF8)) {
+    if ((self == NULL) || (out == NULL)) {
         LOGE("Invalid input parameter.");
-        return CF_INVALID_PARAMS;
+        return CF_ERR_INTERNAL;
+    }
+    if (encodingType != CF_ENCODING_UTF8) {
+        LOGE("encodingType is not utf8.");
+        return CF_ERR_PARAMETER_CHECK;
     }
     if (!CfIsClassMatch((CfObjectBase *)self, GetX509DistinguishedNameClass())) {
         LOGE("Class is not match.");
-        return CF_INVALID_PARAMS;
+        return CF_ERR_INTERNAL;
     }
     return ((HcfX509DistinguishedNameImpl *)self)->spiObj->engineGetNameEx(
         ((HcfX509DistinguishedNameImpl *)self)->spiObj, encodingType, out);

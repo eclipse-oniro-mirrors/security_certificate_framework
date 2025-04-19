@@ -1071,27 +1071,27 @@ HWTEST_F(CryptoX509CertificateTestPart2, getX509CertUtf8Test003, TestSize.Level0
 
     CfBlob out = { 0 };
     ret = x509Cert->getIssuerNameEx(nullptr, CF_ENCODING_UTF8, &out);
-    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+    EXPECT_EQ(ret, CF_ERR_INTERNAL);
     EXPECT_EQ(out.data, nullptr);
 
     CfEncodinigType encodingType = static_cast<CfEncodinigType>(1);
     ret = x509Cert->getIssuerNameEx(nullptr, encodingType, &out);
-    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+    EXPECT_EQ(ret, CF_ERR_INTERNAL);
     EXPECT_EQ(out.data, nullptr);
 
     ret = x509Cert->getIssuerNameEx(x509Cert, CF_ENCODING_UTF8, nullptr);
-    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+    EXPECT_EQ(ret, CF_ERR_INTERNAL);
 
     ret = x509Cert->toStringEx(nullptr, CF_ENCODING_UTF8, &out);
-    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+    EXPECT_EQ(ret, CF_ERR_INTERNAL);
     EXPECT_EQ(out.data, nullptr);
 
     ret = x509Cert->toStringEx(nullptr, encodingType, &out);
-    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+    EXPECT_EQ(ret, CF_ERR_INTERNAL);
     EXPECT_EQ(out.data, nullptr);
 
     ret = x509Cert->toStringEx(x509Cert, CF_ENCODING_UTF8, nullptr);
-    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+    EXPECT_EQ(ret, CF_ERR_INTERNAL);
 
     CfBlob *outData = nullptr;
     ret = x509Cert->getIssuerNameDer(x509Cert, &outData);
@@ -1104,15 +1104,15 @@ HWTEST_F(CryptoX509CertificateTestPart2, getX509CertUtf8Test003, TestSize.Level0
     EXPECT_NE(x509Name, nullptr);
 
     ret = x509Name->getNameEx(nullptr, CF_ENCODING_UTF8, &out);
-    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+    EXPECT_EQ(ret, CF_ERR_INTERNAL);
     EXPECT_EQ(out.data, nullptr);
 
     ret = x509Name->getNameEx(x509Name, encodingType, &out);
-    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+    EXPECT_EQ(ret, CF_ERR_PARAMETER_CHECK);
     EXPECT_EQ(out.data, nullptr);
 
     ret = x509Name->getNameEx(x509Name, encodingType, nullptr);
-    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+    EXPECT_EQ(ret, CF_ERR_INTERNAL);
 
     CfBlobFree(&outData);
     CfBlobDataClearAndFree(&out);

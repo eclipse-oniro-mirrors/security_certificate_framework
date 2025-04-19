@@ -233,7 +233,7 @@ static napi_value NapiGetName(napi_env env, napi_callback_info info)
     NapiX509DistinguishedName *x509Name = nullptr;
     napi_unwrap(env, thisVar, reinterpret_cast<void **>(&x509Name));
     if (x509Name == nullptr) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "x509Cert is nullptr!"));
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "x509Cert is nullptr!"));
         LOGE("x509Name is nullptr!");
         return nullptr;
     }
@@ -243,7 +243,7 @@ static napi_value NapiGetName(napi_env env, napi_callback_info info)
         if (valueType == napi_number) {
             CfEncodinigType encodingType;
             if (napi_get_value_uint32(env, argv[PARAM0], reinterpret_cast<uint32_t *>(&encodingType)) != napi_ok) {
-                napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "napi_get_value_uint32 failed!"));
+                napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "napi_get_value_uint32 failed!"));
                 LOGE("napi_get_value_uint32 failed!");
                 return nullptr;
             }
