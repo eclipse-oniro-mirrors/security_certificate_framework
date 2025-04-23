@@ -279,129 +279,6 @@ HWTEST_F(CryptoX509CertChainValidatorTest, GetAlgorithm002, TestSize.Level0)
     EXPECT_NE(res, CF_SUCCESS);
 }
 
-/* valid cert chain. */
-HWTEST_F(CryptoX509CertChainValidatorTest, VerifyTest001, TestSize.Level0)
-{
-    CfResult res = CF_SUCCESS;
-    HcfCertChainData certsData = { 0 };
-    certsData.format = CF_FORMAT_PEM;
-    certsData.count = 2; /* level-2 cert chain. */
-    uint32_t caCertLen = strlen(g_testCertChainValidatorCaCert) + 1;
-    uint32_t secondCaCertLen = strlen(g_testCertChainValidatorSecondCaCert) + 1;
-    certsData.dataLen = CERT_HEADER_LEN + secondCaCertLen + CERT_HEADER_LEN + caCertLen;
-    certsData.data = (uint8_t *)malloc(certsData.dataLen);
-    ASSERT_NE(certsData.data, nullptr);
-    if (memcpy_s(certsData.data, CERT_HEADER_LEN + secondCaCertLen + CERT_HEADER_LEN + caCertLen,
-        &secondCaCertLen, CERT_HEADER_LEN) != EOK) {
-        goto OUT;
-    }
-    if (memcpy_s(certsData.data + CERT_HEADER_LEN, secondCaCertLen + CERT_HEADER_LEN + caCertLen,
-        g_testCertChainValidatorSecondCaCert, secondCaCertLen) != EOK) {
-        goto OUT;
-    }
-    if (memcpy_s(certsData.data + CERT_HEADER_LEN + secondCaCertLen, CERT_HEADER_LEN + caCertLen,
-        &caCertLen, CERT_HEADER_LEN) != EOK) {
-        goto OUT;
-    }
-    if (memcpy_s(certsData.data + CERT_HEADER_LEN + secondCaCertLen + CERT_HEADER_LEN, caCertLen,
-        g_testCertChainValidatorCaCert, caCertLen) != EOK) {
-        goto OUT;
-    }
-
-    res = g_validator->validate(g_validator, &certsData);
-    EXPECT_EQ(res, CF_SUCCESS);
-OUT:
-    free(certsData.data);
-}
-
-/* invalid cert chain. */
-HWTEST_F(CryptoX509CertChainValidatorTest, VerifyTest002, TestSize.Level0)
-{
-    CfResult res = CF_SUCCESS;
-    HcfCertChainData certsData = { 0 };
-    certsData.format = CF_FORMAT_PEM;
-    certsData.count = 3; /* level-3 cert chain. */
-    uint32_t caCertLen = strlen(g_testCertChainValidatorCaCert) + 1;
-    uint32_t secondCaCertLen = strlen(g_testCertChainValidatorSecondCaCert) + 1;
-    uint32_t thirdCertLen = strlen(g_testCertChainValidatorInvalidCaCert) + 1;
-    certsData.dataLen = CERT_HEADER_LEN + thirdCertLen + CERT_HEADER_LEN +
-        secondCaCertLen + CERT_HEADER_LEN + caCertLen;
-    certsData.data = (uint8_t *)malloc(certsData.dataLen);
-    ASSERT_NE(certsData.data, nullptr);
-    if (memcpy_s(certsData.data,
-        CERT_HEADER_LEN + thirdCertLen + CERT_HEADER_LEN + secondCaCertLen + CERT_HEADER_LEN + caCertLen,
-        &thirdCertLen, CERT_HEADER_LEN) != EOK) {
-        goto OUT;
-    }
-    if (memcpy_s(certsData.data + CERT_HEADER_LEN,
-        thirdCertLen + CERT_HEADER_LEN + secondCaCertLen + CERT_HEADER_LEN + caCertLen,
-        g_testCertChainValidatorInvalidCaCert, thirdCertLen) != EOK) {
-        return;
-    }
-    if (memcpy_s(certsData.data + CERT_HEADER_LEN + thirdCertLen,
-        CERT_HEADER_LEN + secondCaCertLen + CERT_HEADER_LEN + caCertLen, &secondCaCertLen, CERT_HEADER_LEN) != EOK) {
-        goto OUT;
-    }
-    if (memcpy_s(certsData.data + CERT_HEADER_LEN + thirdCertLen + CERT_HEADER_LEN,
-        secondCaCertLen + CERT_HEADER_LEN + caCertLen, g_testCertChainValidatorSecondCaCert, secondCaCertLen) != EOK) {
-        goto OUT;
-    }
-    if (memcpy_s(certsData.data + CERT_HEADER_LEN + thirdCertLen + CERT_HEADER_LEN + secondCaCertLen,
-        CERT_HEADER_LEN + caCertLen, &caCertLen, CERT_HEADER_LEN) != EOK) {
-        goto OUT;
-    }
-    if (memcpy_s(certsData.data + CERT_HEADER_LEN + thirdCertLen + CERT_HEADER_LEN + secondCaCertLen + CERT_HEADER_LEN,
-        caCertLen, g_testCertChainValidatorCaCert, caCertLen) != EOK) {
-        goto OUT;
-    }
-
-    res = g_validator->validate(g_validator, &certsData);
-    EXPECT_NE(res, CF_SUCCESS);
-OUT:
-    free(certsData.data);
-}
-
-/* invalid cert chain data len. */
-HWTEST_F(CryptoX509CertChainValidatorTest, VerifyTest003, TestSize.Level0)
-{
-    HcfCertChainData certsData = { 0 };
-    certsData.format = CF_FORMAT_PEM;
-    certsData.count = 3; /* level-3 cert chain. */
-    certsData.dataLen = INVALID_MAX_CERT_LEN;
-    certsData.data = (uint8_t *)malloc(certsData.dataLen);
-    ASSERT_NE(certsData.data, nullptr);
-
-    CfResult res = g_validator->validate(g_validator, &certsData);
-    EXPECT_NE(res, CF_SUCCESS);
-    free(certsData.data);
-}
-
-/* invalid cert number(1). */
-HWTEST_F(CryptoX509CertChainValidatorTest, VerifyTest004, TestSize.Level0)
-{
-    CfResult res = CF_SUCCESS;
-    HcfCertChainData certsData = { 0 };
-    certsData.format = CF_FORMAT_PEM;
-    certsData.count = 1; /* level-3 cert chain. */
-    uint32_t caCertLen = strlen(g_testCertChainValidatorCaCert) + 1;
-    certsData.dataLen = CERT_HEADER_LEN + caCertLen;
-    certsData.data = (uint8_t *)malloc(certsData.dataLen);
-    ASSERT_NE(certsData.data, nullptr);
-    if (memcpy_s(certsData.data,
-        CERT_HEADER_LEN + caCertLen, &caCertLen, CERT_HEADER_LEN) != EOK) {
-        goto OUT;
-    }
-    if (memcpy_s(certsData.data + CERT_HEADER_LEN,
-        caCertLen, g_testCertChainValidatorCaCert, caCertLen) != EOK) {
-        goto OUT;
-    }
-
-    res = g_validator->validate(g_validator, &certsData);
-    EXPECT_NE(res, CF_SUCCESS);
-OUT:
-    free(certsData.data);
-}
-
 static int32_t ConstructCertData(HcfCertChainData *certsData, uint8_t *caCert, uint32_t caCertLen,
     uint8_t *secCaCert, uint32_t secCaCertLen)
 {
@@ -435,6 +312,139 @@ static int32_t ConstructCertData(HcfCertChainData *certsData, uint8_t *caCert, u
     } while (0);
     free(tmp);
     return ret;
+}
+
+/* valid cert chain. */
+HWTEST_F(CryptoX509CertChainValidatorTest, VerifyTest001, TestSize.Level0)
+{
+    CfResult res = CF_SUCCESS;
+    HcfCertChainData certsData = { 0 };
+    certsData.format = CF_FORMAT_PEM;
+    certsData.count = 2; /* level-2 cert chain. */
+    uint32_t caCertLen = strlen(g_testCertChainValidatorCaCert) + 1;
+    uint32_t secondCaCertLen = strlen(g_testCertChainValidatorSecondCaCert) + 1;
+    int32_t ret = ConstructCertData(&certsData,
+        reinterpret_cast<uint8_t *>(const_cast<char *>(g_testCertChainValidatorCaCert)), caCertLen,
+        reinterpret_cast<uint8_t *>(const_cast<char *>(g_testCertChainValidatorSecondCaCert)), secondCaCertLen);
+    ASSERT_EQ(ret, CF_SUCCESS);
+
+    res = g_validator->validate(g_validator, &certsData);
+    EXPECT_EQ(res, CF_SUCCESS);
+    free(certsData.data);
+}
+
+static int32_t ConstructCertDataVerifyTest002(HcfCertChainData *certsData)
+{
+    uint32_t caCertLen = strlen(g_testCertChainValidatorCaCert) + 1;
+    uint32_t secondCaCertLen = strlen(g_testCertChainValidatorSecondCaCert) + 1;
+    uint32_t thirdCertLen = strlen(g_testCertChainValidatorInvalidCaCert) + 1;
+    certsData->dataLen = CERT_HEADER_LEN + thirdCertLen + CERT_HEADER_LEN +
+        secondCaCertLen + CERT_HEADER_LEN + caCertLen;
+    certsData->data = (uint8_t *)malloc(certsData->dataLen);
+    if (certsData->data == nullptr) {
+        return CF_ERR_MALLOC;
+    }
+    int32_t ret = CF_ERR_COPY;
+    do {
+        if (memcpy_s(certsData->data,
+            CERT_HEADER_LEN + thirdCertLen + CERT_HEADER_LEN + secondCaCertLen + CERT_HEADER_LEN + caCertLen,
+            &thirdCertLen, CERT_HEADER_LEN) != EOK) {
+            break;
+        }
+        if (memcpy_s(certsData->data + CERT_HEADER_LEN,
+            thirdCertLen + CERT_HEADER_LEN + secondCaCertLen + CERT_HEADER_LEN + caCertLen,
+            g_testCertChainValidatorInvalidCaCert, thirdCertLen) != EOK) {
+            break;
+        }
+        if (memcpy_s(certsData->data + CERT_HEADER_LEN + thirdCertLen,
+            CERT_HEADER_LEN + secondCaCertLen + CERT_HEADER_LEN + caCertLen, &secondCaCertLen,
+            CERT_HEADER_LEN) != EOK) {
+            break;
+        }
+        if (memcpy_s(certsData->data + CERT_HEADER_LEN + thirdCertLen + CERT_HEADER_LEN,
+            secondCaCertLen + CERT_HEADER_LEN + caCertLen, g_testCertChainValidatorSecondCaCert,
+            secondCaCertLen) != EOK) {
+            break;
+        }
+        if (memcpy_s(certsData->data + CERT_HEADER_LEN + thirdCertLen + CERT_HEADER_LEN + secondCaCertLen,
+            CERT_HEADER_LEN + caCertLen, &caCertLen, CERT_HEADER_LEN) != EOK) {
+            break;
+        }
+        if (memcpy_s(certsData->data + CERT_HEADER_LEN + thirdCertLen + CERT_HEADER_LEN + secondCaCertLen +
+            CERT_HEADER_LEN, caCertLen, g_testCertChainValidatorCaCert, caCertLen) != EOK) {
+            break;
+        }
+        return CF_SUCCESS;
+    } while (0);
+    return ret;
+}
+
+/* invalid cert chain. */
+HWTEST_F(CryptoX509CertChainValidatorTest, VerifyTest002, TestSize.Level0)
+{
+    CfResult res = CF_SUCCESS;
+    HcfCertChainData certsData = { 0 };
+    certsData.format = CF_FORMAT_PEM;
+    certsData.count = 3; /* level-3 cert chain. */
+    int32_t ret = ConstructCertDataVerifyTest002(&certsData);
+    ASSERT_EQ(ret, CF_SUCCESS);
+
+    res = g_validator->validate(g_validator, &certsData);
+    EXPECT_NE(res, CF_SUCCESS);
+    free(certsData.data);
+}
+
+/* invalid cert chain data len. */
+HWTEST_F(CryptoX509CertChainValidatorTest, VerifyTest003, TestSize.Level0)
+{
+    HcfCertChainData certsData = { 0 };
+    certsData.format = CF_FORMAT_PEM;
+    certsData.count = 3; /* level-3 cert chain. */
+    certsData.dataLen = INVALID_MAX_CERT_LEN;
+    certsData.data = (uint8_t *)malloc(certsData.dataLen);
+    ASSERT_NE(certsData.data, nullptr);
+
+    CfResult res = g_validator->validate(g_validator, &certsData);
+    EXPECT_NE(res, CF_SUCCESS);
+    free(certsData.data);
+}
+
+static int32_t ConstructCertDataVerifyTest004(HcfCertChainData *certsData)
+{
+    uint32_t caCertLen = strlen(g_testCertChainValidatorCaCert) + 1;
+    certsData->dataLen = CERT_HEADER_LEN + caCertLen;
+    certsData->data = (uint8_t *)malloc(certsData->dataLen);
+    if (certsData->data == nullptr) {
+        return CF_ERR_MALLOC;
+    }
+    int32_t ret = CF_ERR_COPY;
+    do {
+        if (memcpy_s(certsData->data,
+            CERT_HEADER_LEN + caCertLen, &caCertLen, CERT_HEADER_LEN) != EOK) {
+            break;
+        }
+        if (memcpy_s(certsData->data + CERT_HEADER_LEN,
+            caCertLen, g_testCertChainValidatorCaCert, caCertLen) != EOK) {
+            break;
+        }
+        return CF_SUCCESS;
+    } while (0);
+    return ret;
+}
+
+/* invalid cert number(1). */
+HWTEST_F(CryptoX509CertChainValidatorTest, VerifyTest004, TestSize.Level0)
+{
+    CfResult res = CF_SUCCESS;
+    HcfCertChainData certsData = { 0 };
+    certsData.format = CF_FORMAT_PEM;
+    certsData.count = 1; /* level-3 cert chain. */
+    int32_t ret = ConstructCertDataVerifyTest004(&certsData);
+    ASSERT_EQ(ret, CF_SUCCESS);
+
+    res = g_validator->validate(g_validator, &certsData);
+    EXPECT_NE(res, CF_SUCCESS);
+    free(certsData.data);
 }
 
 /* valid cert chain der format. */
