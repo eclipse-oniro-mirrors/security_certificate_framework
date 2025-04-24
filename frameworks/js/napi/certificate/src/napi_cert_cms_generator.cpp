@@ -423,6 +423,7 @@ napi_value NapiCertCmsGenerator::DoFinalSync(napi_env env, napi_callback_info in
             napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS,
             "GetCmsGeneratorOptionsFromValue failed!"));
             CfBlobDataFree(content);
+            FreeCmsGeneratorOptions(options);
             return nullptr;
         }
     }

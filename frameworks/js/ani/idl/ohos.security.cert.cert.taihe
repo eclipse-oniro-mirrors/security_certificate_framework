@@ -1,0 +1,90 @@
+/*
+ * Copyright (c) 2025-2025 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+use ohos.security.cryptoFramework.cryptoFramework as cryptoFramework;
+
+@!namespace("@ohos.security.cert", "cert")
+
+@!sts_inject("""
+static { loadLibrary("cert_framework_ani.z"); }
+""")
+
+struct DataBlob {
+  data: @typedarray Array<u8>;
+}
+
+enum EncodingFormat: i32 {
+  FORMAT_DER = 0,
+  FORMAT_PEM = 1,
+  FORMAT_PKCS7 = 2
+}
+
+struct CertChainData {
+  data: @typedarray Array<u8>;
+  count: i32;
+  encodingFormat: EncodingFormat;
+}
+
+interface CertChainValidator {
+  @gen_async("validate")
+  @gen_promise("validate")
+  ValidateSync(certChain: CertChainData);
+  @get GetAlgorithm(): String;
+}
+function CreateCertChainValidator(algorithm: String): CertChainValidator;
+
+struct EncodingBlob {
+  data: @typedarray Array<u8>;
+  encodingFormat: EncodingFormat;
+}
+
+interface X509Cert {
+  @gen_async("verify")
+  @gen_promise("verify")
+  VerifySync(): void;
+  @gen_async("getEncoded")
+  @gen_promise("getEncoded")
+  GetEncodedSync(): EncodingBlob;
+  GetPublicKey(): void;
+}
+
+@gen_async("createX509Cert")
+@gen_promise("createX509Cert")
+function CreateX509CertSync(inStream: EncodingBlob): X509Cert;
+
+struct X509TrustAnchor {
+  CACert: Optional<X509Cert>;
+  CAPubKey: Optional<@typedarray Array<u8>>;
+  CASubject: Optional<@typedarray Array<u8>>;
+  nameConstraints: Optional<@typedarray Array<u8>>;
+}
+
+interface CertChainValidationResult {
+  @get GetTrustAnchor(): X509TrustAnchor;
+  @get GetEntityCert(): X509Cert;
+}
+
+interface X509CertChain {
+  GetCertList(): Array<X509Cert>;
+  @gen_async("validate")
+  @gen_promise("validate")
+  ValidateSync(): CertChainValidationResult;
+  ToString(): String;
+  HashCode(): @typedarray Array<u8>;
+}
+
+@gen_async("createX509CertChain")
+@gen_promise("createX509CertChain")
+function CreateX509CertChainSync(certs: Array<X509Cert>): X509CertChain;
