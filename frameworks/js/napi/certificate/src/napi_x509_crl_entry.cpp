@@ -455,36 +455,39 @@ napi_value NapiX509CrlEntry::GetExtensionsObject(napi_env env, napi_callback_inf
 napi_value NapiX509CrlEntry::GetCertIssuerX500DistinguishedName(napi_env env, napi_callback_info info)
 {
     HcfX509CrlEntry *x509CrlEntry = GetX509CrlEntry();
-    CfBlob *blob = nullptr;
-    CfResult result = x509CrlEntry->getCertIssuerDer(x509CrlEntry, &blob);
+    CfBlob blob = { 0, nullptr };
+    CfResult result = x509CrlEntry->getCertIssuer(x509CrlEntry, &blob);
     if (result != CF_SUCCESS) {
         LOGE("getIssuerDN failed!");
         napi_throw(env, CertGenerateBusinessError(env, result, "get issuer name failed"));
         return nullptr;
     }
     HcfX509DistinguishedName *x509Name = nullptr;
-    CfResult ret = HcfX509DistinguishedNameCreate(blob, false, &x509Name);
-    CfBlobDataFree(blob);
+    CfResult ret = HcfX509DistinguishedNameCreate(&blob, true, &x509Name);
+    CfBlobDataFree(&blob);
     if (ret != CF_SUCCESS) {
         LOGE("HcfX509DistinguishedNameCreate failed");
         napi_throw(env, CertGenerateBusinessError(env, ret, "HcfX509DistinguishedNameCreate failed"));
         return nullptr;
     }
-    napi_value instance = NapiX509DistinguishedName::CreateX509DistinguishedName(env);
-    NapiX509DistinguishedName *x509NameClass = new (std::nothrow) NapiX509DistinguishedName(x509Name);
-    if (x509NameClass == nullptr) {
-        LOGE("Failed to create a NapiX509DistinguishedName class");
-        CfObjDestroy(x509Name);
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "NapiX509DistinguishedName new failed"));
+
+    CfBlob *blobUtf8 = nullptr;
+    result = x509CrlEntry->getCertIssuerDer(x509CrlEntry, &blobUtf8);
+    if (result != CF_SUCCESS) {
+        LOGE("getCertIssuerDer failed!");
+        napi_throw(env, CertGenerateBusinessError(env, result, "getCertIssuerDer failed"));
         return nullptr;
     }
-    napi_wrap(
-        env, instance, x509NameClass,
-        [](napi_env env, void *data, void *hint) {
-            NapiX509DistinguishedName *nameClass = static_cast<NapiX509DistinguishedName *>(data);
-            delete nameClass;
-            return;
-        }, nullptr, nullptr);
+    HcfX509DistinguishedName *x509NameUtf8 = nullptr;
+    ret = HcfX509DistinguishedNameCreate(blobUtf8, false, &x509NameUtf8);
+    CfBlobDataFree(blobUtf8);
+    if (ret != CF_SUCCESS) {
+        LOGE("HcfX509DistinguishedNameCreate failed");
+        napi_throw(env, CertGenerateBusinessError(env, ret, "HcfX509DistinguishedNameCreate failed"));
+        return nullptr;
+    }
+
+    napi_value instance = ConstructX509DistinguishedName(x509Name, x509NameUtf8, env);
     return instance;
 }
 
