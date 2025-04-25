@@ -302,14 +302,18 @@ static CfResult GetIssuerNameDer(HcfX509CrlSpi *self, CfBlob **out)
 
 static CfResult GetIssuerNameEx(HcfX509CrlSpi *self, CfEncodinigType encodingType, CfBlob *out)
 {
-    if ((self == NULL) || (out == NULL) || (encodingType != CF_ENCODING_UTF8)) {
-        LOGE("Invalid params for calling GetIssuerNameEx or encodingType is not utf8!");
-        return CF_INVALID_PARAMS;
+    if ((self == NULL) || (out == NULL)) {
+        LOGE("Invalid params for calling GetIssuerNameEx!");
+        return CF_ERR_INTERNAL;
+    }
+    if (encodingType != CF_ENCODING_UTF8) {
+        LOGE("encodingType is not utf8!");
+        return CF_ERR_PARAMETER_CHECK;
     }
     X509_CRL *crl = GetCrl(self);
     if (crl == NULL) {
         LOGE("crl is null!");
-        return CF_INVALID_PARAMS;
+        return CF_ERR_INTERNAL;
     }
     X509_NAME *x509Name = X509_CRL_get_issuer(crl);
     if (x509Name == NULL) {
@@ -887,18 +891,22 @@ static CfResult ToString(HcfX509CrlSpi *self, CfBlob *out)
 
 static CfResult ToStringEx(HcfX509CrlSpi *self, CfEncodinigType encodingType, CfBlob *out)
 {
-    if ((self == NULL) || (out == NULL) || (encodingType != CF_ENCODING_UTF8)) {
-        LOGE("The input data is null or encodingType is not utf8!");
-        return CF_INVALID_PARAMS;
+    if ((self == NULL) || (out == NULL)) {
+        LOGE("The input data is null!");
+        return CF_ERR_INTERNAL;
+    }
+    if (encodingType != CF_ENCODING_UTF8) {
+        LOGE("encodingType is not utf8!");
+        return CF_ERR_PARAMETER_CHECK;
     }
     if (!CfIsClassMatch((CfObjectBase *)self, GetClass())) {
         LOGE("Input wrong class type!");
-        return CF_INVALID_PARAMS;
+        return CF_ERR_INTERNAL;
     }
     X509_CRL *crl = GetCrl(self);
     if (crl == NULL) {
         LOGE("crl is null!");
-        return CF_INVALID_PARAMS;
+        return CF_ERR_INTERNAL;
     }
     BIO *bio = BIO_new(BIO_s_mem());
     if (bio == NULL) {

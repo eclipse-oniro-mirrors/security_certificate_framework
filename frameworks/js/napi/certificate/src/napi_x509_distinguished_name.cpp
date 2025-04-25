@@ -50,7 +50,11 @@ NapiX509DistinguishedName::NapiX509DistinguishedName(HcfX509DistinguishedName *x
 
 NapiX509DistinguishedName::~NapiX509DistinguishedName()
 {
+    if (this->x509Name_ == this->x509NameUtf8_) {
+        this->x509NameUtf8_ = nullptr;
+    }
     CfObjDestroy(this->x509Name_);
+    CfObjDestroy(this->x509NameUtf8_);
 }
 
 static void FreeCryptoFwkCtx(napi_env env, CfCtx *context)
@@ -88,7 +92,6 @@ static void ReturnPromiseResult(napi_env env, CfCtx *context, napi_value result)
 void NapiX509DistinguishedName::CreateDistinguishedNameExecute(napi_env env, void *data)
 {
     CfCtx *context = static_cast<CfCtx *>(data);
-
     context->errCode = HcfX509DistinguishedNameCreate(context->inPara, context->paraIsString, &context->x509Name);
     if (context->errCode != CF_SUCCESS) {
         context->errMsg = "create x509DistinguishedName failed";
@@ -115,6 +118,7 @@ void NapiX509DistinguishedName::CreateDistinguishedNameComplete(napi_env env, na
         FreeCryptoFwkCtx(env, context);
         return;
     }
+    x509NameClass->SetX509DistinguishedNameUtf8(context->x509Name);
     napi_wrap(
         env, instance, x509NameClass,
         [](napi_env env, void *data, void *hint) {
@@ -190,7 +194,7 @@ napi_value NapiX509DistinguishedName::GetName(napi_env env, napi_callback_info i
 
 napi_value NapiX509DistinguishedName::GetNameEx(napi_env env, napi_callback_info info, CfEncodinigType encodingType)
 {
-    HcfX509DistinguishedName *x509Name = GetX509DistinguishedName();
+    HcfX509DistinguishedName *x509Name = GetX509DistinguishedNameUtf8();
     CfBlob blob = { 0, nullptr };
     CfResult ret = x509Name->getNameEx(x509Name, encodingType, &blob);
     if (ret != CF_SUCCESS) {
@@ -233,7 +237,7 @@ static napi_value NapiGetName(napi_env env, napi_callback_info info)
     NapiX509DistinguishedName *x509Name = nullptr;
     napi_unwrap(env, thisVar, reinterpret_cast<void **>(&x509Name));
     if (x509Name == nullptr) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "x509Cert is nullptr!"));
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "x509Cert is nullptr!"));
         LOGE("x509Name is nullptr!");
         return nullptr;
     }
@@ -243,7 +247,7 @@ static napi_value NapiGetName(napi_env env, napi_callback_info info)
         if (valueType == napi_number) {
             CfEncodinigType encodingType;
             if (napi_get_value_uint32(env, argv[PARAM0], reinterpret_cast<uint32_t *>(&encodingType)) != napi_ok) {
-                napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "napi_get_value_uint32 failed!"));
+                napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "napi_get_value_uint32 failed!"));
                 LOGE("napi_get_value_uint32 failed!");
                 return nullptr;
             }
@@ -333,6 +337,29 @@ napi_value NapiX509DistinguishedName::CreateX509DistinguishedName(napi_env env)
     napi_value instance = nullptr;
     napi_get_reference_value(env, classRef_, &constructor);
     napi_new_instance(env, constructor, 0, nullptr, &instance);
+    return instance;
+}
+
+napi_value ConstructX509DistinguishedName(HcfX509DistinguishedName *x509Name,
+    HcfX509DistinguishedName *x509NameUtf8, napi_env env)
+{
+    napi_value instance = NapiX509DistinguishedName::CreateX509DistinguishedName(env);
+    NapiX509DistinguishedName *x509NameClass = new (std::nothrow) NapiX509DistinguishedName(x509Name);
+    if (x509NameClass == nullptr) {
+        LOGE("Failed to create a NapiX509DistinguishedName class");
+        CfObjDestroy(x509Name);
+        CfObjDestroy(x509NameUtf8);
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "NapiX509DistinguishedName new failed"));
+        return nullptr;
+    }
+    x509NameClass->SetX509DistinguishedNameUtf8(x509NameUtf8);
+    napi_wrap(
+        env, instance, x509NameClass,
+        [](napi_env env, void *data, void *hint) {
+            NapiX509DistinguishedName *nameClass = static_cast<NapiX509DistinguishedName *>(data);
+            delete nameClass;
+            return;
+        }, nullptr, nullptr);
     return instance;
 }
 } // namespace CertFramework

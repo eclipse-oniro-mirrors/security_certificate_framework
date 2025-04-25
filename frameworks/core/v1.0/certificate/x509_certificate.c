@@ -190,13 +190,17 @@ static CfResult GetIssuerNameDer(HcfX509Certificate *self, CfBlob **out)
 
 static CfResult GetIssuerNameEx(HcfX509Certificate *self, CfEncodinigType encodingType, CfBlob *out)
 {
-    if ((self == NULL) || (out == NULL) || (encodingType != CF_ENCODING_UTF8)) {
-        LOGE("Invalid input parameter or encodingType is not utf8.");
-        return CF_INVALID_PARAMS;
+    if ((self == NULL) || (out == NULL)) {
+        LOGE("Invalid input parameter!");
+        return CF_ERR_INTERNAL;
+    }
+    if (encodingType != CF_ENCODING_UTF8) {
+        LOGE("encodingType is not utf8!");
+        return CF_ERR_PARAMETER_CHECK;
     }
     if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertificateClass())) {
         LOGE("Class is not match.");
-        return CF_INVALID_PARAMS;
+        return CF_ERR_INTERNAL;
     }
     return ((HcfX509CertificateImpl *)self)->spiObj->engineGetIssuerNameEx(
         ((HcfX509CertificateImpl *)self)->spiObj, encodingType, out);
@@ -442,13 +446,17 @@ static CfResult ToString(HcfX509Certificate *self, CfBlob *out)
 
 static CfResult ToStringEx(HcfX509Certificate *self, CfEncodinigType encodingType, CfBlob *out)
 {
-    if (self == NULL || out == NULL || (encodingType != CF_ENCODING_UTF8)) {
-        LOGE("Invalid input parameter or encodingType is not utf8.");
-        return CF_INVALID_PARAMS;
+    if (self == NULL || out == NULL) {
+        LOGE("Invalid input parameter.");
+        return CF_ERR_INTERNAL;
+    }
+    if (encodingType != CF_ENCODING_UTF8) {
+        LOGE("encodingType is not utf8.");
+        return CF_ERR_PARAMETER_CHECK;
     }
     if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertificateClass())) {
         LOGE("Class is not match.");
-        return CF_INVALID_PARAMS;
+        return CF_ERR_INTERNAL;
     }
     return ((HcfX509CertificateImpl *)self)->spiObj->engineToStringEx(
         ((HcfX509CertificateImpl *)self)->spiObj, encodingType, out);

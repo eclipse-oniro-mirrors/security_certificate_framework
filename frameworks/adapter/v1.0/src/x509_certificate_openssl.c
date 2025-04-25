@@ -698,13 +698,17 @@ static CfResult GetIssuerDNX509OpensslDer(HcfX509CertificateSpi *self, CfBlob **
 
 static CfResult GetIssuerDNX509OpensslEx(HcfX509CertificateSpi *self, CfEncodinigType encodingType, CfBlob *out)
 {
-    if ((self == NULL) || (out == NULL) || (encodingType != CF_ENCODING_UTF8)) {
-        LOGE("[Get issuerDN utf8 openssl] The input data is null or encodingType is not utf8!");
-        return CF_INVALID_PARAMS;
+    if ((self == NULL) || (out == NULL)) {
+        LOGE("[Get issuerDN utf8 openssl] The input data is null!");
+        return CF_ERR_INTERNAL;
+    }
+    if (encodingType != CF_ENCODING_UTF8) {
+        LOGE("[Get issuerDN utf8 openssl] encodingType is not utf8!");
+        return CF_ERR_PARAMETER_CHECK;
     }
     if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
         LOGE("Input wrong class type!");
-        return CF_INVALID_PARAMS;
+        return CF_ERR_INTERNAL;
     }
     HcfOpensslX509Cert *realCert = (HcfOpensslX509Cert *)self;
     X509 *x509 = realCert->x509;
@@ -1379,13 +1383,17 @@ static CfResult ToStringX509Openssl(HcfX509CertificateSpi *self, CfBlob *out)
 
 static CfResult ToStringX509OpensslEx(HcfX509CertificateSpi *self, CfEncodinigType encodingType, CfBlob *out)
 {
-    if ((self == NULL) || (out == NULL) || (encodingType != CF_ENCODING_UTF8)) {
-        LOGE("The input data is null or encodingType is not utf8!");
-        return CF_INVALID_PARAMS;
+    if ((self == NULL) || (out == NULL)) {
+        LOGE("The input data is null!");
+        return CF_ERR_INTERNAL;
+    }
+    if (encodingType != CF_ENCODING_UTF8) {
+        LOGE("encodingType is not utf8!");
+        return CF_ERR_PARAMETER_CHECK;
     }
     if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
         LOGE("Input wrong class type!");
-        return CF_INVALID_PARAMS;
+        return CF_ERR_INTERNAL;
     }
     HcfOpensslX509Cert *realCert = (HcfOpensslX509Cert *)self;
     BIO *bio = BIO_new(BIO_s_mem());

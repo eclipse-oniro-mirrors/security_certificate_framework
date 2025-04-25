@@ -149,14 +149,18 @@ static CfResult GetCertIssuer(HcfX509CrlEntry *self, CfBlob *encodedOut)
 
 static CfResult GetCertIssuerEx(HcfX509CrlEntry *self, CfEncodinigType encodingType, CfBlob *encodedOut)
 {
-    if ((self == NULL) || (encodedOut == NULL) || (encodingType != CF_ENCODING_UTF8)) {
+    if ((self == NULL) || (encodedOut == NULL)) {
         LOGE("Invalid params for calling GetCertIssuerEx!");
-        return CF_INVALID_PARAMS;
+        return CF_ERR_INTERNAL;
     }
-   
+    if (encodingType != CF_ENCODING_UTF8) {
+        LOGE("encodingType is not utf8!");
+        return CF_ERR_PARAMETER_CHECK;
+    }
+
     if (!CfIsClassMatch((CfObjectBase *)self, GetClass())) {
         LOGE("Input wrong class type!");
-        return CF_INVALID_PARAMS;
+        return CF_ERR_INTERNAL;
     }
     CfBlob *certIssuer = ((HcfX509CRLEntryOpensslImpl *)self)->certIssuerUtf8;
     if (!CfIsBlobValid(certIssuer)) {
