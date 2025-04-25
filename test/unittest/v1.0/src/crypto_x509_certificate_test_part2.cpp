@@ -996,13 +996,13 @@ HWTEST_F(CryptoX509CertificateTestPart2, getX509CertUtf8Test001, TestSize.Level0
     EXPECT_NE(out.data, nullptr);
     CfBlobDataClearAndFree(&out);
 
-    CfBlob *outData = nullptr;
+    CfBlob outData = { 0 };
     ret = x509Cert->getIssuerNameDer(x509Cert, &outData);
     EXPECT_EQ(ret, CF_SUCCESS);
-    EXPECT_NE(outData->data, nullptr);
+    EXPECT_NE(outData.data, nullptr);
 
     HcfX509DistinguishedName *x509Name = nullptr;
-    ret = HcfX509DistinguishedNameCreate(outData, false, &x509Name);
+    ret = HcfX509DistinguishedNameCreate(&outData, false, &x509Name);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(x509Name, nullptr);
 
@@ -1010,7 +1010,7 @@ HWTEST_F(CryptoX509CertificateTestPart2, getX509CertUtf8Test001, TestSize.Level0
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(out.data, nullptr);
 
-    CfBlobFree(&outData);
+    CfBlobDataClearAndFree(&outData);
     CfBlobDataClearAndFree(&out);
     CfObjDestroy(x509Name);
     CfObjDestroy(x509Cert);
@@ -1038,20 +1038,20 @@ HWTEST_F(CryptoX509CertificateTestPart2, getX509CertUtf8Test002, TestSize.Level0
     EXPECT_NE(out.data, nullptr);
     CfBlobDataClearAndFree(&out);
 
-    CfBlob *outData = nullptr;
+    CfBlob outData = { 0 };
     ret = x509Cert->getIssuerNameDer(x509Cert, &outData);
     EXPECT_EQ(ret, CF_SUCCESS);
-    EXPECT_NE(outData->data, nullptr);
+    EXPECT_NE(outData.data, nullptr);
 
     HcfX509DistinguishedName *x509Name = nullptr;
-    ret = HcfX509DistinguishedNameCreate(outData, false, &x509Name);
+    ret = HcfX509DistinguishedNameCreate(&outData, false, &x509Name);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(x509Name, nullptr);
 
     ret = x509Name->getNameEx(x509Name, CF_ENCODING_UTF8, &out);
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
 
-    CfBlobFree(&outData);
+    CfBlobDataClearAndFree(&outData);
     CfBlobDataClearAndFree(&out);
     CfObjDestroy(x509Cert);
     CfObjDestroy(x509Name);
@@ -1093,13 +1093,13 @@ HWTEST_F(CryptoX509CertificateTestPart2, getX509CertUtf8Test003, TestSize.Level0
     ret = x509Cert->toStringEx(x509Cert, CF_ENCODING_UTF8, nullptr);
     EXPECT_EQ(ret, CF_ERR_INTERNAL);
 
-    CfBlob *outData = nullptr;
+    CfBlob outData = { 0 };
     ret = x509Cert->getIssuerNameDer(x509Cert, &outData);
     EXPECT_EQ(ret, CF_SUCCESS);
-    EXPECT_NE(outData->data, nullptr);
+    EXPECT_NE(outData.data, nullptr);
 
     HcfX509DistinguishedName *x509Name = nullptr;
-    ret = HcfX509DistinguishedNameCreate(outData, false, &x509Name);
+    ret = HcfX509DistinguishedNameCreate(&outData, false, &x509Name);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_NE(x509Name, nullptr);
 
@@ -1114,7 +1114,7 @@ HWTEST_F(CryptoX509CertificateTestPart2, getX509CertUtf8Test003, TestSize.Level0
     ret = x509Name->getNameEx(x509Name, encodingType, nullptr);
     EXPECT_EQ(ret, CF_ERR_INTERNAL);
 
-    CfBlobFree(&outData);
+    CfBlobDataClearAndFree(&outData);
     CfBlobDataClearAndFree(&out);
     CfObjDestroy(x509Cert);
     CfObjDestroy(x509Name);

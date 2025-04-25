@@ -50,13 +50,13 @@ struct HcfX509Certificate {
     CfResult (*getIssuerName)(HcfX509Certificate *self, CfBlob *out);
 
     /** Get issuer distinguished name Der Format from certificate. */
-    CfResult (*getIssuerNameDer)(HcfX509Certificate *self, CfBlob **out);
+    CfResult (*getIssuerNameDer)(HcfX509Certificate *self, CfBlob *out);
 
     /** Get subject distinguished name from certificate. */
     CfResult (*getSubjectName)(HcfX509Certificate *self, CfBlob *out);
 
     /** Get subject distinguished name from certificate. */
-    CfResult (*getSubjectNameDer)(HcfX509Certificate *self, CfBlob **out);
+    CfResult (*getSubjectNameDer)(HcfX509Certificate *self, CfBlob *out);
 
     /** Get the not before time within the validity period of the certificate.
      * time format： YYMMDDHHMMSSZ or YYYYMMDDHHMMSSZ

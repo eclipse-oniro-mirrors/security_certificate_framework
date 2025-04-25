@@ -42,7 +42,7 @@ struct HcfX509Crl {
     CfResult (*getIssuerName)(HcfX509Crl *self, CfBlob *out);
 
     /** Get the issuer name Der from CRL. Issuer means the entity that signs and publishes the CRL. */
-    CfResult (*getIssuerNameDer)(HcfX509Crl *self, CfBlob **out);
+    CfResult (*getIssuerNameDer)(HcfX509Crl *self, CfBlob *out);
 
     /** Get lastUpdate value from CRL. */
     CfResult (*getLastUpdate)(HcfX509Crl *self, CfBlob *out);

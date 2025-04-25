@@ -41,11 +41,11 @@ struct HcfX509CertificateSpi {
 
     CfResult (*engineGetIssuerName)(HcfX509CertificateSpi *self, CfBlob *out);
 
-    CfResult (*engineGetIssuerNameDer)(HcfX509CertificateSpi *self, CfBlob **out);
+    CfResult (*engineGetIssuerNameDer)(HcfX509CertificateSpi *self, CfBlob *out);
 
     CfResult (*engineGetSubjectName)(HcfX509CertificateSpi *self, CfBlob *out);
 
-    CfResult (*engineGetSubjectNameDer)(HcfX509CertificateSpi *self, CfBlob **out);
+    CfResult (*engineGetSubjectNameDer)(HcfX509CertificateSpi *self, CfBlob *out);
 
     CfResult (*engineGetNotBeforeTime)(HcfX509CertificateSpi *self, CfBlob *outDate);
 

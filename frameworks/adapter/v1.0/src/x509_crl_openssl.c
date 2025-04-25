@@ -266,16 +266,16 @@ static CfResult GetIssuerName(HcfX509CrlSpi *self, CfBlob *out)
     return CF_SUCCESS;
 }
 
-static CfResult GetIssuerNameDer(HcfX509CrlSpi *self, CfBlob **out)
+static CfResult GetIssuerNameDer(HcfX509CrlSpi *self, CfBlob *out)
 {
     if ((self == NULL) || (out == NULL)) {
         LOGE("Invalid params for calling GetIssuerName!");
-        return CF_INVALID_PARAMS;
+        return CF_ERR_INTERNAL;
     }
     X509_CRL *crl = GetCrl(self);
     if (crl == NULL) {
         LOGE("crl is null!");
-        return CF_INVALID_PARAMS;
+        return CF_ERR_INTERNAL;
     }
     X509_NAME *x509Name = X509_CRL_get_issuer(crl);
     if (x509Name == NULL) {
@@ -283,20 +283,14 @@ static CfResult GetIssuerNameDer(HcfX509CrlSpi *self, CfBlob **out)
         CfPrintOpensslError();
         return CF_ERR_CRYPTO_OPERATION;
     }
-    *out = (CfBlob *)CfMalloc(sizeof(CfBlob), 0);
-    if (*out == NULL) {
-        LOGE("Failed to malloc pub key!");
-        return CF_ERR_MALLOC;
-    }
 
-    int32_t size = i2d_X509_NAME(x509Name, &((*out)->data));
+    int32_t size = i2d_X509_NAME(x509Name, &(out->data));
     if (size <= 0) {
         LOGE("Failed to get Issuer DER data!");
-        CfFree(*out);
-        *out = NULL;
+        CfPrintOpensslError();
         return CF_ERR_CRYPTO_OPERATION;
     }
-    (*out)->size = (uint32_t)size;
+    out->size = (uint32_t)size;
     return CF_SUCCESS;
 }
 
