@@ -16,10 +16,6 @@
 #include "cert_chain_validator.h"
 #include "ani_cert_chain_validator.h"
 
-using namespace taihe;
-using namespace ohos::security::cert::cert;
-using namespace ANI::CertFramework;
-
 namespace ANI::CertFramework {
 CertChainValidatorImpl::CertChainValidatorImpl() {}
 
@@ -75,5 +71,5 @@ CertChainValidator CreateCertChainValidator(string_view algorithm)
 
 // Since these macros are auto-generate, lint will cause false positive.
 // NOLINTBEGIN
-TH_EXPORT_CPP_API_CreateCertChainValidator(CreateCertChainValidator);
+TH_EXPORT_CPP_API_CreateCertChainValidator(ANI::CertFramework::CreateCertChainValidator);
 // NOLINTEND

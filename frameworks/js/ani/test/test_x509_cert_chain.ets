@@ -13,31 +13,14 @@
  * limitations under the License.
  */
 
-#ifndef ANI_X509_CERT_CHAIN_H
-#define ANI_X509_CERT_CHAIN_H
+import { BusinessError } from "@ohos.base";
+import cert from "@ohos.security.cert";
+import utils from "./test_utils";
 
-#include "ani_common.h"
+function testX509CertChainAsync() {
+}
 
-namespace ANI::CertFramework {
-class CertChainValidationResultImpl {
-public:
-    CertChainValidationResultImpl();
-    ~CertChainValidationResultImpl();
-
-    X509TrustAnchor GetTrustAnchor();
-    X509Cert GetEntityCert();
-};
-
-class X509CertChainImpl {
-public:
-    X509CertChainImpl();
-    ~X509CertChainImpl();
-
-    array<X509Cert> GetCertList();
-    CertChainValidationResult ValidateSync();
-    string ToString();
-    array<uint8_t> HashCode();
-};
-} // namespace ANI::CertFramework
-
-#endif // ANI_X509_CERT_CHAIN_H
+export function testX509CertChain() {
+  console.log(">>>>>>>>>>>>>>>>>>>> X509CertChainAsync");
+  testX509CertChainAsync();
+}

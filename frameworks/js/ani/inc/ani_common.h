@@ -26,10 +26,16 @@
 #include "cf_result.h"
 #include "cf_object_base.h"
 
+namespace ANI::CertFramework {
+using namespace taihe;
+using namespace ohos::security::cert::cert;
+namespace cryptoFramework = ohos::security::cryptoFramework::cryptoFramework;
+
 #define ANI_LOGE_THROW(code, msg) \
     do { \
         LOGE(msg); \
         set_business_error(code, msg); \
     } while (0)
+} // namespace ANI::CertFramework
 
 #endif // ANI_COMMON_H

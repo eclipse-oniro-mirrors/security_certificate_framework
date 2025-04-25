@@ -13,5 +13,10 @@
  * limitations under the License.
  */
 
+import { testX509Cert } from "./test_x509_cert";
+import { testCertChainValidator } from "./test_cert_chain_validator";
+
 function main() {
+    testX509Cert();
+    testCertChainValidator();
 }

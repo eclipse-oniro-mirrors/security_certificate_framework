@@ -17,21 +17,19 @@
 #define ANI_X509_CERT_H
 
 #include "ani_common.h"
+#include "ani_pub_key.h"
 #include "x509_certificate.h"
 
 namespace ANI::CertFramework {
-using namespace taihe;
-using namespace ohos::security::cert::cert;
-
 class X509CertImpl {
 public:
     X509CertImpl();
     explicit X509CertImpl(HcfX509Certificate *cert);
     ~X509CertImpl();
 
-    void VerifySync();
+    void VerifySync(cryptoFramework::weak::PubKey key);
     EncodingBlob GetEncodedSync();
-    void GetPublicKey();
+    cryptoFramework::PubKey GetPublicKey();
 
 private:
     HcfX509Certificate *cert_ = nullptr;

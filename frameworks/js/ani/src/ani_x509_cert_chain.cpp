@@ -16,10 +16,6 @@
 #include "ani_x509_cert_chain.h"
 #include "ani_x509_cert.h"
 
-using namespace taihe;
-using namespace ohos::security::cert::cert;
-using namespace ANI::CertFramework;
-
 namespace ANI::CertFramework {
 CertChainValidationResultImpl::CertChainValidationResultImpl() {}
 
@@ -62,16 +58,24 @@ array<uint8_t> X509CertChainImpl::HashCode()
 {
     TH_THROW(std::runtime_error, "HashCode not implemented");
 }
-} // namespace ANI::CertFramework
 
-X509CertChain CreateX509CertChainSync(array_view<X509Cert> certs)
+X509CertChain createX509CertChainSync(EncodingBlob const& inStream)
 {
     // The parameters in the make_holder function should be of the same type
     // as the parameters in the constructor of the actual implementation class.
     return make_holder<X509CertChainImpl, X509CertChain>();
 }
 
+X509CertChain CreateX509CertChain(array_view<X509Cert> certs)
+{
+    // The parameters in the make_holder function should be of the same type
+    // as the parameters in the constructor of the actual implementation class.
+    return make_holder<X509CertChainImpl, X509CertChain>();
+}
+} // namespace ANI::CertFramework
+
 // Since these macros are auto-generate, lint will cause false positive.
 // NOLINTBEGIN
-TH_EXPORT_CPP_API_CreateX509CertChainSync(CreateX509CertChainSync);
+TH_EXPORT_CPP_API_createX509CertChainSync(ANI::CertFramework::createX509CertChainSync);
+TH_EXPORT_CPP_API_CreateX509CertChain(ANI::CertFramework::CreateX509CertChain);
 // NOLINTEND

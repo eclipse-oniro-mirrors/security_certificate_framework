@@ -30,6 +30,7 @@ ohos_taihe("run_taihe") {
   taihe_generated_file_path = "$taihe_generated_file_path"
   deps = [ ":copy_taihe" ]
   outputs = [
+    "$taihe_generated_file_path/src/ohos.security.cryptoFramework.cryptoFramework.abi.c",
     "$taihe_generated_file_path/src/ohos.security.cert.cert.ani.cpp",
     "$taihe_generated_file_path/src/ohos.security.cert.cert.abi.c",
   ]
@@ -47,6 +48,7 @@ taihe_shared_library("cert_framework_ani") {
   sources += [
     "${framework_path}/js/ani/src/ani_cert_chain_validator.cpp",
     "${framework_path}/js/ani/src/ani_constructor.cpp",
+    "${framework_path}/js/ani/src/ani_pub_key.cpp",
     "${framework_path}/js/ani/src/ani_x509_cert.cpp",
     "${framework_path}/js/ani/src/ani_x509_cert_chain.cpp",
   ]
@@ -82,25 +84,12 @@ generate_static_abc("cert_framework_ets") {
   dependencies = [ ":run_taihe" ]
 }
 
-generate_static_abc("cert_framework_test") {
-  base_url = "${framework_path}/js/ani/test"
-  files = [
-    "${framework_path}/js/ani/test/test_main.ets",
-    "${framework_path}/js/ani/test/test_utils.ets",
-  ]
-  is_boot_abc = "True"
-  device_dst_file = "/system/framework/cert_framework_test.abc"
-}
-
 ohos_prebuilt_etc("cert_framework_etc") {
   source = "$target_out_dir/cert_framework_ets.abc"
   module_install_dir = "framework"
   part_name = "$part_name"
   subsystem_name = "$subsystem_name"
-  deps = [
-    ":cert_framework_ets",
-    # ":cert_framework_test",
-  ]
+  deps = [ ":cert_framework_ets" ]
 }
 
 group("certificate_framework_ani") {
