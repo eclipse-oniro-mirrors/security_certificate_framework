@@ -42,7 +42,7 @@ struct HcfX509CrlSpi {
 
     CfResult (*engineGetIssuerName)(HcfX509CrlSpi *self, CfBlob *out);
 
-    CfResult (*engineGetIssuerNameDer)(HcfX509CrlSpi *self, CfBlob **out);
+    CfResult (*engineGetIssuerNameDer)(HcfX509CrlSpi *self, CfBlob *out);
 
     CfResult (*engineGetLastUpdate)(HcfX509CrlSpi *self, CfBlob *out);
 

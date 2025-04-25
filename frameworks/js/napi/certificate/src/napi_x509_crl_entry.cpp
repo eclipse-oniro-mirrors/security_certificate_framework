@@ -471,16 +471,15 @@ napi_value NapiX509CrlEntry::GetCertIssuerX500DistinguishedName(napi_env env, na
         return nullptr;
     }
 
-    CfBlob *blobUtf8 = nullptr;
-    result = x509CrlEntry->getCertIssuerDer(x509CrlEntry, &blobUtf8);
+    result = x509CrlEntry->getCertIssuerDer(x509CrlEntry, &blob);
     if (result != CF_SUCCESS) {
         LOGE("getCertIssuerDer failed!");
         napi_throw(env, CertGenerateBusinessError(env, result, "getCertIssuerDer failed"));
         return nullptr;
     }
     HcfX509DistinguishedName *x509NameUtf8 = nullptr;
-    ret = HcfX509DistinguishedNameCreate(blobUtf8, false, &x509NameUtf8);
-    CfBlobDataFree(blobUtf8);
+    ret = HcfX509DistinguishedNameCreate(&blob, false, &x509NameUtf8);
+    CfBlobDataFree(&blob);
     if (ret != CF_SUCCESS) {
         LOGE("HcfX509DistinguishedNameCreate failed");
         napi_throw(env, CertGenerateBusinessError(env, ret, "HcfX509DistinguishedNameCreate failed"));

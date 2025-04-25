@@ -57,7 +57,10 @@ typedef struct {
     HcfX509CrlEntry base;
     X509_REVOKED *rev;
     CfBlob *certIssuer;
+    CfBlob *certIssuerUtf8;
+    X509_CRL *crl;
 } HcfX509CRLEntryOpensslImpl;
+
 #define X509_CRL_ENTRY_OPENSSL_CLASS "X509CrlEntryOpensslClass"
 
 typedef struct {

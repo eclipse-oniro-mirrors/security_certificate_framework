@@ -168,15 +168,15 @@ static CfResult GetIssuerName(HcfX509Crl *self, CfBlob *out)
         ((HcfX509CrlImpl *)self)->spiObj, out);
 }
 
-static CfResult GetIssuerNameDer(HcfX509Crl *self, CfBlob **out)
+static CfResult GetIssuerNameDer(HcfX509Crl *self, CfBlob *out)
 {
     if ((self == NULL) || (out == NULL)) {
         LOGE("Invalid input parameter.");
-        return CF_INVALID_PARAMS;
+        return CF_ERR_INTERNAL;
     }
     if (!CfIsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
         LOGE("Class is not match.");
-        return CF_INVALID_PARAMS;
+        return CF_ERR_INTERNAL;
     }
     return ((HcfX509CrlImpl *)self)->spiObj->engineGetIssuerNameDer(
         ((HcfX509CrlImpl *)self)->spiObj, out);

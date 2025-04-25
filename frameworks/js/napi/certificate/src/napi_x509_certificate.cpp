@@ -913,22 +913,21 @@ napi_value NapiX509Certificate::GetIssuerX500DistinguishedName(napi_env env, nap
     }
     CfBlobDataFree(&blob);
 
-    CfBlob *blobUtf8 = nullptr;
-    ret = cert->getIssuerNameDer(cert, &blobUtf8);
+    ret = cert->getIssuerNameDer(cert, &blob);
     if (ret != CF_SUCCESS) {
         LOGE("getIssuerNameDer failed!");
         napi_throw(env, CertGenerateBusinessError(env, ret, "get issuer name der failed."));
         return nullptr;
     }
     HcfX509DistinguishedName *x509NameUtf8 = nullptr;
-    ret = HcfX509DistinguishedNameCreate(blobUtf8, false, &x509NameUtf8);
+    ret = HcfX509DistinguishedNameCreate(&blob, false, &x509NameUtf8);
     if (ret != CF_SUCCESS || x509NameUtf8 == nullptr) {
         LOGE("HcfX509DistinguishedNameCreate failed");
         napi_throw(env, CertGenerateBusinessError(env, ret, "HcfX509DistinguishedNameCreate failed"));
-        CfBlobDataFree(blobUtf8);
+        CfBlobDataFree(&blob);
         return nullptr;
     }
-    CfBlobDataFree(blobUtf8);
+    CfBlobDataFree(&blob);
 
     napi_value instance = ConstructX509DistinguishedName(x509Name, x509NameUtf8, env);
     return instance;
@@ -954,22 +953,21 @@ napi_value NapiX509Certificate::GetSubjectX500DistinguishedName(napi_env env, na
     }
     CfBlobDataFree(&blob);
 
-    CfBlob *blobUtf8 = nullptr;
-    ret = cert->getSubjectNameDer(cert, &blobUtf8);
+    ret = cert->getSubjectNameDer(cert, &blob);
     if (ret != CF_SUCCESS) {
         LOGE("getSubjectNameDer failed!");
         napi_throw(env, CertGenerateBusinessError(env, ret, "get subject name der failed"));
         return nullptr;
     }
     HcfX509DistinguishedName *x509NameUtf8 = nullptr;
-    ret = HcfX509DistinguishedNameCreate(blobUtf8, false, &x509NameUtf8);
+    ret = HcfX509DistinguishedNameCreate(&blob, false, &x509NameUtf8);
     if (ret != CF_SUCCESS || x509NameUtf8 == nullptr) {
         LOGE("HcfX509DistinguishedNameCreate failed");
         napi_throw(env, CertGenerateBusinessError(env, ret, "HcfX509DistinguishedNameCreate failed"));
-        CfBlobDataFree(blobUtf8);
+        CfBlobDataFree(&blob);
         return nullptr;
     }
-    CfBlobDataFree(blobUtf8);
+    CfBlobDataFree(&blob);
 
     napi_value instance = ConstructX509DistinguishedName(x509Name, x509NameUtf8, env);
     return instance;
