@@ -330,7 +330,12 @@ static bool GetPrivateKeyPasswordFromValue(napi_env env, napi_value obj, Private
         LOGE("get property %{public}s failed!", CERT_PASSWORD.c_str());
         return false;
     }
-    (*privateKey)->privateKeyPassword = CertGetStringFromValue(env, password);
+    char *tmp = CertGetStringFromValue(env, password);
+    if (tmp == nullptr) {
+        LOGE("CertGetStringFromValue failed!");
+        return false;
+    }
+    (*privateKey)->privateKeyPassword = tmp;
     return true;
 }
 
