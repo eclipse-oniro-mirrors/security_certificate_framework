@@ -164,14 +164,17 @@ static void BuildX509CertChainExecute(napi_env env, void *data)
 {
     CfCtx *context = static_cast<CfCtx *>(data);
     context->async->errCode = HcfCertChainBuildResultCreate(context->bulidParams, &context->buildResult);
-    if (context->async->errCode == CF_SUCCESS) {
-        HcfCertChain *certChain = context->buildResult->certChain;
-        context->async->errCode = certChain->validate(
-            certChain, &(context->bulidParams->validateParameters), &(context->buildResult->validateResult));
-    }
-
     if (context->async->errCode != CF_SUCCESS) {
         context->async->errMsg = "create cert chain failed";
+        return;
+    }
+    HcfCertChain *certChain = context->buildResult->certChain;
+    context->async->errCode = certChain->validate(
+        certChain, &(context->bulidParams->validateParameters), &(context->buildResult->validateResult));
+    if (context->async->errCode != CF_SUCCESS) {
+        context->async->errMsg = "validate failed";
+        CfObjDestroy(context->buildResult->certChain);
+        context->buildResult->certChain = nullptr;
     }
 }
 
