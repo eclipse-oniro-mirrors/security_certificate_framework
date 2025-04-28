@@ -174,15 +174,15 @@ static CfResult GetIssuerName(HcfX509Certificate *self, CfBlob *out)
         ((HcfX509CertificateImpl *)self)->spiObj, out);
 }
 
-static CfResult GetIssuerNameDer(HcfX509Certificate *self, CfBlob **out)
+static CfResult GetIssuerNameDer(HcfX509Certificate *self, CfBlob *out)
 {
     if ((self == NULL) || (out == NULL)) {
         LOGE("Invalid input parameter.");
-        return CF_INVALID_PARAMS;
+        return CF_ERR_INTERNAL;
     }
     if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertificateClass())) {
         LOGE("Class is not match.");
-        return CF_INVALID_PARAMS;
+        return CF_ERR_INTERNAL;
     }
     return ((HcfX509CertificateImpl *)self)->spiObj->engineGetIssuerNameDer(
         ((HcfX509CertificateImpl *)self)->spiObj, out);
@@ -220,15 +220,15 @@ static CfResult GetSubjectName(HcfX509Certificate *self, CfBlob *out)
         ((HcfX509CertificateImpl *)self)->spiObj, out);
 }
 
-static CfResult GetSubjectNameDer(HcfX509Certificate *self, CfBlob **out)
+static CfResult GetSubjectNameDer(HcfX509Certificate *self, CfBlob *out)
 {
     if ((self == NULL) || (out == NULL)) {
         LOGE("Invalid input parameter.");
-        return CF_INVALID_PARAMS;
+        return CF_ERR_INTERNAL;
     }
     if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertificateClass())) {
         LOGE("Class is not match.");
-        return CF_INVALID_PARAMS;
+        return CF_ERR_INTERNAL;
     }
     return ((HcfX509CertificateImpl *)self)->spiObj->engineGetSubjectNameDer(
         ((HcfX509CertificateImpl *)self)->spiObj, out);

@@ -22,6 +22,7 @@
 #include <openssl/x509v3.h>
 
 #include "certificate_openssl_common.h"
+#include "certificate_openssl_class.h"
 #include "cf_log.h"
 #include "cf_memory.h"
 #include "config.h"
@@ -29,14 +30,6 @@
 #include "x509_crl.h"
 #include "x509_crl_entry.h"
 #include "x509_crl_openssl.h"
-
-typedef struct {
-    HcfX509CrlEntry base;
-    X509_REVOKED *rev;
-    CfBlob *certIssuer;
-    CfBlob *certIssuerUtf8;
-    X509_CRL *crl;
-} HcfX509CRLEntryOpensslImpl;
 
 static const char *GetClass(void)
 {
@@ -178,38 +171,32 @@ static CfResult GetCertIssuerEx(HcfX509CrlEntry *self, CfEncodinigType encodingT
     return CF_SUCCESS;
 }
 
-static CfResult GetCertIssuerDer(HcfX509CrlEntry *self, CfBlob **encodedOut)
+static CfResult GetCertIssuerDer(HcfX509CrlEntry *self, CfBlob *encodedOut)
 {
     if ((self == NULL) || (encodedOut == NULL)) {
         LOGE("Invalid params for calling GetCertIssuerEx!");
-        return CF_INVALID_PARAMS;
+        return CF_ERR_INTERNAL;
     }
-   
+
     if (!CfIsClassMatch((CfObjectBase *)self, GetClass())) {
         LOGE("Input wrong class type!");
-        return CF_INVALID_PARAMS;
+        return CF_ERR_INTERNAL;
     }
     X509_CRL *crl = ((HcfX509CRLEntryOpensslImpl *)self)->crl;
     X509_NAME *x509Name = X509_CRL_get_issuer(crl);
     if (x509Name == NULL) {
         LOGE("Failed to get issuer name!");
         CfPrintOpensslError();
-        return CF_INVALID_PARAMS;
-    }
-    *encodedOut = (CfBlob *)CfMalloc(sizeof(CfBlob), 0);
-    if (*encodedOut == NULL) {
-        LOGE("Failed to malloc pub key!");
-        return CF_ERR_MALLOC;
+        return CF_ERR_INTERNAL;
     }
 
-    int32_t size = i2d_X509_NAME(x509Name, &((*encodedOut)->data));
+    int32_t size = i2d_X509_NAME(x509Name, &(encodedOut->data));
     if (size <= 0) {
         LOGE("Failed to get subject DER data!");
-        CfFree(*encodedOut);
-        *encodedOut = NULL;
+        CfPrintOpensslError();
         return CF_ERR_CRYPTO_OPERATION;
     }
-    (*encodedOut)->size = (uint32_t)size;
+    encodedOut->size = (uint32_t)size;
     return CF_SUCCESS;
 }
 

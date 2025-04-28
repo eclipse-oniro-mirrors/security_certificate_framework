@@ -17,6 +17,7 @@
 #define CF_CERTIFICATE_OPENSSL_COMMON_H
 
 #include <openssl/x509.h>
+#include <openssl/x509v3.h>
 #include <stdint.h>
 
 #include "cf_blob.h"
@@ -24,8 +25,13 @@
 #include "x509_cert_match_parameters.h"
 #include "x509_distinguished_name_spi.h"
 
-
 #define CF_OPENSSL_SUCCESS 1 /* openssl return 1: success */
+#define OID_STR_MAX_LEN 128
+#define CHAR_TO_BIT_LEN 8
+#define MAX_DATE_STR_LEN 128
+#define FLAG_BIT_LEFT_NUM 0x07
+#define DATETIME_LEN 15
+#define MIN_PATH_LEN_CONSTRAINT (-2)
 
 #ifdef __cplusplus
 extern "C" {
@@ -67,6 +73,15 @@ CfResult GetPubKeyDataFromX509(X509 *x509, CfBlob **pub);
 CfResult GetSubjectNameFromX509(X509 *cert, CfBlob **sub);
 CfResult GetNameConstraintsFromX509(X509 *cert, CfBlob **name);
 CfResult CopyMemFromBIO(BIO *bio, CfBlob *outBlob);
+CfResult CfDeepCopyExtendedKeyUsage(const STACK_OF(ASN1_OBJECT) *extUsage,
+    int32_t index, CfArray *keyUsageOut);
+CfResult CfDeepCopyAlternativeNames(const STACK_OF(GENERAL_NAME) *altNames, int32_t index, CfArray *outName);
+CfResult CfDeepCopySubAltName(
+    const STACK_OF(GENERAL_NAME) *altname, int32_t index, const SubAltNameArray *subAltNameArrayOut);
+CfResult CfDeepCopyCertPolices(const CERTIFICATEPOLICIES *certPolicesIn, int32_t index, CfArray *certPolices);
+CfResult CfConvertAsn1String2BoolArray(const ASN1_BIT_STRING *string, CfBlob *boolArr);
+bool CfCompareGN2Blob(const GENERAL_NAME *gen, CfBlob *nc);
+CfResult CfGetCRLDpURI(STACK_OF(DIST_POINT) *crlDp, CfArray *outURI);
 #ifdef __cplusplus
 }
 #endif

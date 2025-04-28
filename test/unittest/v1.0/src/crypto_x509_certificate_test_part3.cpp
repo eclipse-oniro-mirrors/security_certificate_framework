@@ -149,7 +149,7 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareSubjectAlternativeNamesTest002, 
     matchParams.subjectAlternativeNames = ConstructSubAltNameArrayData();
     EXPECT_NE(matchParams.subjectAlternativeNames, nullptr);
 
-    // test DeepCopySubAltName failed case
+    // test CfDeepCopySubAltName failed case
     X509OpensslMock::SetMockFlag(true);
     EXPECT_CALL(X509OpensslMock::GetInstance(), i2d_GENERAL_NAME(_, _)).WillRepeatedly(Return(-1));
     CfResult ret = g_x509CertExtAttrObj->match(g_x509CertExtAttrObj, &matchParams, &bResult);

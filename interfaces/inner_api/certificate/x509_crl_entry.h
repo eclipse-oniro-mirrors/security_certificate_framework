@@ -42,7 +42,7 @@ struct HcfX509CrlEntry {
     CfResult (*getCertIssuerEx)(HcfX509CrlEntry *self, CfEncodinigType encodingType, CfBlob *encodedOut);
 
     /** Gets the issuer der format of the x509 certificate described by this entry. */
-    CfResult (*getCertIssuerDer)(HcfX509CrlEntry *self, CfBlob **encodedOut);
+    CfResult (*getCertIssuerDer)(HcfX509CrlEntry *self, CfBlob *encodedOut);
 
     /** Get the revocation date from x509crl entry. */
     CfResult (*getRevocationDate)(HcfX509CrlEntry *self, CfBlob *out);
