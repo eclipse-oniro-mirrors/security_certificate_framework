@@ -41,7 +41,7 @@ interface CertChainValidator {
   @gen_async("validate")
   @gen_promise("validate")
   ValidateSync(certChain: CertChainData);
-  @get GetAlgorithm(): String;
+  @get("algorithm") GetAlgorithm(): String;
 }
 function CreateCertChainValidator(algorithm: String): CertChainValidator;
 
@@ -53,11 +53,11 @@ struct EncodingBlob {
 interface X509Cert {
   @gen_async("verify")
   @gen_promise("verify")
-  VerifySync(): void;
+  VerifySync(key: cryptoFramework.PubKey): void;
   @gen_async("getEncoded")
   @gen_promise("getEncoded")
   GetEncodedSync(): EncodingBlob;
-  GetPublicKey(): void;
+  GetPublicKey(): cryptoFramework.PubKey;
 }
 
 @gen_async("createX509Cert")
@@ -72,8 +72,8 @@ struct X509TrustAnchor {
 }
 
 interface CertChainValidationResult {
-  @get GetTrustAnchor(): X509TrustAnchor;
-  @get GetEntityCert(): X509Cert;
+  @get("trustAnchor") GetTrustAnchor(): X509TrustAnchor;
+  @get("entityCert") GetEntityCert(): X509Cert;
 }
 
 interface X509CertChain {
@@ -87,4 +87,5 @@ interface X509CertChain {
 
 @gen_async("createX509CertChain")
 @gen_promise("createX509CertChain")
-function CreateX509CertChainSync(certs: Array<X509Cert>): X509CertChain;
+function createX509CertChainSync(inStream: EncodingBlob): X509CertChain;
+function CreateX509CertChain(certs: Array<X509Cert>): X509CertChain;

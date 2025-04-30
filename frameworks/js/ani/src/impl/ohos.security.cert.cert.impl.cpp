@@ -45,7 +45,7 @@ public:
         // Don't forget to implement the constructor.
     }
 
-    void VerifySync() {
+    void VerifySync(::ohos::security::cryptoFramework::cryptoFramework::weak::PubKey key) {
         TH_THROW(std::runtime_error, "VerifySync not implemented");
     }
 
@@ -53,8 +53,10 @@ public:
         TH_THROW(std::runtime_error, "GetEncodedSync not implemented");
     }
 
-    void GetPublicKey() {
-        TH_THROW(std::runtime_error, "GetPublicKey not implemented");
+    ::ohos::security::cryptoFramework::cryptoFramework::PubKey GetPublicKey() {
+        // The parameters in the make_holder function should be of the same type
+        // as the parameters in the constructor of the actual implementation class.
+        return make_holder<PubKeyImpl, ::ohos::security::cryptoFramework::cryptoFramework::PubKey>();
     }
 };
 
@@ -112,7 +114,13 @@ X509Cert CreateX509CertSync(EncodingBlob const& inStream) {
     return make_holder<X509CertImpl, X509Cert>();
 }
 
-X509CertChain CreateX509CertChainSync(array_view<X509Cert> certs) {
+X509CertChain createX509CertChainSync(EncodingBlob const& inStream) {
+    // The parameters in the make_holder function should be of the same type
+    // as the parameters in the constructor of the actual implementation class.
+    return make_holder<X509CertChainImpl, X509CertChain>();
+}
+
+X509CertChain CreateX509CertChain(array_view<X509Cert> certs) {
     // The parameters in the make_holder function should be of the same type
     // as the parameters in the constructor of the actual implementation class.
     return make_holder<X509CertChainImpl, X509CertChain>();
@@ -123,5 +131,6 @@ X509CertChain CreateX509CertChainSync(array_view<X509Cert> certs) {
 // NOLINTBEGIN
 TH_EXPORT_CPP_API_CreateCertChainValidator(CreateCertChainValidator);
 TH_EXPORT_CPP_API_CreateX509CertSync(CreateX509CertSync);
-TH_EXPORT_CPP_API_CreateX509CertChainSync(CreateX509CertChainSync);
+TH_EXPORT_CPP_API_createX509CertChainSync(createX509CertChainSync);
+TH_EXPORT_CPP_API_CreateX509CertChain(CreateX509CertChain);
 // NOLINTEND

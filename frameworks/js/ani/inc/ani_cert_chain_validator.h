@@ -19,9 +19,6 @@
 #include "ani_common.h"
 
 namespace ANI::CertFramework {
-using namespace taihe;
-using namespace ohos::security::cert::cert;
-
 class CertChainValidatorImpl {
 public:
     CertChainValidatorImpl();
