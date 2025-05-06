@@ -68,7 +68,7 @@ function testCertChainValidatorAsync() {
     let uint8ArrayOf2ndCaCertData = utils.stringToUint8Array(secondCaCertData);
     let uint8ArrayOf2ndCaCertDataLen = new Uint8Array(new Uint16Array([uint8ArrayOf2ndCaCertData.byteLength]).buffer);
     let encodingData = new Uint8Array(uint8ArrayOf2ndCaCertDataLen.length + uint8ArrayOf2ndCaCertData.length +
-    uint8ArrayOfCaCertDataLen.length + uint8ArrayOfCaCertData.length);
+      uint8ArrayOfCaCertDataLen.length + uint8ArrayOfCaCertData.length);
     for (let i = 0; i < uint8ArrayOf2ndCaCertDataLen.length; i++) {
       encodingData[i] = uint8ArrayOf2ndCaCertDataLen[i];
     }

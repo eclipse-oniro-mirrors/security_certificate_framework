@@ -44,7 +44,7 @@ void X509CertImpl::VerifySync(cryptoFramework::weak::PubKey key)
 
 EncodingBlob X509CertImpl::GetEncodedSync()
 {
-    EncodingBlob encodingBlob = { { array<uint8_t>(nullptr, 0) }, EncodingFormat(EncodingFormat::key_t::FORMAT_DER) };
+    EncodingBlob encodingBlob = { {}, EncodingFormat(EncodingFormat::key_t::FORMAT_DER) };
     if (this->cert_ == nullptr) {
         ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
         return encodingBlob;

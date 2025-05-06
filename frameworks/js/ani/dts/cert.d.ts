@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+import { int, long } from './@ohos.base';
 import type { AsyncCallback } from './@ohos.base';
 import cryptoFramework from './@ohos.security.cryptoFramework';
 
@@ -73,7 +74,7 @@ declare namespace cert {
 
   interface CertChainData {
     data: Uint8Array;
-    count: number;
+    count: int;
     encodingFormat: EncodingFormat;
   }
 
@@ -88,8 +89,8 @@ declare namespace cert {
     getEncoded(): Promise<EncodingBlob>;
     getPublicKey(): cryptoFramework.PubKey;
     checkValidityWithDate(date: string): void;
-    getVersion(): number;
-    getSerialNumber(): number;
+    getVersion(): int;
+    getSerialNumber(): long;
     getCertSerialNumber(): bigint;
     getIssuerName(): DataBlob;
     getSubjectName(encodingType?: EncodingType): DataBlob;
@@ -101,7 +102,7 @@ declare namespace cert {
     getSignatureAlgParams(): DataBlob;
     getKeyUsage(): DataBlob;
     getExtKeyUsage(): DataArray;
-    getBasicConstraints(): number;
+    getBasicConstraints(): int;
     getSubjectAltNames(): DataArray;
     getIssuerAltNames(): DataArray;
     getItem(itemType: CertItemType): DataBlob;
@@ -120,7 +121,7 @@ declare namespace cert {
     getEncoded(): EncodingBlob;
     getOidList(valueType: ExtensionOidType): DataArray;
     getEntry(valueType: ExtensionEntryType, oid: DataBlob): DataBlob;
-    checkCA(): number;
+    checkCA(): int;
     hasUnsupportedCriticalExtension(): boolean;
   }
   function createCertExtension(inStream: EncodingBlob, callback: AsyncCallback<CertExtension>): void;
@@ -147,7 +148,7 @@ declare namespace cert {
     getEncoded(): Promise<EncodingBlob>;
     verify(key: cryptoFramework.PubKey, callback: AsyncCallback<void>): void;
     verify(key: cryptoFramework.PubKey): Promise<void>;
-    getVersion(): number;
+    getVersion(): int;
     getIssuerName(): DataBlob;
     getLastUpdate(): string;
     getNextUpdate(): string;
@@ -198,7 +199,7 @@ declare namespace cert {
     subjectAlternativeNames?: Array<GeneralName>;
     matchAllSubjectAltNames?: boolean;
     authorityKeyIdentifier?: Uint8Array;
-    minPathLenConstraint?: number;
+    minPathLenConstraint?: int;
     x509Cert?: X509Cert;
     validDate?: string;
     issuer?: Uint8Array;
@@ -329,7 +330,7 @@ declare namespace cert {
 
   interface CertChainBuildParameters {
     certMatchParameters: X509CertMatchParameters;
-    maxLength?: number;
+    maxLength?: int;
     validationParameters: CertChainValidationParameters;
   }
 

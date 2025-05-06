@@ -31,10 +31,12 @@ using namespace taihe;
 using namespace ohos::security::cert::cert;
 namespace cryptoFramework = ohos::security::cryptoFramework::cryptoFramework;
 
+int ConvertResultCode(CfResult res);
+
 #define ANI_LOGE_THROW(code, msg) \
     do { \
         LOGE(msg); \
-        set_business_error(code, msg); \
+        set_business_error(ConvertResultCode(code), msg); \
     } while (0)
 } // namespace ANI::CertFramework
 

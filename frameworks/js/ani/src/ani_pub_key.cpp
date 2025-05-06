@@ -55,13 +55,13 @@ cryptoFramework::DataBlob PubKeyImpl::GetEncoded()
 {
     if (this->pubKey_ == nullptr) {
         ANI_LOGE_THROW(CF_INVALID_PARAMS, "pubKey obj is nullptr!");
-        return { array<uint8_t>(nullptr, 0) };
+        return {};
     }
     HcfBlob outBlob = { .data = nullptr, .len = 0 };
     HcfResult res = this->pubKey_->base.getEncoded(&this->pubKey_->base, &outBlob);
     if (res != HCF_SUCCESS) {
-        ANI_LOGE_THROW(res, "getEncoded failed.");
-        return { array<uint8_t>(nullptr, 0) };
+        ANI_LOGE_THROW(static_cast<CfResult>(res), "getEncoded failed.");
+        return {};
     }
     array<uint8_t> data(move_data_t{}, outBlob.data, outBlob.len);
     HcfBlobDataClearAndFree(&outBlob);

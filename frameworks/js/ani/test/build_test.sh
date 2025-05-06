@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+set -e
+
 CURRENT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_PATH="$(cd "${CURRENT_DIR}/../../../../../../.." && pwd)"
 BASE_PATH="${ROOT_PATH}/base/security/certificate_framework"
