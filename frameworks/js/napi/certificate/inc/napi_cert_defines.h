@@ -122,11 +122,11 @@ const std::string CERT_CHAIN_VALIDATE_TAG_POLICY = "policy";
 const std::string CERT_CHAIN_VALIDATE_TAG_SSLHOSTNAME = "sslHostname";
 const std::string CERT_CHAIN_VALIDATE_TAG_KEYUSAGE = "keyUsage";
 // CertChainValidateResult
-const std::string CERT_CHAIN_VALIDATE_RESULLT_TAG_TRUSTANCHOR = "trustAnchor";
-const std::string CERT_CHAIN_VALIDATE_RESULLT_TAG_X509CERT = "entityCert";
+const std::string CERT_CHAIN_VALIDATE_RESULT_TAG_TRUSTANCHOR = "trustAnchor";
+const std::string CERT_CHAIN_VALIDATE_RESULT_TAG_X509CERT = "entityCert";
 
-const std::string CERT_CHAIN_BUILD_RESULLT_TAG_CERTCHAIN = "certChain";
-const std::string CERT_CHAIN_BUILD_RESULLT_TAG_VALIDATERESULT = "validationResult";
+const std::string CERT_CHAIN_BUILD_RESULT_TAG_CERTCHAIN = "certChain";
+const std::string CERT_CHAIN_BUILD_RESULT_TAG_VALIDATERESULT = "validationResult";
 
 // HcfAttributes
 const std::string CERT_ATTRIBUTE_TYPE = "type";

@@ -228,14 +228,14 @@ static napi_value BuildCreateInstanceByBulidRlt(napi_env env, CfCtx *ctx)
             LOGE("Build cert chain instance failed!");
             return nullptr;
         }
-        napi_set_named_property(env, returnValue, CERT_CHAIN_BUILD_RESULLT_TAG_CERTCHAIN.c_str(), insCertChain);
+        napi_set_named_property(env, returnValue, CERT_CHAIN_BUILD_RESULT_TAG_CERTCHAIN.c_str(), insCertChain);
 
         napi_value insValitateRes = BuildX509CertChainValidateResultJS(env, &(ctx->buildResult->validateResult));
         if (insValitateRes == nullptr) {
             LOGE("Build cert validate result failed!");
             return nullptr;
         }
-        napi_set_named_property(env, returnValue, CERT_CHAIN_BUILD_RESULLT_TAG_VALIDATERESULT.c_str(), insValitateRes);
+        napi_set_named_property(env, returnValue, CERT_CHAIN_BUILD_RESULT_TAG_VALIDATERESULT.c_str(), insValitateRes);
     }
 
     return returnValue;
@@ -594,7 +594,7 @@ static napi_value BuildCreateInstanceByTrustAnchorArray(napi_env env, HcfX509Tru
     int elementIdx = 0;
     for (uint32_t i = 0; i < trustAnchorArray->count; ++i) {
         napi_value element = NapiX509Certificate::CreateX509Cert(env);
-        if (instance == nullptr) {
+        if (element == nullptr) {
             LOGE("Create x509Cert failed!");
             return nullptr;
         }
