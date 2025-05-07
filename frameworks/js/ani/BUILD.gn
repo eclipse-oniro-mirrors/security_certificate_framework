@@ -47,6 +47,7 @@ taihe_shared_library("cert_framework_ani") {
   sources = get_target_outputs(":run_taihe")
   sources += [
     "${framework_path}/js/ani/src/ani_cert_chain_validator.cpp",
+    "${framework_path}/js/ani/src/ani_common.cpp",
     "${framework_path}/js/ani/src/ani_constructor.cpp",
     "${framework_path}/js/ani/src/ani_pub_key.cpp",
     "${framework_path}/js/ani/src/ani_x509_cert.cpp",
