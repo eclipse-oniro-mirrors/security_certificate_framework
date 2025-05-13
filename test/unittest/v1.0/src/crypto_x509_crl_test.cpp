@@ -1736,20 +1736,22 @@ HWTEST_F(CryptoX509CrlTest, HcfCX509CRLEntryCreateInvalid, TestSize.Level0)
     X509_REVOKED *rev = X509_REVOKED_new();
     HcfX509CrlEntry *crlEntryOut = nullptr;
     CfBlob certIssuer;
-    CfResult ret = HcfCX509CRLEntryCreate(rev, &crlEntryOut, &certIssuer);
+    CfBlob certIssuerUtf8;
+    X509_CRL *crl = nullptr;
+    CfResult ret = HcfCX509CRLEntryCreate(rev, &crlEntryOut, &certIssuer, &certIssuerUtf8, crl);
     EXPECT_NE(ret, CF_SUCCESS);
     SetMockFlag(false);
 
-    ret = HcfCX509CRLEntryCreate(nullptr, &crlEntryOut, &certIssuer);
+    ret = HcfCX509CRLEntryCreate(nullptr, &crlEntryOut, &certIssuer, &certIssuerUtf8, crl);
     EXPECT_NE(ret, CF_SUCCESS);
 
-    ret = HcfCX509CRLEntryCreate(rev, nullptr, &certIssuer);
+    ret = HcfCX509CRLEntryCreate(rev, nullptr, &certIssuer, &certIssuerUtf8, crl);
     EXPECT_NE(ret, CF_SUCCESS);
 
-    ret = HcfCX509CRLEntryCreate(rev, &crlEntryOut, nullptr);
+    ret = HcfCX509CRLEntryCreate(rev, &crlEntryOut, nullptr, &certIssuerUtf8, crl);
     EXPECT_NE(ret, CF_SUCCESS);
 
-    ret = HcfCX509CRLEntryCreate(rev, &crlEntryOut, &certIssuer);
+    ret = HcfCX509CRLEntryCreate(rev, &crlEntryOut, &certIssuer, &certIssuerUtf8, crl);
     EXPECT_NE(ret, CF_SUCCESS);
 
     X509_REVOKED_free(rev);

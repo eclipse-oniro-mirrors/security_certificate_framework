@@ -34,17 +34,30 @@ public:
     static napi_value CreateX509DistinguishedName(napi_env env);
 
     napi_value GetName(napi_env env, napi_callback_info info);
+    napi_value GetNameEx(napi_env env, napi_callback_info info, CfEncodinigType encodingType);
     napi_value GetEncoded(napi_env env, napi_callback_info info);
+    void SetX509DistinguishedNameUtf8(HcfX509DistinguishedName *x509NameUtf8_)
+    {
+        this->x509NameUtf8_ = x509NameUtf8_;
+    }
     HcfX509DistinguishedName *GetX509DistinguishedName()
     {
         return x509Name_;
+    }
+    HcfX509DistinguishedName *GetX509DistinguishedNameUtf8()
+    {
+        return x509NameUtf8_;
     }
 
     static thread_local napi_ref classRef_;
 
 private:
     HcfX509DistinguishedName *x509Name_ = nullptr;
+    HcfX509DistinguishedName *x509NameUtf8_ = nullptr;
 };
+
+napi_value ConstructX509DistinguishedName(HcfX509DistinguishedName *x509Name,
+    HcfX509DistinguishedName *x509NameUtf8, napi_env env);
 } // namespace CertFramework
 } // namespace OHOS
 

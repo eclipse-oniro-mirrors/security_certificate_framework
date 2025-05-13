@@ -34,12 +34,6 @@
 #include "certificate_openssl_common.h"
 
 #define X509_CERT_PUBLIC_KEY_OPENSSL_CLASS "X509CertPublicKeyOpensslClass"
-#define OID_STR_MAX_LEN 128
-#define CHAR_TO_BIT_LEN 8
-#define MAX_DATE_STR_LEN 128
-#define FLAG_BIT_LEFT_NUM 0x07
-#define DATETIME_LEN 15
-#define MIN_PATH_LEN_CONSTRAINT (-2)
 
 typedef struct {
     HcfPubKey base;
@@ -660,6 +654,84 @@ static CfResult GetIssuerDNX509Openssl(HcfX509CertificateSpi *self, CfBlob *out)
     return res;
 }
 
+static CfResult GetIssuerDNX509OpensslDer(HcfX509CertificateSpi *self, CfBlob *out)
+{
+    if ((self == NULL) || (out == NULL)) {
+        LOGE("[Get issuerDN openssl der] The input data is null!");
+        return CF_ERR_INTERNAL;
+    }
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
+        LOGE("Input wrong class type!");
+        return CF_ERR_INTERNAL;
+    }
+    HcfOpensslX509Cert *realCert = (HcfOpensslX509Cert *)self;
+    X509 *x509 = realCert->x509;
+
+    X509_NAME *issuerName = X509_get_issuer_name(x509);
+    if (issuerName == NULL) {
+        LOGE("Failed to get x509 issuerName in openssl!");
+        CfPrintOpensslError();
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    int32_t size = i2d_X509_NAME(issuerName, &(out->data));
+    if (size <= 0) {
+        LOGE("Failed to get issuerName DER data!");
+        CfPrintOpensslError();
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    out->size = (uint32_t)size;
+    return CF_SUCCESS;
+}
+
+static CfResult GetIssuerDNX509OpensslEx(HcfX509CertificateSpi *self, CfEncodinigType encodingType, CfBlob *out)
+{
+    if ((self == NULL) || (out == NULL)) {
+        LOGE("[Get issuerDN utf8 openssl] The input data is null!");
+        return CF_ERR_INTERNAL;
+    }
+    if (encodingType != CF_ENCODING_UTF8) {
+        LOGE("[Get issuerDN utf8 openssl] encodingType is not utf8!");
+        return CF_ERR_PARAMETER_CHECK;
+    }
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
+        LOGE("Input wrong class type!");
+        return CF_ERR_INTERNAL;
+    }
+    HcfOpensslX509Cert *realCert = (HcfOpensslX509Cert *)self;
+    X509 *x509 = realCert->x509;
+
+    X509_NAME *issuerName = X509_get_issuer_name(x509);
+    if (issuerName == NULL) {
+        LOGE("Failed to get x509 issuerName in openssl!");
+        CfPrintOpensslError();
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    BIO *bio = BIO_new(BIO_s_mem());
+    if (bio == NULL) {
+        LOGE("BIO new fail.");
+        CfPrintOpensslError();
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    CfResult res = CF_SUCCESS;
+    do {
+        int ret = X509_NAME_print_ex(bio, issuerName, 0, XN_FLAG_SEP_COMMA_PLUS | ASN1_STRFLGS_UTF8_CONVERT);
+        if (ret <= 0) {
+            LOGE("Failed to X509_NAME_print_ex in openssl!");
+            CfPrintOpensslError();
+            res = CF_ERR_CRYPTO_OPERATION;
+            break;
+        }
+        res = CopyMemFromBIO(bio, out);
+        if (res != CF_SUCCESS) {
+            LOGE("CopyMemFromBIO failed!");
+            break;
+        }
+    } while (0);
+    BIO_free(bio);
+    return res;
+}
+
 static CfResult GetSubjectDNX509Openssl(HcfX509CertificateSpi *self, CfBlob *out)
 {
     if ((self == NULL) || (out == NULL)) {
@@ -701,30 +773,33 @@ static CfResult GetSubjectDNX509Openssl(HcfX509CertificateSpi *self, CfBlob *out
     return res;
 }
 
-static CfResult CopyMemFromBIO(BIO *bio, CfBlob *outBlob)
+static CfResult GetSubjectDNX509OpensslDer(HcfX509CertificateSpi *self, CfBlob *out)
 {
-    if (bio == NULL || outBlob == NULL) {
-        LOGE("Invalid input.");
-        return CF_INVALID_PARAMS;
+    if ((self == NULL) || (out == NULL)) {
+        LOGE("[Get subjectDN openssl]The input data is null!");
+        return CF_ERR_INTERNAL;
     }
-    int len = BIO_pending(bio);
-    if (len <= 0) {
-        LOGE("Bio len less than or equal to 0.");
-        return CF_INVALID_PARAMS;
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
+        LOGE("Input wrong class type!");
+        return CF_ERR_INTERNAL;
     }
-    uint8_t *buff = (uint8_t *)CfMalloc(len, 0);
-    if (buff == NULL) {
-        LOGE("Malloc mem for buff fail.");
-        return CF_ERR_MALLOC;
-    }
-    if (BIO_read(bio, buff, len) <= 0) {
-        LOGE("Bio read fail.");
+    HcfOpensslX509Cert *realCert = (HcfOpensslX509Cert *)self;
+    X509 *x509 = realCert->x509;
+
+    X509_NAME *subjectName = X509_get_subject_name(x509);
+    if (subjectName == NULL) {
+        LOGE("Failed to get x509 subjectName in openssl!");
         CfPrintOpensslError();
-        CfFree(buff);
         return CF_ERR_CRYPTO_OPERATION;
     }
-    outBlob->size = len;
-    outBlob->data = buff;
+
+    int32_t size = i2d_X509_NAME(subjectName, &(out->data));
+    if (size <= 0) {
+        LOGE("Failed to get subject DER data!");
+        CfPrintOpensslError();
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    out->size = (uint32_t)size;
     return CF_SUCCESS;
 }
 
@@ -975,24 +1050,6 @@ static CfResult GetSigAlgParamsX509Openssl(HcfX509CertificateSpi *self, CfBlob *
     return res;
 }
 
-static CfResult ConvertAsn1String2BoolArray(const ASN1_BIT_STRING *string, CfBlob *boolArr)
-{
-    uint32_t length = ASN1_STRING_length(string) * CHAR_TO_BIT_LEN;
-    if ((uint32_t)(string->flags) & ASN1_STRING_FLAG_BITS_LEFT) {
-        length -= (uint32_t)(string->flags) & FLAG_BIT_LEFT_NUM;
-    }
-    boolArr->data = (uint8_t *)CfMalloc(length, 0);
-    if (boolArr->data == NULL) {
-        LOGE("Failed to malloc for bit array data!");
-        return CF_ERR_MALLOC;
-    }
-    for (uint32_t i = 0; i < length; i++) {
-        boolArr->data[i] = ASN1_BIT_STRING_get_bit(string, i);
-    }
-    boolArr->size = length;
-    return CF_SUCCESS;
-}
-
 static CfResult GetKeyUsageX509Openssl(HcfX509CertificateSpi *self, CfBlob *boolArr)
 {
     if ((self == NULL) || (boolArr == NULL)) {
@@ -1015,30 +1072,9 @@ static CfResult GetKeyUsageX509Openssl(HcfX509CertificateSpi *self, CfBlob *bool
         CfPrintOpensslError();
         return CF_ERR_CRYPTO_OPERATION;
     }
-    CfResult res = ConvertAsn1String2BoolArray(keyUsage, boolArr);
+    CfResult res = CfConvertAsn1String2BoolArray(keyUsage, boolArr);
     ASN1_BIT_STRING_free(keyUsage);
     return res;
-}
-
-static CfResult DeepCopyExtendedKeyUsage(const STACK_OF(ASN1_OBJECT) *extUsage,
-    int32_t i, CfArray *keyUsageOut)
-{
-    char usage[OID_STR_MAX_LEN] = { 0 };
-    int32_t resLen = OBJ_obj2txt(usage, OID_STR_MAX_LEN, sk_ASN1_OBJECT_value(extUsage, i), 1);
-    if ((resLen <= 0) || (resLen >= OID_STR_MAX_LEN)) {
-        LOGE("Failed to convert x509 object to text!");
-        CfPrintOpensslError();
-        return CF_ERR_CRYPTO_OPERATION;
-    }
-    uint32_t len = strlen(usage) + 1;
-    keyUsageOut->data[i].data = (uint8_t *)CfMalloc(len, 0);
-    if (keyUsageOut->data[i].data == NULL) {
-        LOGE("Failed to malloc for key usage!");
-        return CF_ERR_MALLOC;
-    }
-    (void)memcpy_s(keyUsageOut->data[i].data, len, usage, len);
-    keyUsageOut->data[i].size = len;
-    return CF_SUCCESS;
 }
 
 static CfResult GetExtendedKeyUsageX509Openssl(HcfX509CertificateSpi *self, CfArray *keyUsageOut)
@@ -1076,7 +1112,7 @@ static CfResult GetExtendedKeyUsageX509Openssl(HcfX509CertificateSpi *self, CfAr
         }
         keyUsageOut->count = (uint32_t)size;
         for (int32_t i = 0; i < size; ++i) {
-            res = DeepCopyExtendedKeyUsage(extUsage, i, keyUsageOut);
+            res = CfDeepCopyExtendedKeyUsage(extUsage, i, keyUsageOut);
             if (res != CF_SUCCESS) {
                 LOGE("Falied to copy extended key usage!");
                 break;
@@ -1132,28 +1168,6 @@ static int32_t GetBasicConstraintsX509Openssl(HcfX509CertificateSpi *self)
     return (int32_t)pathLen;
 }
 
-static CfResult DeepCopyAlternativeNames(const STACK_OF(GENERAL_NAME) *altNames, int32_t i, CfArray *outName)
-{
-    GENERAL_NAME *general = sk_GENERAL_NAME_value(altNames, i);
-    int32_t generalType = 0;
-    ASN1_STRING *ans1Str = GENERAL_NAME_get0_value(general, &generalType);
-    const char *str = (const char *)ASN1_STRING_get0_data(ans1Str);
-    if ((str == NULL) || (strlen(str) > HCF_MAX_STR_LEN)) {
-        LOGE("Failed to get x509 altNames string in openssl!");
-        CfPrintOpensslError();
-        return CF_ERR_CRYPTO_OPERATION;
-    }
-    uint32_t nameLen = strlen(str) + 1;
-    outName->data[i].data = (uint8_t *)CfMalloc(nameLen, 0);
-    if (outName->data[i].data == NULL) {
-        LOGE("Failed to malloc for outName!");
-        return CF_ERR_MALLOC;
-    }
-    (void)memcpy_s(outName->data[i].data, nameLen, str, nameLen);
-    outName->data[i].size = nameLen;
-    return CF_SUCCESS;
-}
-
 static CfResult GetSubjectAltNamesX509Openssl(HcfX509CertificateSpi *self, CfArray *outName)
 {
     if ((self == NULL) || (outName == NULL)) {
@@ -1190,7 +1204,7 @@ static CfResult GetSubjectAltNamesX509Openssl(HcfX509CertificateSpi *self, CfArr
         }
         outName->count = (uint32_t)size;
         for (int32_t i = 0; i < size; ++i) {
-            res = DeepCopyAlternativeNames(subjectAltName, i, outName);
+            res = CfDeepCopyAlternativeNames(subjectAltName, i, outName);
             if (res != CF_SUCCESS) {
                 LOGE("Falied to copy subjectAltName!");
                 break;
@@ -1240,7 +1254,7 @@ static CfResult GetIssuerAltNamesX509Openssl(HcfX509CertificateSpi *self, CfArra
         }
         outName->count = (uint32_t)size;
         for (int32_t i = 0; i < size; ++i) {
-            res = DeepCopyAlternativeNames(issuerAltName, i, outName);
+            res = CfDeepCopyAlternativeNames(issuerAltName, i, outName);
             if (res != CF_SUCCESS) {
                 LOGE("Falied to copy issuerAltName!");
                 break;
@@ -1285,6 +1299,44 @@ static CfResult ToStringX509Openssl(HcfX509CertificateSpi *self, CfBlob *out)
 
     BIO_free(bio);
     LOGE("BIO_get_mem_ptr error");
+    return CF_ERR_CRYPTO_OPERATION;
+}
+
+static CfResult ToStringX509OpensslEx(HcfX509CertificateSpi *self, CfEncodinigType encodingType, CfBlob *out)
+{
+    if ((self == NULL) || (out == NULL)) {
+        LOGE("The input data is null!");
+        return CF_ERR_INTERNAL;
+    }
+    if (encodingType != CF_ENCODING_UTF8) {
+        LOGE("encodingType is not utf8!");
+        return CF_ERR_PARAMETER_CHECK;
+    }
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CertClass())) {
+        LOGE("Input wrong class type!");
+        return CF_ERR_INTERNAL;
+    }
+    HcfOpensslX509Cert *realCert = (HcfOpensslX509Cert *)self;
+    BIO *bio = BIO_new(BIO_s_mem());
+    if (bio == NULL) {
+        LOGE("BIO_new error");
+        return CF_ERR_MALLOC;
+    }
+    int ret = X509_print_ex(bio, realCert->x509, XN_FLAG_SEP_CPLUS_SPC | ASN1_STRFLGS_UTF8_CONVERT, 0);
+    if (ret <= 0) {
+        LOGE("Failed to X509_print_ex in openssl!");
+        CfPrintOpensslError();
+        BIO_free(bio);
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    BUF_MEM *bufMem = NULL;
+    if (BIO_get_mem_ptr(bio, &bufMem) > 0 && bufMem != NULL) {
+        CfResult res = DeepCopyDataToOut(bufMem->data, bufMem->length, out);
+        BIO_free(bio);
+        return res;
+    }
+    BIO_free(bio);
     return CF_ERR_CRYPTO_OPERATION;
 }
 
@@ -1434,31 +1486,6 @@ static CfResult MatchPart2(HcfX509CertificateSpi *self, const HcfX509CertMatchPa
     return CF_SUCCESS;
 }
 
-static CfResult DeepCopySubAltName(
-    const STACK_OF(GENERAL_NAME) * altname, int32_t i, const SubAltNameArray *subAltNameArrayOut)
-{
-    GENERAL_NAME *generalName = sk_GENERAL_NAME_value(altname, i);
-    unsigned char *derData = NULL;
-    int derLength = i2d_GENERAL_NAME(generalName, &derData);
-    if (derLength <= 0 || derData == NULL) {
-        LOGE("Get generalName failed!");
-        return CF_ERR_CRYPTO_OPERATION;
-    }
-
-    SubjectAlternaiveNameData *subAltNameData = &(subAltNameArrayOut->data[i]);
-    subAltNameData->name.data = CfMalloc(derLength, 0);
-    if (subAltNameData->name.data == NULL) {
-        LOGE("Failed to malloc for sub alt name data!");
-        OPENSSL_free(derData);
-        return CF_ERR_MALLOC;
-    }
-    (void)memcpy_s(subAltNameData->name.data, derLength, derData, derLength);
-    subAltNameData->name.size = (uint32_t)derLength;
-    subAltNameData->type = generalName->type;
-    OPENSSL_free(derData);
-    return CF_SUCCESS;
-}
-
 static bool IsMatch(SubjectAlternaiveNameData *subAltName, SubAltNameArray *subArraySelf)
 {
     if (subAltName == NULL || subArraySelf == NULL) {
@@ -1535,55 +1562,6 @@ static bool DetailForMinPathLenConstraint(X509 *x509, int minPathLenConstraint)
     }
 }
 
-static bool CompareGN2Blob(const GENERAL_NAME *gen, CfBlob *nc)
-{
-    unsigned char *bytes = NULL;
-    unsigned char *point = NULL;
-    int32_t len = 0;
-    bool ret = false;
-    switch (gen->type) {
-        case GEN_X400:
-            len = sizeof(uint8_t) * (gen->d.x400Address->length);
-            bytes = (unsigned char *)gen->d.x400Address->data;
-            break;
-        case GEN_EDIPARTY:
-            len = i2d_EDIPARTYNAME(gen->d.ediPartyName, &bytes);
-            point = bytes;
-            break;
-        case GEN_OTHERNAME:
-            len = i2d_OTHERNAME(gen->d.otherName, &bytes);
-            point = bytes;
-            break;
-        case GEN_EMAIL:
-        case GEN_DNS:
-        case GEN_URI:
-            len = i2d_ASN1_IA5STRING(gen->d.ia5, &bytes);
-            point = bytes;
-            break;
-        case GEN_DIRNAME:
-            len = i2d_X509_NAME(gen->d.dirn, &bytes);
-            point = bytes;
-            break;
-        case GEN_IPADD:
-            len = i2d_ASN1_OCTET_STRING(gen->d.ip, &bytes);
-            point = bytes;
-            break;
-        case GEN_RID:
-            len = i2d_ASN1_OBJECT(gen->d.rid, &bytes);
-            point = bytes;
-            break;
-        default:
-            LOGE("Unknown type.");
-            break;
-    }
-    ret = (len == (int32_t)(nc->size)) && (strncmp((const char *)bytes, (const char *)nc->data, len) == 0);
-    if (point != NULL) {
-        OPENSSL_free(point);
-    }
-
-    return ret;
-}
-
 static CfResult CompareSubAltNameX509Openssl(
     HcfX509CertificateSpi *self, const SubAltNameArray *subAltNameArray, const bool matchAllSubAltNames, bool *out)
 {
@@ -1622,7 +1600,7 @@ static CfResult CompareSubAltNameX509Openssl(
         }
         subAltNameArrayOut.count = (uint32_t)size;
         for (int32_t i = 0; i < size; ++i) {
-            res = DeepCopySubAltName(altname, i, &subAltNameArrayOut);
+            res = CfDeepCopySubAltName(altname, i, &subAltNameArrayOut);
             if (res != CF_SUCCESS) {
                 LOGE("Falied to copy subject alternative Name!");
                 break;
@@ -1690,7 +1668,7 @@ static CfResult CompareNameConstraintsX509Openssl(HcfX509CertificateSpi *self, C
     for (i = 0; i < sk_GENERAL_SUBTREE_num(nc->permittedSubtrees); i++) {
         GENERAL_SUBTREE *tree = NULL;
         tree = sk_GENERAL_SUBTREE_value(nc->permittedSubtrees, i);
-        if (tree != NULL && CompareGN2Blob(tree->base, nameConstraints)) {
+        if (tree != NULL && CfCompareGN2Blob(tree->base, nameConstraints)) {
             NAME_CONSTRAINTS_free(nc);
             return CF_SUCCESS;
         }
@@ -1698,35 +1676,13 @@ static CfResult CompareNameConstraintsX509Openssl(HcfX509CertificateSpi *self, C
     for (i = 0; i < sk_GENERAL_SUBTREE_num(nc->excludedSubtrees); i++) {
         GENERAL_SUBTREE *tree = NULL;
         tree = sk_GENERAL_SUBTREE_value(nc->excludedSubtrees, i);
-        if (tree != NULL && CompareGN2Blob(tree->base, nameConstraints) == true) {
+        if (tree != NULL && CfCompareGN2Blob(tree->base, nameConstraints) == true) {
             NAME_CONSTRAINTS_free(nc);
             return CF_SUCCESS;
         }
     }
     *out = false;
     NAME_CONSTRAINTS_free(nc);
-    return CF_SUCCESS;
-}
-
-static CfResult DeepCopyCertPolices(const CERTIFICATEPOLICIES *certPolicesIn, int32_t i, CfArray *certPolices)
-{
-    POLICYINFO *policy = sk_POLICYINFO_value(certPolicesIn, i);
-    ASN1_OBJECT *policyOid = policy->policyid;
-    char policyBuff[OID_STR_MAX_LEN] = { 0 };
-    int32_t resLen = OBJ_obj2txt(policyBuff, OID_STR_MAX_LEN, policyOid, 1);
-    if ((resLen <= 0) || (resLen >= OID_STR_MAX_LEN)) {
-        LOGE("Failed to convert x509 object to text!");
-        CfPrintOpensslError();
-        return CF_ERR_CRYPTO_OPERATION;
-    }
-    uint32_t len = strlen(policyBuff) + 1;
-    certPolices->data[i].data = (uint8_t *)CfMalloc(len, 0);
-    if (certPolices->data[i].data == NULL) {
-        LOGE("Failed to malloc for cert policies!");
-        return CF_ERR_MALLOC;
-    }
-    (void)memcpy_s(certPolices->data[i].data, len, policyBuff, len);
-    certPolices->data[i].size = len;
     return CF_SUCCESS;
 }
 
@@ -1767,7 +1723,7 @@ static CfResult CompareCertPolicesX509Openssl(HcfX509CertificateSpi *self, CfArr
         }
         certPolicesOut.count = (uint32_t)size;
         for (int32_t i = 0; i < size; ++i) {
-            res = DeepCopyCertPolices(extCpols, i, &certPolicesOut);
+            res = CfDeepCopyCertPolices(extCpols, i, &certPolicesOut);
             if (res != CF_SUCCESS) {
                 LOGE("Falied to copy cert polices!");
                 break;
@@ -1912,147 +1868,6 @@ static CfResult MatchX509Openssl(HcfX509CertificateSpi *self, const HcfX509CertM
     return CF_SUCCESS;
 }
 
-static CfResult DeepCopyURIs(ASN1_STRING *uri, uint32_t index, CfArray *outURI)
-{
-    if (index >= outURI->count) { /* exceed the maximum memory capacity. */
-        LOGE("exceed the maximum memory capacity, uriCount = %{public}u, malloc count = %{public}u",
-            index, outURI->count);
-        return CF_ERR_CRYPTO_OPERATION;
-    }
-
-    const char *str = (const char *)ASN1_STRING_get0_data(uri);
-    if ((str == NULL) || (strlen(str) > HCF_MAX_STR_LEN)) {
-        LOGE("Failed to get CRL DP URI string in openssl!");
-        return CF_ERR_CRYPTO_OPERATION;
-    }
-
-    uint32_t uriLen = strlen(str) + 1;
-    outURI->data[index].data = (uint8_t *)CfMalloc(uriLen, 0);
-    if (outURI->data[index].data == NULL) {
-        LOGE("Failed to malloc for outURI[%{public}u]!", index);
-        return CF_ERR_MALLOC;
-    }
-    (void)memcpy_s(outURI->data[index].data, uriLen, str, uriLen);
-    outURI->data[index].size = uriLen;
-    return CF_SUCCESS;
-}
-
-static CfResult GetDpURIFromGenName(GENERAL_NAME *genName, bool isFormatOutURI, uint32_t *uriCount, CfArray *outURI)
-{
-    int type = 0;
-    ASN1_STRING *uri = GENERAL_NAME_get0_value(genName, &type);
-    if (uri == NULL) {
-        LOGE("get uri asn1 string failed");
-        return CF_ERR_CRYPTO_OPERATION;
-    }
-
-    if (type != GEN_URI) {
-        LOGI("not URI type, type is %{public}d", type);
-        return CF_SUCCESS;
-    }
-
-    if (isFormatOutURI) {
-        CfResult ret = DeepCopyURIs(uri, *uriCount, outURI);
-        if (ret != CF_SUCCESS) {
-            LOGE("copy URI[%{public}u] failed", *uriCount);
-            return ret;
-        }
-    }
-    *uriCount += 1;
-    return CF_SUCCESS;
-}
-
-static CfResult GetDpURIFromGenNames(GENERAL_NAMES *genNames, bool isFormatOutURI, uint32_t *uriCount,
-    CfArray *outURI)
-{
-    CfResult ret = CF_SUCCESS;
-    int genNameNum = sk_GENERAL_NAME_num(genNames);
-    for (int i = 0; i < genNameNum; ++i) {
-        GENERAL_NAME *genName = sk_GENERAL_NAME_value(genNames, i);
-        if (genName == NULL) {
-            LOGE("get gen name failed!");
-            ret = CF_ERR_CRYPTO_OPERATION;
-            break;
-        }
-
-        ret = GetDpURIFromGenName(genName, isFormatOutURI, uriCount, outURI);
-        if (ret != CF_SUCCESS) {
-            LOGE("get gen name failed!");
-            break;
-        }
-    }
-    return ret;
-}
-
-static CfResult GetDpURI(STACK_OF(DIST_POINT) *crlDp, int32_t dpNumber, bool isFormatOutURI,
-    uint32_t *uriCount, CfArray *outURI)
-{
-    CfResult ret = CF_SUCCESS;
-    for (int i = 0; i < dpNumber; ++i) {
-        DIST_POINT *dp = sk_DIST_POINT_value(crlDp, i);
-        if (dp == NULL) {
-            LOGE("get distribution point failed!");
-            ret = CF_ERR_CRYPTO_OPERATION;
-            break;
-        }
-
-        if (dp->distpoint == NULL || dp->distpoint->type != 0) {
-            LOGI("not fullnames, continue!");
-            continue;
-        }
-
-        ret = GetDpURIFromGenNames(dp->distpoint->name.fullname, isFormatOutURI, uriCount, outURI);
-        if (ret != CF_SUCCESS) {
-            LOGE("get dp uri from general names failed");
-            break;
-        }
-    }
-    if (ret == CF_SUCCESS && isFormatOutURI) {
-        outURI->count = *uriCount;
-    }
-    return ret;
-}
-
-static CfResult GetCRLDpURI(STACK_OF(DIST_POINT) *crlDp, CfArray *outURI)
-{
-    /* 1. get CRL distribution point URI count */
-    int32_t dpNumber = sk_DIST_POINT_num(crlDp);
-    uint32_t uriCount = 0;
-    CfResult ret = GetDpURI(crlDp, dpNumber, false, &uriCount, outURI);
-    if (ret != CF_SUCCESS) {
-        LOGE("get dp URI count failed, ret = %{public}d", ret);
-        return ret;
-    }
-    if (uriCount == 0) {
-        LOGE("CRL DP URI not exist");
-        return CF_NOT_EXIST;
-    }
-    if (uriCount > CF_MAX_URI_COUNT) {
-        LOGE("uriCount[%{public}u] exceed max count", uriCount);
-        return CF_ERR_CRYPTO_OPERATION;
-    }
-
-    /* 2. malloc outArray buffer */
-    int32_t blobSize = (int32_t)(sizeof(CfBlob) * uriCount);
-    outURI->data = (CfBlob *)CfMalloc(blobSize, 0);
-    if (outURI->data == NULL) {
-        LOGE("Failed to malloc for outURI array!");
-        return CF_ERR_MALLOC;
-    }
-    outURI->count = uriCount;
-
-    /* 2. copy CRL distribution point URIs */
-    uriCount = 0;
-    ret = GetDpURI(crlDp, dpNumber, true, &uriCount, outURI);
-    if (ret != CF_SUCCESS) {
-        LOGE("get dp URI format failed, ret = %{public}d", ret);
-        CfArrayDataClearAndFree(outURI);
-        return ret;
-    }
-
-    return ret;
-}
-
 static CfResult GetCRLDistributionPointsURIX509Openssl(HcfX509CertificateSpi *self, CfArray *outURI)
 {
     if ((self == NULL) || (outURI == NULL)) {
@@ -2074,7 +1889,7 @@ static CfResult GetCRLDistributionPointsURIX509Openssl(HcfX509CertificateSpi *se
         return CF_NOT_EXIST;
     }
 
-    CfResult ret = GetCRLDpURI(crlDp, outURI);
+    CfResult ret = CfGetCRLDpURI(crlDp, outURI);
     sk_DIST_POINT_pop_free(crlDp, DIST_POINT_free);
     return ret;
 }
@@ -2158,7 +1973,10 @@ CfResult OpensslX509CertSpiCreate(const CfEncodingBlob *inStream, HcfX509Certifi
     realCert->base.engineGetVersion = GetVersionX509Openssl;
     realCert->base.engineGetSerialNumber = GetSerialNumberX509Openssl;
     realCert->base.engineGetIssuerName = GetIssuerDNX509Openssl;
+    realCert->base.engineGetIssuerNameDer = GetIssuerDNX509OpensslDer;
+    realCert->base.engineGetIssuerNameEx = GetIssuerDNX509OpensslEx;
     realCert->base.engineGetSubjectName = GetSubjectDNX509Openssl;
+    realCert->base.engineGetSubjectNameDer = GetSubjectDNX509OpensslDer;
     realCert->base.engineGetSubjectNameEx = GetSubjectDNX509OpensslEx;
     realCert->base.engineGetNotBeforeTime = GetNotBeforeX509Openssl;
     realCert->base.engineGetNotAfterTime = GetNotAfterX509Openssl;
@@ -2174,6 +1992,7 @@ CfResult OpensslX509CertSpiCreate(const CfEncodingBlob *inStream, HcfX509Certifi
     realCert->base.engineGetCRLDistributionPointsURI = GetCRLDistributionPointsURIX509Openssl;
     realCert->base.engineMatch = MatchX509Openssl;
     realCert->base.engineToString = ToStringX509Openssl;
+    realCert->base.engineToStringEx = ToStringX509OpensslEx;
     realCert->base.engineHashCode = HashCodeX509Openssl;
     realCert->base.engineGetExtensionsObject = GetExtensionsObjectX509Openssl;
 

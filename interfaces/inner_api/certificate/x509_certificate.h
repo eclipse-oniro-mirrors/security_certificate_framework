@@ -49,8 +49,14 @@ struct HcfX509Certificate {
     /** Get issuer distinguished name from certificate. */
     CfResult (*getIssuerName)(HcfX509Certificate *self, CfBlob *out);
 
+    /** Get issuer distinguished name Der Format from certificate. */
+    CfResult (*getIssuerNameDer)(HcfX509Certificate *self, CfBlob *out);
+
     /** Get subject distinguished name from certificate. */
     CfResult (*getSubjectName)(HcfX509Certificate *self, CfBlob *out);
+
+    /** Get subject distinguished name from certificate. */
+    CfResult (*getSubjectNameDer)(HcfX509Certificate *self, CfBlob *out);
 
     /** Get the not before time within the validity period of the certificate.
      * time format： YYMMDDHHMMSSZ or YYYYMMDDHHMMSSZ
@@ -110,6 +116,12 @@ struct HcfX509Certificate {
 
     /** Get subject distinguished name utf8 type from certificate. */
     CfResult (*getSubjectNameEx)(HcfX509Certificate *self, CfEncodinigType encodingType, CfBlob *out);
+
+    /** Get issuer distinguished name utf8 type from certificate. */
+    CfResult (*getIssuerNameEx)(HcfX509Certificate *self, CfEncodinigType encodingType, CfBlob *out);
+
+    /** Get the string utf8 type of ceritificate. */
+    CfResult (*toStringEx)(HcfX509Certificate *self, CfEncodinigType encodingType, CfBlob *out);
 };
 
 typedef struct HcfX509CertificateArray HcfX509CertificateArray;

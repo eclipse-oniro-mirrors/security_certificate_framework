@@ -168,6 +168,38 @@ static CfResult GetIssuerName(HcfX509Crl *self, CfBlob *out)
         ((HcfX509CrlImpl *)self)->spiObj, out);
 }
 
+static CfResult GetIssuerNameDer(HcfX509Crl *self, CfBlob *out)
+{
+    if ((self == NULL) || (out == NULL)) {
+        LOGE("Invalid input parameter.");
+        return CF_ERR_INTERNAL;
+    }
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
+        LOGE("Class is not match.");
+        return CF_ERR_INTERNAL;
+    }
+    return ((HcfX509CrlImpl *)self)->spiObj->engineGetIssuerNameDer(
+        ((HcfX509CrlImpl *)self)->spiObj, out);
+}
+
+static CfResult GetIssuerNameEx(HcfX509Crl *self, CfEncodinigType encodingType, CfBlob *out)
+{
+    if ((self == NULL) || (out == NULL)) {
+        LOGE("Invalid input parameter.");
+        return CF_ERR_INTERNAL;
+    }
+    if (encodingType != CF_ENCODING_UTF8) {
+        LOGE("encodingType is not utf8.");
+        return CF_ERR_PARAMETER_CHECK;
+    }
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
+        LOGE("Class is not match.");
+        return CF_ERR_INTERNAL;
+    }
+    return ((HcfX509CrlImpl *)self)->spiObj->engineGetIssuerNameEx(
+        ((HcfX509CrlImpl *)self)->spiObj, encodingType, out);
+}
+
 static CfResult GetLastUpdate(HcfX509Crl *self, CfBlob *out)
 {
     if ((self == NULL) || (out == NULL)) {
@@ -336,6 +368,24 @@ static CfResult ToString(HcfX509Crl *self, CfBlob *out)
         ((HcfX509CrlImpl *)self)->spiObj, out);
 }
 
+static CfResult ToStringEx(HcfX509Crl *self, CfEncodinigType encodingType, CfBlob *out)
+{
+    if ((self == NULL) || (out == NULL)) {
+        LOGE("Invalid input parameter.");
+        return CF_ERR_INTERNAL;
+    }
+    if (encodingType != CF_ENCODING_UTF8) {
+        LOGE("encodingType is not utf8.");
+        return CF_ERR_PARAMETER_CHECK;
+    }
+    if (!CfIsClassMatch((CfObjectBase *)self, GetX509CrlClass())) {
+        LOGE("Class is not match.");
+        return CF_ERR_INTERNAL;
+    }
+    return ((HcfX509CrlImpl *)self)->spiObj->engineToStringEx(
+        ((HcfX509CrlImpl *)self)->spiObj, encodingType, out);
+}
+
 static CfResult HashCode(HcfX509Crl *self, CfBlob *out)
 {
     if ((self == NULL) || (out == NULL)) {
@@ -381,7 +431,6 @@ static CfResult Match(HcfX509Crl *self, const HcfX509CrlMatchParams *matchParams
 CfResult HcfX509CrlCreate(const CfEncodingBlob *inStream, HcfX509Crl **returnObj)
 {
     if ((inStream == NULL) || (inStream->data == NULL) || (inStream->len > HCF_MAX_BUFFER_LEN) || (returnObj == NULL)) {
-        LOGE("FuncSet is null!");
         return CF_INVALID_PARAMS;
     }
     const HcfX509CrlFuncSet *funcSet = FindAbility("X509");
@@ -408,6 +457,8 @@ CfResult HcfX509CrlCreate(const CfEncodingBlob *inStream, HcfX509Crl **returnObj
     x509CertImpl->base.getEncoded = GetEncoded;
     x509CertImpl->base.getVersion = GetVersion;
     x509CertImpl->base.getIssuerName = GetIssuerName;
+    x509CertImpl->base.getIssuerNameEx = GetIssuerNameEx;
+    x509CertImpl->base.getIssuerNameDer = GetIssuerNameDer;
     x509CertImpl->base.getLastUpdate = GetLastUpdate;
     x509CertImpl->base.getNextUpdate = GetNextUpdate;
     x509CertImpl->base.getRevokedCert = GetRevokedCert;
@@ -420,6 +471,7 @@ CfResult HcfX509CrlCreate(const CfEncodingBlob *inStream, HcfX509Crl **returnObj
     x509CertImpl->base.getSignatureAlgParams = GetSignatureAlgParams;
     x509CertImpl->base.getExtensions = GetExtensions;
     x509CertImpl->base.toString = ToString;
+    x509CertImpl->base.toStringEx = ToStringEx;
     x509CertImpl->base.hashCode = HashCode;
     x509CertImpl->base.getExtensionsObject = GetExtensionsOjbect;
     x509CertImpl->base.match = Match;

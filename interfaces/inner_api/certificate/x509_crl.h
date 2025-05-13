@@ -41,6 +41,9 @@ struct HcfX509Crl {
     /** Get the issuer name from CRL. Issuer means the entity that signs and publishes the CRL. */
     CfResult (*getIssuerName)(HcfX509Crl *self, CfBlob *out);
 
+    /** Get the issuer name Der from CRL. Issuer means the entity that signs and publishes the CRL. */
+    CfResult (*getIssuerNameDer)(HcfX509Crl *self, CfBlob *out);
+
     /** Get lastUpdate value from CRL. */
     CfResult (*getLastUpdate)(HcfX509Crl *self, CfBlob *out);
 
@@ -86,6 +89,12 @@ struct HcfX509Crl {
 
     /** Get the Entension Object of crl. */
     CfResult (*getExtensionsObject)(HcfX509Crl *self, CfBlob *out);
+
+    /** Get the issuer name utf8 type from CRL. Issuer means the entity that signs and publishes the CRL. */
+    CfResult (*getIssuerNameEx)(HcfX509Crl *self, CfEncodinigType encodingType, CfBlob *out);
+
+    /** Get the string utf8 type of crl. */
+    CfResult (*toStringEx)(HcfX509Crl *self, CfEncodinigType encodingType, CfBlob *out);
 };
 
 typedef struct HcfX509CrlArray HcfX509CrlArray;
