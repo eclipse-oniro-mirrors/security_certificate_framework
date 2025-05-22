@@ -26,7 +26,7 @@ PubKeyImpl::~PubKeyImpl()
     pubKey_ = nullptr;
 }
 
-cryptoFramework::OptKeySpec PubKeyImpl::GetAsyKeySpec(cryptoFramework::AsyKeySpecEnum itemType)
+cryptoFramework::OptKeySpec PubKeyImpl::GetAsyKeySpec(cryptoFramework::AsyKeySpecItem itemType)
 {
     TH_THROW(std::runtime_error, "GetAsyKeySpec not implemented");
 }

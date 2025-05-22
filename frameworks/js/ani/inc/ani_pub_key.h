@@ -27,7 +27,7 @@ public:
     explicit PubKeyImpl(HcfPubKey *pubKey);
     ~PubKeyImpl();
 
-    cryptoFramework::OptKeySpec GetAsyKeySpec(cryptoFramework::AsyKeySpecEnum itemType);
+    cryptoFramework::OptKeySpec GetAsyKeySpec(cryptoFramework::AsyKeySpecItem itemType);
     cryptoFramework::DataBlob GetEncodedDer(string_view format);
     string GetEncodedPem(string_view format);
     int64_t GetKeyObj();
