@@ -384,6 +384,7 @@ static CfResult DeepCopyCertIssuer(HcfX509CRLEntryOpensslImpl *returnCRLEntry, C
     returnCRLEntry->certIssuer->data = (uint8_t *)CfMalloc(certIssuer->size, 0);
     if (returnCRLEntry->certIssuer->data == NULL) {
         LOGE("Failed to malloc certIssuer data!");
+        CfBlobFree(&returnCRLEntry->certIssuer);
         return CF_ERR_MALLOC;
     }
     (void)memcpy_s(returnCRLEntry->certIssuer->data, certIssuer->size, certIssuer->data, certIssuer->size);
@@ -401,6 +402,7 @@ static CfResult DeepCopyCertIssuerUtf8(HcfX509CRLEntryOpensslImpl *returnCRLEntr
     returnCRLEntry->certIssuerUtf8->data = (uint8_t *)CfMalloc(certIssuerUtf8->size, 0);
     if (returnCRLEntry->certIssuerUtf8->data == NULL) {
         LOGE("Failed to malloc certIssuerUtf8 data!");
+        CfBlobFree(&returnCRLEntry->certIssuerUtf8);
         return CF_ERR_MALLOC;
     }
     (void)memcpy_s(returnCRLEntry->certIssuerUtf8->data, certIssuerUtf8->size, certIssuerUtf8->data,

@@ -102,7 +102,8 @@ CfResult DeepCopyDataToBlob(const unsigned char *data, uint32_t len, CfBlob *out
 CfResult DeepCopyBlobToBlob(const CfBlob *inBlob, CfBlob **outBlob)
 {
     if (inBlob == NULL || outBlob == NULL) {
-        return CF_SUCCESS;
+        LOGE("The input params invalid!");
+        return CF_INVALID_PARAMS;
     }
 
     CfBlob *tmp = (CfBlob *)CfMalloc(sizeof(CfBlob), 0);
