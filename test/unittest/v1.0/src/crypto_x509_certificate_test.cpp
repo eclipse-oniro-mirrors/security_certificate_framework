@@ -1170,7 +1170,7 @@ HWTEST_F(CryptoX509CertificateTest, DeepCopyDataToBlobTest001, TestSize.Level0)
 HWTEST_F(CryptoX509CertificateTest, DeepCopyBlobToBlobTest001, TestSize.Level0)
 {
     CfResult ret = DeepCopyBlobToBlob(nullptr, nullptr);
-    EXPECT_EQ(ret, CF_SUCCESS);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
 }
 
 HWTEST_F(CryptoX509CertificateTest, DeepCopyBlobToBlobTest002, TestSize.Level0)
