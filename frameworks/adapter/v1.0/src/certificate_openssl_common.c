@@ -102,7 +102,8 @@ CfResult DeepCopyDataToBlob(const unsigned char *data, uint32_t len, CfBlob *out
 CfResult DeepCopyBlobToBlob(const CfBlob *inBlob, CfBlob **outBlob)
 {
     if (inBlob == NULL || outBlob == NULL) {
-        return CF_SUCCESS;
+        LOGE("The input params invalid!");
+        return CF_INVALID_PARAMS;
     }
 
     CfBlob *tmp = (CfBlob *)CfMalloc(sizeof(CfBlob), 0);
@@ -592,4 +593,357 @@ CfResult GetNameConstraintsFromX509(X509 *cert, CfBlob **name)
     }
     (*name)->size = (uint32_t)size;
     return CF_SUCCESS;
+}
+
+CfResult CopyMemFromBIO(BIO *bio, CfBlob *outBlob)
+{
+    if (bio == NULL || outBlob == NULL) {
+        LOGE("Invalid input.");
+        return CF_ERR_INTERNAL;
+    }
+    int len = BIO_pending(bio);
+    if (len <= 0) {
+        LOGE("Bio len less than or equal to 0.");
+        return CF_ERR_INTERNAL;
+    }
+    uint8_t *buff = (uint8_t *)CfMalloc(len, 0);
+    if (buff == NULL) {
+        LOGE("Malloc mem for buff fail.");
+        return CF_ERR_MALLOC;
+    }
+    if (BIO_read(bio, buff, len) <= 0) {
+        LOGE("Bio read fail.");
+        CfPrintOpensslError();
+        CfFree(buff);
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    outBlob->size = len;
+    outBlob->data = buff;
+    return CF_SUCCESS;
+}
+
+CfResult CfDeepCopyExtendedKeyUsage(const STACK_OF(ASN1_OBJECT) *extUsage,
+    int32_t index, CfArray *keyUsageOut)
+{
+    if (extUsage == NULL || keyUsageOut == NULL) {
+        LOGE("Invalid input.");
+        return CF_ERR_INTERNAL;
+    }
+    char usage[OID_STR_MAX_LEN] = { 0 };
+    int32_t resLen = OBJ_obj2txt(usage, OID_STR_MAX_LEN, sk_ASN1_OBJECT_value(extUsage, index), 1);
+    if ((resLen <= 0) || (resLen >= OID_STR_MAX_LEN)) {
+        LOGE("Failed to convert x509 object to text!");
+        CfPrintOpensslError();
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    uint32_t len = strlen(usage) + 1;
+    keyUsageOut->data[index].data = (uint8_t *)CfMalloc(len, 0);
+    if (keyUsageOut->data[index].data == NULL) {
+        LOGE("Failed to malloc for key usage!");
+        return CF_ERR_MALLOC;
+    }
+    (void)memcpy_s(keyUsageOut->data[index].data, len, usage, len);
+    keyUsageOut->data[index].size = len;
+    return CF_SUCCESS;
+}
+
+CfResult CfDeepCopyAlternativeNames(const STACK_OF(GENERAL_NAME) *altNames, int32_t index, CfArray *outName)
+{
+    if (altNames == NULL || outName == NULL) {
+        LOGE("Invalid input.");
+        return CF_ERR_INTERNAL;
+    }
+    GENERAL_NAME *general = sk_GENERAL_NAME_value(altNames, index);
+    int32_t generalType = 0;
+    ASN1_STRING *ans1Str = GENERAL_NAME_get0_value(general, &generalType);
+    const char *str = (const char *)ASN1_STRING_get0_data(ans1Str);
+    if ((str == NULL) || (strlen(str) > HCF_MAX_STR_LEN)) {
+        LOGE("Failed to get x509 altNames string in openssl!");
+        CfPrintOpensslError();
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    uint32_t nameLen = strlen(str) + 1;
+    outName->data[index].data = (uint8_t *)CfMalloc(nameLen, 0);
+    if (outName->data[index].data == NULL) {
+        LOGE("Failed to malloc for outName!");
+        return CF_ERR_MALLOC;
+    }
+    (void)memcpy_s(outName->data[index].data, nameLen, str, nameLen);
+    outName->data[index].size = nameLen;
+    return CF_SUCCESS;
+}
+
+CfResult CfDeepCopySubAltName(
+    const STACK_OF(GENERAL_NAME) * altname, int32_t index, const SubAltNameArray *subAltNameArrayOut)
+{
+    if (altname == NULL || subAltNameArrayOut == NULL) {
+        LOGE("Invalid input.");
+        return CF_ERR_INTERNAL;
+    }
+    GENERAL_NAME *generalName = sk_GENERAL_NAME_value(altname, index);
+    unsigned char *derData = NULL;
+    int derLength = i2d_GENERAL_NAME(generalName, &derData);
+    if (derLength <= 0 || derData == NULL) {
+        LOGE("Get generalName failed!");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    SubjectAlternaiveNameData *subAltNameData = &(subAltNameArrayOut->data[index]);
+    subAltNameData->name.data = CfMalloc(derLength, 0);
+    if (subAltNameData->name.data == NULL) {
+        LOGE("Failed to malloc for sub alt name data!");
+        OPENSSL_free(derData);
+        return CF_ERR_MALLOC;
+    }
+    (void)memcpy_s(subAltNameData->name.data, derLength, derData, derLength);
+    subAltNameData->name.size = (uint32_t)derLength;
+    subAltNameData->type = generalName->type;
+    OPENSSL_free(derData);
+    return CF_SUCCESS;
+}
+
+CfResult CfDeepCopyCertPolices(const CERTIFICATEPOLICIES *certPolicesIn, int32_t index, CfArray *certPolices)
+{
+    if (certPolicesIn == NULL || certPolices == NULL) {
+        LOGE("Invalid input.");
+        return CF_ERR_INTERNAL;
+    }
+    POLICYINFO *policy = sk_POLICYINFO_value(certPolicesIn, index);
+    ASN1_OBJECT *policyOid = policy->policyid;
+    char policyBuff[OID_STR_MAX_LEN] = { 0 };
+    int32_t resLen = OBJ_obj2txt(policyBuff, OID_STR_MAX_LEN, policyOid, 1);
+    if ((resLen <= 0) || (resLen >= OID_STR_MAX_LEN)) {
+        LOGE("Failed to convert x509 object to text!");
+        CfPrintOpensslError();
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    uint32_t len = strlen(policyBuff) + 1;
+    certPolices->data[index].data = (uint8_t *)CfMalloc(len, 0);
+    if (certPolices->data[index].data == NULL) {
+        LOGE("Failed to malloc for cert policies!");
+        return CF_ERR_MALLOC;
+    }
+    (void)memcpy_s(certPolices->data[index].data, len, policyBuff, len);
+    certPolices->data[index].size = len;
+    return CF_SUCCESS;
+}
+
+static CfResult DeepCopyURIs(ASN1_STRING *uri, uint32_t index, CfArray *outURI)
+{
+    if (index >= outURI->count) { /* exceed the maximum memory capacity. */
+        LOGE("exceed the maximum memory capacity, uriCount = %{public}u, malloc count = %{public}u",
+            index, outURI->count);
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    const char *str = (const char *)ASN1_STRING_get0_data(uri);
+    if ((str == NULL) || (strlen(str) > HCF_MAX_STR_LEN)) {
+        LOGE("Failed to get CRL DP URI string in openssl!");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    uint32_t uriLen = strlen(str) + 1;
+    outURI->data[index].data = (uint8_t *)CfMalloc(uriLen, 0);
+    if (outURI->data[index].data == NULL) {
+        LOGE("Failed to malloc for outURI[%{public}u]!", index);
+        return CF_ERR_MALLOC;
+    }
+    (void)memcpy_s(outURI->data[index].data, uriLen, str, uriLen);
+    outURI->data[index].size = uriLen;
+    return CF_SUCCESS;
+}
+
+CfResult CfConvertAsn1String2BoolArray(const ASN1_BIT_STRING *string, CfBlob *boolArr)
+{
+    if (string == NULL || boolArr == NULL) {
+        LOGE("Invalid input.");
+        return CF_ERR_INTERNAL;
+    }
+    uint32_t length = ASN1_STRING_length(string) * CHAR_TO_BIT_LEN;
+    if ((uint32_t)(string->flags) & ASN1_STRING_FLAG_BITS_LEFT) {
+        length -= (uint32_t)(string->flags) & FLAG_BIT_LEFT_NUM;
+    }
+    boolArr->data = (uint8_t *)CfMalloc(length, 0);
+    if (boolArr->data == NULL) {
+        LOGE("Failed to malloc for bit array data!");
+        return CF_ERR_MALLOC;
+    }
+    for (uint32_t i = 0; i < length; i++) {
+        boolArr->data[i] = ASN1_BIT_STRING_get_bit(string, i);
+    }
+    boolArr->size = length;
+    return CF_SUCCESS;
+}
+
+bool CfCompareGN2Blob(const GENERAL_NAME *gen, CfBlob *nc)
+{
+    if (gen == NULL || nc == NULL) {
+        LOGE("Invalid input.");
+        return CF_ERR_INTERNAL;
+    }
+    unsigned char *bytes = NULL;
+    unsigned char *point = NULL;
+    int32_t len = 0;
+    bool ret = false;
+    switch (gen->type) {
+        case GEN_X400:
+            len = sizeof(uint8_t) * (gen->d.x400Address->length);
+            bytes = (unsigned char *)gen->d.x400Address->data;
+            break;
+        case GEN_EDIPARTY:
+            len = i2d_EDIPARTYNAME(gen->d.ediPartyName, &bytes);
+            point = bytes;
+            break;
+        case GEN_OTHERNAME:
+            len = i2d_OTHERNAME(gen->d.otherName, &bytes);
+            point = bytes;
+            break;
+        case GEN_EMAIL:
+        case GEN_DNS:
+        case GEN_URI:
+            len = i2d_ASN1_IA5STRING(gen->d.ia5, &bytes);
+            point = bytes;
+            break;
+        case GEN_DIRNAME:
+            len = i2d_X509_NAME(gen->d.dirn, &bytes);
+            point = bytes;
+            break;
+        case GEN_IPADD:
+            len = i2d_ASN1_OCTET_STRING(gen->d.ip, &bytes);
+            point = bytes;
+            break;
+        case GEN_RID:
+            len = i2d_ASN1_OBJECT(gen->d.rid, &bytes);
+            point = bytes;
+            break;
+        default:
+            LOGE("Unknown type.");
+            break;
+    }
+    ret = (len == (int32_t)(nc->size)) && (strncmp((const char *)bytes, (const char *)nc->data, len) == 0);
+    if (point != NULL) {
+        OPENSSL_free(point);
+    }
+
+    return ret;
+}
+
+static CfResult GetDpURIFromGenName(GENERAL_NAME *genName, bool isFormatOutURI, uint32_t *uriCount, CfArray *outURI)
+{
+    int type = 0;
+    ASN1_STRING *uri = GENERAL_NAME_get0_value(genName, &type);
+    if (uri == NULL) {
+        LOGE("get uri asn1 string failed");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    if (type != GEN_URI) {
+        LOGI("not URI type, type is %{public}d", type);
+        return CF_SUCCESS;
+    }
+
+    if (isFormatOutURI) {
+        CfResult ret = DeepCopyURIs(uri, *uriCount, outURI);
+        if (ret != CF_SUCCESS) {
+            LOGE("copy URI[%{public}u] failed", *uriCount);
+            return ret;
+        }
+    }
+    *uriCount += 1;
+    return CF_SUCCESS;
+}
+
+static CfResult GetDpURIFromGenNames(GENERAL_NAMES *genNames, bool isFormatOutURI, uint32_t *uriCount,
+    CfArray *outURI)
+{
+    CfResult ret = CF_SUCCESS;
+    int genNameNum = sk_GENERAL_NAME_num(genNames);
+    for (int i = 0; i < genNameNum; ++i) {
+        GENERAL_NAME *genName = sk_GENERAL_NAME_value(genNames, i);
+        if (genName == NULL) {
+            LOGE("get gen name failed!");
+            ret = CF_ERR_CRYPTO_OPERATION;
+            break;
+        }
+
+        ret = GetDpURIFromGenName(genName, isFormatOutURI, uriCount, outURI);
+        if (ret != CF_SUCCESS) {
+            LOGE("get gen name failed!");
+            break;
+        }
+    }
+    return ret;
+}
+
+static CfResult GetDpURI(STACK_OF(DIST_POINT) *crlDp, int32_t dpNumber, bool isFormatOutURI,
+    uint32_t *uriCount, CfArray *outURI)
+{
+    CfResult ret = CF_SUCCESS;
+    for (int i = 0; i < dpNumber; ++i) {
+        DIST_POINT *dp = sk_DIST_POINT_value(crlDp, i);
+        if (dp == NULL) {
+            LOGE("get distribution point failed!");
+            ret = CF_ERR_CRYPTO_OPERATION;
+            break;
+        }
+
+        if (dp->distpoint == NULL || dp->distpoint->type != 0) {
+            LOGI("not fullnames, continue!");
+            continue;
+        }
+
+        ret = GetDpURIFromGenNames(dp->distpoint->name.fullname, isFormatOutURI, uriCount, outURI);
+        if (ret != CF_SUCCESS) {
+            LOGE("get dp uri from general names failed");
+            break;
+        }
+    }
+    if (ret == CF_SUCCESS && isFormatOutURI) {
+        outURI->count = *uriCount;
+    }
+    return ret;
+}
+
+CfResult CfGetCRLDpURI(STACK_OF(DIST_POINT) *crlDp, CfArray *outURI)
+{
+    if (crlDp == NULL || outURI == NULL) {
+        LOGE("Invalid input.");
+        return CF_ERR_INTERNAL;
+    }
+    /* 1. get CRL distribution point URI count */
+    int32_t dpNumber = sk_DIST_POINT_num(crlDp);
+    uint32_t uriCount = 0;
+    CfResult ret = GetDpURI(crlDp, dpNumber, false, &uriCount, outURI);
+    if (ret != CF_SUCCESS) {
+        LOGE("get dp URI count failed, ret = %{public}d", ret);
+        return ret;
+    }
+    if (uriCount == 0) {
+        LOGE("CRL DP URI not exist");
+        return CF_NOT_EXIST;
+    }
+    if (uriCount > CF_MAX_URI_COUNT) {
+        LOGE("uriCount[%{public}u] exceed max count", uriCount);
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    /* 2. malloc outArray buffer */
+    int32_t blobSize = (int32_t)(sizeof(CfBlob) * uriCount);
+    outURI->data = (CfBlob *)CfMalloc(blobSize, 0);
+    if (outURI->data == NULL) {
+        LOGE("Failed to malloc for outURI array!");
+        return CF_ERR_MALLOC;
+    }
+    outURI->count = uriCount;
+
+    /* 2. copy CRL distribution point URIs */
+    uriCount = 0;
+    ret = GetDpURI(crlDp, dpNumber, true, &uriCount, outURI);
+    if (ret != CF_SUCCESS) {
+        LOGE("get dp URI format failed, ret = %{public}d", ret);
+        CfArrayDataClearAndFree(outURI);
+        return ret;
+    }
+
+    return ret;
 }

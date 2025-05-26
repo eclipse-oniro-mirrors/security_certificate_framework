@@ -63,6 +63,8 @@ public:
     napi_value GetIssuerX500DistinguishedName(napi_env env, napi_callback_info info);
     napi_value Match(napi_env env, napi_callback_info info);
     CfResult MatchProc(HcfX509CrlMatchParams *param, bool &boolFlag);
+    napi_value GetIssuerDNEx(napi_env env, napi_callback_info info, CfEncodinigType encodingType);
+    napi_value ToStringEx(napi_env env, napi_callback_info info, CfEncodinigType encodingType);
 
     HcfX509Crl *GetX509Crl()
     {

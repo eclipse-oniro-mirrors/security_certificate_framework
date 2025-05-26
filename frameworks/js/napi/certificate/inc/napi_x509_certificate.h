@@ -67,6 +67,8 @@ public:
     napi_value GetCRLDistributionPointsURI(napi_env env, napi_callback_info info);
     napi_value GetSubjectNameEx(napi_env env, napi_callback_info info, CfEncodinigType encodingType);
     CfResult MatchProc(HcfX509CertMatchParams *param, bool &boolFlag);
+    napi_value GetIssuerNameEx(napi_env env, napi_callback_info info, CfEncodinigType encodingType);
+    napi_value ToStringEx(napi_env env, napi_callback_info info, CfEncodinigType encodingType);
 
     HcfX509Certificate *GetX509Cert()
     {

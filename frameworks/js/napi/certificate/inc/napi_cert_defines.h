@@ -50,6 +50,7 @@ enum ResultCode {
     JS_ERR_CERT_NOT_SUPPORT = 801,
     JS_ERR_CERT_OUT_OF_MEMORY = 19020001,
     JS_ERR_CERT_RUNTIME_ERROR = 19020002,
+    JS_ERR_CERT_PARAMETER_CHECK = 19020003,
     JS_ERR_CERT_CRYPTO_OPERATION = 19030001,
     JS_ERR_CERT_SIGNATURE_FAILURE = 19030002,
     JS_ERR_CERT_NOT_YET_VALID = 19030003,
@@ -122,11 +123,11 @@ const std::string CERT_CHAIN_VALIDATE_TAG_POLICY = "policy";
 const std::string CERT_CHAIN_VALIDATE_TAG_SSLHOSTNAME = "sslHostname";
 const std::string CERT_CHAIN_VALIDATE_TAG_KEYUSAGE = "keyUsage";
 // CertChainValidateResult
-const std::string CERT_CHAIN_VALIDATE_RESULLT_TAG_TRUSTANCHOR = "trustAnchor";
-const std::string CERT_CHAIN_VALIDATE_RESULLT_TAG_X509CERT = "entityCert";
+const std::string CERT_CHAIN_VALIDATE_RESULT_TAG_TRUSTANCHOR = "trustAnchor";
+const std::string CERT_CHAIN_VALIDATE_RESULT_TAG_X509CERT = "entityCert";
 
-const std::string CERT_CHAIN_BUILD_RESULLT_TAG_CERTCHAIN = "certChain";
-const std::string CERT_CHAIN_BUILD_RESULLT_TAG_VALIDATERESULT = "validationResult";
+const std::string CERT_CHAIN_BUILD_RESULT_TAG_CERTCHAIN = "certChain";
+const std::string CERT_CHAIN_BUILD_RESULT_TAG_VALIDATERESULT = "validationResult";
 
 // HcfAttributes
 const std::string CERT_ATTRIBUTE_TYPE = "type";

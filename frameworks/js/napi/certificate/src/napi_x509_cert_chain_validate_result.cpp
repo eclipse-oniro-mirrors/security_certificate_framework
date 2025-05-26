@@ -53,8 +53,8 @@ napi_value BuildX509CertChainValidateResultJS(napi_env env, const HcfX509CertCha
         LOGE("create result obj failed");
         return nullptr;
     }
-    napi_set_named_property(env, returnValue, CERT_CHAIN_VALIDATE_RESULLT_TAG_X509CERT.c_str(), entityCert);
-    napi_set_named_property(env, returnValue, CERT_CHAIN_VALIDATE_RESULLT_TAG_TRUSTANCHOR.c_str(), trustAnchor);
+    napi_set_named_property(env, returnValue, CERT_CHAIN_VALIDATE_RESULT_TAG_X509CERT.c_str(), entityCert);
+    napi_set_named_property(env, returnValue, CERT_CHAIN_VALIDATE_RESULT_TAG_TRUSTANCHOR.c_str(), trustAnchor);
 
     return returnValue;
 }
