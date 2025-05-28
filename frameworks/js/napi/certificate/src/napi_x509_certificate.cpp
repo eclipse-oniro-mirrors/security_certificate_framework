@@ -916,6 +916,7 @@ napi_value NapiX509Certificate::GetIssuerX500DistinguishedName(napi_env env, nap
     ret = cert->getIssuerNameDer(cert, &blob);
     if (ret != CF_SUCCESS) {
         LOGE("getIssuerNameDer failed!");
+        CfObjDestroy(x509Name);
         napi_throw(env, CertGenerateBusinessError(env, ret, "get issuer name der failed."));
         return nullptr;
     }
@@ -923,6 +924,7 @@ napi_value NapiX509Certificate::GetIssuerX500DistinguishedName(napi_env env, nap
     ret = HcfX509DistinguishedNameCreate(&blob, false, &x509NameUtf8);
     if (ret != CF_SUCCESS || x509NameUtf8 == nullptr) {
         LOGE("HcfX509DistinguishedNameCreate failed");
+        CfObjDestroy(x509Name);
         napi_throw(env, CertGenerateBusinessError(env, ret, "HcfX509DistinguishedNameCreate failed"));
         CfBlobDataFree(&blob);
         return nullptr;
