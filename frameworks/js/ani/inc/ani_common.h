@@ -31,13 +31,18 @@ using namespace taihe;
 using namespace ohos::security::cert::cert;
 namespace cryptoFramework = ohos::security::cryptoFramework::cryptoFramework;
 
-int ConvertResultCode(CfResult res);
-
 #define ANI_LOGE_THROW(code, msg) \
     do { \
         LOGE(msg); \
         set_business_error(ConvertResultCode(code), msg); \
     } while (0)
+
+int ConvertResultCode(CfResult res);
+
+void ArrayU8ToDataBlob(const array<uint8_t> &arr, CfBlob &blob);
+void DataBlobToArrayU8(const CfBlob &blob, array<uint8_t> &arr);
+void ArrayU8ToBigInteger(const array<uint8_t> &arr, CfBlob &bigInt);
+void BigIntegerToArrayU8(const CfBlob &bigInt, array<uint8_t> &arr);
 } // namespace ANI::CertFramework
 
 #endif // ANI_COMMON_H

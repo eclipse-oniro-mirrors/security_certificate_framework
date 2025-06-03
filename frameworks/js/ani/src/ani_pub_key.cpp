@@ -22,8 +22,13 @@ PubKeyImpl::PubKeyImpl(HcfPubKey *pubKey) : pubKey_(pubKey) {}
 
 PubKeyImpl::~PubKeyImpl()
 {
-    CfObjDestroy(pubKey_);
-    pubKey_ = nullptr;
+    CfObjDestroy(this->pubKey_);
+    this->pubKey_ = nullptr;
+}
+
+int64_t PubKeyImpl::GetPubKeyObj()
+{
+    return reinterpret_cast<int64_t>(this->pubKey_);
 }
 
 cryptoFramework::OptKeySpec PubKeyImpl::GetAsyKeySpec(cryptoFramework::AsyKeySpecItem itemType)
@@ -46,35 +51,41 @@ int64_t PubKeyImpl::GetKeyObj()
     TH_THROW(std::runtime_error, "GetKeyObj not implemented");
 }
 
-int64_t PubKeyImpl::GetPubKeyObj()
-{
-    return reinterpret_cast<int64_t>(this->pubKey_);
-}
-
 cryptoFramework::DataBlob PubKeyImpl::GetEncoded()
 {
     if (this->pubKey_ == nullptr) {
         ANI_LOGE_THROW(CF_INVALID_PARAMS, "pubKey obj is nullptr!");
         return {};
     }
-    HcfBlob outBlob = { .data = nullptr, .len = 0 };
+    HcfBlob outBlob = {};
     HcfResult res = this->pubKey_->base.getEncoded(&this->pubKey_->base, &outBlob);
     if (res != HCF_SUCCESS) {
         ANI_LOGE_THROW(static_cast<CfResult>(res), "getEncoded failed.");
         return {};
     }
-    array<uint8_t> data(move_data_t{}, outBlob.data, outBlob.len);
+    array<uint8_t> data = {};
+    DataBlobToArrayU8({ outBlob.len, outBlob.data }, data);
     HcfBlobDataClearAndFree(&outBlob);
     return { data };
 }
 
 string PubKeyImpl::GetFormat()
 {
-    TH_THROW(std::runtime_error, "GetFormat not implemented");
+    if (this->pubKey_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "pubKey obj is nullptr!");
+        return "";
+    }
+    const char *format = this->pubKey_->base.getFormat(&this->pubKey_->base);
+    return (format == nullptr) ? "" : string(format);
 }
 
 string PubKeyImpl::GetAlgName()
 {
-    TH_THROW(std::runtime_error, "GetAlgName not implemented");
+    if (this->pubKey_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "pubKey obj is nullptr!");
+        return "";
+    }
+    const char *algName = this->pubKey_->base.getAlgorithm(&this->pubKey_->base);
+    return (algName == nullptr) ? "" : string(algName);
 }
 } // namespace ANI::CertFramework

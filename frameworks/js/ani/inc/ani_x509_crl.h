@@ -13,52 +13,40 @@
  * limitations under the License.
  */
 
-#ifndef ANI_X509_CERT_H
-#define ANI_X509_CERT_H
+#ifndef ANI_X509_CRL_H
+#define ANI_X509_CRL_H
 
 #include "ani_common.h"
-#include "ani_pub_key.h"
-#include "x509_certificate.h"
 
 namespace ANI::CertFramework {
-class X509CertImpl {
+class X509CRLImpl {
 public:
-    X509CertImpl();
-    explicit X509CertImpl(HcfX509Certificate *cert);
-    ~X509CertImpl();
+    X509CRLImpl();
+    ~X509CRLImpl();
 
-    void VerifySync(cryptoFramework::weak::PubKey key);
+    bool IsRevoked(weak::X509Cert cert);
+    string GetType();
     EncodingBlob GetEncodedSync();
-    cryptoFramework::PubKey GetPublicKey();
-    void CheckValidityWithDate(string_view date);
+    void VerifySync(cryptoFramework::weak::PubKey key);
     int32_t GetVersion();
-    int64_t GetSerialNumber();
-    array<uint8_t> GetCertSerialNumber();
     DataBlob GetIssuerName();
-    DataBlob GetSubjectName(optional_view<EncodingType> encodingType);
-    string GetNotBeforeTime();
-    string GetNotAfterTime();
+    string GetLastUpdate();
+    string GetNextUpdate();
+    X509CRLEntry GetRevokedCert(array_view<uint8_t> serialNumber);
+    X509CRLEntry GetRevokedCertWithCert(weak::X509Cert cert);
+    array<X509CRLEntry> GetRevokedCertsSync();
+    DataBlob GetTBSInfo();
     DataBlob GetSignature();
     string GetSignatureAlgName();
     string GetSignatureAlgOid();
     DataBlob GetSignatureAlgParams();
-    DataBlob GetKeyUsage();
-    DataArray GetExtKeyUsage();
-    int32_t GetBasicConstraints();
-    DataArray GetSubjectAltNames();
-    DataArray GetIssuerAltNames();
-    DataBlob GetItem(CertItemType itemType);
-    bool Match(X509CertMatchParameters const& param);
-    DataArray GetCRLDistributionPoint();
+    DataBlob GetExtensions();
+    bool Match(X509CRLMatchParameters const& param);
     X500DistinguishedName GetIssuerX500DistinguishedName();
-    X500DistinguishedName GetSubjectX500DistinguishedName();
     string ToString();
     array<uint8_t> HashCode();
     CertExtension GetExtensionsObject();
-
-private:
-    HcfX509Certificate *cert_ = nullptr;
 };
 } // namespace ANI::CertFramework
 
-#endif // ANI_X509_CERT_H
+#endif // ANI_X509_CRL_H

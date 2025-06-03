@@ -13,22 +13,23 @@
  * limitations under the License.
  */
 
-#ifndef ANI_X509_CERT_CHAIN_H
-#define ANI_X509_CERT_CHAIN_H
-
-#include "ani_common.h"
+#include "ani_x509_cert_chain_validate_result.h"
+#include "ani_x509_cert.h"
 
 namespace ANI::CertFramework {
-class X509CertChainImpl {
-public:
-    X509CertChainImpl();
-    ~X509CertChainImpl();
+CertChainValidationResultImpl::CertChainValidationResultImpl() {}
 
-    array<X509Cert> GetCertList();
-    CertChainValidationResult ValidateSync(CertChainValidationParameters const& param);
-    string ToString();
-    array<uint8_t> HashCode();
-};
+CertChainValidationResultImpl::~CertChainValidationResultImpl() {}
+
+X509TrustAnchor CertChainValidationResultImpl::GetTrustAnchor()
+{
+    TH_THROW(std::runtime_error, "GetTrustAnchor not implemented");
+}
+
+X509Cert CertChainValidationResultImpl::GetEntityCert()
+{
+    // The parameters in the make_holder function should be of the same type
+    // as the parameters in the constructor of the actual implementation class.
+    return make_holder<X509CertImpl, X509Cert>();
+}
 } // namespace ANI::CertFramework
-
-#endif // ANI_X509_CERT_CHAIN_H
