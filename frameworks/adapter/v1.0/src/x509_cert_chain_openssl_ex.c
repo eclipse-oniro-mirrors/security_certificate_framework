@@ -286,18 +286,20 @@ void FreeHcfX509P12Collection(HcfX509P12Collection *p12Collection)
     }
     if (p12Collection->cert != NULL) {
         CfFree(p12Collection->cert);
+        p12Collection->cert = NULL;
     }
     if (p12Collection->prikey != NULL && p12Collection->prikey->data != NULL) {
-        CfFree(p12Collection->prikey->data);
-        CfFree(p12Collection->prikey);
+        CfBlobFree(&p12Collection->prikey);
     }
     if (p12Collection->otherCerts != NULL && p12Collection->otherCertsCount != 0) {
         for (uint32_t i = 0; i < p12Collection->otherCertsCount; i++) {
             if (p12Collection->otherCerts[i] != NULL) {
                 CfFree(p12Collection->otherCerts[i]);
+                p12Collection->otherCerts[i] = NULL;
             }
         }
         CfFree(p12Collection->otherCerts);
+        p12Collection->otherCerts = NULL;
     }
     CfFree(p12Collection);
 }
@@ -314,7 +316,6 @@ CfResult AllocateAndConvertCert(X509 *cert, HcfX509P12Collection *collection, bo
     }
     CfResult ret = X509ToHcfX509Certificate(cert, &collection->cert);
     if (ret != CF_SUCCESS) {
-        CfFree(collection->cert);
         LOGE("Failed to convert X509 to HcfX509Certificate!");
         return ret;
     }
