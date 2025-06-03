@@ -55,6 +55,19 @@ export function uint8ArrayToString(data: Uint8Array): string {
   }
   return str;
 }
+
+export function doFullGC(): void {
+  try {
+      GC.waitForFinishGC(GC.startGC(GC.Cause.FULL, GC.IN_PLACE_MODE));
+  } catch (err) {
+      assertTrue(false, "Unexpected exception during GC");
+  }
+  Coroutine.Schedule();
+}
+
+export function stopTaskPool(): void {
+  CoroutineExtras.stopTaskpool();
+}
 } // namespace utils
 
 export default utils;

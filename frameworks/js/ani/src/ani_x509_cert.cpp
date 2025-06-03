@@ -15,6 +15,8 @@
 
 #include "ani_x509_cert.h"
 #include "ani_pub_key.h"
+#include "ani_cert_extension.h"
+#include "ani_x500_distinguished_name.h"
 #include "cf_type.h"
 
 namespace ANI::CertFramework {
@@ -34,8 +36,8 @@ void X509CertImpl::VerifySync(cryptoFramework::weak::PubKey key)
         ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
         return;
     }
-    HcfPubKey *obj = reinterpret_cast<HcfPubKey *>(key->GetPubKeyObj());
-    CfResult res = this->cert_->base.verify(&(this->cert_->base), obj);
+    HcfPubKey *hcfPubKey = reinterpret_cast<HcfPubKey *>(key->GetPubKeyObj());
+    CfResult res = this->cert_->base.verify(&(this->cert_->base), hcfPubKey);
     if (res != CF_SUCCESS) {
         ANI_LOGE_THROW(res, "verify cert failed!");
         return;
@@ -50,12 +52,13 @@ EncodingBlob X509CertImpl::GetEncodedSync()
         return encodingBlob;
     }
     CfEncodingBlob outBlob = {};
-    CfResult ret = this->cert_->base.getEncoded(&(this->cert_->base), &outBlob);
-    if (ret != CF_SUCCESS) {
-        ANI_LOGE_THROW(ret, "get cert encoded failed!");
+    CfResult res = this->cert_->base.getEncoded(&(this->cert_->base), &outBlob);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "get cert encoded failed!");
         return encodingBlob;
     }
-    array<uint8_t> data(move_data_t{}, outBlob.data, outBlob.len);
+    array<uint8_t> data = {};
+    DataBlobToArrayU8({ outBlob.len, outBlob.data }, data);
     encodingBlob.data = data;
     encodingBlob.encodingFormat = static_cast<EncodingFormat::key_t>(outBlob.encodingFormat);
     CfEncodingBlobDataFree(&outBlob);
@@ -69,19 +72,152 @@ cryptoFramework::PubKey X509CertImpl::GetPublicKey()
         return make_holder<PubKeyImpl, cryptoFramework::PubKey>();
     }
     HcfPubKey *pubKey = nullptr;
-    CfResult ret = this->cert_->base.getPublicKey(&(this->cert_->base), reinterpret_cast<void **>(&pubKey));
-    if (ret != CF_SUCCESS) {
-        ANI_LOGE_THROW(ret, "get cert public key failed!");
+    CfResult res = this->cert_->base.getPublicKey(&(this->cert_->base), reinterpret_cast<void **>(&pubKey));
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "get cert public key failed!");
         return make_holder<PubKeyImpl, cryptoFramework::PubKey>();
     }
     return make_holder<PubKeyImpl, cryptoFramework::PubKey>(pubKey);
 }
 
+void X509CertImpl::CheckValidityWithDate(string_view date)
+{
+    TH_THROW(std::runtime_error, "CheckValidityWithDate not implemented");
+}
+
+int32_t X509CertImpl::GetVersion()
+{
+    TH_THROW(std::runtime_error, "GetVersion not implemented");
+}
+
+int64_t X509CertImpl::GetSerialNumber()
+{
+    TH_THROW(std::runtime_error, "GetSerialNumber not implemented");
+}
+
+array<uint8_t> X509CertImpl::GetCertSerialNumber()
+{
+    TH_THROW(std::runtime_error, "GetCertSerialNumber not implemented");
+}
+
+DataBlob X509CertImpl::GetIssuerName()
+{
+    TH_THROW(std::runtime_error, "GetIssuerName not implemented");
+}
+
+DataBlob X509CertImpl::GetSubjectName(optional_view<EncodingType> encodingType)
+{
+    TH_THROW(std::runtime_error, "GetSubjectName not implemented");
+}
+
+string X509CertImpl::GetNotBeforeTime()
+{
+    TH_THROW(std::runtime_error, "GetNotBeforeTime not implemented");
+}
+
+string X509CertImpl::GetNotAfterTime()
+{
+    TH_THROW(std::runtime_error, "GetNotAfterTime not implemented");
+}
+
+DataBlob X509CertImpl::GetSignature()
+{
+    TH_THROW(std::runtime_error, "GetSignature not implemented");
+}
+
+string X509CertImpl::GetSignatureAlgName()
+{
+    TH_THROW(std::runtime_error, "GetSignatureAlgName not implemented");
+}
+
+string X509CertImpl::GetSignatureAlgOid()
+{
+    TH_THROW(std::runtime_error, "GetSignatureAlgOid not implemented");
+}
+
+DataBlob X509CertImpl::GetSignatureAlgParams()
+{
+    TH_THROW(std::runtime_error, "GetSignatureAlgParams not implemented");
+}
+
+DataBlob X509CertImpl::GetKeyUsage()
+{
+    TH_THROW(std::runtime_error, "GetKeyUsage not implemented");
+}
+
+DataArray X509CertImpl::GetExtKeyUsage()
+{
+    TH_THROW(std::runtime_error, "GetExtKeyUsage not implemented");
+}
+
+int32_t X509CertImpl::GetBasicConstraints()
+{
+    TH_THROW(std::runtime_error, "GetBasicConstraints not implemented");
+}
+
+DataArray X509CertImpl::GetSubjectAltNames()
+{
+    TH_THROW(std::runtime_error, "GetSubjectAltNames not implemented");
+}
+
+DataArray X509CertImpl::GetIssuerAltNames()
+{
+    TH_THROW(std::runtime_error, "GetIssuerAltNames not implemented");
+}
+
+DataBlob X509CertImpl::GetItem(CertItemType itemType)
+{
+    TH_THROW(std::runtime_error, "GetItem not implemented");
+}
+
+bool X509CertImpl::Match(X509CertMatchParameters const& param)
+{
+    TH_THROW(std::runtime_error, "Match not implemented");
+}
+
+DataArray X509CertImpl::GetCRLDistributionPoint()
+{
+    TH_THROW(std::runtime_error, "GetCRLDistributionPoint not implemented");
+}
+
+X500DistinguishedName X509CertImpl::GetIssuerX500DistinguishedName()
+{
+    // The parameters in the make_holder function should be of the same type
+    // as the parameters in the constructor of the actual implementation class.
+    return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>();
+}
+
+X500DistinguishedName X509CertImpl::GetSubjectX500DistinguishedName()
+{
+    // The parameters in the make_holder function should be of the same type
+    // as the parameters in the constructor of the actual implementation class.
+    return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>();
+}
+
+string X509CertImpl::ToString()
+{
+    TH_THROW(std::runtime_error, "ToString not implemented");
+}
+
+array<uint8_t> X509CertImpl::HashCode()
+{
+    TH_THROW(std::runtime_error, "HashCode not implemented");
+}
+
+CertExtension X509CertImpl::GetExtensionsObject()
+{
+    // The parameters in the make_holder function should be of the same type
+    // as the parameters in the constructor of the actual implementation class.
+    return make_holder<CertExtensionImpl, CertExtension>();
+}
+
 X509Cert CreateX509CertSync(EncodingBlob const& inStream)
 {
+    CfBlob blob = {};
+    ArrayU8ToDataBlob(inStream.data, blob);
     CfEncodingBlob encodingBlob = {
-        .data = inStream.data.data(),
-        .len = inStream.data.size(),
+        .data = blob.data,
+        .len = blob.size,
         .encodingFormat = static_cast<CfEncodingFormat>(inStream.encodingFormat.get_value()),
     };
     HcfX509Certificate *cert = nullptr;

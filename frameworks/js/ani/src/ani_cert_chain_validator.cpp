@@ -24,8 +24,8 @@ CertChainValidatorImpl::CertChainValidatorImpl(HcfCertChainValidator *certChainV
 
 CertChainValidatorImpl::~CertChainValidatorImpl()
 {
-    CfObjDestroy(certChainValidator_);
-    certChainValidator_ = nullptr;
+    CfObjDestroy(this->certChainValidator_);
+    this->certChainValidator_ = nullptr;
 }
 
 void CertChainValidatorImpl::ValidateSync(CertChainData const& certChain)
@@ -34,9 +34,11 @@ void CertChainValidatorImpl::ValidateSync(CertChainData const& certChain)
         ANI_LOGE_THROW(CF_INVALID_PARAMS, "certChainValidator obj is nullptr!");
         return;
     }
+    CfBlob blob = {};
+    ArrayU8ToDataBlob(certChain.data, blob);
     HcfCertChainData certChainData = {
-        .data = certChain.data.data(),
-        .dataLen = certChain.data.size(),
+        .data = blob.data,
+        .dataLen = blob.size,
         .count = certChain.count,
         .format = static_cast<CfEncodingFormat>(certChain.encodingFormat.get_value()),
     };
