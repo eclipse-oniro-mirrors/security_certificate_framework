@@ -53,6 +53,11 @@ DataBlob X509CRLImpl::GetIssuerName()
     TH_THROW(std::runtime_error, "GetIssuerName not implemented");
 }
 
+string X509CRLImpl::GetIssuerNameEx(EncodingType encodingType)
+{
+    TH_THROW(std::runtime_error, "GetIssuerNameEx not implemented");
+}
+
 string X509CRLImpl::GetLastUpdate()
 {
     TH_THROW(std::runtime_error, "GetLastUpdate not implemented");
@@ -127,6 +132,11 @@ X500DistinguishedName X509CRLImpl::GetIssuerX500DistinguishedName()
 string X509CRLImpl::ToString()
 {
     TH_THROW(std::runtime_error, "ToString not implemented");
+}
+
+string X509CRLImpl::ToStringEx(EncodingType encodingType)
+{
+    TH_THROW(std::runtime_error, "ToStringEx not implemented");
 }
 
 array<uint8_t> X509CRLImpl::HashCode()

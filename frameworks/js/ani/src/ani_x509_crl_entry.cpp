@@ -37,6 +37,11 @@ DataBlob X509CRLEntryImpl::GetCertIssuer()
     TH_THROW(std::runtime_error, "GetCertIssuer not implemented");
 }
 
+string X509CRLEntryImpl::GetCertIssuerEx(EncodingType encodingType)
+{
+    TH_THROW(std::runtime_error, "GetCertIssuerEx not implemented");
+}
+
 string X509CRLEntryImpl::GetRevocationDate()
 {
     TH_THROW(std::runtime_error, "GetRevocationDate not implemented");

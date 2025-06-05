@@ -64,6 +64,10 @@ public:
         TH_THROW(std::runtime_error, "GetIssuerName not implemented");
     }
 
+    string GetIssuerNameEx(EncodingType encodingType) {
+        TH_THROW(std::runtime_error, "GetIssuerNameEx not implemented");
+    }
+
     DataBlob GetSubjectName(optional_view<EncodingType> encodingType) {
         TH_THROW(std::runtime_error, "GetSubjectName not implemented");
     }
@@ -140,6 +144,10 @@ public:
         TH_THROW(std::runtime_error, "ToString not implemented");
     }
 
+    string ToStringEx(EncodingType encodingType) {
+        TH_THROW(std::runtime_error, "ToStringEx not implemented");
+    }
+
     array<uint8_t> HashCode() {
         TH_THROW(std::runtime_error, "HashCode not implemented");
     }
@@ -194,6 +202,10 @@ public:
 
     DataBlob GetCertIssuer() {
         TH_THROW(std::runtime_error, "GetCertIssuer not implemented");
+    }
+
+    string GetCertIssuerEx(EncodingType encodingType) {
+        TH_THROW(std::runtime_error, "GetCertIssuerEx not implemented");
     }
 
     string GetRevocationDate() {
@@ -259,6 +271,10 @@ public:
         TH_THROW(std::runtime_error, "GetIssuerName not implemented");
     }
 
+    string GetIssuerNameEx(EncodingType encodingType) {
+        TH_THROW(std::runtime_error, "GetIssuerNameEx not implemented");
+    }
+
     string GetLastUpdate() {
         TH_THROW(std::runtime_error, "GetLastUpdate not implemented");
     }
@@ -319,6 +335,10 @@ public:
 
     string ToString() {
         TH_THROW(std::runtime_error, "ToString not implemented");
+    }
+
+    string ToStringEx(EncodingType encodingType) {
+        TH_THROW(std::runtime_error, "ToStringEx not implemented");
     }
 
     array<uint8_t> HashCode() {
@@ -397,8 +417,12 @@ public:
         TH_THROW(std::runtime_error, "GetName not implemented");
     }
 
-    array<string> GetNameEx(string_view type) {
-        TH_THROW(std::runtime_error, "GetNameEx not implemented");
+    string GetNameByEnum(EncodingType encodingType) {
+        TH_THROW(std::runtime_error, "GetNameByEnum not implemented");
+    }
+
+    array<string> GetNameByStr(string_view type) {
+        TH_THROW(std::runtime_error, "GetNameByStr not implemented");
     }
 
     EncodingBlob GetEncoded() {

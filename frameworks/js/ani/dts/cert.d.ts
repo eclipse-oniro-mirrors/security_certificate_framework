@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-import { int, long } from './@ohos.base';
 import type { AsyncCallback } from './@ohos.base';
 import cryptoFramework from './@ohos.security.cryptoFramework';
 
@@ -23,6 +22,7 @@ declare namespace cert {
     NOT_SUPPORT = 801,
     ERR_OUT_OF_MEMORY = 19020001,
     ERR_RUNTIME_ERROR = 19020002,
+    ERR_PARAMETER_CHECK_FAILED = 19020003,
     ERR_CRYPTO_OPERATION = 19030001,
     ERR_CERT_SIGNATURE_FAILURE = 19030002,
     ERR_CERT_NOT_YET_VALID = 19030003,
@@ -93,6 +93,7 @@ declare namespace cert {
     getSerialNumber(): long;
     getCertSerialNumber(): bigint;
     getIssuerName(): DataBlob;
+    getIssuerName(encodingType: EncodingType): string;
     getSubjectName(encodingType?: EncodingType): DataBlob;
     getNotBeforeTime(): string;
     getNotAfterTime(): string;
@@ -111,6 +112,7 @@ declare namespace cert {
     getIssuerX500DistinguishedName(): X500DistinguishedName;
     getSubjectX500DistinguishedName(): X500DistinguishedName;
     toString(): string;
+    toString(encodingType: EncodingType): string;
     hashCode(): Uint8Array;
     getExtensionsObject(): CertExtension;
   }
@@ -132,6 +134,7 @@ declare namespace cert {
     getEncoded(): Promise<EncodingBlob>;
     getSerialNumber(): bigint;
     getCertIssuer(): DataBlob;
+    getCertIssuer(encodingType: EncodingType): string;
     getRevocationDate(): string;
     getExtensions(): DataBlob;
     hasExtensions(): boolean;
@@ -150,6 +153,7 @@ declare namespace cert {
     verify(key: cryptoFramework.PubKey): Promise<void>;
     getVersion(): int;
     getIssuerName(): DataBlob;
+    getIssuerName(encodingType: EncodingType): string;
     getLastUpdate(): string;
     getNextUpdate(): string;
     getRevokedCert(serialNumber: bigint): X509CRLEntry;
@@ -165,6 +169,7 @@ declare namespace cert {
     match(param: X509CRLMatchParameters): boolean;
     getIssuerX500DistinguishedName(): X500DistinguishedName;
     toString(): string;
+    toString(encodingType: EncodingType): string;
     hashCode(): Uint8Array;
     getExtensionsObject(): CertExtension;
   }
@@ -268,6 +273,7 @@ declare namespace cert {
 
   interface X500DistinguishedName {
     getName(): string;
+    getName(encodingType: EncodingType): string;
     getName(type: string): Array<string>;
     getEncoded(): EncodingBlob;
   }

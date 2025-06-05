@@ -25,7 +25,8 @@ public:
     ~X500DistinguishedNameImpl();
 
     string GetName();
-    array<string> GetNameEx(string_view type);
+    string GetNameByEnum(EncodingType encodingType);
+    array<string> GetNameByStr(string_view type);
     EncodingBlob GetEncoded();
 };
 } // namespace ANI::CertFramework
