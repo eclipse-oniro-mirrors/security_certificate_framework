@@ -105,6 +105,11 @@ DataBlob X509CertImpl::GetIssuerName()
     TH_THROW(std::runtime_error, "GetIssuerName not implemented");
 }
 
+string X509CertImpl::GetIssuerNameEx(EncodingType encodingType)
+{
+    TH_THROW(std::runtime_error, "GetIssuerNameEx not implemented");
+}
+
 DataBlob X509CertImpl::GetSubjectName(optional_view<EncodingType> encodingType)
 {
     TH_THROW(std::runtime_error, "GetSubjectName not implemented");
@@ -197,6 +202,11 @@ X500DistinguishedName X509CertImpl::GetSubjectX500DistinguishedName()
 string X509CertImpl::ToString()
 {
     TH_THROW(std::runtime_error, "ToString not implemented");
+}
+
+string X509CertImpl::ToStringEx(EncodingType encodingType)
+{
+    TH_THROW(std::runtime_error, "ToStringEx not implemented");
 }
 
 array<uint8_t> X509CertImpl::HashCode()

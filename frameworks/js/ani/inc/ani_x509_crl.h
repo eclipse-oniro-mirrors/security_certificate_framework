@@ -30,6 +30,7 @@ public:
     void VerifySync(cryptoFramework::weak::PubKey key);
     int32_t GetVersion();
     DataBlob GetIssuerName();
+    string GetIssuerNameEx(EncodingType encodingType);
     string GetLastUpdate();
     string GetNextUpdate();
     X509CRLEntry GetRevokedCert(array_view<uint8_t> serialNumber);
@@ -44,6 +45,7 @@ public:
     bool Match(X509CRLMatchParameters const& param);
     X500DistinguishedName GetIssuerX500DistinguishedName();
     string ToString();
+    string ToStringEx(EncodingType encodingType);
     array<uint8_t> HashCode();
     CertExtension GetExtensionsObject();
 };

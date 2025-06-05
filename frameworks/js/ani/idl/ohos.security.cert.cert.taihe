@@ -26,6 +26,7 @@ enum CertResult: i32 {
   NOT_SUPPORT = 801,
   ERR_OUT_OF_MEMORY = 19020001,
   ERR_RUNTIME_ERROR = 19020002,
+  ERR_PARAMETER_CHECK_FAILED = 19020003,
   ERR_CRYPTO_OPERATION = 19030001,
   ERR_CERT_SIGNATURE_FAILURE = 19030002,
   ERR_CERT_NOT_YET_VALID = 19030003,
@@ -102,7 +103,10 @@ interface X509Cert {
   GetVersion(): i32;
   GetSerialNumber(): i64;
   GetCertSerialNumber(): @bigint Array<u8>;
+  @overload("getIssuerName")
   GetIssuerName(): DataBlob;
+  @overload("getIssuerName")
+  GetIssuerNameEx(encodingType: EncodingType): String;
   GetSubjectName(encodingType: Optional<EncodingType>): DataBlob;
   GetNotBeforeTime(): String;
   GetNotAfterTime(): String;
@@ -120,7 +124,10 @@ interface X509Cert {
   GetCRLDistributionPoint(): DataArray;
   GetIssuerX500DistinguishedName(): X500DistinguishedName;
   GetSubjectX500DistinguishedName(): X500DistinguishedName;
+  @overload("toString")
   ToString(): String;
+  @overload("toString")
+  ToStringEx(encodingType: EncodingType): String;
   HashCode(): @typedarray Array<u8>;
   GetExtensionsObject(): CertExtension;
 }
@@ -144,7 +151,10 @@ interface X509CRLEntry {
   @gen_promise("getEncoded")
   GetEncodedSync(): EncodingBlob;
   GetSerialNumber(): @bigint Array<u8>;
+  @overload("getCertIssuer")
   GetCertIssuer(): DataBlob;
+  @overload("getCertIssuer")
+  GetCertIssuerEx(encodingType: EncodingType): String;
   GetRevocationDate(): String;
   GetExtensions(): DataBlob;
   HasExtensions(): bool;
@@ -164,7 +174,10 @@ interface X509CRL {
   @gen_promise("verify")
   VerifySync(key: cryptoFramework.PubKey): void;
   GetVersion(): i32;
+  @overload("getIssuerName")
   GetIssuerName(): DataBlob;
+  @overload("getIssuerName")
+  GetIssuerNameEx(encodingType: EncodingType): String;
   GetLastUpdate(): String;
   GetNextUpdate(): String;
   GetRevokedCert(serialNumber: @bigint Array<u8>): X509CRLEntry;
@@ -180,7 +193,10 @@ interface X509CRL {
   GetExtensions(): DataBlob;
   Match(param: X509CRLMatchParameters): bool;
   GetIssuerX500DistinguishedName(): X500DistinguishedName;
+  @overload("toString")
   ToString(): String;
+  @overload("toString")
+  ToStringEx(encodingType: EncodingType): String;
   HashCode(): @typedarray Array<u8>;
   GetExtensionsObject(): CertExtension;
 }
@@ -300,7 +316,9 @@ interface X500DistinguishedName {
   @overload("getName")
   GetName(): String;
   @overload("getName")
-  GetNameEx(type: String): Array<String>;
+  GetNameByEnum(encodingType: EncodingType): String;
+  @overload("getName")
+  GetNameByStr(type: String): Array<String>;
   GetEncoded(): EncodingBlob;
 }
 

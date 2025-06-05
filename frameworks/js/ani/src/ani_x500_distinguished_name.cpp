@@ -25,9 +25,14 @@ string X500DistinguishedNameImpl::GetName()
     TH_THROW(std::runtime_error, "GetName not implemented");
 }
 
-array<string> X500DistinguishedNameImpl::GetNameEx(string_view type)
+string X500DistinguishedNameImpl::GetNameByEnum(EncodingType encodingType)
 {
-    TH_THROW(std::runtime_error, "GetNameEx not implemented");
+    TH_THROW(std::runtime_error, "GetNameByEnum not implemented");
+}
+
+array<string> X500DistinguishedNameImpl::GetNameByStr(string_view type)
+{
+    TH_THROW(std::runtime_error, "GetNameByStr not implemented");
 }
 
 EncodingBlob X500DistinguishedNameImpl::GetEncoded()

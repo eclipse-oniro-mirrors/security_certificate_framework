@@ -35,6 +35,7 @@ public:
     int64_t GetSerialNumber();
     array<uint8_t> GetCertSerialNumber();
     DataBlob GetIssuerName();
+    string GetIssuerNameEx(EncodingType encodingType);
     DataBlob GetSubjectName(optional_view<EncodingType> encodingType);
     string GetNotBeforeTime();
     string GetNotAfterTime();
@@ -53,6 +54,7 @@ public:
     X500DistinguishedName GetIssuerX500DistinguishedName();
     X500DistinguishedName GetSubjectX500DistinguishedName();
     string ToString();
+    string ToStringEx(EncodingType encodingType);
     array<uint8_t> HashCode();
     CertExtension GetExtensionsObject();
 

@@ -27,6 +27,7 @@ public:
     EncodingBlob GetEncodedSync();
     array<uint8_t> GetSerialNumber();
     DataBlob GetCertIssuer();
+    string GetCertIssuerEx(EncodingType encodingType);
     string GetRevocationDate();
     DataBlob GetExtensions();
     bool HasExtensions();
