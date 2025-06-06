@@ -15,6 +15,7 @@ crypto_framwork_common_inc_path = [
   "../../interfaces/inner_api/certificate",
   "../../interfaces/inner_api/common",
   "../../interfaces/inner_api/include",
+  "../../interfaces/inner_api/attestation",
   "v1.0/inc",
 ]
 
