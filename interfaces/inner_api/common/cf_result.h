@@ -58,5 +58,11 @@ typedef enum CfResult {
     CF_ERR_INVALID_CODE_FORMAT = -30008,
     /* Indicates that private key is invalid. */
     CF_ERR_CERT_INVALID_PRIVATE_KEY = -30009,
+
+    CF_ERR_EXTENSION_NOT_EXIST = -30010,
+
+    CF_ERR_INVALID_EXTENSION = -30011,
+
+    CF_ERR_SHOULD_NOT_CALL = -30012,
 } CfResult;
 #endif

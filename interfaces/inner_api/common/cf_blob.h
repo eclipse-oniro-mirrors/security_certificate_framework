@@ -49,6 +49,11 @@ typedef struct {
     uint32_t count;
 } CfBlobArray;
 
+typedef struct {
+    uint32_t size;
+    int64_t *data;
+} CfInt64Array;
+
 #ifdef __cplusplus
 extern "C" {
 #endif

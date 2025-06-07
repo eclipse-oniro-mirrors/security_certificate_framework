@@ -28,9 +28,11 @@ ohos_unittest("cf_version1_test") {
     "../../../interfaces/inner_api/certificate",
     "../../../interfaces/inner_api/common",
     "../../../interfaces/inner_api/include",
+    "../../../interfaces/inner_api/attestation",
     "../../../frameworks/common/v1.0/inc",
     "../../../frameworks/core/v1.0/spi",
     "../../../frameworks/adapter/v1.0/inc",
+    "../../../frameworks/adapter/v1.0/src/attestation",
     "../../../frameworks/ability/inc",
     "../../../frameworks/core/life/inc",
     "../../../frameworks/core/cert/inc",
@@ -53,6 +55,7 @@ ohos_unittest("cf_version1_test") {
     "src/crypto_x509_csr_test.cpp",
     "src/crypto_x509_test_common.cpp",
     "src/x509_distinguished_name_test.cpp",
+    "src/attestation_cert_test.cpp",
   ]
 
   sources += [
@@ -72,6 +75,7 @@ ohos_unittest("cf_version1_test") {
     "../../../frameworks/core/v1.0/certificate/x509_certificate.c",
     "../../../frameworks/core/v1.0/certificate/x509_crl.c",
     "../../../frameworks/core/v1.0/certificate/x509_distinguished_name.c",
+    "../../../frameworks/core/v1.0/certificate/hm_attestation_cert_verify.c",
   ]
   sources += [
     "../../../frameworks/adapter/v1.0/src/certificate_openssl_common.c",
@@ -85,6 +89,13 @@ ohos_unittest("cf_version1_test") {
     "../../../frameworks/adapter/v1.0/src/x509_crl_openssl.c",
     "../../../frameworks/adapter/v1.0/src/x509_csr_openssl.c",
     "../../../frameworks/adapter/v1.0/src/x509_distinguished_name_openssl.c",
+  ]
+
+  sources += [
+    "../../../frameworks/adapter/v1.0/src/attestation/attestation_cert_ext_legacy.c",
+    "../../../frameworks/adapter/v1.0/src/attestation/attestation_cert_ext.c",
+    "../../../frameworks/adapter/v1.0/src/attestation/attestation_cert_verify.c",
+    "../../../frameworks/adapter/v1.0/src/attestation/attestation_common.c",
   ]
 
   sources += [

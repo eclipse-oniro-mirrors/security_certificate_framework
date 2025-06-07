@@ -18,6 +18,7 @@ config("cert_framework_config") {
     "../../interfaces/inner_api/certificate",
     "../../interfaces/inner_api/common",
     "../../interfaces/inner_api/include",
+    "../../interfaces/inner_api/attestation",
   ]
 }
 

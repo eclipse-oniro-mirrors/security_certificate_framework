@@ -27,6 +27,7 @@ ohos_static_library("libcertificate_framework_vesion1") {
   configs = [ "../../../config/build:coverage_flag" ]
   include_dirs = [
     "../../adapter/v1.0/inc",
+    "../../adapter/v1.0/src/attestation",
     "spi",
   ]
   sources = [
@@ -38,6 +39,7 @@ ohos_static_library("libcertificate_framework_vesion1") {
     "certificate/x509_certificate.c",
     "certificate/x509_crl.c",
     "certificate/x509_distinguished_name.c",
+    "certificate/hm_attestation_cert_verify.c"
   ]
   cflags = [
     "-DHILOG_ENABLE",
