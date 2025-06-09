@@ -29,6 +29,7 @@ extern "C" {
 bool CmpObjOid(ASN1_OBJECT *obj, const uint8_t *oid, uint32_t oidLen);
 CfResult FindCertExt(const X509 *cert, const uint8_t *oid, uint32_t oidLen, X509_EXTENSION **extension);
 CfResult GetOctectOrUtf8Data(ASN1_TYPE *v, CfBlob *out);
+void ProcessOpensslError(CfResult ret);
 
 #ifdef __cplusplus
 }

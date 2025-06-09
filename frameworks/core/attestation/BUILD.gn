@@ -1,4 +1,4 @@
-# Copyright (c) 2023 Huawei Device Co., Ltd.
+# Copyright (c) 2025 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -13,7 +13,7 @@
 
 import("//build/ohos.gni")
 
-ohos_static_library("libcertificate_framework_vesion1") {
+ohos_static_library("libcertificate_attestation") {
   sanitize = {
     cfi = true
     cfi_cross_dso = true
@@ -26,31 +26,23 @@ ohos_static_library("libcertificate_framework_vesion1") {
   part_name = "certificate_framework"
   configs = [ "../../../config/build:coverage_flag" ]
   include_dirs = [
-    "../../adapter/v1.0/inc",
-    "../../adapter/v1.0/src/attestation",
-    "spi",
+    "../../adapter/attestation/inc",
   ]
   sources = [
-    "certificate/cert_chain_validator.c",
-    "certificate/cert_cms_generator.c",
-    "certificate/cert_crl_collection.c",
-    "certificate/cert_crl_common.c",
-    "certificate/x509_cert_chain.c",
-    "certificate/x509_certificate.c",
-    "certificate/x509_crl.c",
-    "certificate/x509_distinguished_name.c",
-  ]
-  cflags = [
-    "-DHILOG_ENABLE",
-    "-fPIC",
-    "-Wall",
+    "src/hm_attestation_cert_verify.c"
   ]
 
   deps = [ "../../common:libcertificate_framework_common_static" ]
 
   external_deps = [
     "c_utils:utils",
-    "crypto_framework:crypto_framework_lib",
     "hilog:libhilog",
+  ]
+
+  cflags = [
+    "-DHILOG_ENABLE",
+    "-fPIC",
+    "-Wall",
+    "-Werror",
   ]
 }

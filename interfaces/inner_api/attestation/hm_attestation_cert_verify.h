@@ -75,7 +75,7 @@ void HcfAttestFreeVerifyParam(HcfAttestCertVerifyParam *param);
 /*
  * Verify the certificate and return the attestation info.
  *
- * @param [in] encodingBlob The certificate encoding blob. Currently only PEM is supported
+ * @param [in] encodingBlob The certificate encoding blob. Currently only PEM is supported.
  * @param [in] param The certificate verify param, can be NULL. If NULL, the default param will be used.
  * (1) Use system time to check certificate validity.
  * (2) Verify the certificate using the built-in CA certificate.
@@ -114,7 +114,8 @@ CfResult HcfAttestCheckBoundedWithSocid(HmAttestationInfo *info);
  *
  * @param [in] info The attestation info.
  * @param [in] type The certificate extension type.
- * @param [out] ext The certificate extension.
+ * @param [out] ext The certificate extension. The information in ext is read-only and can be accessed before calling
+ * the HcfAttestInfoFree function to release the info.
  * @return The result code. If the extension is not found, the result code is CF_ERR_EXTENSION_NOT_EXIST.
  */
 CfResult HcfAttestGetCertExtension(HmAttestationInfo *info, HmAttestationCertExtType type, HmAttestationCertExt *ext);

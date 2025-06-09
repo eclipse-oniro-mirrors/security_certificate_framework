@@ -46,6 +46,7 @@ ohos_shared_library("certificate_framework_core") {
     "cert:libcertificate_framework_cert_object",
     "extension:libcertificate_framework_extension_object",
     "v1.0:libcertificate_framework_vesion1",
+    "attestation:libcertificate_attestation"
   ]
 
   external_deps = [

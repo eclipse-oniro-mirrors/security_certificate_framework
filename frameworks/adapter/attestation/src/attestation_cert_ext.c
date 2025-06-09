@@ -44,7 +44,7 @@
 
 #define ID_KEY_PROPERTY_APP_ID_UNIFIED_ID ID_KEY_PROPERTY_APP_ID, 0x03
 
-#define ID_KEY_PROPERTY_CHANLENGE ID_KEY_PROPERTIES, 0x04
+#define ID_KEY_PROPERTY_CHALLENGE ID_KEY_PROPERTIES, 0x04
 #define ID_KEY_PROPERTY_KEY_FLAG ID_KEY_PROPERTIES, 0x05
 #define ID_KEY_PROPERTY_DIGEST ID_KEY_PROPERTIES, 0x08
 #define ID_KEY_PROPERTY_SIGN_PADDING ID_KEY_PROPERTIES, 0x09
@@ -92,7 +92,7 @@ DECLARE_OID(ATTESTATION_APP_ID, ID_KEY_PROPERTY_APP_ID);
 DECLARE_OID(ATTESTATION_APP_ID_HAP_ID, ID_KEY_PROPERTY_APP_ID_HAP_ID);
 DECLARE_OID(ATTESTATION_APP_ID_SA_ID, ID_KEY_PROPERTY_APP_ID_SA_ID);
 DECLARE_OID(ATTESTATION_APP_ID_UNIFIED_ID, ID_KEY_PROPERTY_APP_ID_UNIFIED_ID);
-DECLARE_OID(ATTESTATION_CHALLENGE, ID_KEY_PROPERTY_CHANLENGE);
+DECLARE_OID(ATTESTATION_CHALLENGE, ID_KEY_PROPERTY_CHALLENGE);
 DECLARE_OID(ATTESTATION_KEY_FLAG, ID_KEY_PROPERTY_KEY_FLAG);
 DECLARE_OID(ATTESTATION_DIGEST, ID_KEY_PROPERTY_DIGEST);
 DECLARE_OID(ATTESTATION_SIGN_PADDING, ID_KEY_PROPERTY_SIGN_PADDING);
@@ -234,7 +234,7 @@ CfResult GetDeviceCertSecureLevel(const X509 *cert, DeviceCertSecureLevel **devS
     X509_EXTENSION *extension = NULL;
     CfResult ret = FindCertExt(cert, DEVICE_SECURITY_LEVEL_OID, sizeof(DEVICE_SECURITY_LEVEL_OID), &extension);
     if (ret != CF_SUCCESS) {
-        LOGE("device security level extention is not exist, ret = %d\n", ret);
+        LOGE("device security level extention is not exist, ret = %{public}d\n", ret);
         return ret;
     }
 
@@ -250,7 +250,7 @@ CfResult GetDeviceCertSecureLevel(const X509 *cert, DeviceCertSecureLevel **devS
     tmp = d2i_HmDeviceSecurityLevel(NULL, &data, dataLen);
     if (tmp == NULL) {
         LOGE("d2i_HmDeviceSecurityLevel failed\n");
-        return CF_ERR_CRYPTO_OPERATION;
+        return CF_ERR_INVALID_EXTENSION;
     }
 
     int64_t v = 0;
@@ -375,7 +375,8 @@ static CfResult Asn1typeParseHmAttestationClaim(ASN1_TYPE *asn1Type, HmAttestati
     long len = asn1Type->value.sequence->length;
 
     *claim = d2i_HmAttestationClaim(NULL, &p, len);
-    if (claim == NULL) {
+    if (*claim == NULL) {
+        LOGE("d2i_HmAttestationClaim failed\n");
         return CF_ERR_INVALID_EXTENSION;
     }
 
@@ -407,7 +408,7 @@ static CfResult ParseAttestationClaim(STACK_OF(ASN1_TYPE) *exts, int extCount, A
         HmAttestationClaim *t = NULL;
         ret = Asn1typeParseHmAttestationClaim(asn1Type, &t);
         if (ret != CF_SUCCESS) {
-            LOGE("Asn1typeParseHmAttestationClaim failed, ret = %d\n", ret);
+            LOGE("Asn1typeParseHmAttestationClaim failed, ret = %{public}d\n", ret);
             HmAttestationClaimfree(claims, count);
             return ret;
         }
@@ -422,23 +423,25 @@ static CfResult ParseAttestationClaim(STACK_OF(ASN1_TYPE) *exts, int extCount, A
 
 static CfResult ParseAttestationExt(X509_EXTENSION *extension, AttestationRecord *record)
 {
-    STACK_OF(ASN1_TYPE) *exts = NULL;
-    CfResult ret;
-
     ASN1_OCTET_STRING *extValue = X509_EXTENSION_get_data(extension);
     if (extValue == NULL) {
         LOGE("X509_EXTENSION_get_data failed\n");
-        return -1;
+        return CF_ERR_CRYPTO_OPERATION;
     }
 
     int extValueLen = ASN1_STRING_length(extValue);
     const unsigned char *data = ASN1_STRING_get0_data(extValue);
-    exts = d2i_ASN1_SEQUENCE_ANY(NULL, &data, extValueLen);
+    if (extValueLen == 0 || data == NULL) {
+        LOGE("extValueLen = %{public}d, data = %{public}p\n", extValueLen, data);
+        return CF_ERR_EXTENSION_NOT_EXIST;
+    }
+    STACK_OF(ASN1_TYPE) *exts = d2i_ASN1_SEQUENCE_ANY(NULL, &data, extValueLen);
     if (exts == NULL) {
         LOGE("d2i_ASN1_SEQUENCE_ANY failed\n");
         return CF_ERR_INVALID_EXTENSION;
     }
 
+    CfResult ret;
     int extCount = sk_ASN1_TYPE_num(exts);
     if (extCount <= 0) {
         LOGE("exts has no element\n");
@@ -448,13 +451,13 @@ static CfResult ParseAttestationExt(X509_EXTENSION *extension, AttestationRecord
 
     ret = Asn1typeGetInteger(sk_ASN1_TYPE_value(exts, 0), &record->version);
     if (ret != CF_SUCCESS) {
-        LOGE("Asn1typeGetInteger record version failed, ret = %d\n", ret);
+        LOGE("Asn1typeGetInteger record version failed, ret = %{public}d\n", ret);
         goto exit;
     }
 
     ret = ParseAttestationClaim(exts, extCount, record);
     if (ret != CF_SUCCESS) {
-        LOGE("ParseAttestationClaim failed, ret = %d\n", ret);
+        LOGE("ParseAttestationClaim failed, ret = %{public}d\n", ret);
         goto exit;
     }
 
@@ -475,6 +478,7 @@ static CfResult ParseAppId(AttestationRecord *record)
     const unsigned char *p = blob.data;
     appId = d2i_HmApplicationIdType(NULL, &p, blob.size);
     if (appId == NULL) {
+        LOGE("d2i_HmApplicationIdType failed\n");
         return CF_ERR_INVALID_EXTENSION;
     }
 
@@ -490,7 +494,7 @@ CfResult GetHmAttestationRecord(const X509 *cert, AttestationRecord **record)
     X509_EXTENSION *extension = NULL;
     CfResult ret = FindCertExt(cert, ATTESTATION_EXT_OID, sizeof(ATTESTATION_EXT_OID), &extension);
     if (ret != CF_SUCCESS) {
-        LOGE("attestation extention is not exist, ret = %d\n", ret);
+        LOGE("attestation extention is not exist, ret = %{public}d\n", ret);
         return ret;
     }
 
@@ -523,7 +527,7 @@ CfResult GetDeviceActivationCertExt(const X509 *cert, DeviceActivationCertExt **
     X509_EXTENSION *extension = NULL;
     CfResult ret = FindCertExt(cert, DEVICE_ACTIVATION_EXT_OID, sizeof(DEVICE_ACTIVATION_EXT_OID), &extension);
     if (ret != CF_SUCCESS) {
-        LOGE("Device activation cert extention is not exist, ret = %d\n", ret);
+        LOGE("Device activation cert extention is not exist, ret = %{public}d\n", ret);
         return ret;
     }
 
