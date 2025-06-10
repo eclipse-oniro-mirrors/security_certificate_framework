@@ -1178,7 +1178,7 @@ bool CertGetBlobFromBigIntJSParams(napi_env env, napi_value arg, CfBlob &outBlob
         LOGE("Get big int failed.");
         return false;
     }
-    int length = wordCount * sizeof(uint64_t);
+    size_t length = wordCount * sizeof(uint64_t);
     uint8_t *retArr = reinterpret_cast<uint8_t *>(CfMalloc(length, 0));
     if (retArr == nullptr) {
         LOGE("Malloc blob data failed!");
