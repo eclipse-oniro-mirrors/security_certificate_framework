@@ -2067,14 +2067,14 @@ static STACK_OF(X509) *GetCaFromP12(const CfBlob *keyStore, const CfBlob *pwd)
 
     EVP_PKEY_free(pkey);
     if (cert == NULL) {
-        LOGE("P12 dose not have a cert!");
+        LOGE("P12 does not have a cert!");
         sk_X509_pop_free(caStack, X509_free);
         return NULL;
     }
     X509_free(cert);
 
     if (caStack == NULL) {
-        LOGE("P12 dose not have ca!");
+        LOGE("P12 does not have ca!");
     }
     return caStack;
 }

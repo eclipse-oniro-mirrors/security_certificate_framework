@@ -311,7 +311,7 @@ CfResult AllocateAndConvertCert(X509 *cert, HcfX509P12Collection *collection, bo
         return CF_SUCCESS;
     }
     if (cert == NULL) {
-        LOGI("P12 dose not have a cert!");
+        LOGI("P12 does not have a cert!");
         return CF_SUCCESS;
     }
     CfResult ret = X509ToHcfX509Certificate(cert, &collection->cert);
@@ -378,7 +378,7 @@ CfResult AllocateAndConvertCertStack(STACK_OF(X509) *ca, HcfX509P12Collection *c
         return CF_SUCCESS;
     }
     if (ca == NULL) {
-        LOGI("P12 dose not have other certs!");
+        LOGI("P12 does not have other certs!");
         return CF_SUCCESS;
     }
     int32_t count = sk_X509_num(ca);
