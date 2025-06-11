@@ -17,11 +17,13 @@
 #define ANI_X509_CRL_H
 
 #include "ani_common.h"
+#include "x509_crl.h"
 
 namespace ANI::CertFramework {
 class X509CRLImpl {
 public:
     X509CRLImpl();
+    explicit X509CRLImpl(HcfX509Crl *x509Crl);
     ~X509CRLImpl();
 
     bool IsRevoked(weak::X509Cert cert);
@@ -48,6 +50,9 @@ public:
     string ToStringEx(EncodingType encodingType);
     array<uint8_t> HashCode();
     CertExtension GetExtensionsObject();
+
+private:
+    HcfX509Crl *x509Crl_ = nullptr;
 };
 } // namespace ANI::CertFramework
 

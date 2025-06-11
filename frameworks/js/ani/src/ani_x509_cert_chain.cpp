@@ -14,8 +14,11 @@
  */
 
 #include "ani_x509_cert_chain.h"
+#include "ani_x509_cert.h"
 #include "ani_x509_cert_chain_validate_result.h"
 #include "ani_cert_chain_build_result.h"
+#include "x509_cert_chain.h"
+#include "x509_trust_anchor.h"
 
 namespace ANI::CertFramework {
 X509CertChainImpl::X509CertChainImpl() {}
@@ -67,7 +70,46 @@ CertChainBuildResult BuildX509CertChainSync(CertChainBuildParameters const& para
 
 Pkcs12Data ParsePkcs12(array_view<uint8_t> data, Pkcs12ParsingConfig const& config)
 {
-    TH_THROW(std::runtime_error, "ParsePkcs12 not implemented");
+    HcfX509P12Collection *p12Collection = nullptr;
+    HcfParsePKCS12Conf conf = {};
+    CfBlob keyStore = {};
+    ArrayU8ToDataBlob(data, keyStore);
+    CfResult res = HcfParsePKCS12(&keyStore, &conf, &p12Collection);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "parse pkcs12 failed!");
+        return {};
+    }
+    Pkcs12Data pkcs12Data = {};
+    if (p12Collection->prikey == nullptr) {
+        pkcs12Data.privateKey = optional<OptStrUint8Arr>(std::nullopt);
+    } else {
+        if (p12Collection->isPem) {
+            string str = string(reinterpret_cast<char *>(p12Collection->prikey->data), p12Collection->prikey->size);
+            pkcs12Data.privateKey = optional<OptStrUint8Arr>(std::in_place, OptStrUint8Arr::make_STRING(str));
+        } else {
+            array<uint8_t> blob = {};
+            DataBlobToArrayU8(*(p12Collection->prikey), blob);
+            pkcs12Data.privateKey = optional<OptStrUint8Arr>(std::in_place, OptStrUint8Arr::make_UINT8ARRAY(blob));
+        }
+        CfBlobDataClearAndFree(p12Collection->prikey);
+        CfFree(p12Collection->prikey);
+    }
+    if (p12Collection->cert == nullptr) {
+        pkcs12Data.cert = optional<X509Cert>(std::nullopt);
+    } else {
+        pkcs12Data.cert = optional<X509Cert>(std::in_place, make_holder<X509CertImpl, X509Cert>(p12Collection->cert));
+    }
+    if (p12Collection->otherCertsCount == 0) {
+        pkcs12Data.otherCerts = optional<array<X509Cert>>(std::nullopt);
+    } else {
+        pkcs12Data.otherCerts = optional<array<X509Cert>>(std::in_place,
+            array<X509Cert>(p12Collection->otherCertsCount, make_holder<X509CertImpl, X509Cert>()));
+        for (uint32_t i = 0; i < p12Collection->otherCertsCount; i++) {
+            (*pkcs12Data.otherCerts)[i] = make_holder<X509CertImpl, X509Cert>(p12Collection->otherCerts[i]);
+        }
+    }
+    CfFree(p12Collection);
+    return pkcs12Data;
 }
 
 array<X509TrustAnchor> CreateTrustAnchorsWithKeyStoreSync(array_view<uint8_t> keystore, string_view pwd)

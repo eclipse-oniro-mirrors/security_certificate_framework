@@ -17,7 +17,6 @@
 #define ANI_X509_CERT_H
 
 #include "ani_common.h"
-#include "ani_pub_key.h"
 #include "x509_certificate.h"
 
 namespace ANI::CertFramework {
@@ -27,12 +26,12 @@ public:
     explicit X509CertImpl(HcfX509Certificate *cert);
     ~X509CertImpl();
 
+    int64_t GetX509CertObj();
     void VerifySync(cryptoFramework::weak::PubKey key);
     EncodingBlob GetEncodedSync();
     cryptoFramework::PubKey GetPublicKey();
     void CheckValidityWithDate(string_view date);
     int32_t GetVersion();
-    int64_t GetSerialNumber();
     array<uint8_t> GetCertSerialNumber();
     DataBlob GetIssuerName();
     string GetIssuerNameEx(EncodingType encodingType);

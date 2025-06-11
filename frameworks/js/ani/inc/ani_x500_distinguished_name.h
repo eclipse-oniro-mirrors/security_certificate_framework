@@ -17,17 +17,22 @@
 #define ANI_X509_DISTINGUISHED_NAME_H
 
 #include "ani_common.h"
+#include "x509_distinguished_name.h"
 
 namespace ANI::CertFramework {
 class X500DistinguishedNameImpl {
 public:
     X500DistinguishedNameImpl();
+    explicit X500DistinguishedNameImpl(HcfX509DistinguishedName *x509Name);
     ~X500DistinguishedNameImpl();
 
     string GetName();
     string GetNameByEnum(EncodingType encodingType);
     array<string> GetNameByStr(string_view type);
     EncodingBlob GetEncoded();
+
+private:
+    HcfX509DistinguishedName *x509Name_ = nullptr;
 };
 } // namespace ANI::CertFramework
 

@@ -17,11 +17,13 @@
 #define ANI_X509_CRL_ENTRY_H
 
 #include "ani_common.h"
+#include "x509_crl_entry.h"
 
 namespace ANI::CertFramework {
 class X509CRLEntryImpl {
 public:
     X509CRLEntryImpl();
+    explicit X509CRLEntryImpl(HcfX509CrlEntry *x509CrlEntry);
     ~X509CRLEntryImpl();
 
     EncodingBlob GetEncodedSync();
@@ -35,6 +37,9 @@ public:
     string ToString();
     array<uint8_t> HashCode();
     CertExtension GetExtensionsObject();
+
+private:
+    HcfX509CrlEntry *x509CrlEntry_ = nullptr;
 };
 } // namespace ANI::CertFramework
 

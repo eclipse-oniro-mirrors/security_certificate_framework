@@ -24,6 +24,7 @@
 #include "cf_log.h"
 #include "cf_blob.h"
 #include "cf_result.h"
+#include "cf_memory.h"
 #include "cf_object_base.h"
 
 namespace ANI::CertFramework {
@@ -43,6 +44,9 @@ void ArrayU8ToDataBlob(const array<uint8_t> &arr, CfBlob &blob);
 void DataBlobToArrayU8(const CfBlob &blob, array<uint8_t> &arr);
 void ArrayU8ToBigInteger(const array<uint8_t> &arr, CfBlob &bigInt);
 void BigIntegerToArrayU8(const CfBlob &bigInt, array<uint8_t> &arr);
+void StringToDataBlob(const string &str, CfBlob &blob);
+void DataBlobToEncodingBlob(const CfBlob &blob, CfEncodingBlob &encodingBlob,
+    CfEncodingFormat encodingFormat = CF_FORMAT_DER);
 } // namespace ANI::CertFramework
 
 #endif // ANI_COMMON_H

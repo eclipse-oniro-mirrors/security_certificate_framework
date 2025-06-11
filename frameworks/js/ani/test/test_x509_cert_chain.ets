@@ -21,6 +21,6 @@ function testX509CertChainAsync() {
 }
 
 export function testX509CertChain() {
-  console.log(">>>>>>>>>>>>>>>>>>>> X509CertChainAsync");
+  console.println(">>>>>>>>>>>>>>>>>>>> X509CertChainAsync");
   testX509CertChainAsync();
 }

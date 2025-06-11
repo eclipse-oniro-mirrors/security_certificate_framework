@@ -92,6 +92,7 @@ enum EncodingType: i32 {
 }
 
 interface X509Cert {
+  GetX509CertObj(): i64;
   @gen_async("verify")
   @gen_promise("verify")
   VerifySync(key: cryptoFramework.PubKey): void;
@@ -101,7 +102,6 @@ interface X509Cert {
   GetPublicKey(): cryptoFramework.PubKey;
   CheckValidityWithDate(date: String): void;
   GetVersion(): i32;
-  GetSerialNumber(): i64;
   GetCertSerialNumber(): @bigint Array<u8>;
   @overload("getIssuerName")
   GetIssuerName(): DataBlob;

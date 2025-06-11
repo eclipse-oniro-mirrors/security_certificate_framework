@@ -90,7 +90,6 @@ declare namespace cert {
     getPublicKey(): cryptoFramework.PubKey;
     checkValidityWithDate(date: string): void;
     getVersion(): int;
-    getSerialNumber(): long;
     getCertSerialNumber(): bigint;
     getIssuerName(): DataBlob;
     getIssuerName(encodingType: EncodingType): string;

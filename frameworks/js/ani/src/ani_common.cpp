@@ -88,4 +88,18 @@ void BigIntegerToArrayU8(const CfBlob &bigint, array<uint8_t> &arr)
     // 0x00 is the sign bit of big integer, it's always a positive number in this implementation
     arr[bigint.size] = 0x00;
 }
+
+void StringToDataBlob(const string &str, CfBlob &blob)
+{
+    blob.data = str.empty() ? nullptr : reinterpret_cast<uint8_t *>(const_cast<char *>(str.c_str()));
+    blob.size = str.size();
+}
+
+void DataBlobToEncodingBlob(const CfBlob &blob, CfEncodingBlob &encodingBlob,
+    CfEncodingFormat encodingFormat /* = CF_FORMAT_DER */)
+{
+    encodingBlob.data = blob.data;
+    encodingBlob.len = blob.size;
+    encodingBlob.encodingFormat = encodingFormat;
+}
 } // namespace ANI::CertFramework

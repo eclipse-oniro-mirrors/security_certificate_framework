@@ -33,22 +33,26 @@ int64_t PubKeyImpl::GetPubKeyObj()
 
 cryptoFramework::OptKeySpec PubKeyImpl::GetAsyKeySpec(cryptoFramework::AsyKeySpecItem itemType)
 {
-    TH_THROW(std::runtime_error, "GetAsyKeySpec not implemented");
+    ANI_LOGE_THROW(CF_NOT_SUPPORT, "GetAsyKeySpec not supported!");
+    return cryptoFramework::OptKeySpec::make_INT32(-1);
 }
 
 cryptoFramework::DataBlob PubKeyImpl::GetEncodedDer(string_view format)
 {
-    TH_THROW(std::runtime_error, "GetEncodedDer not implemented");
+    ANI_LOGE_THROW(CF_NOT_SUPPORT, "GetEncodedDer not supported!");
+    return {};
 }
 
 string PubKeyImpl::GetEncodedPem(string_view format)
 {
-    TH_THROW(std::runtime_error, "GetEncodedPem not implemented");
+    ANI_LOGE_THROW(CF_NOT_SUPPORT, "GetEncodedPem not supported!");
+    return "";
 }
 
 int64_t PubKeyImpl::GetKeyObj()
 {
-    TH_THROW(std::runtime_error, "GetKeyObj not implemented");
+    ANI_LOGE_THROW(CF_NOT_SUPPORT, "GetKeyObj not supported!");
+    return -1;
 }
 
 cryptoFramework::DataBlob PubKeyImpl::GetEncoded()
@@ -71,21 +75,13 @@ cryptoFramework::DataBlob PubKeyImpl::GetEncoded()
 
 string PubKeyImpl::GetFormat()
 {
-    if (this->pubKey_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "pubKey obj is nullptr!");
-        return "";
-    }
-    const char *format = this->pubKey_->base.getFormat(&this->pubKey_->base);
-    return (format == nullptr) ? "" : string(format);
+    ANI_LOGE_THROW(CF_NOT_SUPPORT, "GetFormat not supported!");
+    return "";
 }
 
 string PubKeyImpl::GetAlgName()
 {
-    if (this->pubKey_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "pubKey obj is nullptr!");
-        return "";
-    }
-    const char *algName = this->pubKey_->base.getAlgorithm(&this->pubKey_->base);
-    return (algName == nullptr) ? "" : string(algName);
+    ANI_LOGE_THROW(CF_NOT_SUPPORT, "GetAlgName not supported!");
+    return "";
 }
 } // namespace ANI::CertFramework
