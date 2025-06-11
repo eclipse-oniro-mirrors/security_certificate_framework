@@ -18,7 +18,13 @@
 namespace ANI::CertFramework {
 CertExtensionImpl::CertExtensionImpl() {}
 
-CertExtensionImpl::~CertExtensionImpl() {}
+CertExtensionImpl::CertExtensionImpl(CfObject *object) : object_(object) {}
+
+CertExtensionImpl::~CertExtensionImpl()
+{
+    CfObjDestroy(this->object_);
+    this->object_ = nullptr;
+}
 
 EncodingBlob CertExtensionImpl::GetEncoded()
 {

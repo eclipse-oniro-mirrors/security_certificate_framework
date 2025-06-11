@@ -84,20 +84,20 @@ function testCertChainValidatorAsync() {
         uint8ArrayOfCaCertDataLen.length + i] = uint8ArrayOfCaCertData[i];
     }
     let validator = cert.createCertChainValidator('PKIX');
-    console.log("CertChainValidator algName: " + validator.algorithm);
+    console.println("CertChainValidator algName: " + validator.algorithm);
     let certChainData: cert.CertChainData = {
       data: encodingData,
       count: 2,
       encodingFormat: cert.EncodingFormat.FORMAT_PEM
     };
     await validator.validate(certChainData);
-    console.log('CertChainValidator success');
+    console.println('CertChainValidator success');
   } catch (err: BusinessError) {
-    console.error(`[error] CertChainValidator: ${err.code} ${err.message}`);
+    console.println(`[error] CertChainValidator: ${err.code} ${err.message}`);
   }
 }
 
 export function testCertChainValidator() {
-  console.log(">>>>>>>>>>>>>>>>>>>> CertChainValidatorAsync");
+  console.println(">>>>>>>>>>>>>>>>>>>> CertChainValidatorAsync");
   testCertChainValidatorAsync();
 }

@@ -760,7 +760,7 @@ static void FreeP12Collection(HcfX509P12Collection *collection)
     }
 
     if (collection->prikey != nullptr && collection->prikey->data != nullptr) {
-        CfFree(collection->prikey->data);
+        CfBlobDataClearAndFree(collection->prikey);
         CfFree(collection->prikey);
     }
 
@@ -891,7 +891,8 @@ static napi_value ParsePKCS12WithKeyStore(napi_env env, size_t argc, napi_value 
     }
     CfBlobFree(&keyStore);
     FreeHcfParsePKCS12Conf(conf);
-    CfBlobFree(&p12Collection->prikey);
+    CfBlobDataClearAndFree(p12Collection->prikey);
+    CfFree(p12Collection->prikey);
     CfFree(p12Collection);
     return instance;
 }

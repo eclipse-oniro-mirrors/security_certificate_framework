@@ -18,7 +18,13 @@
 namespace ANI::CertFramework {
 X500DistinguishedNameImpl::X500DistinguishedNameImpl() {}
 
-X500DistinguishedNameImpl::~X500DistinguishedNameImpl() {}
+X500DistinguishedNameImpl::X500DistinguishedNameImpl(HcfX509DistinguishedName *x509Name) : x509Name_(x509Name) {}
+
+X500DistinguishedNameImpl::~X500DistinguishedNameImpl()
+{
+    CfObjDestroy(this->x509Name_);
+    this->x509Name_ = nullptr;
+}
 
 string X500DistinguishedNameImpl::GetName()
 {
@@ -27,6 +33,7 @@ string X500DistinguishedNameImpl::GetName()
 
 string X500DistinguishedNameImpl::GetNameByEnum(EncodingType encodingType)
 {
+    // api 20
     TH_THROW(std::runtime_error, "GetNameByEnum not implemented");
 }
 

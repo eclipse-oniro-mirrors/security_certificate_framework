@@ -17,11 +17,13 @@
 #define ANI_CERT_EXTENSION_H
 
 #include "ani_common.h"
+#include "cf_api.h"
 
 namespace ANI::CertFramework {
 class CertExtensionImpl {
 public:
     CertExtensionImpl();
+    explicit CertExtensionImpl(CfObject *object);
     ~CertExtensionImpl();
 
     EncodingBlob GetEncoded();
@@ -29,6 +31,9 @@ public:
     DataBlob GetEntry(ExtensionEntryType valueType, DataBlob const& oid);
     int32_t CheckCA();
     bool HasUnsupportedCriticalExtension();
+
+private:
+    CfObject *object_ = nullptr;
 };
 } // namespace ANI::CertFramework
 

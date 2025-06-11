@@ -30,6 +30,11 @@ X509CertImpl::~X509CertImpl()
     this->cert_ = nullptr;
 }
 
+int64_t X509CertImpl::GetX509CertObj()
+{
+    return reinterpret_cast<int64_t>(this->cert_);
+}
+
 void X509CertImpl::VerifySync(cryptoFramework::weak::PubKey key)
 {
     if (this->cert_ == nullptr) {
@@ -51,17 +56,17 @@ EncodingBlob X509CertImpl::GetEncodedSync()
         ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
         return encodingBlob;
     }
-    CfEncodingBlob outBlob = {};
-    CfResult res = this->cert_->base.getEncoded(&(this->cert_->base), &outBlob);
+    CfEncodingBlob blob = {};
+    CfResult res = this->cert_->base.getEncoded(&(this->cert_->base), &blob);
     if (res != CF_SUCCESS) {
         ANI_LOGE_THROW(res, "get cert encoded failed!");
         return encodingBlob;
     }
     array<uint8_t> data = {};
-    DataBlobToArrayU8({ outBlob.len, outBlob.data }, data);
+    DataBlobToArrayU8({ blob.len, blob.data }, data);
     encodingBlob.data = data;
-    encodingBlob.encodingFormat = static_cast<EncodingFormat::key_t>(outBlob.encodingFormat);
-    CfEncodingBlobDataFree(&outBlob);
+    encodingBlob.encodingFormat = static_cast<EncodingFormat::key_t>(blob.encodingFormat);
+    CfEncodingBlobDataFree(&blob);
     return encodingBlob;
 }
 
@@ -90,11 +95,6 @@ int32_t X509CertImpl::GetVersion()
     TH_THROW(std::runtime_error, "GetVersion not implemented");
 }
 
-int64_t X509CertImpl::GetSerialNumber()
-{
-    TH_THROW(std::runtime_error, "GetSerialNumber not implemented");
-}
-
 array<uint8_t> X509CertImpl::GetCertSerialNumber()
 {
     TH_THROW(std::runtime_error, "GetCertSerialNumber not implemented");
@@ -107,6 +107,7 @@ DataBlob X509CertImpl::GetIssuerName()
 
 string X509CertImpl::GetIssuerNameEx(EncodingType encodingType)
 {
+    // api 20
     TH_THROW(std::runtime_error, "GetIssuerNameEx not implemented");
 }
 
@@ -152,7 +153,22 @@ DataBlob X509CertImpl::GetKeyUsage()
 
 DataArray X509CertImpl::GetExtKeyUsage()
 {
-    TH_THROW(std::runtime_error, "GetExtKeyUsage not implemented");
+    if (this->cert_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        return {};
+    }
+    CfArray cfArr = {};
+    CfResult res = this->cert_->getExtKeyUsage(this->cert_, &cfArr);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "get ext key usage failed!");
+        return {};
+    }
+    DataArray dataArr = { array<array<uint8_t>>::make(cfArr.count, {}) };
+    for (uint32_t i = 0; i < cfArr.count; i++) {
+        DataBlobToArrayU8(cfArr.data[i], dataArr.data[i]);
+    }
+    CfArrayDataClearAndFree(&cfArr);
+    return dataArr;
 }
 
 int32_t X509CertImpl::GetBasicConstraints()
@@ -206,6 +222,7 @@ string X509CertImpl::ToString()
 
 string X509CertImpl::ToStringEx(EncodingType encodingType)
 {
+    // api 20
     TH_THROW(std::runtime_error, "ToStringEx not implemented");
 }
 
@@ -225,11 +242,9 @@ X509Cert CreateX509CertSync(EncodingBlob const& inStream)
 {
     CfBlob blob = {};
     ArrayU8ToDataBlob(inStream.data, blob);
-    CfEncodingBlob encodingBlob = {
-        .data = blob.data,
-        .len = blob.size,
-        .encodingFormat = static_cast<CfEncodingFormat>(inStream.encodingFormat.get_value()),
-    };
+    CfEncodingBlob encodingBlob = {};
+    CfEncodingFormat encodingFormat = static_cast<CfEncodingFormat>(inStream.encodingFormat.get_value());
+    DataBlobToEncodingBlob(blob, encodingBlob, encodingFormat);
     HcfX509Certificate *cert = nullptr;
     CfResult res = HcfX509CertificateCreate(&encodingBlob, &cert);
     if (res != CF_SUCCESS) {

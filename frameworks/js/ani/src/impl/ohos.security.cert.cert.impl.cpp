@@ -30,6 +30,10 @@ public:
         // Don't forget to implement the constructor.
     }
 
+    int64_t GetX509CertObj() {
+        TH_THROW(std::runtime_error, "GetX509CertObj not implemented");
+    }
+
     void VerifySync(::ohos::security::cryptoFramework::cryptoFramework::weak::PubKey key) {
         TH_THROW(std::runtime_error, "VerifySync not implemented");
     }
@@ -50,10 +54,6 @@ public:
 
     int32_t GetVersion() {
         TH_THROW(std::runtime_error, "GetVersion not implemented");
-    }
-
-    int64_t GetSerialNumber() {
-        TH_THROW(std::runtime_error, "GetSerialNumber not implemented");
     }
 
     array<uint8_t> GetCertSerialNumber() {

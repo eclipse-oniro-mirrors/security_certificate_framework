@@ -37,17 +37,15 @@ function testX509CertAsync() {
     let pubKey = x509Cert.getPublicKey();
     let pkBlob = pubKey.getEncoded();
     let pkStr = utils.uint8ArrayToHexStr(pkBlob.data);
-    console.log("X509Cert pubKey.algName: " + pubKey.algName);
-    console.log("X509Cert pubKey.format: " + pubKey.format);
-    console.log("X509Cert pubKey: " + pkStr);
+    console.println("X509Cert pubKey: " + pkStr);
     await x509Cert.verify(pubKey);
-    console.log("X509Cert success");
+    console.println("X509Cert success");
   } catch (err: BusinessError) {
-    console.error(`[error] X509Cert: ${err.code} ${err.message}`);
+    console.println(`[error] X509Cert: ${err.code} ${err.message}`);
   }
 }
 
 export function testX509Cert() {
-  console.log(">>>>>>>>>>>>>>>>>>>> X509CertAsync");
+  console.println(">>>>>>>>>>>>>>>>>>>> X509CertAsync");
   testX509CertAsync();
 }
