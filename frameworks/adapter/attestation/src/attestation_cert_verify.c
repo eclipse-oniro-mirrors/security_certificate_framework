@@ -26,6 +26,38 @@
 #include "attestation_cert_verify.h"
 #include "attestation_cert_ext_legacy.h"
 
+static const char *ROOT_CA = "-----BEGIN CERTIFICATE-----\n"
+"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\n"
+"-----END CERTIFICATE-----";
+
 static const char *ROOT_G2_CA = "-----BEGIN CERTIFICATE-----\n"
 "MIICGjCCAaGgAwIBAgIIShhpn519jNAwCgYIKoZIzj0EAwMwUzELMAkGA1UEBhMC\n"
 "Q04xDzANBgNVBAoMBkh1YXdlaTETMBEGA1UECwwKSHVhd2VpIENCRzEeMBwGA1UE\n"
@@ -108,26 +140,31 @@ static CfResult AddtrustedCertsToStore(STACK_OF(X509) *trustedCerts, X509_STORE 
     return CF_SUCCESS;
 }
 
+typedef struct {
+    int32_t errCode;
+    CfResult ret;
+} X509VerifyErrCodeMap;
+
+static const X509VerifyErrCodeMap X509_VERIFY_ERR_MAP[] = {
+    {X509_V_ERR_CERT_SIGNATURE_FAILURE, CF_ERR_CERT_SIGNATURE_FAILURE},
+    {X509_V_ERR_CERT_NOT_YET_VALID, CF_ERR_CERT_NOT_YET_VALID},
+    {X509_V_ERR_CERT_HAS_EXPIRED, CF_ERR_CERT_HAS_EXPIRED},
+    {X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY, CF_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY},
+    {X509_V_ERR_KEYUSAGE_NO_CERTSIGN, CF_ERR_KEYUSAGE_NO_CERTSIGN},
+    {X509_V_ERR_KEYUSAGE_NO_DIGITAL_SIGNATURE, CF_ERR_KEYUSAGE_NO_DIGITAL_SIGNATURE},
+};
+
 static CfResult ParseX509VerifyErrCode(X509_STORE_CTX *ctx)
 {
     int32_t errCode = X509_STORE_CTX_get_error(ctx);
-    LOGE("X509_verify_cert failed: %s\n", X509_verify_cert_error_string(errCode));
-    switch (errCode) {
-        case X509_V_ERR_CERT_SIGNATURE_FAILURE:
-            return CF_ERR_CERT_SIGNATURE_FAILURE;
-        case X509_V_ERR_CERT_NOT_YET_VALID:
-            return CF_ERR_CERT_NOT_YET_VALID;
-        case X509_V_ERR_CERT_HAS_EXPIRED:
-            return CF_ERR_CERT_HAS_EXPIRED;
-        case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY:
-            return CF_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY;
-        case X509_V_ERR_KEYUSAGE_NO_CERTSIGN:
-            return CF_ERR_KEYUSAGE_NO_CERTSIGN;
-        case X509_V_ERR_KEYUSAGE_NO_DIGITAL_SIGNATURE:
-            return CF_ERR_KEYUSAGE_NO_DIGITAL_SIGNATURE;
-        default:
-            return CF_ERR_CRYPTO_OPERATION;
+    LOGE("X509_verify_cert failed: %{public}s\n", X509_verify_cert_error_string(errCode));
+    int i;
+    for (i = 0; i < sizeof(X509_VERIFY_ERR_MAP) / sizeof(X509_VERIFY_ERR_MAP[0]); i++) {
+        if (X509_VERIFY_ERR_MAP[i].errCode == errCode) {
+            return X509_VERIFY_ERR_MAP[i].ret;
+        }
     }
+    return CF_ERR_CRYPTO_OPERATION;
 }
 
 static CfResult VerifyCerts(STACK_OF(X509) *certs, STACK_OF(X509) *trustedCerts, const HcfAttestCertVerifyParam *param,
@@ -188,7 +225,7 @@ static CfResult GetX509NameByNid(X509_NAME *name, int nid, char **buf)
 {
     CfResult ret = X509_NAME_get_text_by_NID(name, nid, NULL, 0);
     if (ret <= 0) {
-        LOGE("X509 name not exist %s\n", OBJ_nid2sn(nid));
+        LOGE("X509 name not exist %{public}s\n", OBJ_nid2sn(nid));
         return CF_ERR_EXTENSION_NOT_EXIST;
     }
 
@@ -231,7 +268,7 @@ static CfResult CheckSn(const CertSnInfo *snPattern, const CertSnInfo *sn)
         return CF_ERR_PARAMETER_CHECK;
     }
 
-    if (strncmp(snPattern->cn, sn->cn, strlen(snPattern->cn)) != CF_SUCCESS) {
+    if (strncmp(snPattern->cn, sn->cn, strlen(snPattern->cn)) != 0) {
         LOGI("cn is not equal\n");
         return CF_ERR_PARAMETER_CHECK;
     }
@@ -275,25 +312,25 @@ static CfResult GetCertSn(X509 *cert, CertSnInfo *sn)
     }
     CfResult ret = GetX509NameByNid(name, NID_commonName, &sn->cn);
     if (ret != CF_SUCCESS) { // CN must exist
-        LOGE("Get X509 name cn failed, ret = %d\n", ret);
+        LOGE("Get X509 name cn failed, ret = %{public}d\n", ret);
         goto exit;
     }
 
     ret = GetX509NameByNid(name, NID_countryName, &sn->c);
     if (ret != CF_SUCCESS && ret != CF_ERR_EXTENSION_NOT_EXIST) {
-        LOGE("Get X509 name c failed, ret = %d\n", ret);
+        LOGE("Get X509 name c failed, ret = %{public}d\n", ret);
         goto exit;
     }
 
     ret = GetX509NameByNid(name, NID_organizationalUnitName, &sn->ou);
     if (ret != CF_SUCCESS && ret != CF_ERR_EXTENSION_NOT_EXIST) {
-        LOGE("Get X509 name ou failed, ret = %d\n", ret);
+        LOGE("Get X509 name ou failed, ret = %{public}d\n", ret);
         goto exit;
     }
 
     ret = GetX509NameByNid(name, NID_organizationName, &sn->o);
     if (ret != CF_SUCCESS && ret != CF_ERR_EXTENSION_NOT_EXIST) {
-        LOGE("Get X509 name o failed, ret = %d\n", ret);
+        LOGE("Get X509 name o failed, ret = %{public}d\n", ret);
         goto exit;
     }
     return CF_SUCCESS;
@@ -312,7 +349,7 @@ static CfResult VerifySubCa(X509 *subCa, const HcfAttestCertVerifyParam *param)
     CertSnInfo snInfo = {0};
     CfResult ret = GetCertSn(subCa, &snInfo);
     if (ret != CF_SUCCESS) {
-        LOGE("GetCertSn failed, ret = %d\n", ret);
+        LOGE("GetCertSn failed, ret = %{public}d\n", ret);
         return ret;
     }
 
@@ -340,12 +377,13 @@ static CfResult CreateTrustedCerts(const HcfAttestCertVerifyParam *param, STACK_
 
     STACK_OF(X509) *certs = sk_X509_new_null();
     if (certs == NULL) {
-        return CF_ERR_MALLOC;
+        return CF_ERR_CRYPTO_OPERATION;
     }
 
-    const char *rootCa[] = {ROOT_G2_CA, EQUIPMENT_ROOT_CA};
+    const char *rootCa[] = {ROOT_CA, ROOT_G2_CA, EQUIPMENT_ROOT_CA};
     uint32_t rootCaNum = sizeof(rootCa) / sizeof(rootCa[0]);
     uint32_t i;
+    ERR_clear_error();
     for (i = 0; i < rootCaNum; i++) {
         BIO *bio = BIO_new_mem_buf(rootCa[i], -1);
         if (bio == NULL) {
@@ -363,7 +401,8 @@ static CfResult CreateTrustedCerts(const HcfAttestCertVerifyParam *param, STACK_
         }
         BIO_free(bio);
     }
-
+    // Record the error
+    ProcessOpensslError(CF_ERR_CRYPTO_OPERATION);
     if ((uint32_t)sk_X509_num(certs) != rootCaNum) {
         sk_X509_pop_free(certs, X509_free);
         return CF_ERR_PARAMETER_CHECK;
@@ -387,6 +426,8 @@ static CfResult ReadX509FromData(const CfEncodingBlob *encodingBlob, STACK_OF(X5
 
     CfResult ret = CF_SUCCESS;
     uint32_t certNum = 0;
+
+    ERR_clear_error();
     X509 *cert = PEM_read_bio_X509(bio, NULL, NULL, NULL);
     while (cert != NULL) {
         if (sk_X509_push(tmp, cert) <= 0) {
@@ -401,6 +442,8 @@ static CfResult ReadX509FromData(const CfEncodingBlob *encodingBlob, STACK_OF(X5
         }
         cert = PEM_read_bio_X509(bio, NULL, NULL, NULL);
     }
+    // Record the error
+    ProcessOpensslError(CF_ERR_CRYPTO_OPERATION);
     BIO_free(bio);
     if (ret != CF_SUCCESS) {
         sk_X509_pop_free(tmp, X509_free);
@@ -419,7 +462,7 @@ static CfResult CreateCerts(const CfEncodingBlob *encodingBlob, STACK_OF(X509) *
     STACK_OF(X509) *tmp = NULL;
     CfResult ret = ReadX509FromData(encodingBlob, &tmp);
     if (ret != CF_SUCCESS) {
-        LOGE("ReadX509FromData failed, ret = %d\n", ret);
+        LOGE("ReadX509FromData failed, ret = %{public}d\n", ret);
         return ret;
     }
 
@@ -438,22 +481,11 @@ static CfResult CalculateSha256(CfBlob *data1, CfBlob *data2, uint8_t *buf, uint
     if (ctx == NULL) {
         return CF_ERR_CRYPTO_OPERATION;
     }
-    if (EVP_DigestInit(ctx, EVP_sha256()) != 1) {
-        EVP_MD_CTX_free(ctx);
-        return CF_ERR_CRYPTO_OPERATION;
-    }
 
-    if (EVP_DigestUpdate(ctx, data1->data, data1->size) != 1) {
-        EVP_MD_CTX_free(ctx);
-        return CF_ERR_CRYPTO_OPERATION;
-    }
-
-    if (EVP_DigestUpdate(ctx, data2->data, data2->size) != 1) {
-        EVP_MD_CTX_free(ctx);
-        return CF_ERR_CRYPTO_OPERATION;
-    }
-
-    if (EVP_DigestFinal(ctx, buf, &len) != 1) {
+    if (EVP_DigestInit(ctx, EVP_sha256()) != 1 ||
+        EVP_DigestUpdate(ctx, data1->data, data1->size) != 1 ||
+        EVP_DigestUpdate(ctx, data2->data, data2->size) != 1 ||
+        EVP_DigestFinal(ctx, buf, &len)!= 1) {
         EVP_MD_CTX_free(ctx);
         return CF_ERR_CRYPTO_OPERATION;
     }
@@ -507,7 +539,7 @@ static CfResult ParseAttestationCert(X509 *cert, HmAttestationInfo *info)
     }
 
     if (ret != CF_ERR_EXTENSION_NOT_EXIST) {
-        LOGE("GetHmAttestationRecord failed, ret = %d\n", ret);
+        LOGE("GetHmAttestationRecord failed, ret = %{public}d\n", ret);
         return ret;
     }
 
@@ -520,7 +552,7 @@ static CfResult ParseAttestationCert(X509 *cert, HmAttestationInfo *info)
     }
 
     if (ret != CF_ERR_EXTENSION_NOT_EXIST) {
-        LOGE("GetHmKeyDescription failed, ret = %d\n", ret);
+        LOGE("GetHmKeyDescription failed, ret = %{public}d\n", ret);
         return ret;
     }
 
@@ -530,9 +562,10 @@ static CfResult ParseAttestationCert(X509 *cert, HmAttestationInfo *info)
 static CfResult ParseDeviceCert(X509 *deviceCert, HmAttestationInfo *info)
 {
     DeviceCertSecureLevel *level = NULL;
+    AttestationRecord *devActRecord = NULL;
     CfResult ret = GetDeviceCertSecureLevel(deviceCert, &level);
     if (ret != CF_SUCCESS && ret != CF_ERR_EXTENSION_NOT_EXIST) {
-        LOGE("GetDeviceCertSecureLevel failed, ret = %d\n", ret);
+        LOGE("GetDeviceCertSecureLevel failed, ret = %{public}d\n", ret);
         return ret;
     }
 
@@ -541,22 +574,21 @@ static CfResult ParseDeviceCert(X509 *deviceCert, HmAttestationInfo *info)
         int secLevel = -1;
         ret = GetDeviceSecureLevel(level, &version, &secLevel);
         if (version != 0 && version != 1) {
-            LOGE("version is invalid, version = %d\n", version);
+            LOGE("version is invalid, version = %{public}d\n", version);
             ret = CF_ERR_INVALID_EXTENSION;
             goto exit;
         }
 
         if (secLevel < DEVICE_SECURITY_LEVEL_MIN || secLevel > DEVICE_SECURITY_LEVEL_MAX) {
-            LOGE("secLevel is invalid, secLevel = %d\n", secLevel);
+            LOGE("secLevel is invalid, secLevel = %{public}d\n", secLevel);
             ret = CF_ERR_INVALID_EXTENSION;
             goto exit;
         }
     }
 
-    AttestationRecord *devActRecord = NULL;
     ret = GetDeviceActivationCertExt(deviceCert, &devActRecord);
     if (ret != CF_SUCCESS && ret != CF_ERR_EXTENSION_NOT_EXIST) {
-        LOGE("GetDeviceCertSecureLevel failed, ret = %d\n", ret);
+        LOGE("GetDeviceActivationCertExt failed, ret = %{public}d\n", ret);
         goto exit;
     }
 
@@ -573,12 +605,12 @@ static CfResult CheckCertsOrder(STACK_OF(X509) *certs, STACK_OF(X509) *chain)
     int num1 = sk_X509_num(certs);
     int num2 = sk_X509_num(chain);
     if (num2 < MIN_CERT_CHAIN_NUM) {
-        LOGE("Incorrect number of chain, num2 = %d\n", num2);
+        LOGE("Incorrect number of chain, num2 = %{public}d\n", num2);
         return CF_ERR_PARAMETER_CHECK;
     }
 
     if (num1 != num2 && (num1 + 1) != num2) {
-        LOGE("Incorrect number of chain, num1 = %d, num2 = %d\n", num1, num2);
+        LOGE("Incorrect number of chain, num1 = %{public}d, num2 = %{public}d\n", num1, num2);
         return CF_ERR_PARAMETER_CHECK;
     }
 
@@ -598,25 +630,24 @@ static CfResult VerifyAttestCerts(const CfEncodingBlob *encodingBlob, const HcfA
     STACK_OF(X509) *certs = NULL;
     STACK_OF(X509) *trustedCerts = NULL;
     STACK_OF(X509) *chain = NULL;
-    CfResult ret;
-    ret = CreateCerts(encodingBlob, &certs);
+    CfResult ret = CreateCerts(encodingBlob, &certs);
     if (ret != CF_SUCCESS) {
-        LOGE("CreateCerts failed, ret = %d\n", ret);
+        LOGE("CreateCerts failed, ret = %{public}d\n", ret);
         goto exit;
     }
     ret = CreateTrustedCerts(param, &trustedCerts);
     if (ret != CF_SUCCESS) {
-        LOGE("CreateTrustedCerts failed, ret = %d\n", ret);
+        LOGE("CreateTrustedCerts failed, ret = %{public}d\n", ret);
         goto exit;
     }
     ret = VerifyCerts(certs, trustedCerts, param, &chain);
     if (ret != CF_SUCCESS) {
-        LOGE("VerifyCerts failed, ret = %d\n", ret);
+        LOGE("VerifyCerts failed, ret = %{public}d\n", ret);
         goto exit;
     }
     ret = CheckCertsOrder(certs, chain);
     if (ret != CF_SUCCESS) {
-        LOGE("VerifyCerts failed, ret = %d\n", ret);
+        LOGE("VerifyCerts failed, ret = %{public}d\n", ret);
         goto exit;
     }
     *out = chain;
@@ -639,19 +670,18 @@ CfResult AttestCertVerify(const CfEncodingBlob *encodingBlob, const HcfAttestCer
 
     STACK_OF(X509) *chain = NULL;
     X509 *trustSubCa = NULL;
-    CfResult ret;
     HmAttestationInfo *tmp = NULL;
 
-    ret = VerifyAttestCerts(encodingBlob, param, &chain);
+    CfResult ret = VerifyAttestCerts(encodingBlob, param, &chain);
     if (ret != CF_SUCCESS) {
-        LOGE("AttestCertVerify failed, ret = %d\n", ret);
+        LOGE("AttestCertVerify failed, ret = %{public}d\n", ret);
         goto exit;
     }
 
     trustSubCa = sk_X509_value(chain, sk_X509_num(chain) - MIN_CERT_CHAIN_NUM);
     ret = VerifySubCa(trustSubCa, param);
     if (ret != CF_SUCCESS) {
-        LOGE("VerifyCerts failed, ret = %d\n", ret);
+        LOGE("VerifyCerts failed, ret = %{public}d\n", ret);
         goto exit;
     }
 
@@ -670,6 +700,7 @@ CfResult AttestCertVerify(const CfEncodingBlob *encodingBlob, const HcfAttestCer
     chain = NULL;
     ret = CF_SUCCESS;
 exit:
+    ProcessOpensslError(ret);
     AttestInfoFree(tmp);
     if (chain != NULL) {
         sk_X509_pop_free(chain, X509_free);
@@ -694,13 +725,15 @@ CfResult AttestCertParseExtension(HmAttestationInfo *info)
 
     CfResult ret = ParseAttestationCert(sk_X509_value(info->trustedChain, 0), info);
     if (ret != CF_SUCCESS && ret != CF_ERR_EXTENSION_NOT_EXIST) {
-        LOGE("ParseAttestationCert failed, ret = %d\n", ret);
+        LOGE("ParseAttestationCert failed, ret = %{public}d\n", ret);
+        ProcessOpensslError(ret);
         return ret;
     }
 
     ret = ParseDeviceCert(sk_X509_value(info->trustedChain, 1), info);
     if (ret != CF_SUCCESS && ret != CF_ERR_EXTENSION_NOT_EXIST) {
-        LOGE("ParseDeviceCert failed, ret = %d\n", ret);
+        LOGE("ParseDeviceCert failed, ret = %{public}d\n", ret);
+        ProcessOpensslError(ret);
         return ret;
     }
     if (ret == CF_ERR_EXTENSION_NOT_EXIST) {
@@ -729,26 +762,27 @@ CfResult AttestCheckBoundedWithUdId(HmAttestationInfo *info)
 
     CfResult ret = GetAttestCertExt(info->deviveActiveCertExt, DEVICE_ACTIVATION_DEVICE_ID1, &deviceId1);
     if (ret != CF_SUCCESS) {
-        LOGE("Get deviceId1 failed, ret = %d\n", ret);
+        LOGE("Get deviceId1 failed, ret = %{public}d\n", ret);
         return ret;
     }
 
     ret = GetAttestCertExt(info->attestationRecord, ATTESTATION_NONCE, &nonce);
     if (ret != CF_SUCCESS) {
-        LOGE("Get nonce failed when check deviceId1, ret = %d\n", ret);
+        LOGE("Get nonce failed when check deviceId1, ret = %{public}d\n", ret);
         return ret;
     }
 
     ret = GetAttestCertExt(info->attestationRecord, ATTESTATION_UDID, &udid);
     if (ret != CF_SUCCESS) {
-        LOGE("Get udid failed, ret = %d\n", ret);
+        LOGE("Get udid failed, ret = %{public}d\n", ret);
         return ret;
     }
 
     uint8_t nonceUdidHash[SHA256_DIGEST_LENGTH] = {0};
     ret = CalculateSha256(&udid.blob, &nonce.blob, nonceUdidHash, sizeof(nonceUdidHash));
     if (ret != CF_SUCCESS) {
-        LOGE("CalculateSha256 udid failed, ret = %d\n", ret);
+        ProcessOpensslError(ret);
+        LOGE("CalculateSha256 udid failed, ret = %{public}d\n", ret);
         return ret;
     }
 
@@ -780,26 +814,27 @@ CfResult AttestCheckBoundedWithSocid(HmAttestationInfo *info)
 
     CfResult ret = GetAttestCertExt(info->deviveActiveCertExt, DEVICE_ACTIVATION_DEVICE_ID2, &deviceId2);
     if (ret != CF_SUCCESS) {
-        LOGE("Get deviceId2 failed, ret = %d\n", ret);
+        LOGE("Get deviceId2 failed, ret = %{public}d\n", ret);
         return ret;
     }
 
     ret = GetAttestCertExt(info->attestationRecord, ATTESTATION_NONCE, &nonce);
     if (ret != CF_SUCCESS) {
-        LOGE("Get nonce failed when check deviceId2, ret = %d\n", ret);
+        LOGE("Get nonce failed when check deviceId2, ret = %{public}d\n", ret);
         return ret;
     }
 
     ret = GetAttestCertExt(info->attestationRecord, ATTESTATION_SOCID, &socId);
     if (ret != CF_SUCCESS) {
-        LOGE("Get socid failed, ret = %d\n", ret);
+        LOGE("Get socid failed, ret = %{public}d\n", ret);
         return ret;
     }
 
     uint8_t nonceSocidHash[SHA256_DIGEST_LENGTH] = {0};
     ret = CalculateSha256(&socId.blob, &nonce.blob, nonceSocidHash, sizeof(nonceSocidHash));
     if (ret != CF_SUCCESS) {
-        LOGE("CalculateSha256 socid failed, ret = %d\n", ret);
+        ProcessOpensslError(ret);
+        LOGE("CalculateSha256 socid failed, ret = %{public}d\n", ret);
         return ret;
     }
 
@@ -868,19 +903,19 @@ CfResult AttestSetVerifyParamRootCa(HcfAttestCertVerifyParam *param, const CfEnc
     if (param == NULL || rootCa == NULL) {
         return CF_NULL_POINTER;
     }
+    if (param->trustedCerts != NULL) {
+        return CF_ERR_SHOULD_NOT_CALL;
+    }
     if (rootCa->data == NULL || rootCa->len == 0) {
         return CF_ERR_PARAMETER_CHECK;
     }
     STACK_OF(X509) *cas = NULL;
     CfResult ret = ReadX509FromData(rootCa, &cas);
     if (ret != CF_SUCCESS) {
-        LOGE("ReadX509FromData failed, ret = %d\n", ret);
+        LOGE("ReadX509FromData failed, ret = %{public}d\n", ret);
         return ret;
     }
 
-    if (param->trustedCerts != NULL) {
-        sk_X509_pop_free(param->trustedCerts, X509_free);
-    }
     param->trustedCerts = cas;
     return ret;
 }

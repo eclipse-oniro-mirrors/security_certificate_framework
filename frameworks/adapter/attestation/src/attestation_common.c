@@ -15,6 +15,8 @@
 
 #include <string.h>
 #include <stdbool.h>
+#include "openssl/err.h"
+#include "cf_log.h"
 #include "attestation_common.h"
 
 bool CmpObjOid(ASN1_OBJECT *obj, const uint8_t *oid, uint32_t oidLen)
@@ -70,7 +72,6 @@ CfResult GetOctectOrUtf8Data(ASN1_TYPE *v, CfBlob *out)
         return CF_ERR_EXTENSION_NOT_EXIST;
     }
 
-    CfResult ret = CF_SUCCESS;
     if (ASN1_TYPE_get(v) == V_ASN1_OCTET_STRING) {
         out->size = ASN1_STRING_length(v->value.octet_string);
         out->data = (uint8_t *)ASN1_STRING_get0_data(v->value.octet_string);
@@ -78,7 +79,25 @@ CfResult GetOctectOrUtf8Data(ASN1_TYPE *v, CfBlob *out)
         out->size = ASN1_STRING_length(v->value.utf8string);
         out->data = (uint8_t *)ASN1_STRING_get0_data(v->value.utf8string);
     } else {
-        ret = CF_ERR_INVALID_EXTENSION;
+        return CF_ERR_INVALID_EXTENSION;
     }
-    return ret;
+    return CF_SUCCESS;
+}
+
+#define MAX_OPENSSL_ERROR_DEPTH 16
+#define MAX_OPENSSL_ERROR_LEN 256
+void ProcessOpensslError(CfResult ret)
+{
+    if (ret != CF_ERR_CRYPTO_OPERATION) {
+        return;
+    }
+    char errStr[MAX_OPENSSL_ERROR_LEN] = { 0 };
+    unsigned long errCode = ERR_get_error();
+    uint32_t depth = MAX_OPENSSL_ERROR_DEPTH;
+    while (errCode != 0 && depth > 0) {
+        ERR_error_string_n(errCode, errStr, MAX_OPENSSL_ERROR_LEN);
+        LOGE("Call openssl failed, error code = %{public}lu, error string = %{public}s", errCode, errStr);
+        errCode = ERR_get_error();
+        depth--;
+    }
 }

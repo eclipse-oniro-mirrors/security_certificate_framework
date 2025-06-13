@@ -66,6 +66,18 @@ const char *EC_ROOT_CA = "-----BEGIN CERTIFICATE-----\n"
 "RRCItMDzYbUO6hQCIH8k97AK+7bFipGLJIjd8hY4oG7iWlGgUtwU9Kx6ne7q\n"
 "-----END CERTIFICATE-----";
 
+const char *BAD_CERT = "-----BEGIN CERTIFICATE-----\n"
+"MIIB2TCCAX+gAwIBAgIFAt/cGLEwCgYIKoZIzj0EAwIwQzEPMA0GA1UECgwGVEVT\n"
+"VCBYMTAwLgYDVQQDDCdURVNUIFggRUNDIERldmljZSBBdHRlc3RhdGlvbiBSb290\n"
+"IENBIDEwHhcNMjUwNjA3MDkzMTE5WhcNNDUwNDAzMDkzMTE5WjBDMQ8wDQYDVQQK\n"
+"DAZURVNUIFgxMDAuBgNVBAMMJ1RFU1QgWCBFQ0MgRGV2aWNlIEF0dGVzdGF0aW9u\n"
+"IFJvb3QgQ0EgMTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABNIRo0npO5bdiWHm\n"
+"5+Gfe90YWh+8RmGlPI4VnP2gDJamPlZfKSokvcPX72IIZZen0KYoU92jlPoLy4mo\n"
+"vCoFFYCjYDBeMB0GA1UdDgQWBBT8QJ0aBENv/QK9b9yA+whHSj9AJDAfBgNVHSME\n"
+"GDAWgBT8QJ0aBENv/QK9b9yA+whHSj9AJDAPBgNVHRMBAf8EBTADAQH/MAsGA1Ud\n"
+"DwQEAwIBBjAKBggqhkjOPQQDAgNIADBFAiEA/AuETYSOLM4MXvZYv14QimHv8slQ\n"
+"RRCItMDzYbUO6hQCIH8k97AK+7bFipGLJIjd8hY4oG7iWlGgUtwU9Kx6ne7q\n";
+
 const char *EC_APP_CERT = "-----BEGIN CERTIFICATE-----\n"
 "MIIBrDCCAVGgAwIBAgIFBTPn/LEwCgYIKoZIzj0EAwIwTTEPMA0GA1UECgwGVEVT\n"
 "VCBYMS0wKwYDVQQDDCRURVNUIFggRUNDIERldmljZSBBdHRlc3RhdGlvbiBERVZJ\n"
@@ -198,12 +210,22 @@ string g_o = "TEST X";
 string g_c = "CN";
 string g_cn2 = "TEST X RSA Device Attestation CA";
 
+string g_ou9 = "ou9";
+string g_o9 = "o9";
+string g_c9 = "CX";
+
 const static CertSnInfo SUB_CA_SUBJECT_INFO[] = {
+    {const_cast<char *>(g_cn1.c_str()), const_cast<char *>(g_ou9.c_str()), const_cast<char *>(g_o9.c_str()),
+        const_cast<char *>(g_c9.c_str())},
+    {const_cast<char *>(g_cn1.c_str()), const_cast<char *>(g_o.c_str()), const_cast<char *>(g_o9.c_str()),
+        const_cast<char *>(g_c9.c_str())},
+    {const_cast<char *>(g_cn1.c_str()), const_cast<char *>(g_o.c_str()), const_cast<char *>(g_c.c_str()),
+        const_cast<char *>(g_c9.c_str())},
     {const_cast<char *>(g_cn1.c_str()), nullptr, const_cast<char *>(g_o.c_str()), const_cast<char *>(g_c.c_str())},
     {const_cast<char *>(g_cn2.c_str()), nullptr, const_cast<char *>(g_o.c_str()), const_cast<char *>(g_c.c_str())},
 };
 
-#define SUB_CA_SUBJECT_INFO_LEN 2
+#define SUB_CA_SUBJECT_INFO_LEN 5
 
 string g_cn3 = "XXXX";
 const static CertSnInfo SUB_CA_SUBJECT_INFO_ERROR[] = {
@@ -542,6 +564,8 @@ HWTEST_F(CfAttestationTest, CfAttestationTest007, TestSize.Level0)
     ASSERT_NE(bio, nullptr);
     X509 *cert = PEM_read_bio_X509(bio, nullptr, nullptr, nullptr);
     ASSERT_NE(cert, nullptr);
+    BIO_free(bio);
+
     const uint8_t oid[] = {0x2b, 0x06, 0x01, 0x04, 0x01, 0x82, 0x37, 0x02, 0x01, 0x01};
     X509_EXTENSION *extension = nullptr;
     CfResult ret = FindCertExt(cert, oid, sizeof(oid) / sizeof(uint8_t), &extension);
@@ -660,6 +684,7 @@ HWTEST_F(CfAttestationTest, CfAttestationTest008, TestSize.Level0)
     ASSERT_NE(bio, nullptr);
     X509 *cert = PEM_read_bio_X509(bio, nullptr, nullptr, nullptr);
     ASSERT_NE(cert, nullptr);
+    BIO_free(bio);
 
     AttestationRecord *record = nullptr;
     CfResult ret = GetHmAttestationRecord(cert, &record);
@@ -751,6 +776,7 @@ HWTEST_F(CfAttestationTest, CfAttestationTest009, TestSize.Level0)
     ASSERT_NE(bio, nullptr);
     X509 *cert = PEM_read_bio_X509(bio, nullptr, nullptr, nullptr);
     ASSERT_NE(cert, nullptr);
+    BIO_free(bio);
 
     LegacyKeyDescription *record = nullptr;
     CfResult ret = GetHmKeyDescription(cert, &record);
@@ -760,4 +786,524 @@ HWTEST_F(CfAttestationTest, CfAttestationTest009, TestSize.Level0)
     FreeHmKeyDescription(record);
     X509_free(cert);
 }
+
+/**
+ * @tc.name: CfAttestationTest010
+ * @tc.desc: Wrong number of certificates
+ * @tc.type: FUNC
+ * @tc.require: NA
+ */
+HWTEST_F(CfAttestationTest, CfAttestationTest010, TestSize.Level0)
+{
+    HmAttestationInfo *info = nullptr;
+    char *chain = nullptr;
+    const char *certs[] = {RSA_APP_CERT};
+    int num = sizeof(certs) / sizeof(certs[0]);
+    int res = CreateCertChain(certs, num, &chain);
+    ASSERT_EQ(res, 0);
+    CfEncodingBlob certsChain = {0};
+    certsChain.encodingFormat = CF_FORMAT_PEM;
+    certsChain.data = reinterpret_cast<uint8_t *>(chain);
+    certsChain.len = strlen(chain);
+    CfResult ret = HcfAttestCertVerify(&certsChain, nullptr, &info);
+    ASSERT_EQ(ret, CF_ERR_PARAMETER_CHECK);
+    CfFree(chain);
+
+    chain = nullptr;
+    const char *certs2[] = {RSA_APP_CERT, RSA_DEVICE_CERT, RSA_SUB_CA_CERT, RSA_SUB_CA_CERT, RSA_SUB_CA_CERT,
+        RSA_SUB_CA_CERT};
+    num = sizeof(certs2) / sizeof(certs2[0]);
+    res = CreateCertChain(certs2, num, &chain);
+    ASSERT_EQ(res, 0);
+    certsChain.data = reinterpret_cast<uint8_t *>(chain);
+    certsChain.len = strlen(chain);
+    ret = HcfAttestCertVerify(&certsChain, nullptr, &info);
+    ASSERT_EQ(ret, CF_ERR_PARAMETER_CHECK);
+    CfFree(chain);
+
+    chain = nullptr;
+    const char *certs3[] = {BAD_CERT};
+    num = sizeof(certs3) / sizeof(certs3[0]);
+    res = CreateCertChain(certs, num, &chain);
+    ASSERT_EQ(res, 0);
+    certsChain.data = reinterpret_cast<uint8_t *>(chain);
+    certsChain.len = strlen(chain);
+    ret = HcfAttestCertVerify(&certsChain, nullptr, &info);
+    ASSERT_EQ(ret, CF_ERR_PARAMETER_CHECK);
+    CfFree(chain);
+}
+
+/**
+ * @tc.name: CfAttestationTest011
+ * @tc.desc: use built-in CA certificate, verify failed
+ * @tc.type: FUNC
+ * @tc.require: NA
+ */
+HWTEST_F(CfAttestationTest, CfAttestationTest011, TestSize.Level0)
+{
+    HmAttestationInfo *info = nullptr;
+    char *chain = nullptr;
+    const char *certs[] = {EC_APP_CERT, EC_DEVICE_CERT, EC_SUB_CA_CERT, EC_ROOT_CA};
+    int num = sizeof(certs) / sizeof(certs[0]);
+    int res = CreateCertChain(certs, num, &chain);
+    ASSERT_EQ(res, 0);
+    CfEncodingBlob certsChain = {0};
+    certsChain.encodingFormat = CF_FORMAT_PEM;
+    certsChain.data = reinterpret_cast<uint8_t *>(chain);
+    certsChain.len = strlen(chain);
+    CfResult ret = HcfAttestCertVerify(&certsChain, nullptr, &info);
+    ASSERT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
+    CfFree(chain);
+}
+
+/**
+ * @tc.name: CfAttestationTest012
+ * @tc.desc: HcfAttestCertVerifyParam test
+ * @tc.type: FUNC
+ * @tc.require: NA
+ */
+HWTEST_F(CfAttestationTest, CfAttestationTest012, TestSize.Level0)
+{
+    HcfAttestCertVerifyParam *param = nullptr;
+    CfResult ret = HcfAttestCreateVerifyParam(&param);
+    ASSERT_EQ(ret, CF_SUCCESS);
+
+    CfEncodingBlob rootCa = {0};
+    rootCa.encodingFormat = CF_FORMAT_PEM;
+    rootCa.data = reinterpret_cast<uint8_t *>(const_cast<char *>(EC_ROOT_CA));
+    rootCa.len = strlen(EC_ROOT_CA);
+    ret = HcfAttestSetVerifyParamRootCa(param, &rootCa);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ret = HcfAttestSetVerifyParamRootCa(param, &rootCa);
+    ASSERT_EQ(ret, CF_ERR_SHOULD_NOT_CALL);
+
+    HmAttestationSnInfo snInfos = { 0 };
+    snInfos.certSnInfos = const_cast<CertSnInfo *>(&SUB_CA_SUBJECT_INFO[0]);
+    snInfos.num = SUB_CA_SUBJECT_INFO_LEN;
+    ret = HcfAttestSetVerifyParamSnInfos(param, &snInfos);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ret = HcfAttestSetVerifyParamSnInfos(param, &snInfos);
+    ASSERT_EQ(ret, CF_ERR_SHOULD_NOT_CALL);
+    HcfAttestFreeVerifyParam(param);
+
+    ret = HcfAttestCreateVerifyParam(&param);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    rootCa.data = reinterpret_cast<uint8_t *>(const_cast<char *>(BAD_CERT));
+    rootCa.len = strlen(BAD_CERT);
+    ret = HcfAttestSetVerifyParamRootCa(param, &rootCa);
+    ASSERT_EQ(ret, CF_ERR_PARAMETER_CHECK);
+    HcfAttestFreeVerifyParam(param);
+}
+
+const char *APP_CERT_HM = "-----BEGIN CERTIFICATE-----\n"
+"MIIEHTCCA8KgAwIBAgIFBTPn/LEwCgYIKoZIzj0EAwIwTTEPMA0GA1UECgwGVEVT\n"
+"VCBYMS0wKwYDVQQDDCRURVNUIFggRUNDIERldmljZSBBdHRlc3RhdGlvbiBERVZJ\n"
+"Q0UxCzAJBgNVBAYTAkNOMB4XDTI1MDYxMTA5MTA0NloXDTQ1MDQwNzA5MTA0Nlow\n"
+"ETEPMA0GA1UECwwGZnV0dXJlMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEGXqK\n"
+"9yhyiPTpqUwlaQoRSv/+mhh2GIdTJItsJF88vVgUxqw4zjwFGLvjDAdK+fpqk1it\n"
+"nXBqdUYBwdecU9c+k6OCAskwggLFMIICaQYMKwYBBAGPWwKCeAEDBIICVzCCAlMC\n"
+"AQEwHwIBAQYNKwYBBAGPWwKCeAIBAQQLa2V5X3B1cnBvc2UwNAIBAQYNKwYBBAGP\n"
+"WwKCeAIBAwQgMB4GDisGAQQBj1sCgngCAQMBBAxhcHBJRF9oYXBfaWQwHgIBAQYN\n"
+"KwYBBAGPWwKCeAIBBAQKY2hhbmxsZW5nZTAcAgEBBg0rBgEEAY9bAoJ4AgEFBAhr\n"
+"ZXlfZmxhZzAaAgEBBg0rBgEEAY9bAoJ4AgEIBAZkaWdlc3QwIAIBAQYNKwYBBAGP\n"
+"WwKCeAIBCQQMc2lnbl9wYWRkaW5nMB8CAQEGDSsGAQQBj1sCgngCAQoEC2VuY19w\n"
+"YWRkaW5nMB0CAQEGDSsGAQQBj1sCgngCAQsECXNpZ25fdHlwZTAhAgEBBg4rBgEE\n"
+"AY9bAoJ4AgICBAQMdmVyc2lvbl9pbmZvMCYCAQEGDisGAQQBj1sCgngCAgIGBBFr\n"
+"ZXlfbWFuYWdlcl90YV9pZDAWAgEBBg4rBgEEAY9bAoJ4AgICBwIBATAWAgEBBg4r\n"
+"BgEEAY9bAoJ4AgICCAEBADAaAgEBBg4rBgEEAY9bAoJ4AgICCQQFbm9uY2UwGQIB\n"
+"AQYOKwYBBAGPWwKCeAICBAEEBGltZWkwGQIBAQYOKwYBBAGPWwKCeAICBAIEBG1l\n"
+"aWQwGwIBAQYOKwYBBAGPWwKCeAICBAMEBnNlcmlhbDAaAgEBBg4rBgEEAY9bAoJ4\n"
+"AgIECAQFbW9kZWwwGgIBAQYOKwYBBAGPWwKCeAICBAkEBXNvY2lkMBkCAQEGDisG\n"
+"AQQBj1sCgngCAgQKBAR1ZGlkMAkGA1UdEwQCMAAwCwYDVR0PBAQDAgXgMB0GA1Ud\n"
+"DgQWBBStGuOfFobr5l3NyIFGEXKsB0sfdTAfBgNVHSMEGDAWgBQPv0aZM32Ue16i\n"
+"rkp+/UWhP7v+lDAKBggqhkjOPQQDAgNJADBGAiEA1c4KtlsR8COuMWmQcE1kbcBq\n"
+"m9Yql1BuARHL7As8eOACIQDVKR7mKXoRV6mWJHebFIka0FrOmUtxrMw6A7/R7M23\n"
+"kA==\n"
+"-----END CERTIFICATE-----";
+const char *APP_CERT_HM_CA = "-----BEGIN CERTIFICATE-----\n"
+"MIICYTCCAgigAwIBAgIFAt/cGLIwCgYIKoZIzj0EAwIwSzEPMA0GA1UECgwGVEVT\n"
+"VCBYMSswKQYDVQQDDCJURVNUIFggRUNDIERldmljZSBBdHRlc3RhdGlvbiBDQSAx\n"
+"MQswCQYDVQQGEwJDTjAeFw0yNTA2MTEwOTEwNDZaFw00NTA0MDcwOTEwNDZaME0x\n"
+"DzANBgNVBAoMBlRFU1QgWDEtMCsGA1UEAwwkVEVTVCBYIEVDQyBEZXZpY2UgQXR0\n"
+"ZXN0YXRpb24gREVWSUNFMQswCQYDVQQGEwJDTjBZMBMGByqGSM49AgEGCCqGSM49\n"
+"AwEHA0IABB9z62x5cIqCb0l2+94sF5puhw+h+JFXzK4xROIFKuBMF51uJ/Ru77uT\n"
+"C/PgWbX+za0Lk0Qo7Ggy0Xs03flsBzOjgdYwgdMwWQYMKwYBBAGPWwKCeAEFBEkw\n"
+"RwIBATAgAgEBBg0rBgEEAY9bAoJ4AQUBBAwxMjM0NTY3ODkwMDEwIAIBAQYNKwYB\n"
+"BAGPWwKCeAEFAgQMMTIzNDU2Nzg5MDAyMBgGDCsGAQQBj1sCgngBAQQIMAYCAQEK\n"
+"AQIwHQYDVR0OBBYEFA+/RpkzfZR7XqKuSn79RaE/u/6UMB8GA1UdIwQYMBaAFLaQ\n"
+"Bh8fH+UmPI7qUZ1X8FxfFC0uMA8GA1UdEwEB/wQFMAMBAf8wCwYDVR0PBAQDAgEG\n"
+"MAoGCCqGSM49BAMCA0cAMEQCIBeoLU+c0bOq5sBTulvXB1ExhN4AuN/BY9rnPYO8\n"
+"Czy5AiBVk30qH+UExeD9gbh+nRsWm+kJttJfnm1PuzxknA28xA==\n"
+"-----END CERTIFICATE-----";
+const char *APP_CERT_HM_CA_CA = "-----BEGIN CERTIFICATE-----\n"
+"MIIB4TCCAYegAwIBAgIFAt/cGLIwCgYIKoZIzj0EAwIwQzEPMA0GA1UECgwGVEVT\n"
+"VCBYMTAwLgYDVQQDDCdURVNUIFggRUNDIERldmljZSBBdHRlc3RhdGlvbiBSb290\n"
+"IENBIDEwHhcNMjUwNjExMDkxMDQ2WhcNNDUwNDA3MDkxMDQ2WjBLMQ8wDQYDVQQK\n"
+"DAZURVNUIFgxKzApBgNVBAMMIlRFU1QgWCBFQ0MgRGV2aWNlIEF0dGVzdGF0aW9u\n"
+"IENBIDExCzAJBgNVBAYTAkNOMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAERn/d\n"
+"cxxC3CnQXUWuyFQNjOSh+W3YJasPvYAWLEks8HbTZDIRkA026TLNZkCGaogr13PU\n"
+"4AaQ136lqU3nh4aFkKNgMF4wHQYDVR0OBBYEFLaQBh8fH+UmPI7qUZ1X8FxfFC0u\n"
+"MB8GA1UdIwQYMBaAFObuOKqjI4nQ0hBjLSXtAHqkq5nfMA8GA1UdEwEB/wQFMAMB\n"
+"Af8wCwYDVR0PBAQDAgEGMAoGCCqGSM49BAMCA0gAMEUCIQCMG1GEOthyP8c+8yRr\n"
+"dbUGSzC1cFeUfqvZHbV03ryBtQIgBzx1Gd7SK4ytgvkGuHPViMaEstZKIFbZpJbT\n"
+"hScQLm0=\n"
+"-----END CERTIFICATE-----";
+const char *APP_CERT_HM_CA_CA_CA = "-----BEGIN CERTIFICATE-----\n"
+"MIIB2jCCAX+gAwIBAgIFAt/cGLEwCgYIKoZIzj0EAwIwQzEPMA0GA1UECgwGVEVT\n"
+"VCBYMTAwLgYDVQQDDCdURVNUIFggRUNDIERldmljZSBBdHRlc3RhdGlvbiBSb290\n"
+"IENBIDEwHhcNMjUwNjExMDkxMDQ2WhcNNDUwNDA3MDkxMDQ2WjBDMQ8wDQYDVQQK\n"
+"DAZURVNUIFgxMDAuBgNVBAMMJ1RFU1QgWCBFQ0MgRGV2aWNlIEF0dGVzdGF0aW9u\n"
+"IFJvb3QgQ0EgMTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABNM+ugXYvVwmi4nX\n"
+"3Qg3C1wAa20fLAfWV3Grt6SdBBIpAZN3gBfsTW6K7jUibU89KcMCxTl/kFFp0e0V\n"
+"3d9y+qSjYDBeMB0GA1UdDgQWBBTm7jiqoyOJ0NIQYy0l7QB6pKuZ3zAfBgNVHSME\n"
+"GDAWgBTm7jiqoyOJ0NIQYy0l7QB6pKuZ3zAPBgNVHRMBAf8EBTADAQH/MAsGA1Ud\n"
+"DwQEAwIBBjAKBggqhkjOPQQDAgNJADBGAiEA+2uLSqMByXRUht4TYniLJ49XHJ/o\n"
+"HNDvXTx0p1G+hmwCIQDJdBYp2XCgzbBIvC6iFLSM2uvkAKlfjOudTV3Ym25OyA==\n"
+"-----END CERTIFICATE-----";
+
+static void TestGetAttestCertExtALL(AttestationRecord *record)
+{
+    CfResult ret;
+    HmAttestationCertExt ext = {0};
+    ret = GetAttestCertExt(record, ATTESTATION_KEY_PURPOSE, &ext);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ret = GetAttestCertExt(record, ATTESTATION_APP_ID_HAP_ID, &ext);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ret = GetAttestCertExt(record, ATTESTATION_APP_ID_SA_ID, &ext);
+    ASSERT_EQ(ret, CF_ERR_EXTENSION_NOT_EXIST);
+    ret = GetAttestCertExt(record, ATTESTATION_APP_ID_UNIFIED_ID, &ext);
+    ASSERT_EQ(ret, CF_ERR_EXTENSION_NOT_EXIST);
+    ret = GetAttestCertExt(record, ATTESTATION_CHALLENGE, &ext);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ret = GetAttestCertExt(record, ATTESTATION_KEY_FLAG, &ext);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ret = GetAttestCertExt(record, ATTESTATION_DIGEST, &ext);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ret = GetAttestCertExt(record, ATTESTATION_ENC_PADDING, &ext);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ret = GetAttestCertExt(record, ATTESTATION_SIGN_TYPE, &ext);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ret = GetAttestCertExt(record, ATTESTATION_VERSION_INFO, &ext);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ret = GetAttestCertExt(record, ATTESTATION_PURPOSE, &ext);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ret = GetAttestCertExt(record, ATTESTATION_ID_PADDING_FLAG, &ext);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ret = GetAttestCertExt(record, ATTESTATION_NONCE, &ext);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ret = GetAttestCertExt(record, ATTESTATION_IMEI, &ext);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ret = GetAttestCertExt(record, ATTESTATION_SERIAL, &ext);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ret = GetAttestCertExt(record, ATTESTATION_MEID, &ext);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ret = GetAttestCertExt(record, ATTESTATION_MODEL, &ext);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ret = GetAttestCertExt(record, ATTESTATION_SOCID, &ext);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ret = GetAttestCertExt(record, ATTESTATION_UDID, &ext);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ret = GetAttestCertExt(record, ATTESTATION_VERSION, &ext);
+    ASSERT_EQ(ret, CF_SUCCESS);
+}
+
+/**
+ * @tc.name: CfAttestationTest013
+ * @tc.desc: GetHmAttestationRecord all ext
+ * @tc.type: FUNC
+ * @tc.require: NA
+ */
+HWTEST_F(CfAttestationTest, CfAttestationTest013, TestSize.Level0)
+{
+    BIO *bio = BIO_new_mem_buf(APP_CERT_HM, -1);
+    ASSERT_NE(bio, nullptr);
+    X509 *cert = PEM_read_bio_X509(bio, nullptr, nullptr, nullptr);
+    ASSERT_NE(cert, nullptr);
+    BIO_free(bio);
+
+    AttestationRecord *record = nullptr;
+    CfResult ret = GetHmAttestationRecord(cert, &record);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    TestGetAttestCertExtALL(record);
+    FreeHmAttestationRecord(record);
+    X509_free(cert);
+}
+
+static HcfAttestCertVerifyParam *GetHcfAttestCertVerifyParam(const char *in)
+{
+    HcfAttestCertVerifyParam *param = nullptr;
+    CfResult ret = HcfAttestCreateVerifyParam(&param);
+    if (ret != CF_SUCCESS) {
+        return nullptr;
+    }
+    ret = HcfAttestSetVerifyParamCheckTime(param, true);
+    if (ret != CF_SUCCESS) {
+        HcfAttestFreeVerifyParam(param);
+        return nullptr;
+    }
+    CfEncodingBlob rootCa = {0};
+    rootCa.encodingFormat = CF_FORMAT_PEM;
+    rootCa.data = reinterpret_cast<uint8_t *>(const_cast<char *>(in));
+    rootCa.len = strlen(in);
+    ret = HcfAttestSetVerifyParamRootCa(param, &rootCa);
+    if (ret != CF_SUCCESS) {
+        HcfAttestFreeVerifyParam(param);
+        return nullptr;
+    }
+
+    return param;
+}
+/**
+ * @tc.name: CfAttestationTest014
+ * @tc.desc: HmAttestation cert test, include all ext, but decvice id is invalid
+ * @tc.type: FUNC
+ * @tc.require: NA
+ */
+HWTEST_F(CfAttestationTest, CfAttestationTest014, TestSize.Level0)
+{
+    HcfAttestCertVerifyParam *param = GetHcfAttestCertVerifyParam(APP_CERT_HM_CA_CA_CA);
+    ASSERT_NE(param, nullptr);
+
+    char *chain = nullptr;
+    const char *certs[] = {APP_CERT_HM, APP_CERT_HM_CA, APP_CERT_HM_CA_CA};
+    int num = sizeof(certs) / sizeof(certs[0]);
+    int res = CreateCertChain(certs, num, &chain);
+    ASSERT_EQ(res, 0);
+
+    CfEncodingBlob data = {0};
+    data.encodingFormat = CF_FORMAT_PEM;
+    data.data = reinterpret_cast<uint8_t *>(chain);
+    data.len = strlen(chain);
+    HmAttestationInfo *info = nullptr;
+    CfResult ret = HcfAttestCertVerify(&data, param, &info);
+    ASSERT_EQ(ret, CF_SUCCESS);
+
+    ret = HcfAttestCertParseExtension(info);
+    ASSERT_EQ(ret, CF_SUCCESS);
+
+    ret = HcfAttestCheckBoundedWithUdId(info);
+    ASSERT_EQ(ret, CF_ERR_INVALID_EXTENSION);
+
+    ret = HcfAttestCheckBoundedWithSocid(info);
+    ASSERT_EQ(ret, CF_ERR_INVALID_EXTENSION);
+
+    HmAttestationCertExt ext = { 0 };
+    ret = HcfAttestGetCertExtension(info, DEVICE_ACTIVATION_DEVICE_ID1, &ext);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ret = HcfAttestGetCertExtension(info, ATTESTATION_ENC_PADDING, &ext);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ret = HcfAttestGetCertExtension(info, ATTESTATION_CERT_EXT_TYPE_MAX, &ext);
+    ASSERT_EQ(ret, CF_ERR_PARAMETER_CHECK);
+
+    ret = HcfAttestGetCertExtension(info, LEGACY_VERSION, &ext);
+    ASSERT_EQ(ret, CF_ERR_EXTENSION_NOT_EXIST);
+    ret = HcfAttestGetCertExtension(info, KM_TAG_TYPE_MAX, &ext);
+    ASSERT_EQ(ret, CF_ERR_PARAMETER_CHECK);
+    HcfAttestInfoFree(info);
+
+    HcfAttestFreeVerifyParam(param);
+    CfFree(chain);
+}
+
+const char *CERT_NULL_DEVICE_ID_AND_SECURITY_LEVEL = "-----BEGIN CERTIFICATE-----\n"
+"MIICEDCCAbegAwIBAgIFAt/cGLIwCgYIKoZIzj0EAwIwSzEPMA0GA1UECgwGVEVT\n"
+"VCBYMSswKQYDVQQDDCJURVNUIFggRUNDIERldmljZSBBdHRlc3RhdGlvbiBDQSAx\n"
+"MQswCQYDVQQGEwJDTjAeFw0yNTA2MTExMTE2MzJaFw00NTA0MDcxMTE2MzJaME0x\n"
+"DzANBgNVBAoMBlRFU1QgWDEtMCsGA1UEAwwkVEVTVCBYIEVDQyBEZXZpY2UgQXR0\n"
+"ZXN0YXRpb24gREVWSUNFMQswCQYDVQQGEwJDTjBZMBMGByqGSM49AgEGCCqGSM49\n"
+"AwEHA0IABKajoZhKBUabke4UMgHfBo21qVDxcahoeuN7xkXWjZ3Y1L9xlDSimwbu\n"
+"Qik4boItfPbOqgGfbV2mpZu7pVXWXmqjgYUwgYIwEAYMKwYBBAGPWwKCeAEFBAAw\n"
+"EAYMKwYBBAGPWwKCeAEBBAAwHQYDVR0OBBYEFEZHzj9m6AMkUPwOSvcQlrexySFU\n"
+"MB8GA1UdIwQYMBaAFLaQBh8fH+UmPI7qUZ1X8FxfFC0uMA8GA1UdEwEB/wQFMAMB\n"
+"Af8wCwYDVR0PBAQDAgEGMAoGCCqGSM49BAMCA0cAMEQCIBa5ZHOp9LqbFxbcGD2H\n"
+"d7YupzRWKNE8WT4Xn7AHrD28AiAbDQ3dEEzGsU91dKWU9nx5eVqGU560Lxya80SY\n"
+"CnpHmw==\n"
+"-----END CERTIFICATE-----";
+/**
+ * @tc.name: CfAttestationTest015
+ * @tc.desc: test GetDeviceCertSecureLevel with null null security level
+ * @tc.type: FUNC
+ * @tc.require: NA
+ */
+HWTEST_F(CfAttestationTest, CfAttestationTest015, TestSize.Level0)
+{
+    BIO *bio = BIO_new_mem_buf(CERT_NULL_DEVICE_ID_AND_SECURITY_LEVEL, -1);
+    ASSERT_NE(bio, nullptr);
+    X509 *cert = PEM_read_bio_X509(bio, nullptr, nullptr, nullptr);
+    BIO_free(bio);
+    ASSERT_NE(cert, nullptr);
+
+    DeviceCertSecureLevel *record = nullptr;
+    CfResult ret = GetDeviceCertSecureLevel(cert, &record);
+    ASSERT_EQ(ret, CF_ERR_INVALID_EXTENSION);
+    X509_free(cert);
+}
+
+/**
+ * @tc.name: CfAttestationTest016
+ * @tc.desc: test GetDeviceActivationCertExt with null device
+ * @tc.type: FUNC
+ * @tc.require: NA
+ */
+HWTEST_F(CfAttestationTest, CfAttestationTest016, TestSize.Level0)
+{
+    BIO *bio = BIO_new_mem_buf(CERT_NULL_DEVICE_ID_AND_SECURITY_LEVEL, -1);
+    ASSERT_NE(bio, nullptr);
+    X509 *cert = PEM_read_bio_X509(bio, nullptr, nullptr, nullptr);
+    ASSERT_NE(cert, nullptr);
+    BIO_free(bio);
+
+    DeviceActivationCertExt *record = nullptr;
+    CfResult ret = GetDeviceActivationCertExt(cert, &record);
+    ASSERT_EQ(ret, CF_ERR_EXTENSION_NOT_EXIST);
+    X509_free(cert);
+}
+
+const char *CERT_INVALID_DEVICE_ID_AND_SECURITY_LEVEL = "-----BEGIN CERTIFICATE-----\n"
+"MIICYDCCAgagAwIBAgIFAt/cGLIwCgYIKoZIzj0EAwIwSzEPMA0GA1UECgwGVEVT\n"
+"VCBYMSswKQYDVQQDDCJURVNUIFggRUNDIERldmljZSBBdHRlc3RhdGlvbiBDQSAx\n"
+"MQswCQYDVQQGEwJDTjAeFw0yNTA2MTExMTU3MDFaFw00NTA0MDcxMTU3MDFaME0x\n"
+"DzANBgNVBAoMBlRFU1QgWDEtMCsGA1UEAwwkVEVTVCBYIEVDQyBEZXZpY2UgQXR0\n"
+"ZXN0YXRpb24gREVWSUNFMQswCQYDVQQGEwJDTjBZMBMGByqGSM49AgEGCCqGSM49\n"
+"AwEHA0IABN7OsIvfUXFRNlIE1dtIyyf3T2reOWXUQDT0g2PgtOhk1MjkVx97ZqjQ\n"
+"Qklwlz2rJDbXOu34iSu4Pxb6KXtJv7WjgdQwgdEwWAYMKwYBBAGPWwKCeAEFBEgw\n"
+"RwIBATAgAgEBBg0rBgEEAY9bAoJ4AQUBBAwxMjM0NTY3ODkwMDEwIAIBAQYNKwYB\n"
+"BAGPWwKCeAEFAgQMMTIzNDU2Nzg5MDAwFwYMKwYBBAGPWwKCeAEBBAcwBgIBAQoB\n"
+"MB0GA1UdDgQWBBSVRRxZG7bnarFjpfzmAAcrlC26TTAfBgNVHSMEGDAWgBS2kAYf\n"
+"Hx/lJjyO6lGdV/BcXxQtLjAPBgNVHRMBAf8EBTADAQH/MAsGA1UdDwQEAwIBBjAK\n"
+"BggqhkjOPQQDAgNIADBFAiBjBytvedpG7xs3n6VnnaukA9FomBNj98BuwOjOpR+5\n"
+"4wIhANBWv1ZSnuAZEYUebTVSy3MsJx2j7smszcileXQLz1pz\n"
+"-----END CERTIFICATE-----";
+
+/**
+ * @tc.name: CfAttestationTest017
+ * @tc.desc: test GetDeviceCertSecureLevel with invalid security level or invlaid device id
+ * @tc.type: FUNC
+ * @tc.require: NA
+ */
+HWTEST_F(CfAttestationTest, CfAttestationTest017, TestSize.Level0)
+{
+    BIO *bio = BIO_new_mem_buf(CERT_INVALID_DEVICE_ID_AND_SECURITY_LEVEL, -1);
+    ASSERT_NE(bio, nullptr);
+    X509 *cert = PEM_read_bio_X509(bio, nullptr, nullptr, nullptr);
+    ASSERT_NE(cert, nullptr);
+    BIO_free(bio);
+
+    DeviceCertSecureLevel *record = nullptr;
+    CfResult ret = GetDeviceCertSecureLevel(cert, &record);
+    ASSERT_EQ(ret, CF_ERR_INVALID_EXTENSION);
+    X509_free(cert);
+
+    bio = BIO_new_mem_buf(CERT_INVALID_DEVICE_ID_AND_SECURITY_LEVEL, -1);
+    ASSERT_NE(bio, nullptr);
+    cert = PEM_read_bio_X509(bio, nullptr, nullptr, nullptr);
+    ASSERT_NE(cert, nullptr);
+    BIO_free(bio);
+
+    DeviceActivationCertExt *record2 = nullptr;
+    ret = GetDeviceActivationCertExt(cert, &record2);
+    ASSERT_EQ(ret, CF_ERR_INVALID_EXTENSION);
+    X509_free(cert);
+}
+
+const char *CERT_INVALID_SECURITY_VERSION_VALUE = "-----BEGIN CERTIFICATE-----\n"
+"MIICYTCCAgigAwIBAgIFAt/cGLIwCgYIKoZIzj0EAwIwSzEPMA0GA1UECgwGVEVT\n"
+"VCBYMSswKQYDVQQDDCJURVNUIFggRUNDIERldmljZSBBdHRlc3RhdGlvbiBDQSAx\n"
+"MQswCQYDVQQGEwJDTjAeFw0yNTA2MTExMjAxMjdaFw00NTA0MDcxMjAxMjdaME0x\n"
+"DzANBgNVBAoMBlRFU1QgWDEtMCsGA1UEAwwkVEVTVCBYIEVDQyBEZXZpY2UgQXR0\n"
+"ZXN0YXRpb24gREVWSUNFMQswCQYDVQQGEwJDTjBZMBMGByqGSM49AgEGCCqGSM49\n"
+"AwEHA0IABB9z62x5cIqCb0l2+94sF5puhw+h+JFXzK4xROIFKuBMF51uJ/Ru77uT\n"
+"C/PgWbX+za0Lk0Qo7Ggy0Xs03flsBzOjgdYwgdMwWQYMKwYBBAGPWwKCeAEFBEkw\n"
+"RwIBATAgAgEBBg0rBgEEAY9bAoJ4AQUBBAwxMjM0NTY3ODkwMDEwIAIBAQYNKwYB\n"
+"BAGPWwKCeAEFAgQMMTIzNDU2Nzg5MDAyMBgGDCsGAQQBj1sCgngBAQQIMAYCAQgK\n"
+"AVowHQYDVR0OBBYEFA+/RpkzfZR7XqKuSn79RaE/u/6UMB8GA1UdIwQYMBaAFLaQ\n"
+"Bh8fH+UmPI7qUZ1X8FxfFC0uMA8GA1UdEwEB/wQFMAMBAf8wCwYDVR0PBAQDAgEG\n"
+"MAoGCCqGSM49BAMCA0cAMEQCIHlo2270zqNh2BCmfwFR84ht1e0JY1fcuL4+GeiT\n"
+"aoJEAiBqdweHEpE3plYKuMWbVkDsC9TuY7jxUsWNm9inAuP11w==\n"
+"-----END CERTIFICATE-----\n";
+
+const char *CERT_INVALID_SECURITY_LEVEL_VALUE = "-----BEGIN CERTIFICATE-----\n"
+"MIICYTCCAgigAwIBAgIFAt/cGLIwCgYIKoZIzj0EAwIwSzEPMA0GA1UECgwGVEVT\n"
+"VCBYMSswKQYDVQQDDCJURVNUIFggRUNDIERldmljZSBBdHRlc3RhdGlvbiBDQSAx\n"
+"MQswCQYDVQQGEwJDTjAeFw0yNTA2MTExMjE1NTJaFw00NTA0MDcxMjE1NTJaME0x\n"
+"DzANBgNVBAoMBlRFU1QgWDEtMCsGA1UEAwwkVEVTVCBYIEVDQyBEZXZpY2UgQXR0\n"
+"ZXN0YXRpb24gREVWSUNFMQswCQYDVQQGEwJDTjBZMBMGByqGSM49AgEGCCqGSM49\n"
+"AwEHA0IABB9z62x5cIqCb0l2+94sF5puhw+h+JFXzK4xROIFKuBMF51uJ/Ru77uT\n"
+"C/PgWbX+za0Lk0Qo7Ggy0Xs03flsBzOjgdYwgdMwWQYMKwYBBAGPWwKCeAEFBEkw\n"
+"RwIBATAgAgEBBg0rBgEEAY9bAoJ4AQUBBAwxMjM0NTY3ODkwMDEwIAIBAQYNKwYB\n"
+"BAGPWwKCeAEFAgQMMTIzNDU2Nzg5MDAyMBgGDCsGAQQBj1sCgngBAQQIMAYCAQEK\n"
+"AVowHQYDVR0OBBYEFA+/RpkzfZR7XqKuSn79RaE/u/6UMB8GA1UdIwQYMBaAFLaQ\n"
+"Bh8fH+UmPI7qUZ1X8FxfFC0uMA8GA1UdEwEB/wQFMAMBAf8wCwYDVR0PBAQDAgEG\n"
+"MAoGCCqGSM49BAMCA0cAMEQCIAlIo06mXpbJSgUbPO6IJzPBJhXtwhbU0bCvR1vt\n"
+"OfjwAiB+tTtC4GnrYFnA+RfjmL9Qy7hHqSrg0gWbR+Wf2MwEQw==\n"
+"-----END CERTIFICATE-----";
+
+/**
+ * @tc.name: CfAttestationTest018
+ * @tc.desc: test GetDeviceActivationCertExt with invlaid security version value
+ * @tc.type: FUNC
+ * @tc.require: NA
+ */
+HWTEST_F(CfAttestationTest, CfAttestationTest018, TestSize.Level0)
+{
+    HcfAttestCertVerifyParam *param = GetHcfAttestCertVerifyParam(APP_CERT_HM_CA_CA_CA);
+    ASSERT_NE(param, nullptr);
+
+    char *chain = nullptr;
+    const char *certs[] = {APP_CERT_HM, CERT_INVALID_SECURITY_VERSION_VALUE, APP_CERT_HM_CA_CA};
+    int num = sizeof(certs) / sizeof(certs[0]);
+    int res = CreateCertChain(certs, num, &chain);
+    ASSERT_EQ(res, 0);
+
+    CfEncodingBlob data = {0};
+    data.encodingFormat = CF_FORMAT_PEM;
+    data.data = reinterpret_cast<uint8_t *>(chain);
+    data.len = strlen(chain);
+    HmAttestationInfo *info = nullptr;
+    CfResult ret = HcfAttestCertVerify(&data, param, &info);
+    ASSERT_EQ(ret, CF_SUCCESS);
+
+    ret = HcfAttestCertParseExtension(info);
+    ASSERT_EQ(ret, CF_ERR_INVALID_EXTENSION);
+
+    HcfAttestInfoFree(info);
+
+    HcfAttestFreeVerifyParam(param);
+    CfFree(chain);
+}
+
+/**
+ * @tc.name: CfAttestationTest019
+ * @tc.desc: test GetDeviceActivationCertExt with invlaid security level value
+ * @tc.type: FUNC
+ * @tc.require: NA
+ */
+HWTEST_F(CfAttestationTest, CfAttestationTest019, TestSize.Level0)
+{
+    HcfAttestCertVerifyParam *param = GetHcfAttestCertVerifyParam(APP_CERT_HM_CA_CA_CA);
+    ASSERT_NE(param, nullptr);
+
+    char *chain = nullptr;
+    const char *certs[] = {APP_CERT_HM, CERT_INVALID_SECURITY_LEVEL_VALUE, APP_CERT_HM_CA_CA};
+    int num = sizeof(certs) / sizeof(certs[0]);
+    int res = CreateCertChain(certs, num, &chain);
+    ASSERT_EQ(res, 0);
+
+    CfEncodingBlob data = {0};
+    data.encodingFormat = CF_FORMAT_PEM;
+    data.data = reinterpret_cast<uint8_t *>(chain);
+    data.len = strlen(chain);
+    HmAttestationInfo *info = nullptr;
+    CfResult ret = HcfAttestCertVerify(&data, param, &info);
+    ASSERT_EQ(ret, CF_SUCCESS);
+
+    ret = HcfAttestCertParseExtension(info);
+    ASSERT_EQ(ret, CF_ERR_INVALID_EXTENSION);
+
+    HcfAttestInfoFree(info);
+
+    HcfAttestFreeVerifyParam(param);
+    CfFree(chain);
+}
+
 } // namespace

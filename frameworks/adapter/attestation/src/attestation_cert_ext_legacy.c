@@ -232,11 +232,9 @@ CfResult ParseKeyDescription(X509_EXTENSION *extension, KeyDescription **keyDesc
 
     int extValueLen = ASN1_STRING_length(extValue);
     const unsigned char *data = ASN1_STRING_get0_data(extValue);
-    KeyDescription *keyDesc = NULL;
-    keyDesc = d2i_KeyDescription(NULL, &data, extValueLen);
+    KeyDescription *keyDesc = d2i_KeyDescription(NULL, &data, extValueLen);
     if (keyDesc == NULL) {
         LOGE("d2i_KeyDescription failed\n");
-        ERR_print_errors_fp(stderr);
         return CF_ERR_CRYPTO_OPERATION;
     }
     *keyDescription = keyDesc;
@@ -333,9 +331,8 @@ CfResult GetHmKeyDescription(const X509 *cert, LegacyKeyDescription **legacy)
         return CF_NULL_POINTER;
     }
 
-    CfResult ret;
     X509_EXTENSION *extension = NULL;
-    ret = FindCertExt(cert, KEY_DESCRIPTION_OID, sizeof(KEY_DESCRIPTION_OID), &extension);
+    CfResult ret = FindCertExt(cert, KEY_DESCRIPTION_OID, sizeof(KEY_DESCRIPTION_OID), &extension);
     if (ret != CF_SUCCESS) {
         LOGE("keyDescription is not exist\n");
         return ret;
@@ -349,14 +346,14 @@ CfResult GetHmKeyDescription(const X509 *cert, LegacyKeyDescription **legacy)
 
     ret = ParseKeyDescription(extension, &out->keyDescription);
     if (ret != CF_SUCCESS) {
-        LOGE("ParseKeyDescription failed, ret = %d\n", ret);
+        LOGE("ParseKeyDescription failed, ret = %{public}d\n", ret);
         CfFree(out);
         return ret;
     }
 
     ret = ParseSetOfItems(out);
     if (ret != CF_SUCCESS) {
-        LOGE("ParseSetOfItems failed, ret = %d\n", ret);
+        LOGE("ParseSetOfItems failed, ret = %{public}d\n", ret);
         FreeHmKeyDescription(out);
         return ret;
     }

@@ -44,10 +44,6 @@ ohos_static_library("certificate_openssl_plugin_lib") {
     "src/x509_crl_openssl.c",
     "src/x509_csr_openssl.c",
     "src/x509_distinguished_name_openssl.c",
-    "src/attestation/attestation_cert_ext_legacy.c",
-    "src/attestation/attestation_cert_ext.c",
-    "src/attestation/attestation_cert_verify.c",
-    "src/attestation/attestation_common.c",
   ]
 
   cflags = [
