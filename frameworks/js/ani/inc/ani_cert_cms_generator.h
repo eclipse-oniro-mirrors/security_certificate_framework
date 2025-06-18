@@ -17,16 +17,21 @@
 #define ANI_CERT_CMS_GENERATOR_H
 
 #include "ani_common.h"
+#include "cert_cms_generator.h"
 
 namespace ANI::CertFramework {
 class CmsGeneratorImpl {
 public:
     CmsGeneratorImpl();
+    explicit CmsGeneratorImpl(HcfCmsGenerator *cmsGenerator);
     ~CmsGeneratorImpl();
 
-    void AddSigner(weak::X509Cert cert, PrivateKeyInfo const& keyInfo, CmsSignerConfig const& config);
+    void AddSigner(weak::X509Cert cert, ThPrivateKeyInfo const& keyInfo, CmsSignerConfig const& config);
     void AddCert(weak::X509Cert cert);
     OptStrUint8Arr DoFinalSync(array_view<uint8_t> data, optional_view<CmsGeneratorOptions> options);
+
+private:
+    HcfCmsGenerator *cmsGenerator_ = nullptr;
 };
 } // namespace ANI::CertFramework
 

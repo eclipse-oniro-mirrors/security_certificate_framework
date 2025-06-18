@@ -17,17 +17,22 @@
 #define ANI_X509_CERT_CHAIN_H
 
 #include "ani_common.h"
+#include "x509_cert_chain.h"
 
 namespace ANI::CertFramework {
 class X509CertChainImpl {
 public:
     X509CertChainImpl();
+    explicit X509CertChainImpl(HcfCertChain *x509CertChain);
     ~X509CertChainImpl();
 
     array<X509Cert> GetCertList();
     CertChainValidationResult ValidateSync(CertChainValidationParameters const& param);
     string ToString();
     array<uint8_t> HashCode();
+
+private:
+    HcfCertChain *x509CertChain_ = nullptr;
 };
 } // namespace ANI::CertFramework
 

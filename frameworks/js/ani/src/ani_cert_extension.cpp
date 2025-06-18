@@ -14,6 +14,9 @@
  */
 
 #include "ani_cert_extension.h"
+#include "ani_object.h"
+#include "cf_type.h"
+#include "cf_param.h"
 
 namespace ANI::CertFramework {
 CertExtensionImpl::CertExtensionImpl() {}
@@ -28,34 +31,177 @@ CertExtensionImpl::~CertExtensionImpl()
 
 EncodingBlob CertExtensionImpl::GetEncoded()
 {
-    TH_THROW(std::runtime_error, "GetEncoded not implemented");
+    if (this->object_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "object is nullptr");
+        return EncodingBlob{array<uint8_t>{}, EncodingFormat(EncodingFormat::key_t::FORMAT_DER)};
+    }
+
+    const std::vector<CfParam> param = {
+        { .tag = CF_TAG_GET_TYPE, .int32Param = CF_GET_TYPE_EXT_ITEM },
+        { .tag = CF_TAG_PARAM0_INT32, .int32Param = CF_ITEM_ENCODED }
+    };
+    std::string errMsg = "";
+    CfParamSet *outParam = nullptr;
+    CfResult ret = DoCommonOperation(this->object_, param, &outParam, errMsg);
+    if (ret != CF_SUCCESS) {
+        ANI_LOGE_THROW(ret, errMsg.c_str());
+        return EncodingBlob{array<uint8_t>{}, EncodingFormat(EncodingFormat::key_t::FORMAT_DER)};
+    }
+
+    CfParam *resultParam = nullptr;
+    ret = static_cast<CfResult>(CfGetParam(outParam, CF_TAG_RESULT_BYTES, &resultParam));
+    if (ret != CF_SUCCESS) {
+        ANI_LOGE_THROW(ret, "get result failed");
+        return EncodingBlob{array<uint8_t>{}, EncodingFormat(EncodingFormat::key_t::FORMAT_DER)};
+    }
+    array<uint8_t> data = {};
+    DataBlobToArrayU8(resultParam->blob, data);
+    EncodingBlob result = { data, EncodingFormat(EncodingFormat::key_t::FORMAT_DER) };
+    CfFreeParamSet(&outParam);
+    return result;
 }
 
 DataArray CertExtensionImpl::GetOidList(ExtensionOidType valueType)
 {
-    TH_THROW(std::runtime_error, "GetOidList not implemented");
+    if (this->object_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "object is nullptr");
+        return {};
+    }
+
+    const std::vector<CfParam> param = {
+        { .tag = CF_TAG_GET_TYPE, .int32Param = CF_GET_TYPE_EXT_OIDS },
+        { .tag = CF_TAG_PARAM0_INT32, .int32Param = static_cast<int32_t>(valueType) }
+    };
+    std::string errMsg = "";
+    CfParamSet *outParamSet = nullptr;
+    CfResult ret = DoCommonOperation(this->object_, param, &outParamSet, errMsg);
+    if (ret != CF_SUCCESS) {
+        ANI_LOGE_THROW(ret, errMsg.c_str());
+        return {};
+    }
+
+    if (outParamSet->paramSetSize <= 1) {
+        CfFreeParamSet(&outParamSet);
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "invalid param set size");
+        return {};
+    } else {
+        uint32_t count = outParamSet->paramsCnt - 1;
+        DataArray result = { array<array<uint8_t>>::make(count, {}) };
+        for (uint32_t i = 0; i < count; ++i) {
+            DataBlobToArrayU8(outParamSet->params[i + 1].blob, result.data[i]);
+        }
+        CfFreeParamSet(&outParamSet);
+        return result;
+    }
 }
 
 DataBlob CertExtensionImpl::GetEntry(ExtensionEntryType valueType, DataBlob const& oid)
 {
-    TH_THROW(std::runtime_error, "GetEntry not implemented");
+    if (this->object_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "object is nullptr");
+        return {};
+    }
+    CfBlob oidBlob = {};
+    ArrayU8ToDataBlob(oid.data, oidBlob);
+    const std::vector<CfParam> param = {
+        { .tag = CF_TAG_GET_TYPE, .int32Param = CF_GET_TYPE_EXT_ENTRY },
+        { .tag = CF_TAG_PARAM0_INT32, .int32Param = static_cast<int32_t>(valueType) },
+        { .tag = CF_TAG_PARAM1_BUFFER, .blob = oidBlob },
+    };
+    std::string errMsg = "";
+    CfParamSet *outParamSet = nullptr;
+    CfResult ret = DoCommonOperation(this->object_, param, &outParamSet, errMsg);
+    if (ret != CF_SUCCESS) {
+        ANI_LOGE_THROW(ret, errMsg.c_str());
+        return {};
+    }
+
+    CfParam *resultParam = nullptr;
+    ret = static_cast<CfResult>(CfGetParam(outParamSet, CF_TAG_RESULT_BYTES, &resultParam));
+    if (ret != CF_SUCCESS) {
+        CfFreeParamSet(&outParamSet);
+        ANI_LOGE_THROW(ret, "get result failed");
+        return {};
+    }
+
+    array<uint8_t> data = {};
+    DataBlobToArrayU8(resultParam->blob, data);
+    CfFreeParamSet(&outParamSet);
+    return { data };
 }
 
 int32_t CertExtensionImpl::CheckCA()
 {
-    TH_THROW(std::runtime_error, "CheckCA not implemented");
+    if (this->object_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "object is nullptr");
+        return CF_INVALID_PARAMS;
+    }
+
+    const std::vector<CfParam> param = {
+        { .tag = CF_TAG_CHECK_TYPE, .int32Param = CF_CHECK_TYPE_EXT_CA },
+    };
+    std::string errMsg = "";
+    CfParamSet *outParamSet = nullptr;
+    CfResult ret = DoCommonOperation(this->object_, param, &outParamSet, errMsg);
+    if (ret != CF_SUCCESS) {
+        ANI_LOGE_THROW(ret, errMsg.c_str());
+        return ret;
+    }
+
+    CfParam *resultParam = nullptr;
+    ret = static_cast<CfResult>(CfGetParam(outParamSet, CF_TAG_RESULT_INT, &resultParam));
+    if (ret != CF_SUCCESS) {
+        CfFreeParamSet(&outParamSet);
+        ANI_LOGE_THROW(ret, "get result failed");
+        return ret;
+    }
+    CfFreeParamSet(&outParamSet);
+    return resultParam->int32Param;
 }
 
 bool CertExtensionImpl::HasUnsupportedCriticalExtension()
 {
-    TH_THROW(std::runtime_error, "HasUnsupportedCriticalExtension not implemented");
+    if (this->object_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "object is nullptr");
+        return false;
+    }
+
+    const std::vector<CfParam> param = {
+        { .tag = CF_TAG_CHECK_TYPE, .int32Param = CF_CHECK_TYPE_EXT_HAS_UN_SUPPORT },
+    };
+    std::string errMsg = "";
+    CfParamSet *outParamSet = nullptr;
+    CfResult ret = DoCommonOperation(this->object_, param, &outParamSet, errMsg);
+    if (ret != CF_SUCCESS) {
+        ANI_LOGE_THROW(ret, errMsg.c_str());
+        return false;
+    }
+
+    CfParam *resultParam = nullptr;
+    ret = static_cast<CfResult>(CfGetParam(outParamSet, CF_TAG_RESULT_BOOL, &resultParam));
+    if (ret != CF_SUCCESS) {
+        CfFreeParamSet(&outParamSet);
+        ANI_LOGE_THROW(ret, "get result failed");
+        return false;
+    }
+
+    CfFreeParamSet(&outParamSet);
+    return resultParam->boolParam;
 }
 
 CertExtension CreateCertExtensionSync(EncodingBlob const& inStream)
 {
-    // The parameters in the make_holder function should be of the same type
-    // as the parameters in the constructor of the actual implementation class.
-    return make_holder<CertExtensionImpl, CertExtension>();
+    CfObject *object = nullptr;
+    CfEncodingBlob encodingBlob = {};
+    encodingBlob.data = inStream.data.data();
+    encodingBlob.len = inStream.data.size();
+    encodingBlob.encodingFormat = static_cast<CfEncodingFormat>(static_cast<int>(inStream.encodingFormat));
+    CfResult ret = static_cast<CfResult>(CfCreate(CF_OBJ_TYPE_EXTENSION, &encodingBlob, &object));
+    if (ret != CF_SUCCESS) {
+        ANI_LOGE_THROW(ret, "create cert extension failed");
+        return make_holder<CertExtensionImpl, CertExtension>();
+    }
+    return make_holder<CertExtensionImpl, CertExtension>(object);
 }
 } // namespace ANI::CertFramework
 
