@@ -21,6 +21,7 @@
 #include "ohos.security.cert.cert.proj.hpp"
 #include "ohos.security.cert.cert.impl.hpp"
 
+#include "cf_api.h"
 #include "cf_log.h"
 #include "cf_blob.h"
 #include "cf_result.h"
@@ -34,7 +35,7 @@ namespace cryptoFramework = ohos::security::cryptoFramework::cryptoFramework;
 
 #define ANI_LOGE_THROW(code, msg) \
     do { \
-        LOGE(msg); \
+        LOGE("%{public}s", msg); \
         set_business_error(ConvertResultCode(code), msg); \
     } while (0)
 
@@ -42,9 +43,10 @@ int ConvertResultCode(CfResult res);
 
 void ArrayU8ToDataBlob(const array<uint8_t> &arr, CfBlob &blob);
 void DataBlobToArrayU8(const CfBlob &blob, array<uint8_t> &arr);
-void ArrayU8ToBigInteger(const array<uint8_t> &arr, CfBlob &bigInt);
-void BigIntegerToArrayU8(const CfBlob &bigInt, array<uint8_t> &arr);
+void ArrayU8ToBigInteger(const array<uint8_t> &arr, CfBlob &bigInt, bool isReverse = false);
+void BigIntegerToArrayU8(const CfBlob &bigInt, array<uint8_t> &arr, bool isReverse = false);
 void StringToDataBlob(const string &str, CfBlob &blob);
+void CfArrayToDataArray(const CfArray &cfArr, DataArray &dataArr);
 void DataBlobToEncodingBlob(const CfBlob &blob, CfEncodingBlob &encodingBlob,
     CfEncodingFormat encodingFormat = CF_FORMAT_DER);
 } // namespace ANI::CertFramework

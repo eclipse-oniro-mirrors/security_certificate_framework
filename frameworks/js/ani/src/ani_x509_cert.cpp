@@ -17,17 +17,42 @@
 #include "ani_pub_key.h"
 #include "ani_cert_extension.h"
 #include "ani_x500_distinguished_name.h"
-#include "cf_type.h"
+#include "x509_cert_match_parameters.h"
+#include "ani_object.h"
+
+namespace {
+using namespace ANI::CertFramework;
+
+void SetX509CertMatchParameters(X509CertMatchParameters const& param, HcfX509CertMatchParams &matchParam)
+{
+}
+} // namespace
 
 namespace ANI::CertFramework {
 X509CertImpl::X509CertImpl() {}
 
-X509CertImpl::X509CertImpl(HcfX509Certificate *cert) : cert_(cert) {}
+X509CertImpl::X509CertImpl(HcfX509Certificate *cert) : cert_(cert), object_(nullptr)
+{
+    CfEncodingBlob encodingBlob = {};
+    CfResult res = this->cert_->base.getEncoded(&(this->cert_->base), &encodingBlob);
+    if (res != CF_SUCCESS) {
+        return;
+    }
+    CfObject *object = nullptr;
+    res = static_cast<CfResult>(CfCreate(CF_OBJ_TYPE_CERT, &encodingBlob, &object));
+    CfEncodingBlobDataFree(&encodingBlob);
+    if (res != CF_SUCCESS) {
+        return;
+    }
+    this->object_ = object;
+}
 
 X509CertImpl::~X509CertImpl()
 {
     CfObjDestroy(this->cert_);
     this->cert_ = nullptr;
+    CfObjDestroy(this->object_);
+    this->object_ = nullptr;
 }
 
 int64_t X509CertImpl::GetX509CertObj()
@@ -87,22 +112,60 @@ cryptoFramework::PubKey X509CertImpl::GetPublicKey()
 
 void X509CertImpl::CheckValidityWithDate(string_view date)
 {
-    TH_THROW(std::runtime_error, "CheckValidityWithDate not implemented");
+    if (this->cert_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        return;
+    }
+    CfResult res = this->cert_->checkValidityWithDate(this->cert_, date.c_str());
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "check cert validity failed!");
+        return;
+    }
 }
 
 int32_t X509CertImpl::GetVersion()
 {
-    TH_THROW(std::runtime_error, "GetVersion not implemented");
+    if (this->cert_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        return -1;
+    }
+    return this->cert_->getVersion(this->cert_);
 }
 
 array<uint8_t> X509CertImpl::GetCertSerialNumber()
 {
-    TH_THROW(std::runtime_error, "GetCertSerialNumber not implemented");
+    if (this->cert_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        return {};
+    }
+    CfBlob blob = {};
+    CfResult res = this->cert_->getSerialNumber(this->cert_, &blob);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "cert get serial num failed!");
+        return {};
+    }
+    array<uint8_t> data = {};
+    BigIntegerToArrayU8(blob, data, true);
+    CfBlobDataFree(&blob);
+    return data;
 }
 
 DataBlob X509CertImpl::GetIssuerName()
 {
-    TH_THROW(std::runtime_error, "GetIssuerName not implemented");
+    if (this->cert_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        return {};
+    }
+    CfBlob blob = {};
+    CfResult res = this->cert_->getIssuerName(this->cert_, &blob);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "get issuer name failed!");
+        return {};
+    }
+    array<uint8_t> data = {};
+    DataBlobToArrayU8(blob, data);
+    CfBlobDataFree(&blob);
+    return { data };
 }
 
 string X509CertImpl::GetIssuerNameEx(EncodingType encodingType)
@@ -113,42 +176,148 @@ string X509CertImpl::GetIssuerNameEx(EncodingType encodingType)
 
 DataBlob X509CertImpl::GetSubjectName(optional_view<EncodingType> encodingType)
 {
-    TH_THROW(std::runtime_error, "GetSubjectName not implemented");
+    if (this->cert_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        return {};
+    }
+    CfBlob blob = {};
+    CfResult res = CF_INVALID_PARAMS;
+    if (encodingType.has_value()) {
+        CfEncodinigType type = static_cast<CfEncodinigType>(encodingType.value().get_value());
+        res = this->cert_->getSubjectNameEx(this->cert_, type, &blob);
+    } else {
+        res = this->cert_->getSubjectName(this->cert_, &blob);
+    }
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "get subject name failed!");
+        return {};
+    }
+    array<uint8_t> data = {};
+    DataBlobToArrayU8(blob, data);
+    CfBlobDataFree(&blob);
+    return { data };
 }
 
 string X509CertImpl::GetNotBeforeTime()
 {
-    TH_THROW(std::runtime_error, "GetNotBeforeTime not implemented");
+    if (this->cert_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        return "";
+    }
+    CfBlob blob = {};
+    CfResult res = this->cert_->getNotBeforeTime(this->cert_, &blob);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "get not before time failed!");
+        return "";
+    }
+    string str = string(reinterpret_cast<char *>(blob.data), blob.size);
+    CfBlobDataFree(&blob);
+    return str;
 }
 
 string X509CertImpl::GetNotAfterTime()
 {
-    TH_THROW(std::runtime_error, "GetNotAfterTime not implemented");
+    if (this->cert_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        return "";
+    }
+    CfBlob blob = {};
+    CfResult res = this->cert_->getNotAfterTime(this->cert_, &blob);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "get not before time failed!");
+        return "";
+    }
+    string str = string(reinterpret_cast<char *>(blob.data), blob.size);
+    CfBlobDataFree(&blob);
+    return str;
 }
 
 DataBlob X509CertImpl::GetSignature()
 {
-    TH_THROW(std::runtime_error, "GetSignature not implemented");
+    if (this->cert_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        return {};
+    }
+    CfBlob blob = {};
+    CfResult res = this->cert_->getSignature(this->cert_, &blob);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "get issuer name failed!");
+        return {};
+    }
+    array<uint8_t> data = {};
+    DataBlobToArrayU8(blob, data);
+    CfBlobDataFree(&blob);
+    return { data };
 }
 
 string X509CertImpl::GetSignatureAlgName()
 {
-    TH_THROW(std::runtime_error, "GetSignatureAlgName not implemented");
+    if (this->cert_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        return "";
+    }
+    CfBlob blob = {};
+    CfResult res = this->cert_->getSignatureAlgName(this->cert_, &blob);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "get signature alg name failed!");
+        return "";
+    }
+    string str = string(reinterpret_cast<char *>(blob.data), blob.size);
+    CfBlobDataFree(&blob);
+    return str;
 }
 
 string X509CertImpl::GetSignatureAlgOid()
 {
-    TH_THROW(std::runtime_error, "GetSignatureAlgOid not implemented");
+    if (this->cert_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        return "";
+    }
+    CfBlob blob = {};
+    CfResult res = this->cert_->getSignatureAlgOid(this->cert_, &blob);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "get signature alg oid failed!");
+        return "";
+    }
+    string str = string(reinterpret_cast<char *>(blob.data), blob.size);
+    CfBlobDataFree(&blob);
+    return str;
 }
 
 DataBlob X509CertImpl::GetSignatureAlgParams()
 {
-    TH_THROW(std::runtime_error, "GetSignatureAlgParams not implemented");
+    if (this->cert_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        return {};
+    }
+    CfBlob blob = {};
+    CfResult res = this->cert_->getSignatureAlgParams(this->cert_, &blob);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "get signature alg params failed!");
+        return {};
+    }
+    array<uint8_t> data = {};
+    DataBlobToArrayU8(blob, data);
+    CfBlobDataFree(&blob);
+    return { data };
 }
 
 DataBlob X509CertImpl::GetKeyUsage()
 {
-    TH_THROW(std::runtime_error, "GetKeyUsage not implemented");
+    if (this->cert_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        return {};
+    }
+    CfBlob blob = {};
+    CfResult res = this->cert_->getKeyUsage(this->cert_, &blob);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "get key usage failed!");
+        return {};
+    }
+    array<uint8_t> data = {};
+    DataBlobToArrayU8(blob, data);
+    CfBlobDataFree(&blob);
+    return { data };
 }
 
 DataArray X509CertImpl::GetExtKeyUsage()
@@ -163,61 +332,175 @@ DataArray X509CertImpl::GetExtKeyUsage()
         ANI_LOGE_THROW(res, "get ext key usage failed!");
         return {};
     }
-    DataArray dataArr = { array<array<uint8_t>>::make(cfArr.count, {}) };
-    for (uint32_t i = 0; i < cfArr.count; i++) {
-        DataBlobToArrayU8(cfArr.data[i], dataArr.data[i]);
-    }
+    DataArray dataArr = {};
+    CfArrayToDataArray(cfArr, dataArr);
     CfArrayDataClearAndFree(&cfArr);
     return dataArr;
 }
 
 int32_t X509CertImpl::GetBasicConstraints()
 {
-    TH_THROW(std::runtime_error, "GetBasicConstraints not implemented");
+    if (this->cert_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        return -1;
+    }
+    return this->cert_->getBasicConstraints(this->cert_);
 }
 
 DataArray X509CertImpl::GetSubjectAltNames()
 {
-    TH_THROW(std::runtime_error, "GetSubjectAltNames not implemented");
+    if (this->cert_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        return {};
+    }
+    CfArray cfArr = {};
+    CfResult res = this->cert_->getSubjectAltNames(this->cert_, &cfArr);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "get subject alt names failed!");
+        return {};
+    }
+    DataArray dataArr = {};
+    CfArrayToDataArray(cfArr, dataArr);
+    CfArrayDataClearAndFree(&cfArr);
+    return dataArr;
 }
 
 DataArray X509CertImpl::GetIssuerAltNames()
 {
-    TH_THROW(std::runtime_error, "GetIssuerAltNames not implemented");
+    if (this->cert_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        return {};
+    }
+    CfArray cfArr = {};
+    CfResult res = this->cert_->getIssuerAltNames(this->cert_, &cfArr);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "get issuer alt names failed!");
+        return {};
+    }
+    DataArray dataArr = {};
+    CfArrayToDataArray(cfArr, dataArr);
+    CfArrayDataClearAndFree(&cfArr);
+    return dataArr;
 }
 
 DataBlob X509CertImpl::GetItem(CertItemType itemType)
 {
-    TH_THROW(std::runtime_error, "GetItem not implemented");
+    const std::vector<CfParam> param = {
+        { .tag = CF_TAG_GET_TYPE, .int32Param = CF_GET_TYPE_CERT_ITEM },
+        { .tag = CF_TAG_PARAM0_INT32, .int32Param = itemType }
+    };
+    CfParamSet *paramSet = nullptr;
+    std::string errMsg = "";
+    CfResult res = DoCommonOperation(this->object_, param, &paramSet, errMsg);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, errMsg.c_str());
+        return {};
+    }
+    CfParam *itemParam = NULL; // CfGetParam will return a pointer to the param in the paramSet
+    res = static_cast<CfResult>(CfGetParam(paramSet, CF_TAG_RESULT_BYTES, &itemParam));
+    if (res != CF_SUCCESS) {
+        CfFreeParamSet(&paramSet);
+        ANI_LOGE_THROW(res, "get item failed!");
+        return {};
+    }
+    array<uint8_t> data = {};
+    DataBlobToArrayU8(itemParam->blob, data);
+    CfFreeParamSet(&paramSet);
+    return { data };
 }
 
 bool X509CertImpl::Match(X509CertMatchParameters const& param)
 {
-    TH_THROW(std::runtime_error, "Match not implemented");
+    HcfX509CertMatchParams matchParam = {};
+    SetX509CertMatchParameters(param, matchParam);
+    bool flag = false;
+    CfResult res = this->cert_->match(this->cert_, &matchParam, &flag);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "match cert failed!");
+        return false;
+    }
+    return flag;
 }
 
 DataArray X509CertImpl::GetCRLDistributionPoint()
 {
-    TH_THROW(std::runtime_error, "GetCRLDistributionPoint not implemented");
+    if (this->cert_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        return {};
+    }
+    CfArray cfArr = {};
+    CfResult res = this->cert_->getCRLDistributionPointsURI(this->cert_, &cfArr);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "get crl distribution points uri failed!");
+        return {};
+    }
+    DataArray dataArr = {};
+    CfArrayToDataArray(cfArr, dataArr);
+    CfArrayDataClearAndFree(&cfArr);
+    return dataArr;
 }
 
 X500DistinguishedName X509CertImpl::GetIssuerX500DistinguishedName()
 {
-    // The parameters in the make_holder function should be of the same type
-    // as the parameters in the constructor of the actual implementation class.
-    return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>();
+    if (this->cert_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>();
+    }
+    CfBlob blob = {};
+    CfResult res = this->cert_->getIssuerName(this->cert_, &blob);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "getIssuerName failed!");
+        return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>();
+    }
+    HcfX509DistinguishedName *x509Name = nullptr;
+    res = HcfX509DistinguishedNameCreate(&blob, true, &x509Name);
+    if (res != CF_SUCCESS || x509Name == nullptr) {
+        ANI_LOGE_THROW(res, "HcfX509DistinguishedNameCreate failed!");
+        CfBlobDataFree(&blob);
+        return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>();
+    }
+    CfBlobDataFree(&blob);
+    return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>(x509Name);
 }
 
 X500DistinguishedName X509CertImpl::GetSubjectX500DistinguishedName()
 {
-    // The parameters in the make_holder function should be of the same type
-    // as the parameters in the constructor of the actual implementation class.
-    return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>();
+    if (this->cert_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>();
+    }
+    CfBlob blob = {};
+    CfResult res = this->cert_->getSubjectName(this->cert_, &blob);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "getSubjectName failed!");
+        return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>();
+    }
+    HcfX509DistinguishedName *x509Name = nullptr;
+    res = HcfX509DistinguishedNameCreate(&blob, true, &x509Name);
+    if (res != CF_SUCCESS || x509Name == nullptr) {
+        ANI_LOGE_THROW(res, "HcfX509DistinguishedNameCreate failed!");
+        CfBlobDataFree(&blob);
+        return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>();
+    }
+    CfBlobDataFree(&blob);
+    return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>(x509Name);
 }
 
 string X509CertImpl::ToString()
 {
-    TH_THROW(std::runtime_error, "ToString not implemented");
+    if (this->cert_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        return "";
+    }
+    CfBlob blob = {};
+    CfResult res = this->cert_->toString(this->cert_, &blob);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "to string failed!");
+        return "";
+    }
+    string str = string(reinterpret_cast<char *>(blob.data), blob.size);
+    CfBlobDataFree(&blob);
+    return str;
 }
 
 string X509CertImpl::ToStringEx(EncodingType encodingType)
@@ -228,14 +511,44 @@ string X509CertImpl::ToStringEx(EncodingType encodingType)
 
 array<uint8_t> X509CertImpl::HashCode()
 {
-    TH_THROW(std::runtime_error, "HashCode not implemented");
+    if (this->cert_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        return {};
+    }
+    CfBlob blob = {};
+    CfResult res = this->cert_->hashCode(this->cert_, &blob);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "hash code failed!");
+        return {};
+    }
+    array<uint8_t> data = {};
+    DataBlobToArrayU8(blob, data);
+    CfBlobDataFree(&blob);
+    return data;
 }
 
 CertExtension X509CertImpl::GetExtensionsObject()
 {
-    // The parameters in the make_holder function should be of the same type
-    // as the parameters in the constructor of the actual implementation class.
-    return make_holder<CertExtensionImpl, CertExtension>();
+    if (this->cert_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        return make_holder<CertExtensionImpl, CertExtension>();
+    }
+    CfBlob blob = {};
+    CfResult res = this->cert_->getExtensionsObject(this->cert_, &blob);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "get extensions object failed!");
+        return make_holder<CertExtensionImpl, CertExtension>();
+    }
+    CfObject *object = nullptr;
+    CfEncodingBlob encodingBlob = {};
+    DataBlobToEncodingBlob(blob, encodingBlob);
+    res = static_cast<CfResult>(CfCreate(CF_OBJ_TYPE_EXTENSION, &encodingBlob, &object));
+    CfBlobDataFree(&blob);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "create extension obj failed!");
+        return make_holder<CertExtensionImpl, CertExtension>();
+    }
+    return make_holder<CertExtensionImpl, CertExtension>(object);
 }
 
 X509Cert CreateX509CertSync(EncodingBlob const& inStream)

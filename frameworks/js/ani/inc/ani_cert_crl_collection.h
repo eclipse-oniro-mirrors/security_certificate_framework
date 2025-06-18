@@ -19,15 +19,20 @@
 #include "ani_common.h"
 #include "ani_x509_cert.h"
 #include "ani_x509_crl.h"
+#include "cert_crl_collection.h"
 
 namespace ANI::CertFramework {
 class CertCRLCollectionImpl {
 public:
     CertCRLCollectionImpl();
+    explicit CertCRLCollectionImpl(HcfCertCrlCollection *collection);
     ~CertCRLCollectionImpl();
 
     array<X509Cert> SelectCertsSync(X509CertMatchParameters const& param);
     array<X509CRL> SelectCRLsSync(X509CRLMatchParameters const& param);
+
+private:
+    HcfCertCrlCollection *collection_ = nullptr;
 };
 } // namespace ANI::CertFramework
 

@@ -13,27 +13,14 @@
  * limitations under the License.
  */
 
-#ifndef ANI_CERT_EXTENSION_H
-#define ANI_CERT_EXTENSION_H
+import { BusinessError } from "@ohos.base";
+import cert from "@ohos.security.cert";
+import utils from "./test_utils";
 
-#include "ani_common.h"
+function testCertCrlCollectionAsync() {
+}
 
-namespace ANI::CertFramework {
-class CertExtensionImpl {
-public:
-    CertExtensionImpl();
-    explicit CertExtensionImpl(CfObject *object);
-    ~CertExtensionImpl();
-
-    EncodingBlob GetEncoded();
-    DataArray GetOidList(ExtensionOidType valueType);
-    DataBlob GetEntry(ExtensionEntryType valueType, DataBlob const& oid);
-    int32_t CheckCA();
-    bool HasUnsupportedCriticalExtension();
-
-private:
-    CfObject *object_ = nullptr;
-};
-} // namespace ANI::CertFramework
-
-#endif // ANI_CERT_EXTENSION_H
+export function testCertCrlCollection() {
+  console.println(">>>>>>>>>>>>>>>>>>>> CertCrlCollectionAsync");
+  testCertCrlCollectionAsync();
+}

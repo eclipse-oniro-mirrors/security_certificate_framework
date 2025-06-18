@@ -13,27 +13,15 @@
  * limitations under the License.
  */
 
-#ifndef ANI_CERT_EXTENSION_H
-#define ANI_CERT_EXTENSION_H
+#ifndef ANI_OBJECT_H
+#define ANI_OBJECT_H
 
 #include "ani_common.h"
+#include "cf_param.h"
 
 namespace ANI::CertFramework {
-class CertExtensionImpl {
-public:
-    CertExtensionImpl();
-    explicit CertExtensionImpl(CfObject *object);
-    ~CertExtensionImpl();
-
-    EncodingBlob GetEncoded();
-    DataArray GetOidList(ExtensionOidType valueType);
-    DataBlob GetEntry(ExtensionEntryType valueType, DataBlob const& oid);
-    int32_t CheckCA();
-    bool HasUnsupportedCriticalExtension();
-
-private:
-    CfObject *object_ = nullptr;
-};
+CfResult DoCommonOperation(const CfObject *object, const std::vector<CfParam> &param,
+    CfParamSet **outParamSet, std::string &errMsg);
 } // namespace ANI::CertFramework
 
-#endif // ANI_CERT_EXTENSION_H
+#endif // ANI_OBJECT_H

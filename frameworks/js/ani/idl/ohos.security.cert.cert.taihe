@@ -234,7 +234,7 @@ struct X509CertMatchParameters {
   matchAllSubjectAltNames: Optional<bool>;
   authorityKeyIdentifier: Optional<@typedarray Array<u8>>;
   minPathLenConstraint: Optional<i32>;
-  // x509Cert: Optional<X509Cert>;
+  x509Cert: Optional<X509Cert>;
   validDate: Optional<String>;
   issuer: Optional<@typedarray Array<u8>>;
   extendedKeyUsage: Optional<Array<String>>;
