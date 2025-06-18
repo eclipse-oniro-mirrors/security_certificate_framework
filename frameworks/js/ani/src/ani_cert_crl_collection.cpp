@@ -18,7 +18,13 @@
 namespace ANI::CertFramework {
 CertCRLCollectionImpl::CertCRLCollectionImpl() {}
 
-CertCRLCollectionImpl::~CertCRLCollectionImpl() {}
+CertCRLCollectionImpl::CertCRLCollectionImpl(HcfCertCrlCollection *collection) : collection_(collection) {}
+
+CertCRLCollectionImpl::~CertCRLCollectionImpl()
+{
+    CfObjDestroy(this->collection_);
+    this->collection_ = nullptr;
+}
 
 array<X509Cert> CertCRLCollectionImpl::SelectCertsSync(X509CertMatchParameters const& param)
 {

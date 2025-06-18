@@ -72,19 +72,25 @@ void DataBlobToArrayU8(const CfBlob &blob, array<uint8_t> &arr)
     arr = array<uint8_t>(move_data_t{}, blob.data, blob.size);
 }
 
-void ArrayU8ToBigInteger(const array<uint8_t> &arr, CfBlob &bigint)
+void ArrayU8ToBigInteger(const array<uint8_t> &arr, CfBlob &bigint, bool isReverse /* = false */)
 {
     bigint.data = arr.empty() ? nullptr : arr.data();
     bigint.size = arr.size();
     if (bigint.size > 0 && bigint.data[bigint.size - 1] == 0) { // remove the sign bit of big integer
         bigint.size--;
     }
+    if (isReverse) { // reverse bigint data for serial number
+        std::reverse(bigint.data, bigint.data + bigint.size);
+    }
 }
 
-void BigIntegerToArrayU8(const CfBlob &bigint, array<uint8_t> &arr)
+void BigIntegerToArrayU8(const CfBlob &bigint, array<uint8_t> &arr, bool isReverse /* = false */)
 {
     arr = array<uint8_t>(bigint.size + 1);
     std::copy(bigint.data, bigint.data + bigint.size, arr.data());
+    if (isReverse) { // reverse bigint data for serial number
+        std::reverse(arr.begin(), arr.begin() + bigint.size);
+    }
     // 0x00 is the sign bit of big integer, it's always a positive number in this implementation
     arr[bigint.size] = 0x00;
 }
@@ -93,6 +99,14 @@ void StringToDataBlob(const string &str, CfBlob &blob)
 {
     blob.data = str.empty() ? nullptr : reinterpret_cast<uint8_t *>(const_cast<char *>(str.c_str()));
     blob.size = str.size();
+}
+
+void CfArrayToDataArray(const CfArray &cfArr, DataArray &dataArr)
+{
+    dataArr = { array<array<uint8_t>>::make(cfArr.count, {}) };
+    for (uint32_t i = 0; i < cfArr.count; i++) {
+        DataBlobToArrayU8(cfArr.data[i], dataArr.data[i]);
+    }
 }
 
 void DataBlobToEncodingBlob(const CfBlob &blob, CfEncodingBlob &encodingBlob,

@@ -161,7 +161,7 @@ X509CRLEntry X509CRLImpl::GetRevokedCert(array_view<uint8_t> serialNumber)
     }
     HcfX509CrlEntry *crlEntry = nullptr;
     CfBlob serialNumberBlob = {};
-    ArrayU8ToBigInteger(serialNumber, serialNumberBlob);
+    ArrayU8ToBigInteger(serialNumber, serialNumberBlob, true);
     CfResult res = this->x509Crl_->getRevokedCert(this->x509Crl_, &serialNumberBlob, &crlEntry);
     if (res != CF_SUCCESS) {
         ANI_LOGE_THROW(res, "get revoked cert failed!");
@@ -348,7 +348,6 @@ bool X509CRLImpl::Match(X509CRLMatchParameters const& param)
         ArrayU8ToDataBlob(param.minCRL.value(), minCRL);
         matchParams.minCRL = &minCRL;
     }
-
     bool flag = false;
     CfResult res = this->x509Crl_->match(this->x509Crl_, &matchParams, &flag);
     if (res != CF_SUCCESS) {
@@ -439,7 +438,7 @@ CertExtension X509CRLImpl::GetExtensionsObject()
     res = static_cast<CfResult>(CfCreate(CF_OBJ_TYPE_EXTENSION, &encodingBlob, &object));
     CfBlobDataFree(&blob);
     if (res != CF_SUCCESS) {
-        ANI_LOGE_THROW(res, "Cf create failed!");
+        ANI_LOGE_THROW(res, "create extension obj failed!");
         return make_holder<CertExtensionImpl, CertExtension>();
     }
     return make_holder<CertExtensionImpl, CertExtension>(object);

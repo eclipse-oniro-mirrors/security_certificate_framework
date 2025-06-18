@@ -217,7 +217,7 @@ CertExtension X509CRLEntryImpl::GetExtensionsObject()
     res = static_cast<CfResult>(CfCreate(CF_OBJ_TYPE_EXTENSION, &encodingBlob, &object));
     CfBlobDataFree(&blob);
     if (res != CF_SUCCESS) {
-        ANI_LOGE_THROW(res, "Cf create failed!");
+        ANI_LOGE_THROW(res, "create extension obj failed!");
         return make_holder<CertExtensionImpl, CertExtension>();
     }
     return make_holder<CertExtensionImpl, CertExtension>(object);

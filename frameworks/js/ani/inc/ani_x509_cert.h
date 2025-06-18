@@ -59,6 +59,7 @@ public:
 
 private:
     HcfX509Certificate *cert_ = nullptr;
+    CfObject *object_ = nullptr;
 };
 } // namespace ANI::CertFramework
 
