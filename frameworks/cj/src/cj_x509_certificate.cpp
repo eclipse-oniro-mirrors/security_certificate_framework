@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,7 +13,9 @@
  * limitations under the License.
  */
 
+#include "cf_memory.h"
 #include "cf_param.h"
+#include "securec.h"
 
 #include "cj_x509_certificate.h"
 
@@ -280,11 +282,17 @@ CfResult FfiCertCjX509CertificateGetItem(const CjX509Certificate self, const int
 
     CfParam *resultParam = nullptr;
     ret = CfGetParam(outParamSet, CF_TAG_RESULT_BYTES, &resultParam);
+    uint32_t blobSize = resultParam->blob.size;
+    uint8_t* buffer = static_cast<uint8_t*>(CfMalloc(blobSize, 0));
+    if (memcpy_s(buffer, blobSize, resultParam->blob.data, blobSize) != CF_SUCCESS) {
+        CfFree(buffer);
+        return CfResult(ret);
+    }
     CfFreeParamSet(&inParamSet);
     CfFreeParamSet(&outParamSet);
 
     if (ret == CF_SUCCESS) {
-        *out = resultParam->blob;
+        *out = CfBlob { .size = blobSize, .data = buffer };
     }
     return CfResult(ret);
 }

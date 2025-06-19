@@ -13,7 +13,9 @@
  * limitations under the License.
  */
 
+#include "cf_memory.h"
 #include "cf_param.h"
+#include "securec.h"
 
 #include "cj_cf_object.h"
 
@@ -62,11 +64,17 @@ CfResult FfiCertCjCfObjectGetEncoded(const CjCfObject self, CfBlob *out)
 
     CfParam *resultParam = nullptr;
     ret = CfGetParam(outParamSet, CF_TAG_RESULT_BYTES, &resultParam);
+    uint32_t blobSize = resultParam->blob.size;
+    uint8_t* buffer = static_cast<uint8_t*>(CfMalloc(blobSize, 0));
+    if (memcpy_s(buffer, blobSize, resultParam->blob.data, blobSize) != CF_SUCCESS) {
+        CfFree(buffer);
+        return CfResult(ret);
+    }
     CfFreeParamSet(&inParamSet);
     CfFreeParamSet(&outParamSet);
 
     if (ret == CF_SUCCESS) {
-        *out = resultParam->blob;
+        *out = CfBlob { .size = blobSize, .data = buffer };
     }
     return CfResult(ret);
 }
@@ -141,11 +149,17 @@ CfResult FfiCertCjCfObjectGetEntry(const CjCfObject self, int32_t valueType, CfB
     }
     CfParam *resultParam = nullptr;
     ret = CfGetParam(outParamSet, CF_TAG_RESULT_BYTES, &resultParam);
+    uint32_t blobSize = resultParam->blob.size;
+    uint8_t* buffer = static_cast<uint8_t*>(CfMalloc(blobSize, 0));
+    if (memcpy_s(buffer, blobSize, resultParam->blob.data, blobSize) != CF_SUCCESS) {
+        CfFree(buffer);
+        return CfResult(ret);
+    }
     CfFreeParamSet(&inParamSet);
     CfFreeParamSet(&outParamSet);
 
     if (ret == CF_SUCCESS) {
-        *out = resultParam->blob;
+        *out = CfBlob { .size = blobSize, .data = buffer };
     }
     return CfResult(ret);
 }
@@ -173,12 +187,11 @@ CfResult FfiCertCjCfObjectCheckCA(const CjCfObject self, int32_t *out)
     }
     CfParam *resultParam = nullptr;
     ret = CfGetParam(outParamSet, CF_TAG_RESULT_INT, &resultParam);
-    CfFreeParamSet(&inParamSet);
-    CfFreeParamSet(&outParamSet);
-
     if (ret == CF_SUCCESS) {
         *out = resultParam->int32Param;
     }
+    CfFreeParamSet(&inParamSet);
+    CfFreeParamSet(&outParamSet);
     return CfResult(ret);
 }
 
@@ -205,11 +218,10 @@ CfResult FfiCertCjCfObjectHasUnsupportedCriticalExtension(const CjCfObject self,
     }
     CfParam *resultParam = nullptr;
     ret = CfGetParam(outParamSet, CF_TAG_RESULT_BOOL, &resultParam);
-    CfFreeParamSet(&inParamSet);
-    CfFreeParamSet(&outParamSet);
-
     if (ret == CF_SUCCESS) {
         *out = resultParam->boolParam;
     }
+    CfFreeParamSet(&inParamSet);
+    CfFreeParamSet(&outParamSet);
     return CfResult(ret);
 }

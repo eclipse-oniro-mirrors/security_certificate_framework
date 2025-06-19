@@ -50,5 +50,8 @@ ohos_shared_library("cj_cert_ffi") {
   ]
 
   deps = [ "../core:certificate_framework_core" ]
+
+  external_deps = [ "c_utils:utils" ]
+
   innerapi_tags = [ "platformsdk" ]
 }
