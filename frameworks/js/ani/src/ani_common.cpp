@@ -15,6 +15,7 @@
 
 #include "ani_common.h"
 #include <unordered_map>
+#include <securec.h>
 
 namespace {
 enum ResultCode {
@@ -122,4 +123,39 @@ void DataBlobToEncodingBlob(const CfBlob &blob, CfEncodingBlob &encodingBlob,
     encodingBlob.len = blob.size;
     encodingBlob.encodingFormat = encodingFormat;
 }
+
+bool StringCopyToBlob(const string &str, CfBlob **blob)
+{
+    *blob = static_cast<CfBlob *>(CfMalloc(sizeof(CfBlob), 0));
+    if (*blob == nullptr) {
+        return false;
+    }
+    uint32_t length = str.size() + 1;
+    (*blob)->data = (uint8_t *)CfMalloc(length, 0);
+    if ((*blob)->data == nullptr) {
+        CfFree(*blob);
+        return false;
+    }
+    (void)memcpy_s((*blob)->data, length, str.c_str(), length);
+    (*blob)->size = length;
+    return true;
+}
+
+bool ArrayU8CopyToBlob(const array<uint8_t> &arr, CfBlob **blob)
+{
+    *blob = static_cast<CfBlob *>(CfMalloc(sizeof(CfBlob), 0));
+    if (*blob == nullptr) {
+        return false;
+    }
+    uint32_t length = arr.size();
+    (*blob)->data = (uint8_t *)CfMalloc(length, 0);
+    if ((*blob)->data == nullptr) {
+        CfFree(*blob);
+        return false;
+    }
+    (void)memcpy_s((*blob)->data, length, arr.data(), length);
+    (*blob)->size = length;
+    return true;
+}
+
 } // namespace ANI::CertFramework

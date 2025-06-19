@@ -259,6 +259,7 @@ struct X509CRLMatchParameters {
 }
 
 interface CertCRLCollection {
+  GetCertCrlCollectionObj(): i64;
   @gen_async("selectCerts")
   @gen_promise("selectCerts")
   SelectCertsSync(param: X509CertMatchParameters): Array<X509Cert>;
@@ -376,6 +377,7 @@ struct CertChainValidationParameters {
 }
 
 interface CertChainValidationResult {
+  GetCertChainValidationResultObj(): i64;
   @get("trustAnchor") GetTrustAnchor(): X509TrustAnchor;
   @get("entityCert") GetEntityCert(): X509Cert;
 }

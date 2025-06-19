@@ -27,6 +27,11 @@ CertCRLCollectionImpl::~CertCRLCollectionImpl()
     this->collection_ = nullptr;
 }
 
+int64_t CertCRLCollectionImpl::GetCertCrlCollectionObj()
+{
+    return reinterpret_cast<int64_t>(this->collection_);
+}
+
 array<X509Cert> CertCRLCollectionImpl::SelectCertsSync(X509CertMatchParameters const& param)
 {
     if (this->collection_ == nullptr) {

@@ -17,15 +17,21 @@
 #define ANI_CERT_CHAIN_BUILD_RESULT_H
 
 #include "ani_common.h"
+#include "x509_cert_chain.h"
+#include "x509_cert_chain_validate_result.h"
 
 namespace ANI::CertFramework {
 class CertChainBuildResultImpl {
 public:
     CertChainBuildResultImpl();
+    explicit CertChainBuildResultImpl(HcfX509CertChainBuildResult *buildResult);
     ~CertChainBuildResultImpl();
 
     X509CertChain GetCertChain();
     CertChainValidationResult GetValidationResult();
+
+private:
+    HcfX509CertChainBuildResult *buildResult_;
 };
 } // namespace ANI::CertFramework
 

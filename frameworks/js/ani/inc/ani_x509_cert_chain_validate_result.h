@@ -17,15 +17,21 @@
 #define ANI_X509_CERT_CHAIN_VALIDATE_RESULT_H
 
 #include "ani_common.h"
+#include "x509_cert_chain_validate_result.h"
 
 namespace ANI::CertFramework {
 class CertChainValidationResultImpl {
 public:
     CertChainValidationResultImpl();
+    explicit CertChainValidationResultImpl(HcfX509CertChainValidateResult *validateResult);
     ~CertChainValidationResultImpl();
 
+    int64_t GetCertChainValidationResultObj();
     X509TrustAnchor GetTrustAnchor();
     X509Cert GetEntityCert();
+
+private:
+    HcfX509CertChainValidateResult *validateResult_ = nullptr;
 };
 } // namespace ANI::CertFramework
 
