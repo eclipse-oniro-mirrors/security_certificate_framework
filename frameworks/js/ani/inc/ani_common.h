@@ -28,10 +28,16 @@
 #include "cf_memory.h"
 #include "cf_object_base.h"
 
+#include "x509_certificate.h"
+
 namespace ANI::CertFramework {
 using namespace taihe;
 using namespace ohos::security::cert::cert;
 namespace cryptoFramework = ohos::security::cryptoFramework::cryptoFramework;
+
+// Resolve the issue of enumeration conflicts with the same name between inner and taihe
+using HcfPrivateKeyInfo = ::PrivateKeyInfo;
+using ThPrivateKeyInfo = ohos::security::cert::cert::PrivateKeyInfo;
 
 #define ANI_LOGE_THROW(code, msg) \
     do { \

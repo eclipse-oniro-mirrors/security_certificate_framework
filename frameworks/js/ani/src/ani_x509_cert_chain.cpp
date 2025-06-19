@@ -14,20 +14,152 @@
  */
 
 #include "ani_x509_cert_chain.h"
+
+#include <securec.h>
 #include "ani_x509_cert.h"
 #include "ani_x509_cert_chain_validate_result.h"
 #include "ani_cert_chain_build_result.h"
 #include "x509_cert_chain.h"
 #include "x509_trust_anchor.h"
+#include "cf_blob.h"
+
+namespace {
+using namespace ANI::CertFramework;
+
+HcfParsePKCS12Conf *SetParsePKCS12Conf(Pkcs12ParsingConfig const& config)
+{
+    static HcfParsePKCS12Conf conf = {};
+    static CfBlob tmpPwd = {};
+    StringToDataBlob(config.password, tmpPwd);
+    conf.pwd = &tmpPwd;
+
+    if (config.privateKeyFormat.has_value()) {
+        conf.isPem = config.privateKeyFormat.value() == DER ? false : true;
+    }
+    conf.isGetPriKey = config.needsPrivateKey.has_value() ? config.needsPrivateKey.value() : false;
+    conf.isGetCert = config.needsCert.has_value() ? config.needsCert.value() : false;
+    conf.isGetOtherCerts = config.needsOtherCerts.has_value() ? config.needsOtherCerts.value() : false;
+    return &conf;
+}
+
+void SetKeyStore(CfBlob **keyStore, array_view<uint8_t> data)
+{
+    CfBlob *tmpKeyStore = (CfBlob *)malloc(sizeof(CfBlob));
+    if (tmpKeyStore == nullptr) {
+        ANI_LOGE_THROW(CF_ERR_MALLOC, "malloc failed!");
+        return;
+    }
+    tmpKeyStore->data = (uint8_t *)CfMalloc(data.size(), 0);
+    if (tmpKeyStore->data == nullptr) {
+        CfBlobFree(&tmpKeyStore);
+        ANI_LOGE_THROW(CF_ERR_MALLOC, "malloc failed!");
+        return;
+    }
+    (void)memcpy_s(tmpKeyStore->data, data.size(), data.data(), data.size());
+    tmpKeyStore->size = data.size();
+    *keyStore = tmpKeyStore;
+}
+
+uint32_t CountValidTrustAnchors(HcfX509TrustAnchorArray* trustAnchors)
+{
+    if (trustAnchors == nullptr || trustAnchors->data == nullptr) {
+        return 0;
+    }
+
+    uint32_t validCount = 0;
+    for (uint32_t i = 0; i < trustAnchors->count; i++) {
+        if (trustAnchors->data[i] != nullptr) {
+            validCount++;
+        }
+    }
+    return validCount;
+}
+
+X509TrustAnchor CreateTrustAnchorFromHcf(HcfX509TrustAnchor* hcfAnchor)
+{
+    X509TrustAnchor anchor = {
+        .CACert = optional<X509Cert>(std::nullopt),
+        .CAPubKey = optional<array<uint8_t>>(std::nullopt),
+        .CASubject = optional<array<uint8_t>>(std::nullopt),
+        .nameConstraints = optional<array<uint8_t>>(std::nullopt)
+    };
+
+    if (hcfAnchor->CAPubKey != nullptr) {
+        array<uint8_t> capubkey = {};
+        DataBlobToArrayU8(*(hcfAnchor->CAPubKey), capubkey);
+        anchor.CAPubKey = optional<array<uint8_t>>(std::in_place, capubkey);
+    }
+
+    if (hcfAnchor->CACert != nullptr) {
+        anchor.CACert = optional<X509Cert>(std::in_place, make_holder<X509CertImpl, X509Cert>(hcfAnchor->CACert));
+    }
+
+    if (hcfAnchor->CASubject != nullptr) {
+        array<uint8_t> casubject = {};
+        DataBlobToArrayU8(*(hcfAnchor->CASubject), casubject);
+        anchor.CASubject = optional<array<uint8_t>>(std::in_place, casubject);
+    }
+
+    if (hcfAnchor->nameConstraints != nullptr) {
+        array<uint8_t> nameConstraints = {};
+        DataBlobToArrayU8(*(hcfAnchor->nameConstraints), nameConstraints);
+        anchor.nameConstraints = optional<array<uint8_t>>(std::in_place, nameConstraints);
+    }
+
+    return anchor;
+}
+
+void FreeX509TrustAnchorObj(HcfX509TrustAnchor *&trustAnchor)
+{
+    if (trustAnchor == nullptr) {
+        return;
+    }
+    CfBlobFree(&trustAnchor->CAPubKey);
+    CfBlobFree(&trustAnchor->CASubject);
+    CfBlobFree(&trustAnchor->nameConstraints);
+    CfObjDestroy(trustAnchor->CACert);
+    trustAnchor->CACert = nullptr;
+
+    CF_FREE_PTR(trustAnchor);
+}
+
+void FreeTrustAnchorArray(HcfX509TrustAnchorArray *&trustAnchors)
+{
+    for (uint32_t i = 0; i < trustAnchors->count; ++i) {
+        FreeX509TrustAnchorObj(trustAnchors->data[i]);
+    }
+    CfFree(trustAnchors);
+    trustAnchors = nullptr;
+}
+} // namespace
 
 namespace ANI::CertFramework {
 X509CertChainImpl::X509CertChainImpl() {}
 
-X509CertChainImpl::~X509CertChainImpl() {}
+X509CertChainImpl::X509CertChainImpl(HcfCertChain *x509CertChain) : x509CertChain_(x509CertChain) {}
+
+X509CertChainImpl::~X509CertChainImpl()
+{
+    CfObjDestroy(this->x509CertChain_);
+    this->x509CertChain_ = nullptr;
+}
 
 array<X509Cert> X509CertChainImpl::GetCertList()
 {
-    TH_THROW(std::runtime_error, "GetCertList not implemented");
+    if (this->x509CertChain_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509CertChain_ is nullptr");
+    }
+    HcfX509CertificateArray certs = { nullptr, 0 };
+    CfResult ret = this->x509CertChain_->getCertList(this->x509CertChain_, &certs);
+    if (ret != CF_SUCCESS) {
+        ANI_LOGE_THROW(ret, "GetCertList failed");
+        return array<X509Cert>(0, make_holder<X509CertImpl, X509Cert>());
+    }
+    array<X509Cert> result(certs.count, make_holder<X509CertImpl, X509Cert>());
+    for (uint32_t i = 0; i < certs.count; i++) {
+        result[i] = make_holder<X509CertImpl, X509Cert>(certs.data[i]);
+    }
+    return result;
 }
 
 CertChainValidationResult X509CertChainImpl::ValidateSync(CertChainValidationParameters const& param)
@@ -39,26 +171,67 @@ CertChainValidationResult X509CertChainImpl::ValidateSync(CertChainValidationPar
 
 string X509CertChainImpl::ToString()
 {
-    TH_THROW(std::runtime_error, "ToString not implemented");
+    if (this->x509CertChain_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509CertChain_ is nullptr");
+        return "";
+    }
+    CfBlob blob = { 0, nullptr };
+    CfResult ret = this->x509CertChain_->toString(this->x509CertChain_, &blob);
+    if (ret != CF_SUCCESS) {
+        ANI_LOGE_THROW(ret, "ToString failed");
+        return "";
+    }
+    string str = string(reinterpret_cast<char *>(blob.data), blob.size);
+    CfBlobDataClearAndFree(&blob);
+    return str;
 }
 
 array<uint8_t> X509CertChainImpl::HashCode()
 {
-    TH_THROW(std::runtime_error, "HashCode not implemented");
+    if (this->x509CertChain_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509CertChain_ is nullptr");
+        return {};
+    }
+    CfBlob blob = { 0, nullptr };
+    CfResult ret = this->x509CertChain_->hashCode(this->x509CertChain_, &blob);
+    if (ret != CF_SUCCESS) {
+        ANI_LOGE_THROW(ret, "HashCode failed");
+        return {};
+    }
+    array<uint8_t> data = {};
+    DataBlobToArrayU8(blob, data);
+    CfBlobDataClearAndFree(&blob);
+    return data;
 }
 
 X509CertChain CreateX509CertChainSync(EncodingBlob const& inStream)
 {
-    // The parameters in the make_holder function should be of the same type
-    // as the parameters in the constructor of the actual implementation class.
-    return make_holder<X509CertChainImpl, X509CertChain>();
+    HcfCertChain *x509CertChain = nullptr;
+    CfEncodingBlob encodingBlob = {};
+    encodingBlob.data = inStream.data.data();
+    encodingBlob.len = inStream.data.size();
+    encodingBlob.encodingFormat = static_cast<CfEncodingFormat>(static_cast<int>(inStream.encodingFormat));
+    CfResult ret = HcfCertChainCreate(&encodingBlob, nullptr, &x509CertChain);
+    if (ret != CF_SUCCESS) {
+        ANI_LOGE_THROW(ret, "CreateX509CertChainSync failed");
+        return make_holder<X509CertChainImpl, X509CertChain>();
+    }
+    return make_holder<X509CertChainImpl, X509CertChain>(x509CertChain);
 }
 
 X509CertChain CreateX509CertChain(array_view<X509Cert> certs)
 {
-    // The parameters in the make_holder function should be of the same type
-    // as the parameters in the constructor of the actual implementation class.
-    return make_holder<X509CertChainImpl, X509CertChain>();
+    HcfX509CertificateArray certsArray = { nullptr, 0 };
+    for (uint32_t i = 0; i < certs.size(); i++) {
+        certsArray.data[i] = reinterpret_cast<HcfX509Certificate *>(certs[i]->GetX509CertObj());
+    }
+    HcfCertChain *x509CertChain = nullptr;
+    CfResult ret = HcfCertChainCreate(nullptr, &certsArray, &x509CertChain);
+    if (ret != CF_SUCCESS) {
+        ANI_LOGE_THROW(ret, "CreateX509CertChain failed");
+        return make_holder<X509CertChainImpl, X509CertChain>();
+    }
+    return make_holder<X509CertChainImpl, X509CertChain>(x509CertChain);
 }
 
 CertChainBuildResult BuildX509CertChainSync(CertChainBuildParameters const& param)
@@ -71,11 +244,12 @@ CertChainBuildResult BuildX509CertChainSync(CertChainBuildParameters const& para
 Pkcs12Data ParsePkcs12(array_view<uint8_t> data, Pkcs12ParsingConfig const& config)
 {
     HcfX509P12Collection *p12Collection = nullptr;
-    HcfParsePKCS12Conf conf = {};
-    CfBlob keyStore = {};
-    ArrayU8ToDataBlob(data, keyStore);
-    CfResult res = HcfParsePKCS12(&keyStore, &conf, &p12Collection);
+    HcfParsePKCS12Conf *conf = SetParsePKCS12Conf(config);
+    CfBlob *keyStore = nullptr;
+    SetKeyStore(&keyStore, data);
+    CfResult res = HcfParsePKCS12(keyStore, conf, &p12Collection);
     if (res != CF_SUCCESS) {
+        CfBlobFree(&keyStore);
         ANI_LOGE_THROW(res, "parse pkcs12 failed!");
         return {};
     }
@@ -109,12 +283,37 @@ Pkcs12Data ParsePkcs12(array_view<uint8_t> data, Pkcs12ParsingConfig const& conf
         }
     }
     CfFree(p12Collection);
+    CfBlobFree(&keyStore);
     return pkcs12Data;
 }
 
 array<X509TrustAnchor> CreateTrustAnchorsWithKeyStoreSync(array_view<uint8_t> keystore, string_view pwd)
 {
-    TH_THROW(std::runtime_error, "CreateTrustAnchorsWithKeyStoreSync not implemented");
+    HcfX509TrustAnchorArray* trustAnchors = nullptr;
+    CfBlob keyStore = {};
+    ArrayU8ToDataBlob(keystore, keyStore);
+    CfBlob pwdBlob = {};
+    StringToDataBlob(pwd, pwdBlob);
+
+    CfResult ret = HcfCreateTrustAnchorWithKeyStore(&keyStore, &pwdBlob, &trustAnchors);
+    if (ret != CF_SUCCESS) {
+        ANI_LOGE_THROW(ret, "create trust anchors with keystore failed!");
+        return array<X509TrustAnchor>(0);
+    }
+
+    uint32_t validCount = CountValidTrustAnchors(trustAnchors);
+    array<X509TrustAnchor> result(validCount);
+    
+    uint32_t index = 0;
+    for (uint32_t i = 0; i < trustAnchors->count; i++) {
+        if (trustAnchors->data[i] == nullptr) {
+            continue;
+        }
+        result[index++] = CreateTrustAnchorFromHcf(trustAnchors->data[i]);
+    }
+
+    FreeTrustAnchorArray(trustAnchors);
+    return result;
 }
 } // namespace ANI::CertFramework
 

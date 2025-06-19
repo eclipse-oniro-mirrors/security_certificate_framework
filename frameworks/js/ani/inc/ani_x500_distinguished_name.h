@@ -26,6 +26,7 @@ public:
     explicit X500DistinguishedNameImpl(HcfX509DistinguishedName *x509Name);
     ~X500DistinguishedNameImpl();
 
+    int64_t GetX500DistinguishedNameObj();
     string GetName();
     string GetNameByEnum(EncodingType encodingType);
     array<string> GetNameByStr(string_view type);

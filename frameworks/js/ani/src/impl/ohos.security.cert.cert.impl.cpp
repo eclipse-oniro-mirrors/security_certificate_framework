@@ -413,6 +413,10 @@ public:
         // Don't forget to implement the constructor.
     }
 
+    int64_t GetX500DistinguishedNameObj() {
+        TH_THROW(std::runtime_error, "GetX500DistinguishedNameObj not implemented");
+    }
+
     string GetName() {
         TH_THROW(std::runtime_error, "GetName not implemented");
     }

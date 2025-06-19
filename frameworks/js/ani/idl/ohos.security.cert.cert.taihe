@@ -313,6 +313,7 @@ function CreateX500DistinguishedNameByStrSync(nameStr: String): X500Distinguishe
 function CreateX500DistinguishedNameByDerSync(nameDer: @typedarray Array<u8>): X500DistinguishedName;
 
 interface X500DistinguishedName {
+  GetX500DistinguishedNameObj(): i64;
   @overload("getName")
   GetName(): String;
   @overload("getName")

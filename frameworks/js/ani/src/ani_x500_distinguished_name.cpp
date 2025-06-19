@@ -26,9 +26,37 @@ X500DistinguishedNameImpl::~X500DistinguishedNameImpl()
     this->x509Name_ = nullptr;
 }
 
+int64_t X500DistinguishedNameImpl::GetX500DistinguishedNameObj()
+{
+    return reinterpret_cast<int64_t>(this->x509Name_);
+}
+
+X500DistinguishedName CreateX500DistinguishedNameInner(const CfBlob *inStream, bool bString)
+{
+    HcfX509DistinguishedName *x500DistinguishedName = nullptr;
+    CfResult res = HcfX509DistinguishedNameCreate(inStream, bString, &x500DistinguishedName);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "create x500 distinguished name failed.");
+        return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>();
+    }
+    return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>(x500DistinguishedName);
+}
+
 string X500DistinguishedNameImpl::GetName()
 {
-    TH_THROW(std::runtime_error, "GetName not implemented");
+    if (this->x509Name_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x500 distinguished name obj is nullptr!");
+        return "";
+    }
+    CfBlob blob = {};
+    CfResult ret = this->x509Name_->getName(this->x509Name_, NULL, &blob, NULL);
+    if (ret != CF_SUCCESS) {
+        ANI_LOGE_THROW(ret, "get name failed.");
+        return "";
+    }
+    string result = string(reinterpret_cast<char *>(blob.data), blob.size);
+    CfBlobDataFree(&blob);
+    return result;
 }
 
 string X500DistinguishedNameImpl::GetNameByEnum(EncodingType encodingType)
@@ -39,26 +67,59 @@ string X500DistinguishedNameImpl::GetNameByEnum(EncodingType encodingType)
 
 array<string> X500DistinguishedNameImpl::GetNameByStr(string_view type)
 {
-    TH_THROW(std::runtime_error, "GetNameByStr not implemented");
+    if (this->x509Name_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x500 distinguished name obj is nullptr!");
+        return array<string>{};
+    }
+    CfBlob inPara = {};
+    StringToDataBlob(type, inPara);
+    CfArray outArr = { nullptr, CF_FORMAT_DER, 0 };
+    CfResult ret = this->x509Name_->getName(this->x509Name_, &inPara, NULL, &outArr);
+    if (ret != CF_SUCCESS) {
+        ANI_LOGE_THROW(ret, "get name failed.");
+        return array<string>{};
+    }
+    array<string> result = array<string>::make(outArr.count, {});
+    for (uint32_t i = 0; i < outArr.count; i++) {
+        result[i] = string(reinterpret_cast<char *>(outArr.data[i].data), outArr.data[i].size);
+    }
+    CfArrayDataClearAndFree(&outArr);
+    return result;
 }
 
 EncodingBlob X500DistinguishedNameImpl::GetEncoded()
 {
-    TH_THROW(std::runtime_error, "GetEncoded not implemented");
+    EncodingBlob encodingBlob = { {}, EncodingFormat(EncodingFormat::key_t::FORMAT_DER) };
+    if (this->x509Name_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x500 distinguished name obj is nullptr!");
+        return encodingBlob;
+    }
+    CfEncodingBlob blob = {};
+    CfResult ret = this->x509Name_->getEncode(this->x509Name_, &blob);
+    if (ret != CF_SUCCESS) {
+        ANI_LOGE_THROW(ret, "get encoded failed.");
+        return encodingBlob;
+    }
+    array<uint8_t> data = {};
+    DataBlobToArrayU8({ blob.len, blob.data }, data);
+    encodingBlob.data = data;
+    encodingBlob.encodingFormat = static_cast<EncodingFormat::key_t>(blob.encodingFormat);
+    CfEncodingBlobDataFree(&blob);
+    return encodingBlob;
 }
 
 X500DistinguishedName CreateX500DistinguishedNameByStrSync(string_view nameStr)
 {
-    // The parameters in the make_holder function should be of the same type
-    // as the parameters in the constructor of the actual implementation class.
-    return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>();
+    CfBlob nameStrBlob = {};
+    StringToDataBlob(nameStr, nameStrBlob);
+    return CreateX500DistinguishedNameInner(&nameStrBlob, true);
 }
 
 X500DistinguishedName CreateX500DistinguishedNameByDerSync(array_view<uint8_t> nameDer)
 {
-    // The parameters in the make_holder function should be of the same type
-    // as the parameters in the constructor of the actual implementation class.
-    return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>();
+    CfBlob nameDerBlob = {};
+    ArrayU8ToDataBlob(nameDer, nameDerBlob);
+    return CreateX500DistinguishedNameInner(&nameDerBlob, false);
 }
 } // namespace ANI::CertFramework
 
