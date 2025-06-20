@@ -229,10 +229,10 @@ CfResult SetCmsSignerOptions(HcfCmsSignerOptions **options, CmsSignerConfig cons
 {
     *options = static_cast<HcfCmsSignerOptions *>(CfMalloc(sizeof(HcfCmsSignerOptions), 0));
     if (!CopyString(config.mdName, &(*options)->mdName)) {
-        ANI_LOGE_THROW(CF_ERR_MALLOC, "set mdName failed");
+        ANI_LOGE_THROW(CF_ERR_COPY, "copy mdName failed");
         CfFree(*options);
         *options = nullptr;
-        return CF_ERR_MALLOC;
+        return CF_ERR_COPY;
     }
     (*options)->addCert = config.addCert.has_value() ? config.addCert.value() : false;
     (*options)->addAttr = config.addAttr.has_value() ? config.addAttr.value() : false;
@@ -262,7 +262,6 @@ void CmsGeneratorImpl::AddSigner(weak::X509Cert cert, ThPrivateKeyInfo const& ke
     if (ret != CF_SUCCESS) {
         FreePrivateKeyInfo(privateKey);
         ANI_LOGE_THROW(ret, "set cms signer options failed");
-        FreePrivateKeyInfo(privateKey);
         return;
     }
 
