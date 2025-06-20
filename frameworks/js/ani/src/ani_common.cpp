@@ -121,11 +121,9 @@ bool CopyString(const string &str, char **dst)
 {
     *dst = static_cast<char *>(CfMalloc(str.size() + 1, 0));
     if (*dst == nullptr) {
-        ANI_LOGE_THROW(CF_ERR_MALLOC, "malloc failed");
         return false;
     }
     if (strcpy_s(*dst, str.size() + 1, str.c_str()) != EOK) {
-        ANI_LOGE_THROW(CF_ERR_COPY, "copy string failed");
         CfFree(*dst);
         *dst = nullptr;
         return false;
