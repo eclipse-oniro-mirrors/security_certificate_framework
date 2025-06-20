@@ -26,38 +26,81 @@
 namespace {
 using namespace ANI::CertFramework;
 
-HcfParsePKCS12Conf *SetParsePKCS12Conf(Pkcs12ParsingConfig const& config)
+void FreePkcs12Data(HcfParsePKCS12Conf *conf, CfBlob *keyStore)
 {
-    static HcfParsePKCS12Conf conf = {};
-    static CfBlob tmpPwd = {};
-    StringToDataBlob(config.password, tmpPwd);
-    conf.pwd = &tmpPwd;
-
-    if (config.privateKeyFormat.has_value()) {
-        conf.isPem = config.privateKeyFormat.value() == DER ? false : true;
+    if (conf != nullptr) {
+        CfBlobDataClearAndFree(conf->pwd);
+        CfFree(conf);
     }
-    conf.isGetPriKey = config.needsPrivateKey.has_value() ? config.needsPrivateKey.value() : false;
-    conf.isGetCert = config.needsCert.has_value() ? config.needsCert.value() : false;
-    conf.isGetOtherCerts = config.needsOtherCerts.has_value() ? config.needsOtherCerts.value() : false;
-    return &conf;
+    if (keyStore != nullptr) {
+        CfBlobFree(&keyStore);
+    }
 }
 
-void SetKeyStore(CfBlob **keyStore, array_view<uint8_t> data)
+CfResult SetParsePKCS12Conf(Pkcs12ParsingConfig const& config, HcfParsePKCS12Conf **conf)
 {
-    CfBlob *tmpKeyStore = (CfBlob *)malloc(sizeof(CfBlob));
+    HcfParsePKCS12Conf *tmpConf = (HcfParsePKCS12Conf *)CfMalloc(sizeof(HcfParsePKCS12Conf), 0);
+    if (tmpConf == nullptr) {
+        ANI_LOGE_THROW(CF_ERR_MALLOC, "malloc failed!");
+        return CF_ERR_MALLOC;
+    }
+    CfBlob *tmpPwd = (CfBlob *)CfMalloc(config.password.size(), 0);
+    if (tmpPwd == nullptr) {
+        FreePkcs12Data(tmpConf, nullptr);
+        ANI_LOGE_THROW(CF_ERR_MALLOC, "malloc failed!");
+        return CF_ERR_MALLOC;
+    }
+    tmpPwd->data = (uint8_t *)CfMalloc(config.password.size(), 0);
+    if (tmpPwd->data == nullptr) {
+        FreePkcs12Data(tmpConf, tmpPwd);
+        ANI_LOGE_THROW(CF_ERR_MALLOC, "malloc failed!");
+        return CF_ERR_MALLOC;
+    }
+    (void)memcpy_s(tmpPwd->data, config.password.size(), config.password.data(), config.password.size());
+    tmpPwd->size = config.password.size();
+    tmpConf->pwd = tmpPwd;
+
+    tmpConf->isPem = config.privateKeyFormat.has_value() ?
+        config.privateKeyFormat.value() == DER ? false : true : false;
+    tmpConf->isGetPriKey = config.needsPrivateKey.has_value() ? config.needsPrivateKey.value() : false;
+    tmpConf->isGetCert = config.needsCert.has_value() ? config.needsCert.value() : false;
+    tmpConf->isGetOtherCerts = config.needsOtherCerts.has_value() ? config.needsOtherCerts.value() : false;
+    *conf = tmpConf;
+    return CF_SUCCESS;
+}
+
+CfResult SetKeyStore(array_view<uint8_t> data, CfBlob **keyStore)
+{
+    CfBlob *tmpKeyStore = (CfBlob *)CfMalloc(sizeof(CfBlob), 0);
     if (tmpKeyStore == nullptr) {
         ANI_LOGE_THROW(CF_ERR_MALLOC, "malloc failed!");
-        return;
+        return CF_ERR_MALLOC;
     }
     tmpKeyStore->data = (uint8_t *)CfMalloc(data.size(), 0);
     if (tmpKeyStore->data == nullptr) {
-        CfBlobFree(&tmpKeyStore);
+        FreePkcs12Data(nullptr, tmpKeyStore);
         ANI_LOGE_THROW(CF_ERR_MALLOC, "malloc failed!");
-        return;
+        return CF_ERR_MALLOC;
     }
     (void)memcpy_s(tmpKeyStore->data, data.size(), data.data(), data.size());
     tmpKeyStore->size = data.size();
     *keyStore = tmpKeyStore;
+    return CF_SUCCESS;
+}
+
+CfResult SetPkcs12Data(Pkcs12ParsingConfig const& config, array_view<uint8_t> data,
+    HcfParsePKCS12Conf **conf, CfBlob **keyStore)
+{
+    if (SetParsePKCS12Conf(config, conf) != CF_SUCCESS) {
+        ANI_LOGE_THROW(CF_ERR_MALLOC, "set parse pkcs12 conf failed!");
+        return CF_ERR_MALLOC;
+    }
+    if (SetKeyStore(data, keyStore) != CF_SUCCESS) {
+        FreePkcs12Data(*conf, *keyStore);
+        ANI_LOGE_THROW(CF_ERR_MALLOC, "set key store failed!");
+        return CF_ERR_MALLOC;
+    }
+    return CF_SUCCESS;
 }
 
 uint32_t CountValidTrustAnchors(HcfX509TrustAnchorArray* trustAnchors)
@@ -244,12 +287,16 @@ CertChainBuildResult BuildX509CertChainSync(CertChainBuildParameters const& para
 Pkcs12Data ParsePkcs12(array_view<uint8_t> data, Pkcs12ParsingConfig const& config)
 {
     HcfX509P12Collection *p12Collection = nullptr;
-    HcfParsePKCS12Conf *conf = SetParsePKCS12Conf(config);
+    HcfParsePKCS12Conf *conf = nullptr;
     CfBlob *keyStore = nullptr;
-    SetKeyStore(&keyStore, data);
-    CfResult res = HcfParsePKCS12(keyStore, conf, &p12Collection);
+    CfResult res = SetPkcs12Data(config, data, &conf, &keyStore);
     if (res != CF_SUCCESS) {
-        CfBlobFree(&keyStore);
+        ANI_LOGE_THROW(res, "set pkcs12 data failed!");
+        return {};
+    }
+    res = HcfParsePKCS12(keyStore, conf, &p12Collection);
+    if (res != CF_SUCCESS) {
+        FreePkcs12Data(conf, keyStore);
         ANI_LOGE_THROW(res, "parse pkcs12 failed!");
         return {};
     }
@@ -283,7 +330,7 @@ Pkcs12Data ParsePkcs12(array_view<uint8_t> data, Pkcs12ParsingConfig const& conf
         }
     }
     CfFree(p12Collection);
-    CfBlobFree(&keyStore);
+    FreePkcs12Data(conf, keyStore);
     return pkcs12Data;
 }
 
