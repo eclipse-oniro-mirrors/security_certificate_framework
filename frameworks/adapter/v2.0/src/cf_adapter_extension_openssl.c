@@ -88,6 +88,7 @@ int32_t CfOpensslCreateExtension(const CfEncodingBlob *inData, CfBase **object)
     if (extsObj->exts == NULL) {
         CF_LOG_E("Failed to get internal extension");
         CfFree(extsObj);
+        extsObj = NULL;
         return CF_ERR_CRYPTO_OPERATION;
     }
 
@@ -95,6 +96,7 @@ int32_t CfOpensslCreateExtension(const CfEncodingBlob *inData, CfBase **object)
         CF_LOG_E("The extension indata is invalid");
         sk_X509_EXTENSION_pop_free(extsObj->exts, X509_EXTENSION_free);
         CfFree(extsObj);
+        extsObj = NULL;
         return CF_ERR_CRYPTO_OPERATION;
     }
 
@@ -224,6 +226,7 @@ static int32_t DeepCopyOidsToOut(const X509_EXTENSIONS *exts, const uint32_t *id
         if (ex == NULL) {
             CF_LOG_E("Failed to get exts [%{public}u] value", index);
             FreeCfBlobArray(dataArray, i);
+            dataArray = NULL;
             return CF_ERR_CRYPTO_OPERATION;
         }
 
@@ -232,6 +235,7 @@ static int32_t DeepCopyOidsToOut(const X509_EXTENSIONS *exts, const uint32_t *id
         if ((oidLen <= 0) || (oidLen >= MAX_LEN_OID)) {
             CF_LOG_E("Failed to get oid[%{public}u]", index);
             FreeCfBlobArray(dataArray, i);
+            dataArray = NULL;
             return CF_ERR_CRYPTO_OPERATION;
         }
 
@@ -239,6 +243,7 @@ static int32_t DeepCopyOidsToOut(const X509_EXTENSIONS *exts, const uint32_t *id
         if (ret != CF_SUCCESS) {
             CF_LOG_E("Failed to copy oid[%{public}u]", index);
             FreeCfBlobArray(dataArray, i);
+            dataArray = NULL;
             return ret;
         }
     }
@@ -346,11 +351,13 @@ static int GetTargetNid(const CfBlob *oid, int *nid)
     if (memcpy_s(oidString, length, oid->data, oid->size) != EOK) {
         CF_LOG_E("Failed to copy oid string");
         CfFree(oidString);
+        oidString = NULL;
         return CF_ERR_COPY;
     }
 
     *nid = OBJ_txt2nid((char *)oidString);
     CfFree(oidString);
+    oidString = NULL;
     return CF_SUCCESS;
 }
 

@@ -75,6 +75,7 @@ static CfResult GetEncodeOpenssl(HcfX509DistinguishedNameSpi *self, CfEncodingBl
         if (memcpy_s(out->data, len, p, len) != EOK) {
             LOGE("memcpy_s data to buffer failed!");
             CfFree(out->data);
+            out->data = NULL;
             return CF_ERR_COPY;
         }
 
@@ -146,6 +147,7 @@ static CfResult GetNameTypeByOpenssl(HcfX509DistinguishedNameOpensslImpl *realNa
         if (str == NULL) {
             LOGE("OBJ_nid2sn error!");
             CfFree(neArr);
+            neArr = NULL;
             return CF_ERR_CRYPTO_OPERATION;
         }
 
@@ -157,10 +159,12 @@ static CfResult GetNameTypeByOpenssl(HcfX509DistinguishedNameOpensslImpl *realNa
     if (j > 0) {
         CfResult res = GetDataByEntryOpenssl(j, outArr, neArr);
         CfFree(neArr);
+        neArr = NULL;
         return res;
     }
 
     CfFree(neArr);
+    neArr = NULL;
     return CF_SUCCESS;
 }
 

@@ -345,6 +345,7 @@ static CfResult HashCode(HcfX509CrlEntry *self, CfBlob *outBlob)
         LOGE("Compute sha256 error");
         OPENSSL_free(buf);
         CfFree(outBlob->data);
+        outBlob->data = NULL;
         return CF_ERR_CRYPTO_OPERATION;
     }
     outBlob->size = SHA256_DIGEST_LENGTH;
@@ -457,6 +458,7 @@ CfResult HcfCX509CRLEntryCreate(X509_REVOKED *rev, HcfX509CrlEntry **crlEntryOut
     X509_REVOKED *tmp = X509_REVOKED_dup(rev);
     if (tmp == NULL) {
         CfFree(returnCRLEntry);
+        returnCRLEntry = NULL;
         LOGE("Failed to dup x509 revoked");
         return CF_ERR_MALLOC;
     }

@@ -239,6 +239,7 @@ static CfResult GetX509NameByNid(X509_NAME *name, int nid, char **buf)
     if (ret <= 0) {
         LOGE("X509_NAME_get_text_by_NID failed\n");
         CfFree(out);
+        out = NULL;
         return CF_ERR_CRYPTO_OPERATION;
     }
     *buf = out;
@@ -514,9 +515,11 @@ void AttestInfoFree(HmAttestationInfo *info)
 
     if (info->type == HM_ATTEST_TYPE_STANDARD) {
         FreeHmAttestationRecord(info->attestationRecord);
+        info->attestationRecord = NULL;
     }
     if (info->type == HM_ATTEST_TYPE_LEGACY) {
         FreeHmKeyDescription(info->legacyKeyDescription);
+        info->legacyKeyDescription = NULL;
     }
 
     if (info->trustedChain != NULL) {
@@ -524,7 +527,9 @@ void AttestInfoFree(HmAttestationInfo *info)
     }
 
     FreeAttestationDevSecLevel(info->attestationDevSecLevel);
+    info->attestationDevSecLevel = NULL;
     FreeDeviveActiveCertExt(info->deviveActiveCertExt);
+    info->deviveActiveCertExt = NULL;
     CfFree(info);
 }
 
@@ -702,6 +707,7 @@ CfResult AttestCertVerify(const CfEncodingBlob *encodingBlob, const HcfAttestCer
 exit:
     ProcessOpensslError(ret);
     AttestInfoFree(tmp);
+    tmp = NULL;
     if (chain != NULL) {
         sk_X509_pop_free(chain, X509_free);
     }

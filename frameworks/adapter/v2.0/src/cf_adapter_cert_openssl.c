@@ -97,6 +97,7 @@ int32_t CfOpensslCreateCert(const CfEncodingBlob *inData, CfBase **object)
     int32_t ret = CreateX509Cert(inData, certObj);
     if (ret != CF_SUCCESS) {
         CfFree(certObj);
+        certObj = NULL;
         return ret;
     }
 

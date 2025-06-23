@@ -58,6 +58,7 @@ int32_t CfExtensionCreate(const CfEncodingBlob *in, CfBase **obj)
     if (ret != CF_SUCCESS) {
         CF_LOG_E("cert adapter create failed");
         CfFree(tmp);
+        tmp = NULL;
         return ret;
     }
     (void)memcpy_s(&tmp->func, sizeof(CfExtensionAdapterAbilityFunc), func, sizeof(CfExtensionAdapterAbilityFunc));
@@ -88,6 +89,7 @@ static int32_t CfExtGetItem(const CfExtensionObjStruct *obj, const CfParamSet *i
     };
     ret = CfConstructParamSetOut(params, sizeof(params) / sizeof(CfParam), out);
     CfFree(itemRes.data);
+    itemRes.data = NULL;
     return ret;
 }
 
@@ -109,6 +111,7 @@ static int32_t CfExtGetOids(const CfExtensionObjStruct *obj, const CfParamSet *i
 
     ret = CfConstructArrayParamSetOut(&oids, out);
     FreeCfBlobArray(oids.data, oids.count);
+    oids.data = NULL;
     return ret;
 }
 
@@ -142,6 +145,7 @@ static int32_t CfExtGetEntry(const CfExtensionObjStruct *obj, const CfParamSet *
     };
     ret = CfConstructParamSetOut(params, sizeof(params) / sizeof(CfParam), out);
     CfFree(entryValue.data);
+    entryValue.data = NULL;
     return ret;
 }
 

@@ -262,6 +262,7 @@ static CfResult ParseInt64Array(STACK_OF(ASN1_INTEGER) *data, CfInt64Array **out
     if (array->data == NULL) {
         LOGE("Malloc failed\n");
         CfFree(array);
+        array = NULL;
         return CF_ERR_MALLOC;
     }
 
@@ -271,7 +272,9 @@ static CfResult ParseInt64Array(STACK_OF(ASN1_INTEGER) *data, CfInt64Array **out
         if (ASN1_INTEGER_get_int64(&array->data[i], asn1Integer) != 1) {
             LOGE("ASN1_INTEGER_get_int64 failed\n");
             CfFree(array->data);
+            array->data = NULL;
             CfFree(array);
+            array = NULL;
             return CF_ERR_CRYPTO_OPERATION;
         }
     }
@@ -310,15 +313,21 @@ void FreeHmKeyDescription(LegacyKeyDescription *legacy)
 
     if (legacy->purpose != NULL) {
         CfFree(legacy->purpose->data);
+        legacy->purpose->data = NULL;
         CfFree(legacy->purpose);
+        legacy->purpose = NULL;
     }
     if (legacy->digest != NULL) {
         CfFree(legacy->digest->data);
+        legacy->digest->data = NULL;
         CfFree(legacy->digest);
+        legacy->digest = NULL;
     }
     if (legacy->padding != NULL) {
         CfFree(legacy->padding->data);
+        legacy->padding->data = NULL;
         CfFree(legacy->padding);
+        legacy->padding = NULL;
     }
     KeyDescription_free(legacy->keyDescription);
     legacy->keyDescription = NULL;
@@ -348,6 +357,7 @@ CfResult GetHmKeyDescription(const X509 *cert, LegacyKeyDescription **legacy)
     if (ret != CF_SUCCESS) {
         LOGE("ParseKeyDescription failed, ret = %{public}d\n", ret);
         CfFree(out);
+        out = NULL;
         return ret;
     }
 
@@ -355,6 +365,7 @@ CfResult GetHmKeyDescription(const X509 *cert, LegacyKeyDescription **legacy)
     if (ret != CF_SUCCESS) {
         LOGE("ParseSetOfItems failed, ret = %{public}d\n", ret);
         FreeHmKeyDescription(out);
+        out = NULL;
         return ret;
     }
     *legacy = out;

@@ -427,6 +427,7 @@ CfResult HcfCmsGeneratorSpiCreate(HcfCmsContentType type, HcfCmsGeneratorSpi **s
         LOGE("Cms_sign_ex fail.");
         CfPrintOpensslError();
         CfFree(cmsGenerator);
+        cmsGenerator = NULL;
         return CF_ERR_CRYPTO_OPERATION;
     }
     cmsGenerator->cms = cms;

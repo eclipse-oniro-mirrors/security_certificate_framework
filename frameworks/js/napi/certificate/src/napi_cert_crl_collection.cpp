@@ -86,6 +86,7 @@ static void FreeCryptoFwkCtx(napi_env env, CfCertCRLColCtx *&context)
 
     if (context->certMatchParam != nullptr) {
         FreeX509CertMatchParams(context->certMatchParam);
+        context->certMatchParam = nullptr;
     }
     if (context->crlMatchParam != nullptr) {
         FreeX509CrlMatchParams(context->crlMatchParam);
@@ -255,6 +256,7 @@ static bool GetCertMatchParams(napi_env env, napi_value arg, CfCertCRLColCtx *co
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Build X509 cert match params failed"));
         LOGE("build X509 cert match params failed!");
         FreeX509CertMatchParams(param);
+        param = nullptr;
         return false;
     }
     context->certMatchParam = param;
@@ -284,6 +286,7 @@ napi_value NapiCertCRLCollection::SelectCerts(napi_env env, napi_callback_info i
 
     if (!GetCertMatchParams(env, argv[PARAM0], context)) {
         CfFree(context);
+        context = nullptr;
         return nullptr;
     }
 
@@ -408,7 +411,7 @@ napi_value NapiCertCRLCollection::SelectCRLs(napi_env env, napi_callback_info in
     context->certCRLColClass = this;
 
     if (!GetCrlMatchParam(env, argv[PARAM0], context)) {
-        CfFree(context);
+        CF_FREE_PTR(context);
         return nullptr;
     }
 

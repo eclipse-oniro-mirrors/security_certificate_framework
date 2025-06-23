@@ -79,6 +79,7 @@ CfResult FfiCertCjCfObjectGetEncoded(const CjCfObject self, CfBlob *out)
     }
     if ((ret = memcpy_s(buffer, blobSize, resultParam->blob.data, blobSize)) != CF_SUCCESS) {
         CfFree(buffer);
+        buffer = nullptr;
         CfFreeParamSet(&inParamSet);
         CfFreeParamSet(&outParamSet);
         return CfResult(ret);
@@ -174,6 +175,7 @@ CfResult FfiCertCjCfObjectGetEntry(const CjCfObject self, int32_t valueType, CfB
     }
     if ((ret = memcpy_s(buffer, blobSize, resultParam->blob.data, blobSize)) != CF_SUCCESS) {
         CfFree(buffer);
+        buffer = nullptr;
         CfFreeParamSet(&inParamSet);
         CfFreeParamSet(&outParamSet);
         return CfResult(ret);

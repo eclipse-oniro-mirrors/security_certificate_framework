@@ -106,12 +106,14 @@ static bool GetX509TrustAnchorArray(napi_env env, napi_value arg, HcfX509TrustAn
         if (napi_get_element(env, obj, i, &element) != napi_ok) {
             LOGE("get element failed!");
             FreeTrustAnchorArray(out);
+            out = nullptr;
             return false;
         }
 
         if (!BuildX509TrustAnchorObj(env, element, out->data[i])) {
             LOGE("build x509 trust anchor obj failed!");
             FreeTrustAnchorArray(out);
+            out = nullptr;
             return false;
         }
     }
@@ -152,6 +154,7 @@ static bool GetCertCRLCollectionArray(napi_env env, napi_value arg, HcfCertCRLCo
         if (status != napi_ok) {
             LOGE("get element failed!");
             CfFree(out->data);
+            out->data = nullptr;
             CfFree(out);
             out = nullptr;
             return false;
@@ -161,6 +164,7 @@ static bool GetCertCRLCollectionArray(napi_env env, napi_value arg, HcfCertCRLCo
         if (napiCertCrlCollectionObj == nullptr) {
             LOGE("napi cert crl collection object is nullptr!");
             CfFree(out->data);
+            out->data = nullptr;
             CfFree(out);
             out = nullptr;
             return false;
@@ -194,16 +198,15 @@ static bool GetRevocationOptions(napi_env env, napi_value rckObj, HcfRevocationC
     out->options->count = length;
     out->options->data = static_cast<HcfRevChkOption *>(CfMalloc(length * sizeof(HcfRevChkOption), 0));
     if (out->options->data == nullptr) {
-        CfFree(out->options);
-        out->options = nullptr;
+        CF_FREE_PTR(out->options);
         return false;
     }
     for (uint32_t i = 0; i < length; i++) {
         napi_value element;
         if (napi_get_element(env, obj, i, &element) != napi_ok ||
             napi_get_value_int32(env, element, (int32_t *)&(out->options->data[i])) != napi_ok) {
-            CfFree(out->options->data);
-            CfFree(out->options);
+            CF_FREE_PTR(out->options->data);
+            CF_FREE_PTR(out->options);
             return false;
         }
         switch (out->options->data[i]) {
@@ -213,10 +216,8 @@ static bool GetRevocationOptions(napi_env env, napi_value rckObj, HcfRevocationC
             case REVOCATION_CHECK_OPTION_FALLBACK_LOCAL:
                 break;
             default:
-                CfFree(out->options->data);
-                out->options->data = nullptr;
-                CfFree(out->options);
-                out->options = nullptr;
+                CF_FREE_PTR(out->options->data);
+                CF_FREE_PTR(out->options);
                 return false;
         }
     }
@@ -313,7 +314,10 @@ static void FreeHcfRevocationCheckParam(HcfRevocationCheckParam *param)
     }
     if (param->ocspRequestExtension != nullptr) {
         FreeCfBlobArray(param->ocspRequestExtension->data, param->ocspRequestExtension->count);
+        param->ocspRequestExtension->data = nullptr;
+        param->ocspRequestExtension->count = 0;
         CfFree(param->ocspRequestExtension);
+        param->ocspRequestExtension = nullptr;
     }
     CfBlobFree(&param->ocspResponderURI);
     CfBlobFree(&param->ocspResponses);
@@ -321,8 +325,10 @@ static void FreeHcfRevocationCheckParam(HcfRevocationCheckParam *param)
     if (param->options != nullptr) {
         if (param->options->data != nullptr) {
             CfFree(param->options->data);
+            param->options->data = nullptr;
         }
         CfFree(param->options);
+        param->options = nullptr;
     }
     CfBlobFree(&param->ocspDigest);
     CfFree(param);
@@ -417,6 +423,7 @@ static bool GetKeyUsage(napi_env env, napi_value arg, HcfKuArray *&out)
         if (napi_get_element(env, obj, i, &element) != napi_ok ||
             napi_get_value_int32(env, element, (int32_t *)&(out->data[i])) != napi_ok) {
             CfFree(out->data);
+            out->data = nullptr;
             CfFree(out);
             out = nullptr;
             return false;
@@ -438,6 +445,7 @@ void FreeX509CertChainValidateParams(HcfX509CertChainValidateParams &param)
 
     if (param.certCRLCollections != nullptr) {
         CfFree(param.certCRLCollections->data);
+        param.certCRLCollections->data = nullptr;
         CfFree(param.certCRLCollections);
         param.certCRLCollections = nullptr;
     }
@@ -445,6 +453,7 @@ void FreeX509CertChainValidateParams(HcfX509CertChainValidateParams &param)
     CfBlobFree(&(param.sslHostname));
     if (param.keyUsage != nullptr) {
         CfFree(param.keyUsage->data);
+        param.keyUsage->data = nullptr;
         CfFree(param.keyUsage);
         param.keyUsage = nullptr;
     }

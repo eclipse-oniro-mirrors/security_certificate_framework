@@ -137,6 +137,8 @@ void FreeX509CrlMatchParams(HcfX509CrlMatchParams *&matchParams)
 
     if (matchParams->issuer != nullptr) {
         FreeCfBlobArray(matchParams->issuer->data, matchParams->issuer->count);
+        matchParams->issuer->data = nullptr;
+        matchParams->issuer->count = 0;
         CF_FREE_PTR(matchParams->issuer);
     }
     matchParams->x509Cert = nullptr;

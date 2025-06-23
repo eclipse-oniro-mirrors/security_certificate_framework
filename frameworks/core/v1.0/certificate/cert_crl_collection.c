@@ -312,6 +312,7 @@ CfResult HcfCertCrlCollectionCreate(
     if (res != CF_SUCCESS) {
         LOGE("Failed to clone cert array!");
         CfFree(ret);
+        ret = NULL;
         return res;
     }
     res = CloneCrlArray(inCrls, &(ret->crls));
@@ -319,6 +320,7 @@ CfResult HcfCertCrlCollectionCreate(
         LOGE("Failed to clone crl array!");
         FreeCertArrayData(&ret->certs);
         CfFree(ret);
+        ret = NULL;
         return res;
     }
 
