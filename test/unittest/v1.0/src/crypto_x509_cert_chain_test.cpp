@@ -1545,4 +1545,19 @@ HWTEST_F(CryptoX509CertChainTest, ValidateCoreTest005, TestSize.Level0)
     FreeTrustAnchorArr(trustAnchorArray);
     FreeValidateResult(result);
 }
+
+HWTEST_F(CryptoX509CertChainTest, ValidateCoreTest006, TestSize.Level0)
+{
+    ASSERT_NE(g_certChainPemSpi, nullptr);
+
+    HcfX509CertChainValidateParams pCertChainValidateParams = { 0 };
+    pCertChainValidateParams.trustAnchors = nullptr;
+    pCertChainValidateParams.trustSystemCa = true;
+
+    HcfX509CertChainValidateResult result = { 0 };
+    CfResult ret = g_certChainPemSpi->engineValidate(g_certChainPemSpi, &pCertChainValidateParams, &result);
+    ASSERT_NE(ret, CF_SUCCESS);
+
+    FreeValidateResult(result);
+}
 } // namespace

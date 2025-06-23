@@ -52,6 +52,7 @@
 #define OCSP_CONN_TIMEOUT (-1)     // timeout == 0 means no timeout, < 0 means exactly one try.
 #define HTTP_PORT "80"
 #define HTTPS_PORT "443"
+#define CERT_VERIFY_DIR "/etc/security/certificates"
 
 // helper functions
 typedef struct {
@@ -469,20 +470,7 @@ static CfResult FillValidateResult(HcfX509TrustAnchor *inputAnchor, X509 *cert, 
         return CF_INVALID_PARAMS;
     }
     CfResult res = CF_SUCCESS;
-    HcfX509TrustAnchor *validateTrustAnchors = (HcfX509TrustAnchor *)CfMalloc(sizeof(HcfX509TrustAnchor), 0);
-    if (validateTrustAnchors == NULL) {
-        LOGE("FillValidateResult() malloc failed");
-        return CF_ERR_MALLOC;
-    }
-    res = CopyHcfX509TrustAnchor(inputAnchor, validateTrustAnchors);
-    if (res != CF_SUCCESS) {
-        LOGE("CopyHcfX509TrustAnchor() failed!");
-        CfFree(validateTrustAnchors);
-        validateTrustAnchors = NULL;
-        return res;
-    }
-
-    result->trustAnchor = validateTrustAnchors;
+    result->trustAnchor = inputAnchor;
     HcfX509Certificate *entityCert = NULL;
     res = X509ToHcfX509Certificate(cert, &entityCert);
     if (res != CF_SUCCESS) {
@@ -655,7 +643,7 @@ static CfResult ValidateNC(STACK_OF(X509) *x509CertChain, CfBlob *nameConstraint
 }
 
 static CfResult ValidateTrustAnchor(const HcfX509TrustAnchorArray *trustAnchorsArray, X509 *rootCert,
-    STACK_OF(X509) *x509CertChain, HcfX509TrustAnchor **trustAnchorResult)
+    STACK_OF(X509) *x509CertChain, HcfX509TrustAnchor *trustAnchorResult)
 {
     CfResult res = CF_SUCCESS;
     for (uint32_t i = 0; i < trustAnchorsArray->count; ++i) {
@@ -683,7 +671,11 @@ static CfResult ValidateTrustAnchor(const HcfX509TrustAnchorArray *trustAnchorsA
             LOGI("verify nameConstraints failed, try next trustAnchor.");
             continue;
         }
-        *trustAnchorResult = trustAnchor;
+        res = CopyHcfX509TrustAnchor(trustAnchor, trustAnchorResult);
+        if (res != CF_SUCCESS) {
+            LOGE("CopyHcfX509TrustAnchor() failed!");
+            return res;
+        }
         break;
     }
 
@@ -1502,6 +1494,174 @@ static CfResult ValidateStrategies(const HcfX509CertChainValidateParams *params,
     return res;
 }
 
+static CfResult CreateStoreAndLoadCerts(X509_STORE **store)
+{
+    *store = X509_STORE_new();
+    if (*store == NULL) {
+        LOGE("Failed to new store");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    if (X509_STORE_load_path(*store, CERT_VERIFY_DIR) != 1) {
+        LOGE("Failed to load system certificates");
+        X509_STORE_free(*store);
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    return CF_SUCCESS;
+}
+
+static int IsCertInStore(X509_STORE_CTX *storeCtx, X509 *cert)
+{
+    if (storeCtx == NULL || cert == NULL) {
+        return 0;
+    }
+
+    X509_OBJECT *obj = X509_OBJECT_new();
+    if (obj == NULL) {
+        return 0;
+    }
+
+    int found = 0;
+    X509_NAME *subjectName = X509_get_subject_name(cert);
+    if (subjectName == NULL) {
+        X509_OBJECT_free(obj);
+        return 0;
+    }
+
+    if (X509_STORE_get_by_subject(storeCtx, X509_LU_X509, subjectName, obj) <= 0) {
+        X509_OBJECT_free(obj);
+        return 0;
+    }
+
+    X509 *storeCert = X509_OBJECT_get0_X509(obj);
+    if (storeCert != NULL && X509_cmp(storeCert, cert) == 0) {
+        found = 1;
+    }
+
+    X509_OBJECT_free(obj);
+    return found;
+}
+
+static CfResult TryGetIssuerFromStore(X509_STORE_CTX *storeCtx, X509 *rootCert, X509 **mostTrustCert)
+{
+    if (X509_STORE_CTX_get1_issuer(mostTrustCert, storeCtx, rootCert) == 1) {
+        return CF_SUCCESS;
+    }
+    return CF_ERR_CRYPTO_OPERATION;
+}
+
+static CfResult TryUseRootCertAsTrust(X509_STORE_CTX *storeCtx, X509 *rootCert, X509 **mostTrustCert)
+{
+    if (IsCertInStore(storeCtx, rootCert) != 1) {
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    *mostTrustCert = X509_dup(rootCert);
+    if (*mostTrustCert == NULL) {
+        LOGE("Failed to duplicate root certificate");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    return CF_SUCCESS;
+}
+
+static CfResult GetMostTrustCert(X509_STORE *store, X509 *rootCert, STACK_OF(X509) *x509CertChain, X509 **mostTrustCert)
+{
+    if (store == NULL || rootCert == NULL || mostTrustCert == NULL) {
+        return CF_INVALID_PARAMS;
+    }
+
+    X509_STORE_CTX *storeCtx = X509_STORE_CTX_new();
+    if (storeCtx == NULL) {
+        LOGE("Failed to create store context");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    CfResult res = CF_ERR_CRYPTO_OPERATION;
+    if (X509_STORE_CTX_init(storeCtx, store, rootCert, x509CertChain) != 1) {
+        LOGE("Failed to initialize verify context");
+        goto cleanup;
+    }
+
+    res = TryGetIssuerFromStore(storeCtx, rootCert, mostTrustCert);
+    if (res == CF_SUCCESS) {
+        goto cleanup;
+    }
+
+    LOGE("Failed to get issuer certificate, trying root cert");
+    res = TryUseRootCertAsTrust(storeCtx, rootCert, mostTrustCert);
+
+cleanup:
+    X509_STORE_CTX_free(storeCtx);
+    return res;
+}
+
+static CfResult CreateTrustAnchorFromMostTrustCert(X509 *mostTrustCert, STACK_OF(X509) *x509CertChain,
+    HcfX509TrustAnchor *trustAnchor)
+{
+    CfResult res = X509ToHcfX509Certificate(mostTrustCert, &(trustAnchor->CACert));
+    if (res != CF_SUCCESS) {
+        LOGE("Failed to convert X509 to HcfX509Certificate");
+        return res;
+    }
+
+    res = GetPubKeyDataFromX509(mostTrustCert, &(trustAnchor->CAPubKey));
+    if (res != CF_SUCCESS) {
+        LOGE("Failed to get public key data");
+        return res;
+    }
+
+    res = GetSubjectNameFromX509(mostTrustCert, &(trustAnchor->CASubject));
+    if (res != CF_SUCCESS) {
+        LOGE("Failed to get subject name");
+        return res;
+    }
+
+    (void)GetNameConstraintsFromX509(mostTrustCert, &(trustAnchor->nameConstraints));
+    res = ValidateNC(x509CertChain, trustAnchor->nameConstraints);
+    if (res != CF_SUCCESS) {
+        LOGI("verify nameConstraints failed, try next trustAnchor.");
+        return res;
+    }
+
+    return CF_SUCCESS;
+}
+
+static CfResult ValidateTrustCertDir(X509 *rootCert, STACK_OF(X509) *x509CertChain,
+    HcfX509TrustAnchor *trustAnchorResult)
+{
+    X509_STORE *store = NULL;
+    X509 *mostTrustCert = NULL;
+
+    CfResult res = CreateStoreAndLoadCerts(&store);
+    if (res != CF_SUCCESS) {
+        return res;
+    }
+
+    res = GetMostTrustCert(store, rootCert, x509CertChain, &mostTrustCert);
+    X509_STORE_free(store);
+    if (res != CF_SUCCESS) {
+        return res;
+    }
+
+    res = VerifyCertChain(mostTrustCert, x509CertChain);
+    if (res != CF_SUCCESS) {
+        LOGI("verify cert chain failed.");
+        X509_free(mostTrustCert);
+        return res;
+    }
+
+    res = CreateTrustAnchorFromMostTrustCert(mostTrustCert, x509CertChain, trustAnchorResult);
+    if (res != CF_SUCCESS) {
+        X509_free(mostTrustCert);
+        return res;
+    }
+
+    X509_free(mostTrustCert);
+    return CF_SUCCESS;
+}
+
 static CfResult ValidateOther(const HcfX509CertChainValidateParams *params, STACK_OF(X509) *x509CertChain,
     HcfX509TrustAnchor **trustAnchorResult)
 {
@@ -1515,24 +1675,40 @@ static CfResult ValidateOther(const HcfX509CertChainValidateParams *params, STAC
         CfPrintOpensslError();
         return CF_ERR_CRYPTO_OPERATION;
     }
+    HcfX509TrustAnchor *anchorResult = (HcfX509TrustAnchor *)CfMalloc(sizeof(HcfX509TrustAnchor), 0);
+    if (anchorResult == NULL) {
+        LOGE("Failed to allocate anchor result");
+        return CF_ERR_MALLOC;
+    }
 
-    CfResult res = ValidateTrustAnchor(params->trustAnchors, rootCert, x509CertChain, trustAnchorResult);
+    CfResult res = CF_INVALID_PARAMS;
+    if ((params->trustAnchors != NULL) && (params->trustAnchors->data != NULL) && (params->trustAnchors->count != 0)) {
+        res = ValidateTrustAnchor(params->trustAnchors, rootCert, x509CertChain, anchorResult);
+    }
+    if ((res != CF_SUCCESS) && (params->trustSystemCa)) {
+        res = ValidateTrustCertDir(rootCert, x509CertChain, anchorResult);
+    }
     if (res != CF_SUCCESS) {
-        LOGE("ValidateTrustAnchor failed!");
+        LOGE("ValidateTrust failed!");
+        FreeTrustAnchorData(anchorResult);
+        CfFree(anchorResult);
         return res;
     }
-    res = ValidateRevocation(x509CertChain, *trustAnchorResult, params);
+    res = ValidateRevocation(x509CertChain, anchorResult, params);
     if (res != CF_SUCCESS) {
+        FreeTrustAnchorData(anchorResult);
+        CfFree(anchorResult);
         return res;
     }
+    *trustAnchorResult = anchorResult;
     return res;
 }
 
 static CfResult Validate(
     HcfX509CertChainSpi *self, const HcfX509CertChainValidateParams *params, HcfX509CertChainValidateResult *result)
 {
-    if ((self == NULL) || (params == NULL) || (params->trustAnchors == NULL) || (params->trustAnchors->data == NULL) ||
-        (params->trustAnchors->count == 0) || (result == NULL)) {
+    if ((self == NULL) || (params == NULL) || (!(params->trustSystemCa) && ((params->trustAnchors == NULL) ||
+        (params->trustAnchors->data == NULL) || (params->trustAnchors->count == 0))) || (result == NULL)) {
         LOGE("The input data is null!");
         return CF_INVALID_PARAMS;
     }
@@ -1561,13 +1737,21 @@ static CfResult Validate(
         LOGE("Validate part2 failed!");
         return res;
     }
+
     X509 *entityCert = sk_X509_value(x509CertChain, 0);
     if (entityCert == NULL) {
         CfPrintOpensslError();
+        FreeTrustAnchorData(trustAnchorResult);
+        CfFree(trustAnchorResult);
         return CF_ERR_CRYPTO_OPERATION;
     }
 
-    return FillValidateResult(trustAnchorResult, entityCert, result);
+    res = FillValidateResult(trustAnchorResult, entityCert, result);
+    if (res != CF_SUCCESS) {
+        FreeTrustAnchorData(trustAnchorResult);
+        CfFree(trustAnchorResult);
+    }
+    return res;
 }
 
 static int32_t CreateX509CertChainPEM(const CfEncodingBlob *inData, STACK_OF(X509) **certchainObj)
@@ -1880,10 +2064,11 @@ bool ValidatCertChainX509(STACK_OF(X509) * x509CertChain, HcfX509CertChainValida
     if (rootCert == NULL) {
         return false;
     }
-    HcfX509TrustAnchor *trustAnchorResult = NULL;
+    HcfX509TrustAnchor trustAnchorResult = {};
     if (ValidateTrustAnchor(params.trustAnchors, rootCert, x509CertChain, &trustAnchorResult) != CF_SUCCESS) {
         return false;
     }
+    FreeTrustAnchorData(&trustAnchorResult);
     if (ValidateCrlLocal(params.certCRLCollections, x509CertChain) != CF_SUCCESS) {
         return false;
     }

@@ -122,6 +122,7 @@ const std::string CERT_CHAIN_VALIDATE_TAG_OCSP_DIGEST = "ocspDigest";
 const std::string CERT_CHAIN_VALIDATE_TAG_POLICY = "policy";
 const std::string CERT_CHAIN_VALIDATE_TAG_SSLHOSTNAME = "sslHostname";
 const std::string CERT_CHAIN_VALIDATE_TAG_KEYUSAGE = "keyUsage";
+const std::string CERT_CHAIN_VALIDATE_TAG_TRUST_SYSTEM_CA = "trustSystemCa";
 // CertChainValidateResult
 const std::string CERT_CHAIN_VALIDATE_RESULT_TAG_TRUSTANCHOR = "trustAnchor";
 const std::string CERT_CHAIN_VALIDATE_RESULT_TAG_X509CERT = "entityCert";
