@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -71,9 +71,17 @@ CfResult FfiCertCjCfObjectGetEncoded(const CjCfObject self, CfBlob *out)
     }
     uint32_t blobSize = resultParam->blob.size;
     uint8_t* buffer = static_cast<uint8_t*>(CfMalloc(blobSize, 0));
-    if (memcpy_s(buffer, blobSize, resultParam->blob.data, blobSize) != CF_SUCCESS) {
+    if (buffer == nullptr) {
+        ret = CF_ERR_MALLOC;
+        CfFreeParamSet(&inParamSet);
+        CfFreeParamSet(&outParamSet);
+        return CfResult(ret);
+    }
+    if ((ret = memcpy_s(buffer, blobSize, resultParam->blob.data, blobSize)) != CF_SUCCESS) {
         CfFree(buffer);
-        buffer = nullptr;
+        CfFreeParamSet(&inParamSet);
+        CfFreeParamSet(&outParamSet);
+        return CfResult(ret);
     }
     CfFreeParamSet(&inParamSet);
     CfFreeParamSet(&outParamSet);
@@ -158,9 +166,17 @@ CfResult FfiCertCjCfObjectGetEntry(const CjCfObject self, int32_t valueType, CfB
     }
     uint32_t blobSize = resultParam->blob.size;
     uint8_t* buffer = static_cast<uint8_t*>(CfMalloc(blobSize, 0));
-    if (memcpy_s(buffer, blobSize, resultParam->blob.data, blobSize) != CF_SUCCESS) {
+    if (buffer == nullptr) {
+        ret = CF_ERR_MALLOC;
+        CfFreeParamSet(&inParamSet);
+        CfFreeParamSet(&outParamSet);
+        return CfResult(ret);
+    }
+    if ((ret = memcpy_s(buffer, blobSize, resultParam->blob.data, blobSize)) != CF_SUCCESS) {
         CfFree(buffer);
-        buffer = nullptr;
+        CfFreeParamSet(&inParamSet);
+        CfFreeParamSet(&outParamSet);
+        return CfResult(ret);
     }
     CfFreeParamSet(&inParamSet);
     CfFreeParamSet(&outParamSet);
