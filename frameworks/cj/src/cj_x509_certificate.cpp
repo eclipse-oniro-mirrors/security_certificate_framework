@@ -289,9 +289,17 @@ CfResult FfiCertCjX509CertificateGetItem(const CjX509Certificate self, const int
     }
     uint32_t blobSize = resultParam->blob.size;
     uint8_t* buffer = static_cast<uint8_t*>(CfMalloc(blobSize, 0));
-    if (memcpy_s(buffer, blobSize, resultParam->blob.data, blobSize) != CF_SUCCESS) {
+    if (buffer == nullptr) {
+        ret = CF_ERR_MALLOC;
+        CfFreeParamSet(&inParamSet);
+        CfFreeParamSet(&outParamSet);
+        return CfResult(ret);
+    }
+    if ((ret = memcpy_s(buffer, blobSize, resultParam->blob.data, blobSize)) != CF_SUCCESS) {
         CfFree(buffer);
-        buffer = nullptr;
+        CfFreeParamSet(&inParamSet);
+        CfFreeParamSet(&outParamSet);
+        return CfResult(ret);
     }
     CfFreeParamSet(&inParamSet);
     CfFreeParamSet(&outParamSet);
