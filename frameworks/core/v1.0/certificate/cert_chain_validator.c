@@ -203,6 +203,7 @@ CfResult HcfCertChainValidatorCreate(const char *algorithm, HcfCertChainValidato
     if (returnValidator->algorithm == NULL) {
         LOGE("Failed to allocate algorithm memory!");
         CfFree(returnValidator);
+        returnValidator = NULL;
         CfObjDestroy(spiObj);
         return CF_ERR_MALLOC;
     }

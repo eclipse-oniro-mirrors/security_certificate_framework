@@ -92,6 +92,7 @@ CF_API_EXPORT int32_t CfCreate(CfObjectType objType, const CfEncodingBlob *in, C
     if (ret != CF_SUCCESS) {
         CF_LOG_E("create object resource failed, ret = %{public}d", ret);
         CfFree(tmp);
+        tmp = NULL;
         return ret;
     }
     (void)memcpy_s(&tmp->func, sizeof(CfObjectAbilityFunc), func, sizeof(CfObjectAbilityFunc));

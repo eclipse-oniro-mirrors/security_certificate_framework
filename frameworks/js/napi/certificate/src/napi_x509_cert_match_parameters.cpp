@@ -407,7 +407,9 @@ void FreeX509CertMatchParams(HcfX509CertMatchParams *&matchParams)
     CfArrayDataClearAndFree(matchParams->certPolicy);
     CfArrayDataClearAndFree(matchParams->extendedKeyUsage);
     CfFree(matchParams->certPolicy);
+    matchParams->certPolicy = nullptr;
     CfFree(matchParams->extendedKeyUsage);
+    matchParams->extendedKeyUsage = nullptr;
     if (matchParams->subjectAlternativeNames != nullptr) {
         for (uint32_t i = 0; i < matchParams->subjectAlternativeNames->count; ++i) {
             if (matchParams->subjectAlternativeNames->data != nullptr) {
@@ -415,7 +417,9 @@ void FreeX509CertMatchParams(HcfX509CertMatchParams *&matchParams)
             }
         }
         CfFree(matchParams->subjectAlternativeNames->data);
+        matchParams->subjectAlternativeNames->data = nullptr;
         CfFree(matchParams->subjectAlternativeNames);
+        matchParams->subjectAlternativeNames = nullptr;
     }
 
     CF_FREE_PTR(matchParams);

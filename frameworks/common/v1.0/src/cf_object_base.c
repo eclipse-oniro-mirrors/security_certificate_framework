@@ -21,5 +21,6 @@ __attribute__((no_sanitize("cfi"))) void CfObjDestroy(void *obj)
 {
     if (obj != NULL) {
         ((CfObjectBase *)obj)->destroy((CfObjectBase *)obj);
+        obj = NULL;
     }
 }

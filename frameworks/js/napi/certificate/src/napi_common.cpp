@@ -122,6 +122,7 @@ int32_t GetBlobArrayFromParamSet(const CfParamSet *paramSet, CfArray *outArray)
         if (paramSet->params[i + 1].tag != CF_TAG_RESULT_BYTES) { /* index of blob is 1-based */
             CF_LOG_E("params[%{public}u] is invalid", i);
             FreeCfBlobArray(blobs, i);
+            blobs = nullptr;
             return CF_INVALID_PARAMS;
         }
 
@@ -130,6 +131,7 @@ int32_t GetBlobArrayFromParamSet(const CfParamSet *paramSet, CfArray *outArray)
         if (blobs[i].data == nullptr) {
             CF_LOG_E("Failed to malloc blob[%{public}u].data", i);
             FreeCfBlobArray(blobs, i);
+            blobs = nullptr;
             return CF_ERR_MALLOC;
         }
         (void)memcpy_s(blobs[i].data, size, paramSet->params[i + 1].blob.data, size);

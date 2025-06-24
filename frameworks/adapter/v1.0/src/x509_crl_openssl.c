@@ -693,6 +693,7 @@ static CfResult GetSignatureAlgOidInner(X509_CRL *crl, CfBlob *oidOut)
         LOGE("Failed to do OBJ_obj2txt!");
         CfPrintOpensslError();
         CfFree(output);
+        output = NULL;
         return CF_ERR_CRYPTO_OPERATION;
     }
     uint32_t length = strlen(output) + 1;
@@ -700,10 +701,12 @@ static CfResult GetSignatureAlgOidInner(X509_CRL *crl, CfBlob *oidOut)
     if (oidOut->data == NULL) {
         LOGE("Failed to malloc for oidOut!");
         CfFree(output);
+        output = NULL;
         return CF_ERR_MALLOC;
     }
     (void)memcpy_s(oidOut->data, length, output, length);
     CfFree(output);
+    output = NULL;
     oidOut->size = length;
     return CF_SUCCESS;
 }
@@ -741,11 +744,14 @@ static CfResult GetSignatureAlgName(HcfX509CrlSpi *self, CfBlob *algNameOut)
     if (res != CF_SUCCESS) {
         LOGE("Get signature algor oid failed!");
         CfFree(oidOut);
+        oidOut = NULL;
         return res;
     }
     const char *algName = GetAlgorithmName((const char *)(oidOut->data));
     CfFree(oidOut->data);
+    oidOut->data = NULL;
     CfFree(oidOut);
+    oidOut = NULL;
     if (algName == NULL) {
         LOGE("Can not find algorithmName!");
         return CF_ERR_CRYPTO_OPERATION;
@@ -957,6 +963,7 @@ static CfResult HashCode(HcfX509CrlSpi *self, CfBlob *out)
         LOGE("Compute sha256 error");
         OPENSSL_free(buf);
         CfFree(out->data);
+        out->data = NULL;
         return CF_ERR_CRYPTO_OPERATION;
     }
     out->size = SHA256_DIGEST_LENGTH;
@@ -1055,20 +1062,25 @@ static CfResult CompareIssuerX509Openssl(HcfX509CrlSpi *self, const CfBlobArray 
         if (ret != CF_SUCCESS) {
             LOGE("ConvertNameDerDataToString failed!");
             CfFree(outTmpSelf.data);
+            outTmpSelf.data = NULL;
             return ret;
         }
         if (outTmpSelf.size != cfBlobDataParam.size) {
             CfFree(cfBlobDataParam.data);
+            cfBlobDataParam.data = NULL;
             continue;
         }
         if (strncmp((const char *)outTmpSelf.data, (const char *)cfBlobDataParam.data, outTmpSelf.size) == 0) {
             *out = true;
             CfFree(cfBlobDataParam.data);
+            cfBlobDataParam.data = NULL;
             break;
         }
         CfFree(cfBlobDataParam.data);
+        cfBlobDataParam.data = NULL;
     }
     CfFree(outTmpSelf.data);
+    outTmpSelf.data = NULL;
     return CF_SUCCESS;
 }
 
@@ -1086,6 +1098,7 @@ static CfResult CompareUpdateDateTimeX509Openssl(HcfX509CrlSpi *self, const CfBl
     if (res != CF_SUCCESS) {
         LOGE("X509Crl getLastUpdate failed!");
         CfFree(outNextUpdate.data);
+        outNextUpdate.data = NULL;
         return res;
     }
 
@@ -1094,19 +1107,25 @@ static CfResult CompareUpdateDateTimeX509Openssl(HcfX509CrlSpi *self, const CfBl
     if (res != CF_SUCCESS || ret > 0) {
         LOGE("updateDateTime should <= outNextUpdate!");
         CfFree(outNextUpdate.data);
+        outNextUpdate.data = NULL;
         CfFree(outThisUpdate.data);
+        outThisUpdate.data = NULL;
         return res;
     }
     res = CompareBigNum(updateDateTime, &outThisUpdate, &ret);
     if (res != CF_SUCCESS || ret < 0) {
         LOGE("updateDateTime should >= outThisUpdate!");
         CfFree(outNextUpdate.data);
+        outNextUpdate.data = NULL;
         CfFree(outThisUpdate.data);
+        outThisUpdate.data = NULL;
         return res;
     }
     *out = true;
     CfFree(outNextUpdate.data);
+    outNextUpdate.data = NULL;
     CfFree(outThisUpdate.data);
+    outThisUpdate.data = NULL;
     return CF_SUCCESS;
 }
 
@@ -1138,6 +1157,7 @@ static CfResult CompareCRLX509Openssl(HcfX509CrlSpi *self, const CfBlob *crlBlob
             break;
     }
     CfFree(outNum.data);
+    outNum.data = NULL;
     return CF_SUCCESS;
 }
 
@@ -1294,6 +1314,7 @@ static CfResult CheckX509CrlSpi(const CfEncodingBlob *inStream, HcfX509CrlSpi **
     if (*crl == NULL) {
         LOGE("Failed to Parse x509 CRL!");
         CfFree(*returnCRL);
+        *returnCRL = NULL;
         return CF_INVALID_PARAMS;
     }
     return CF_SUCCESS;

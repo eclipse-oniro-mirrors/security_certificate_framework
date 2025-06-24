@@ -73,6 +73,7 @@ NapiX509Certificate::~NapiX509Certificate()
     CfObjDestroy(this->x509Cert_);
     if (this->certObject_ != nullptr) {
         this->certObject_->destroy(&(this->certObject_));
+        this->certObject_ = nullptr;
     }
 }
 
@@ -752,6 +753,7 @@ napi_value NapiX509Certificate::Match(napi_env env, napi_callback_info info)
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "BuildX509CertMatchParams failed"));
         LOGE("BuildX509CertMatchParams failed!");
         FreeX509CertMatchParams(param);
+        param = nullptr;
         return nullptr;
     }
     bool boolFlag = false;
@@ -760,9 +762,11 @@ napi_value NapiX509Certificate::Match(napi_env env, napi_callback_info info)
         napi_throw(env, CertGenerateBusinessError(env, result, "match failed"));
         LOGE("call match failed!");
         FreeX509CertMatchParams(param);
+        param = nullptr;
         return nullptr;
     }
     FreeX509CertMatchParams(param);
+    param = nullptr;
     napi_value ret = nullptr;
     napi_get_boolean(env, boolFlag, &ret);
     return ret;
@@ -839,6 +843,7 @@ static napi_value BuildCertExtsObject(napi_env env, CfEncodingBlob *encodingBlob
         LOGE("Failed to create napi extension class");
         if (extsObj != nullptr) {
             extsObj->destroy(&(extsObj));
+            extsObj = nullptr;
         }
         return nullptr;
     }
@@ -1559,7 +1564,9 @@ static void FreeCsrCfBlobArray(HcfAttributes *array, uint32_t arrayLen)
 
     for (uint32_t i = 0; i < arrayLen; ++i) {
         CfFree(array[i].attributeName);
+        array[i].attributeName = nullptr;
         CfFree(array[i].attributeValue);
+        array[i].attributeValue = nullptr;
     }
 
     CfFree(array);
@@ -1572,6 +1579,7 @@ static void FreeGenCsrConf(HcfGenCsrConf *conf)
     }
     if (conf->attribute.array != NULL) {
         FreeCsrCfBlobArray(conf->attribute.array, conf->attribute.attributeSize);
+        conf->attribute.array = nullptr;
     }
 
     if (conf->mdName != nullptr) {
@@ -1669,6 +1677,7 @@ static bool GetStringFromValue(napi_env env, napi_value value, char **outStr)
         napi_get_value_string_utf8(env, value, *outStr, strLen + 1, nullptr) != napi_ok) {
         LOGE("get string value failed");
         CfFree(*outStr);
+        *outStr = nullptr;
         return false;
     }
     return true;
@@ -1764,6 +1773,7 @@ static bool GetX509CsrMdName(napi_env env, napi_value arg, char **mdName)
     }
     if (!IsValidMdName(tmpMdName)) {
         CfFree(tmpMdName);
+        tmpMdName = nullptr;
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "invalid mdName"));
         return false;
     }
@@ -1825,18 +1835,22 @@ static bool BuildX509CsrConf(napi_env env, napi_value arg, HcfGenCsrConf **conf)
 
     if (!GetX509CsrSubject(env, arg, &tmpConf->subject)) {
         CfFree(tmpConf);
+        tmpConf = nullptr;
         return false;
     }
     if (!GetX509CsrAttributeArray(env, arg, &tmpConf->attribute)) {
         FreeGenCsrConf(tmpConf);
+        tmpConf = nullptr;
         return false;
     }
     if (!GetX509CsrMdName(env, arg, &tmpConf->mdName)) {
         FreeGenCsrConf(tmpConf);
+        tmpConf = nullptr;
         return false;
     }
     if (!GetX509CsrIsPem(env, arg, &tmpConf->isPem)) {
         FreeGenCsrConf(tmpConf);
+        tmpConf = nullptr;
         return false;
     }
     *conf = tmpConf;
@@ -1902,6 +1916,7 @@ static napi_value GenerateCsr(napi_env env, size_t argc, napi_value param1, napi
     if (ret != CF_SUCCESS) {
         LOGE("generate csr failed, ret: %{public}d", ret);
         FreeGenCsrConf(conf);
+        conf = nullptr;
         FreePrivateKeyInfo(privateKey);
         napi_throw(env, CertGenerateBusinessError(env, ret, "generate csr failed!"));
         return nullptr;
@@ -1909,6 +1924,7 @@ static napi_value GenerateCsr(napi_env env, size_t argc, napi_value param1, napi
     napi_value result = conf->isPem ? CreatePemResult(env, csrBlob) : CreateDerResult(env, csrBlob);
     FreePrivateKeyInfo(privateKey);
     FreeGenCsrConf(conf);
+    conf = nullptr;
     CfBlobDataFree(&csrBlob);
     return result;
 }

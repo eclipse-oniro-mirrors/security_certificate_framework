@@ -58,6 +58,7 @@ int32_t CfCertCreate(const CfEncodingBlob *in, CfBase **obj)
     if (ret != CF_SUCCESS) {
         CF_LOG_E("cert adapter create failed");
         CfFree(tmp);
+        tmp = NULL;
         return ret;
     }
     (void)memcpy_s(&tmp->func, sizeof(CfCertAdapterAbilityFunc), func, sizeof(CfCertAdapterAbilityFunc));
@@ -89,6 +90,7 @@ static int32_t CfCertGetItem(const CfCertObjStruct *obj, const CfParamSet *in, C
     };
     ret = CfConstructParamSetOut(params, sizeof(params) / sizeof(CfParam), out);
     CfFree(itemValue.data);
+    itemValue.data = NULL;
     return ret;
 }
 

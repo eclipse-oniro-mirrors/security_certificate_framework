@@ -189,6 +189,7 @@ void FreeHmAttestationRecord(AttestationRecord *record)
     }
 
     HmAttestationClaimfree(record->claims, record->claimNum);
+    record->claims = NULL;
     HmApplicationIdType_free(record->appId);
     CfFree(record);
 }
@@ -506,12 +507,14 @@ CfResult GetHmAttestationRecord(const X509 *cert, AttestationRecord **record)
     ret = ParseAttestationExt(extension, tmp);
     if (ret != CF_SUCCESS) {
         CfFree(tmp);
+        tmp = NULL;
         return ret;
     }
 
     ret = ParseAppId(tmp);
     if (ret != CF_SUCCESS && ret != CF_ERR_EXTENSION_NOT_EXIST) {
         FreeHmAttestationRecord(tmp);
+        tmp = NULL;
         return ret;
     }
 
@@ -539,6 +542,7 @@ CfResult GetDeviceActivationCertExt(const X509 *cert, DeviceActivationCertExt **
     ret = ParseAttestationExt(extension, tmp);
     if (ret != CF_SUCCESS) {
         CfFree(tmp);
+        tmp = NULL;
         return ret;
     }
     *record = tmp;

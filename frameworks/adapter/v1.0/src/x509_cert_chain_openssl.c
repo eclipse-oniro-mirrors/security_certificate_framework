@@ -425,7 +425,7 @@ static CfResult CopyHcfX509TrustAnchor(const HcfX509TrustAnchor *inputAnchor, Hc
         CfEncodingBlob encodedByte = { NULL, 0, CF_FORMAT_DER };
         CACert->base.getEncoded((HcfCertificate *)CACert, &encodedByte);
         res = func(&encodedByte, &outAnchor->CACert);
-        CfFree(encodedByte.data);
+        CF_FREE_PTR(encodedByte.data);
         if (res != CF_SUCCESS) {
             LOGE("HcfX509CertificateCreate fail, res : %{public}d!", res);
             return CF_ERR_MALLOC;
@@ -478,6 +478,7 @@ static CfResult FillValidateResult(HcfX509TrustAnchor *inputAnchor, X509 *cert, 
     if (res != CF_SUCCESS) {
         LOGE("CopyHcfX509TrustAnchor() failed!");
         CfFree(validateTrustAnchors);
+        validateTrustAnchors = NULL;
         return res;
     }
 
@@ -544,6 +545,7 @@ static CfResult PushCrl2Stack(HcfX509CrlArray *crlArray, STACK_OF(X509_CRL) *out
 
         crl = ParseX509CRL(&encodedBlob);
         CfFree(encodedBlob.data);
+        encodedBlob.data = NULL;
         if (crl == NULL) {
             LOGE("Failed to Parse x509 CRL!");
             return CF_INVALID_PARAMS;
@@ -1763,6 +1765,7 @@ CfResult HcfX509CertChainByEncSpiCreate(const CfEncodingBlob *inStream, HcfX509C
     ret = CreateX509CertChainInner(inStream, &(certChain->x509CertChain));
     if (ret != CF_SUCCESS || certChain->x509CertChain == NULL) {
         CfFree(certChain);
+        certChain = NULL;
         LOGE("Failed to create x509 cert chain");
         return CF_INVALID_PARAMS;
     }
@@ -1772,6 +1775,7 @@ CfResult HcfX509CertChainByEncSpiCreate(const CfEncodingBlob *inStream, HcfX509C
         LOGE("cert chain isOrder failed!");
         sk_X509_pop_free(certChain->x509CertChain, X509_free);
         CfFree(certChain);
+        certChain = NULL;
         return ret;
     }
 
@@ -1830,6 +1834,7 @@ CfResult HcfX509CertChainByArrSpiCreate(const HcfX509CertificateArray *inCerts, 
     if (certsStack == NULL) {
         LOGE("Error creating certificate chain.");
         CfFree(certChain);
+        certChain = NULL;
         return CF_ERR_MALLOC;
     }
 
@@ -1838,6 +1843,7 @@ CfResult HcfX509CertChainByArrSpiCreate(const HcfX509CertificateArray *inCerts, 
         LOGE("Get Certs Stack failed!");
         sk_X509_pop_free(certsStack, X509_free);
         CfFree(certChain);
+        certChain = NULL;
         return res;
     }
 
@@ -1847,6 +1853,7 @@ CfResult HcfX509CertChainByArrSpiCreate(const HcfX509CertificateArray *inCerts, 
         LOGE("cert chain isOrder failed!");
         sk_X509_pop_free(certsStack, X509_free);
         CfFree(certChain);
+        certChain = NULL;
         return res;
     }
 
@@ -2039,6 +2046,7 @@ static void FreeHcfX509TrustAnchorArrayInner(HcfX509TrustAnchorArray *trustAncho
             }
         }
         CfFree(trustAnchorArray->data);
+        trustAnchorArray->data = NULL;
     }
 }
 
@@ -2092,6 +2100,7 @@ static HcfX509TrustAnchorArray *MallocTrustAnchorArray(int32_t count)
     if (anchor->data == NULL) {
         LOGE("Failed to allocate data memory!");
         CfFree(anchor);
+        anchor = NULL;
         return NULL;
     }
 
@@ -2101,6 +2110,7 @@ static HcfX509TrustAnchorArray *MallocTrustAnchorArray(int32_t count)
             LOGE("Failed to allocate data memory!");
             FreeHcfX509TrustAnchorArrayInner(anchor);
             CfFree(anchor);
+            anchor = NULL;
             return NULL;
         }
     }
@@ -2186,6 +2196,7 @@ CfResult HcfX509ParsePKCS12Func(
     if (ret != CF_SUCCESS) {
         FreeResources(cert, pkey, caStack);
         FreeHcfX509P12Collection(collection);
+        collection = NULL;
         LOGE("Failed to convert cert!");
         return ret;
     }
@@ -2195,6 +2206,7 @@ CfResult HcfX509ParsePKCS12Func(
     if (ret != CF_SUCCESS) {
         FreeResources(cert, pkey, caStack);
         FreeHcfX509P12Collection(collection);
+        collection = NULL;
         LOGE("Failed to convert pkey!");
         return ret;
     }
@@ -2203,6 +2215,7 @@ CfResult HcfX509ParsePKCS12Func(
     if (ret != CF_SUCCESS) {
         FreeResources(cert, pkey, caStack);
         FreeHcfX509P12Collection(collection);
+        collection = NULL;
         LOGE("Failed to convert caStack!");
         return ret;
     }

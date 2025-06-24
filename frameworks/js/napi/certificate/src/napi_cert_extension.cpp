@@ -65,6 +65,7 @@ static ExtsAsyncContext NewExtsAsyncContext(void)
     if (asyncCtx == nullptr) {
         CF_LOG_E("Failed to malloc async context");
         CfFree(extsAsyncCtx);
+        extsAsyncCtx = nullptr;
         return nullptr;
     }
 

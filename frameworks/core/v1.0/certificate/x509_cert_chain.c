@@ -225,6 +225,7 @@ CfResult HcfCertChainBuildResultCreate(
         LOGE("Failed to allocate CertChainImpl return memory!");
         CfObjDestroy(spiObj);
         CfFree(impl);
+        impl = NULL;
         return CF_ERR_MALLOC;
     }
 

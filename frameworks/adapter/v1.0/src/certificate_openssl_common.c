@@ -115,6 +115,7 @@ CfResult DeepCopyBlobToBlob(const CfBlob *inBlob, CfBlob **outBlob)
     if (res != CF_SUCCESS) {
         LOGE("DeepCopyDataToBlob failed");
         CfFree(tmp);
+        tmp = NULL;
         return res;
     }
     *outBlob = tmp;
@@ -615,6 +616,7 @@ CfResult CopyMemFromBIO(BIO *bio, CfBlob *outBlob)
         LOGE("Bio read fail.");
         CfPrintOpensslError();
         CfFree(buff);
+        buff = NULL;
         return CF_ERR_CRYPTO_OPERATION;
     }
     outBlob->size = len;

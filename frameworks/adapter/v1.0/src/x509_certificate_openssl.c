@@ -243,6 +243,7 @@ static CfResult CompareCertBlobX509Openssl(HcfX509CertificateSpi *self, HcfCerti
         if (res != CF_SUCCESS) {
             LOGE("x509Cert GetEncodedX509Openssl failed!");
             CfFree(encodedBlobParam.data);
+            encodedBlobParam.data = NULL;
             return res;
         }
         if ((encodedBlobSelf.len != encodedBlobParam.len) ||
@@ -251,7 +252,9 @@ static CfResult CompareCertBlobX509Openssl(HcfX509CertificateSpi *self, HcfCerti
         }
 
         CfFree(encodedBlobParam.data);
+        encodedBlobParam.data = NULL;
         CfFree(encodedBlobSelf.data);
+        encodedBlobSelf.data = NULL;
     }
 
     return res;
@@ -348,12 +351,14 @@ static CfResult CompareNameObjectX509Openssl(
             default:
                 LOGE("Unknown nameType!");
                 CfFree(cfBlobDataParam.data);
+                cfBlobDataParam.data = NULL;
                 return CF_INVALID_PARAMS;
         }
 
         if (res != CF_SUCCESS) {
             LOGE("X509Cert get param object failed!");
             CfFree(cfBlobDataParam.data);
+            cfBlobDataParam.data = NULL;
             return res;
         }
 
@@ -361,7 +366,9 @@ static CfResult CompareNameObjectX509Openssl(
             (cfBlobDataSelf.size == cfBlobDataParam.size) &&
             (strncmp((const char *)cfBlobDataSelf.data, (const char *)cfBlobDataParam.data, cfBlobDataSelf.size) == 0);
         CfFree(cfBlobDataSelf.data);
+        cfBlobDataSelf.data = NULL;
         CfFree(cfBlobDataParam.data);
+        cfBlobDataParam.data = NULL;
     }
 
     return res;
@@ -425,6 +432,7 @@ static CfResult CompareKeyUsageX509Openssl(HcfX509CertificateSpi *self, const Cf
     }
     if (!(*out)) {
         CfFree(cfBlobDataSelf.data);
+        cfBlobDataSelf.data = NULL;
         return CF_SUCCESS;
     }
     for (; index < cfBlobDataSelf.size; ++index) {
@@ -440,6 +448,7 @@ static CfResult CompareKeyUsageX509Openssl(HcfX509CertificateSpi *self, const Cf
         }
     }
     CfFree(cfBlobDataSelf.data);
+    cfBlobDataSelf.data = NULL;
     return CF_SUCCESS;
 }
 
@@ -473,6 +482,7 @@ static CfResult CompareSerialNumberX509Openssl(HcfX509CertificateSpi *self, cons
         } while (0);
 
         CfFree(cfBlobDataSelf.data);
+        cfBlobDataSelf.data = NULL;
     }
 
     return res;
@@ -555,6 +565,7 @@ static CfResult ComparePublicKeyAlgOidX509Openssl(HcfX509CertificateSpi *self, c
             *out = false;
         }
         CfFree(cfBlobDataSelf.data);
+        cfBlobDataSelf.data = NULL;
     }
 
     return res;
@@ -651,6 +662,7 @@ static CfResult GetIssuerDNX509Openssl(HcfX509CertificateSpi *self, CfBlob *out)
         res = DeepCopyDataToOut(issuer, length, out);
     } while (0);
     CfFree(issuer);
+    issuer = NULL;
     return res;
 }
 
@@ -770,6 +782,7 @@ static CfResult GetSubjectDNX509Openssl(HcfX509CertificateSpi *self, CfBlob *out
         res = DeepCopyDataToOut(subject, length, out);
     } while (0);
     CfFree(subject);
+    subject = NULL;
     return res;
 }
 
@@ -1369,6 +1382,7 @@ static CfResult HashCodeX509Openssl(HcfX509CertificateSpi *self, CfBlob *out)
     if (SHA256(buf, len, out->data) == NULL) {
         LOGE("Compute sha256 error");
         CfFree(out->data);
+        out->data = NULL;
         OPENSSL_free(buf);
         return CF_ERR_CRYPTO_OPERATION;
     }
@@ -1761,13 +1775,17 @@ static CfResult ComparePrivateKeyValidX509Openssl(HcfX509CertificateSpi *self, C
     if (notBefore == NULL || notAfter == NULL) {
         LOGE("Get original data failed");
         CfFree(notBefore);
+        notBefore = NULL;
         CfFree(notAfter);
+        notAfter = NULL;
         return CF_SUCCESS;
     }
     if (privateKeyValid->size < DATETIME_LEN || strlen(notBefore) < DATETIME_LEN || strlen(notAfter) < DATETIME_LEN) {
         LOGE("Get private key valid date is not valid!");
         CfFree(notBefore);
+        notBefore = NULL;
         CfFree(notAfter);
+        notAfter = NULL;
         return CF_INVALID_PARAMS;
     }
     if (strncmp((const char *)privateKeyValid->data, (const char *)notBefore, DATETIME_LEN) >= 0 &&
@@ -1775,7 +1793,9 @@ static CfResult ComparePrivateKeyValidX509Openssl(HcfX509CertificateSpi *self, C
         *out = true;
     }
     CfFree(notBefore);
+    notBefore = NULL;
     CfFree(notAfter);
+    notAfter = NULL;
     return CF_SUCCESS;
 }
 
@@ -1960,7 +1980,7 @@ CfResult OpensslX509CertSpiCreate(const CfEncodingBlob *inStream, HcfX509Certifi
     }
     realCert->x509 = CreateX509CertInner(inStream);
     if (realCert->x509 == NULL) {
-        CfFree(realCert);
+        CF_FREE_PTR(realCert);
         LOGE("Failed to create x509 cert from input data!");
         return CF_INVALID_PARAMS;
     }

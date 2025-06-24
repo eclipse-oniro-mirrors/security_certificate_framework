@@ -145,6 +145,7 @@ static int32_t GetInputObject(napi_env env, napi_value object, size_t index, vec
     params.push_back(param);
 
     CfFree(inBlob); /* inBlob's data need freed by caller */
+    inBlob = nullptr;
     return CF_SUCCESS;
 }
 

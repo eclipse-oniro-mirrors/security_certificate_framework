@@ -89,6 +89,7 @@ static CfCtx *BuildCertChainContext()
     if (context->async == nullptr) {
         LOGE("malloc async ctx failed!");
         CfFree(context);
+        context = nullptr;
         return nullptr;
     }
     return context;
@@ -123,6 +124,7 @@ static void DeleteCertChainContext(napi_env env, CfCtx *&context, bool freeCertF
     CfBlobFree(&(context->keyStore));
     CfBlobDataClearAndFree(context->pwd);
     CfFree(context->pwd);
+    context->pwd = nullptr;
 
     CF_FREE_PTR(context);
 }
@@ -526,6 +528,7 @@ static napi_value ConvertX509CertToNapiValue(napi_env env, HcfX509Certificate *c
     if (x509Cert == nullptr) {
         LOGE("new x509Cert failed!");
         certObj->destroy(&certObj);
+        certObj = nullptr;
         return nullptr;
     }
     napi_value instance = NapiX509Certificate::CreateX509Cert(env);
@@ -561,6 +564,7 @@ static napi_value ConvertBlobToUint8ArrayNapiValue(napi_env env, CfBlob *blob)
     if (memcpy_s(buffer, blob->size, blob->data, blob->size) != EOK) {
         LOGE("memcpy_s data to buffer failed!");
         CfFree(buffer);
+        buffer = nullptr;
         return nullptr;
     }
 
@@ -570,6 +574,7 @@ static napi_value ConvertBlobToUint8ArrayNapiValue(napi_env env, CfBlob *blob)
     if (status != napi_ok) {
         LOGE("create uint8 array buffer failed!");
         CfFree(buffer);
+        buffer = nullptr;
         return nullptr;
     }
     buffer = nullptr;
@@ -753,18 +758,23 @@ static void FreeP12Collection(HcfX509P12Collection *collection)
         for (uint32_t i = 0; i < collection->otherCertsCount; i++) {
             if (collection->otherCerts[i] != nullptr) {
                 CfFree(collection->otherCerts[i]);
+                collection->otherCerts[i] = nullptr;
             }
         }
         CfFree(collection->otherCerts);
+        collection->otherCerts = nullptr;
     }
 
     if (collection->cert != nullptr) {
         CfFree(collection->cert);
+        collection->cert = nullptr;
     }
 
     if (collection->prikey != nullptr && collection->prikey->data != nullptr) {
         CfFree(collection->prikey->data);
+        collection->prikey->data = nullptr;
         CfFree(collection->prikey);
+        collection->prikey = nullptr;
     }
 
     CfFree(collection);
@@ -796,6 +806,7 @@ static napi_value ConvertBlobToStringNapiValue(napi_env env, CfBlob *blob)
     napi_value instance = nullptr;
     napi_create_string_utf8(env, returnString, len, &instance);
     CfFree(returnString);
+    returnString = nullptr;
     return instance;
 }
 
@@ -868,6 +879,7 @@ static napi_value ParsePKCS12WithKeyStore(napi_env env, size_t argc, napi_value 
     if (!GetP12ConfFromValue(env, param1, conf)) {
         CfBlobFree(&keyStore);
         FreeHcfParsePKCS12Conf(conf);
+        conf = nullptr;
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Failed to get conf"));
         LOGE("Failed to get conf!");
         return nullptr;
@@ -878,6 +890,7 @@ static napi_value ParsePKCS12WithKeyStore(napi_env env, size_t argc, napi_value 
     if (ret != CF_SUCCESS) {
         CfBlobFree(&keyStore);
         FreeHcfParsePKCS12Conf(conf);
+        conf = nullptr;
         napi_throw(env, CertGenerateBusinessError(env, ret, "Failed to parse pkcs12"));
         LOGE("Failed to parse pkcs12!");
         return nullptr;
@@ -887,15 +900,19 @@ static napi_value ParsePKCS12WithKeyStore(napi_env env, size_t argc, napi_value 
     if (instance == nullptr) {
         CfBlobFree(&keyStore);
         FreeHcfParsePKCS12Conf(conf);
+        conf = nullptr;
         FreeP12Collection(p12Collection);
+        p12Collection = nullptr;
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to build instance"));
         LOGE("Failed to build instance!");
         return nullptr;
     }
     CfBlobFree(&keyStore);
     FreeHcfParsePKCS12Conf(conf);
+    conf = nullptr;
     CfBlobFree(&p12Collection->prikey);
     CfFree(p12Collection);
+    p12Collection = nullptr;
     return instance;
 }
 
@@ -975,16 +992,19 @@ bool GetChainBuildParametersFromValue(napi_env env, napi_value obj, HcfX509CertC
     if (!GetCertMatchParameters(env, obj, &buildParam)) {
         LOGE("failed to get cert match parameters!");
         CfFree(buildParam);
+        buildParam = nullptr;
         return false;
     }
     if (!GetMaxlength(env, obj, &buildParam)) {
         LOGE("failed to get max length!");
         CfFree(buildParam);
+        buildParam = nullptr;
         return false;
     }
     if (!GetValidateParameters(env, obj, &buildParam)) {
         LOGE("failed to get validate parameters!");
         CfFree(buildParam);
+        buildParam = nullptr;
         return false;
     }
 

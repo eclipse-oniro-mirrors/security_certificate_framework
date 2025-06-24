@@ -67,6 +67,7 @@ napi_value ConvertCertToNapiValue(napi_env env, HcfX509Certificate *cert)
     if (x509Cert == nullptr) {
         LOGE("new x509Cert failed!");
         certObj->destroy(&certObj);
+        certObj = nullptr;
         return nullptr;
     }
     napi_value instance = NapiX509Certificate::CreateX509Cert(env);

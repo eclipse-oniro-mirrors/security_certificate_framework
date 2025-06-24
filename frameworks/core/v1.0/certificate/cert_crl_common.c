@@ -30,10 +30,12 @@ CfResult CloneCertificateObj(HcfX509Certificate *in, HcfX509Certificate **out)
     if (res != CF_SUCCESS) {
         LOGE("Failed to HcfX509CertificateCreate!");
         CfFree(encodingBlob.data);
+        encodingBlob.data = NULL;
         return res;
     }
     *out = clone;
     CfFree(encodingBlob.data);
+    encodingBlob.data = NULL;
     return CF_SUCCESS;
 }
 
@@ -50,10 +52,12 @@ CfResult CloneCrlObj(HcfX509Crl *in, HcfX509Crl **out)
     if (res != CF_SUCCESS) {
         LOGE("Failed to HcfX509CrlCreate!");
         CfFree(encodingBlob.data);
+        encodingBlob.data = NULL;
         return res;
     }
     *out = clone;
     CfFree(encodingBlob.data);
+    encodingBlob.data = NULL;
     return CF_SUCCESS;
 }
 

@@ -106,6 +106,7 @@ napi_value GenerateArrayBuffer(napi_env env, uint8_t *data, uint32_t size)
     if (memcpy_s(buffer, size, data, size) != EOK) {
         LOGE("memcpy_s data to buffer failed!");
         CfFree(buffer);
+        buffer = nullptr;
         return nullptr;
     }
 
@@ -115,6 +116,7 @@ napi_value GenerateArrayBuffer(napi_env env, uint8_t *data, uint32_t size)
     if (status != napi_ok) {
         LOGE("create uint8 array buffer failed!");
         CfFree(buffer);
+        buffer = nullptr;
         return nullptr;
     }
     buffer = nullptr;
@@ -195,6 +197,7 @@ static char *CertGetStringFromValue(napi_env env, napi_value arg)
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get value failed"));
         memset_s(value, length + 1, 0, length + 1);
         CfFree(value);
+        value = nullptr;
         return nullptr;
     }
     return value;
@@ -310,12 +313,14 @@ static bool GetPrivateKeyFromValue(napi_env env, napi_value obj, PrivateKeyInfo 
 
     if (!CopyBlobDataToPrivateKey(blob, (*privateKey)->privateKey)) {
         CfFree(blob);
+        blob = nullptr;
         CfFree((*privateKey)->privateKey);
         (*privateKey)->privateKey = nullptr;
         return false;
     }
 
     CfFree(blob);
+    blob = nullptr;
     return true;
 }
 
@@ -669,6 +674,7 @@ napi_value ConvertBlobToUint8ArrNapiValue(napi_env env, CfBlob *blob)
     if (memcpy_s(buffer, blob->size, blob->data, blob->size) != EOK) {
         LOGE("memcpy_s data to buffer failed!");
         CfFree(buffer);
+        buffer = nullptr;
         return nullptr;
     }
 
@@ -678,6 +684,7 @@ napi_value ConvertBlobToUint8ArrNapiValue(napi_env env, CfBlob *blob)
     if (status != napi_ok) {
         LOGE("create uint8 array buffer failed!");
         CfFree(buffer);
+        buffer = nullptr;
         return nullptr;
     }
     buffer = nullptr;
@@ -818,13 +825,16 @@ CfBlob *CertGetBlobFromUint8ArrJSParams(napi_env env, napi_value arg)
         LOGE("malloc blob data failed!");
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed!"));
         CfFree(newBlob);
+        newBlob = nullptr;
         return nullptr;
     }
     if (memcpy_s(newBlob->data, length, rawData, length) != EOK) {
         LOGE("memcpy_s blob data failed!");
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_COPY, "copy memory failed!"));
         CfFree(newBlob->data);
+        newBlob->data = nullptr;
         CfFree(newBlob);
+        newBlob = nullptr;
         return nullptr;
     }
     return newBlob;
@@ -866,6 +876,7 @@ CfBlob *CertGetBlobFromStringJSParams(napi_env env, napi_value arg)
         LOGE("malloc blob data failed!");
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed"));
         CfFree(newBlob);
+        newBlob = nullptr;
         return nullptr;
     }
 
@@ -874,7 +885,9 @@ CfBlob *CertGetBlobFromStringJSParams(napi_env env, napi_value arg)
         LOGE("can not get string value");
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get string failed"));
         CfFree(newBlob->data);
+        newBlob->data = nullptr;
         CfFree(newBlob);
+        newBlob = nullptr;
         return nullptr;
     }
     return newBlob;
@@ -934,7 +947,7 @@ CfBlobArray *CertGetBlobArrFromArrUarrJSParams(napi_env env, napi_value arg)
     if (newBlobArr->data == nullptr) {
         LOGE("Failed to allocate data memory!");
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed"));
-        CfFree(newBlobArr);
+        CF_FREE_PTR(newBlobArr);
         return nullptr;
     }
     for (uint32_t i = 0; i < length; i++) {
@@ -944,12 +957,13 @@ CfBlobArray *CertGetBlobArrFromArrUarrJSParams(napi_env env, napi_value arg)
             if (blob != nullptr) {
                 newBlobArr->data[i] = *blob;
                 CfFree(blob); // release blob object, not release blob data
+                blob = nullptr;
                 continue;
             }
         }
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "input arr is invalid"));
         FreeCfBlobArray(newBlobArr->data, newBlobArr->count);
-        CfFree(newBlobArr);
+        CF_FREE_PTR(newBlobArr);
         LOGE("Failed to allocate data memory!");
         return nullptr;
     }
@@ -996,6 +1010,7 @@ CfBlob *CertGetBlobFromArrBoolJSParams(napi_env env, napi_value arg)
         LOGE("Failed to allocate data memory!");
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed"));
         CfFree(newBlob);
+        newBlob = nullptr;
         return nullptr;
     }
     napi_status status = napi_ok;
@@ -1018,7 +1033,9 @@ CfBlob *CertGetBlobFromArrBoolJSParams(napi_env env, napi_value arg)
     if (status != napi_ok) {
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "invalid params!"));
         CfFree(newBlob->data);
+        newBlob->data = nullptr;
         CfFree(newBlob);
+        newBlob = nullptr;
         return nullptr;
     }
 
@@ -1079,9 +1096,7 @@ SubAltNameArray *CertGetSANArrFromArrUarrJSParams(napi_env env, napi_value arg)
     if (newSANArr->data == nullptr) {
         LOGE("Failed to allocate data memory!");
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed"));
-        SubAltNameArrayDataClearAndFree(newSANArr);
-        CfFree(newSANArr);
-        return nullptr;
+        goto exit;
     }
     for (uint32_t i = 0; i < length; i++) {
         napi_value element;
@@ -1089,25 +1104,27 @@ SubAltNameArray *CertGetSANArrFromArrUarrJSParams(napi_env env, napi_value arg)
             napi_value obj = GetProp(env, element, CERT_MATCH_TAG_SUBJECT_ALT_NAMES_TYPE.c_str());
             if (obj == nullptr || napi_get_value_int32(env, obj, (int32_t *)&(newSANArr->data[i].type)) != napi_ok) {
                 LOGE("Failed to get type!");
-                SubAltNameArrayDataClearAndFree(newSANArr);
-                CfFree(newSANArr);
-                return nullptr;
+                goto exit;
             }
             obj = GetProp(env, element, CERT_MATCH_TAG_SUBJECT_ALT_NAMES_DATA.c_str());
             CfBlob *blob = CertGetBlobFromUint8ArrJSParams(env, obj);
             if (blob != nullptr) {
                 newSANArr->data[i].name = *blob;
                 CfFree(blob);
+                blob = nullptr;
                 continue;
             }
         }
         LOGE("Failed to allocate data memory!");
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "input arr is invalid"));
-        SubAltNameArrayDataClearAndFree(newSANArr);
-        CfFree(newSANArr);
-        return nullptr;
+        goto exit;
     }
     return newSANArr;
+exit:
+    SubAltNameArrayDataClearAndFree(newSANArr);
+    CfFree(newSANArr);
+    newSANArr = nullptr;
+    return nullptr;
 }
 
 CfArray *CertGetArrFromArrUarrJSParams(napi_env env, napi_value arg)
@@ -1138,7 +1155,7 @@ CfArray *CertGetArrFromArrUarrJSParams(napi_env env, napi_value arg)
     if (newBlobArr->data == nullptr) {
         LOGE("Failed to allocate data memory!");
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed"));
-        CfFree(newBlobArr);
+        CF_FREE_PTR(newBlobArr);
         return nullptr;
     }
     for (uint32_t i = 0; i < length; i++) {
@@ -1147,13 +1164,13 @@ CfArray *CertGetArrFromArrUarrJSParams(napi_env env, napi_value arg)
             CfBlob *blob = CertGetBlobFromStringJSParams(env, element);
             if (blob != nullptr) {
                 newBlobArr->data[i] = *blob;
-                CfFree(blob);
+                CF_FREE_PTR(blob);
                 continue;
             }
         }
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "input arr is invalid"));
         FreeCfBlobArray(newBlobArr->data, newBlobArr->count);
-        CfFree(newBlobArr);
+        CF_FREE_PTR(newBlobArr);
         LOGE("Failed to allocate data memory!");
         return nullptr;
     }
@@ -1186,11 +1203,13 @@ bool CertGetBlobFromBigIntJSParams(napi_env env, napi_value arg, CfBlob &outBlob
     }
     if (napi_get_value_bigint_words(env, arg, &signBit, &wordCount, reinterpret_cast<uint64_t *>(retArr)) != napi_ok) {
         CfFree(retArr);
+        retArr = nullptr;
         LOGE("Failed to get valid rawData.");
         return false;
     }
     if (signBit != 0) {
         CfFree(retArr);
+        retArr = nullptr;
         LOGE("Failed to get gegative rawData.");
         return false;
     }
@@ -1429,6 +1448,7 @@ napi_value ConvertBlobToNapiValue(napi_env env, const CfBlob *blob)
     if (status != napi_ok) {
         LOGE("create uint8 array buffer failed!");
         CfFree(buffer);
+        buffer = nullptr;
         return nullptr;
     }
     buffer = nullptr;
@@ -1481,6 +1501,7 @@ napi_value ConvertBlobToBigIntWords(napi_env env, const CfBlob &blob)
     napi_value result = nullptr;
     napi_create_bigint_words(env, 0, wordsCount, words, &result);
     CfFree(words);
+    words = nullptr;
     return result;
 }
 

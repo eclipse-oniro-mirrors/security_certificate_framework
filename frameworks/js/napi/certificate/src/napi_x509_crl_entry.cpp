@@ -399,6 +399,7 @@ static napi_value BuildCertExtsObject(napi_env env, CfEncodingBlob *encodingBlob
     if (napiObject == nullptr) {
         LOGE("Failed to create napi extension class");
         extsObj->destroy(&(extsObj));
+        extsObj = nullptr;
         return nullptr;
     }
     napi_wrap(
