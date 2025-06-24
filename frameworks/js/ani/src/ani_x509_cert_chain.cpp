@@ -224,7 +224,7 @@ string X509CertChainImpl::ToString()
         ANI_LOGE_THROW(ret, "ToString failed");
         return "";
     }
-    string str = string(reinterpret_cast<char *>(blob.data), blob.size);
+    string str = DataBlobToString(blob);
     CfBlobDataClearAndFree(&blob);
     return str;
 }
@@ -305,7 +305,7 @@ Pkcs12Data ParsePkcs12(array_view<uint8_t> data, Pkcs12ParsingConfig const& conf
         pkcs12Data.privateKey = optional<OptStrUint8Arr>(std::nullopt);
     } else {
         if (p12Collection->isPem) {
-            string str = string(reinterpret_cast<char *>(p12Collection->prikey->data), p12Collection->prikey->size);
+            string str = DataBlobToString(*(p12Collection->prikey));
             pkcs12Data.privateKey = optional<OptStrUint8Arr>(std::in_place, OptStrUint8Arr::make_STRING(str));
         } else {
             array<uint8_t> blob = {};

@@ -216,8 +216,14 @@ function testX509CertGetItem() {
 
 function testX509CertMatch() {
   try {
-    const param: cert.X509CertMatchParameters = {};
     let x509Cert = createX509Cert();
+    const param: cert.X509CertMatchParameters = {
+      x509Cert,
+      validDate: '250618021836Z',
+      keyUsage: [true, false, false, false, false, true, true],
+      publicKeyAlgID: '1.2.840.113549.1.1.1',
+      serialNumber: BigInt('183805826533459806557718180865582461731414746332')
+    };
     let match = x509Cert.match(param);
     console.println("X509Cert match: " + (match ? "success" : "failed"));
   } catch (err: BusinessError) {

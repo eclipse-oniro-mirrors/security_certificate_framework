@@ -35,7 +35,6 @@ function main() {
   testX509CertChain();
   testCertExtension();
 
-
   utils.doFullGC();
   utils.stopTaskPool();
 }

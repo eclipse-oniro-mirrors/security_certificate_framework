@@ -30,6 +30,11 @@ X509CRLImpl::~X509CRLImpl()
     this->x509Crl_ = nullptr;
 }
 
+int64_t X509CRLImpl::GetX509CRLObj()
+{
+    return reinterpret_cast<int64_t>(this->x509Crl_);
+}
+
 bool X509CRLImpl::IsRevoked(weak::X509Cert cert)
 {
     if (this->x509Crl_ == nullptr) {
@@ -131,7 +136,7 @@ string X509CRLImpl::GetLastUpdate()
         ANI_LOGE_THROW(res, "get last update failed!");
         return "";
     }
-    string str = string(reinterpret_cast<char *>(blob.data), blob.size);
+    string str = DataBlobToString(blob);
     CfBlobDataFree(&blob);
     return str;
 }
@@ -148,7 +153,7 @@ string X509CRLImpl::GetNextUpdate()
         ANI_LOGE_THROW(res, "get next update failed!");
         return "";
     }
-    string str = string(reinterpret_cast<char *>(blob.data), blob.size);
+    string str = DataBlobToString(blob);
     CfBlobDataFree(&blob);
     return str;
 }
@@ -254,7 +259,7 @@ string X509CRLImpl::GetSignatureAlgName()
         ANI_LOGE_THROW(res, "get signature failed!");
         return {};
     }
-    string str = string(reinterpret_cast<char *>(blob.data), blob.size);
+    string str = DataBlobToString(blob);
     CfBlobDataFree(&blob);
     return str;
 }
@@ -271,7 +276,7 @@ string X509CRLImpl::GetSignatureAlgOid()
         ANI_LOGE_THROW(res, "get signature alg oid failed!");
         return "";
     }
-    string str = string(reinterpret_cast<char *>(blob.data), blob.size);
+    string str = DataBlobToString(blob);
     CfBlobDataFree(&blob);
     return str;
 }
@@ -325,7 +330,7 @@ bool X509CRLImpl::Match(X509CRLMatchParameters const& param)
     HcfX509CrlMatchParams matchParams = {};
     array<CfBlob> blobs(param.issuer.has_value() ? param.issuer.value().size() : 0);
     if (param.issuer.has_value()) {
-        uint32_t i = 0;
+        size_t i = 0;
         for (auto const& blob : param.issuer.value()) {
             ArrayU8ToDataBlob(blob, blobs[i++]);
         }
@@ -391,7 +396,7 @@ string X509CRLImpl::ToString()
         ANI_LOGE_THROW(res, "to string failed!");
         return "";
     }
-    string str = string(reinterpret_cast<char *>(blob.data), blob.size);
+    string str = DataBlobToString(blob);
     CfBlobDataFree(&blob);
     return str;
 }

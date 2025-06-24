@@ -54,6 +54,7 @@ taihe_shared_library("cert_framework_ani") {
     "${framework_path}/js/ani/src/ani_common.cpp",
     "${framework_path}/js/ani/src/ani_constructor.cpp",
     "${framework_path}/js/ani/src/ani_object.cpp",
+    "${framework_path}/js/ani/src/ani_parameters.cpp",
     "${framework_path}/js/ani/src/ani_pub_key.cpp",
     "${framework_path}/js/ani/src/ani_x500_distinguished_name.cpp",
     "${framework_path}/js/ani/src/ani_x509_cert.cpp",

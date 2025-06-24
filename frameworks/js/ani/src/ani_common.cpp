@@ -98,7 +98,13 @@ void BigIntegerToArrayU8(const CfBlob &bigint, array<uint8_t> &arr, bool isRever
 void StringToDataBlob(const string &str, CfBlob &blob)
 {
     blob.data = str.empty() ? nullptr : reinterpret_cast<uint8_t *>(const_cast<char *>(str.c_str()));
-    blob.size = str.size();
+    blob.size = str.size() + 1;
+}
+
+string DataBlobToString(const CfBlob &blob)
+{
+    uint32_t size = blob.data[blob.size - 1] == '\0' ? blob.size - 1 : blob.size;
+    return string(reinterpret_cast<char *>(blob.data), size);
 }
 
 void CfArrayToDataArray(const CfArray &cfArr, DataArray &dataArr)
@@ -115,19 +121,5 @@ void DataBlobToEncodingBlob(const CfBlob &blob, CfEncodingBlob &encodingBlob,
     encodingBlob.data = blob.data;
     encodingBlob.len = blob.size;
     encodingBlob.encodingFormat = encodingFormat;
-}
-
-bool CopyString(const string &str, char **dst)
-{
-    *dst = static_cast<char *>(CfMalloc(str.size() + 1, 0));
-    if (*dst == nullptr) {
-        return false;
-    }
-    if (strcpy_s(*dst, str.size() + 1, str.c_str()) != EOK) {
-        CfFree(*dst);
-        *dst = nullptr;
-        return false;
-    }
-    return true;
 }
 } // namespace ANI::CertFramework
