@@ -165,6 +165,7 @@ interface X509CRLEntry {
 }
 
 interface X509CRL {
+  GetX509CRLObj(): i64;
   IsRevoked(cert: X509Cert): bool;
   GetType(): String;
   @gen_async("getEncoded")

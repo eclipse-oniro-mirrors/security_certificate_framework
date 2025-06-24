@@ -104,7 +104,7 @@ string X509CRLEntryImpl::GetRevocationDate()
         ANI_LOGE_THROW(res, "get revocation date failed!");
         return "";
     }
-    string str = string(reinterpret_cast<char *>(blob.data), blob.size);
+    string str = DataBlobToString(blob);
     CfBlobDataFree(&blob);
     return str;
 }
@@ -176,7 +176,7 @@ string X509CRLEntryImpl::ToString()
         ANI_LOGE_THROW(res, "to string failed!");
         return "";
     }
-    string str = string(reinterpret_cast<char *>(blob.data), blob.size);
+    string str = DataBlobToString(blob);
     CfBlobDataFree(&blob);
     return str;
 }

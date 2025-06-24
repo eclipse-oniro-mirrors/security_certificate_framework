@@ -26,6 +26,7 @@ public:
     explicit X509CRLImpl(HcfX509Crl *x509Crl);
     ~X509CRLImpl();
 
+    int64_t GetX509CRLObj();
     bool IsRevoked(weak::X509Cert cert);
     string GetType();
     EncodingBlob GetEncodedSync();

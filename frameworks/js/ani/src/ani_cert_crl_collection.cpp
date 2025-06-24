@@ -14,6 +14,7 @@
  */
 
 #include "ani_cert_crl_collection.h"
+#include "ani_parameters.h"
 
 namespace ANI::CertFramework {
 CertCRLCollectionImpl::CertCRLCollectionImpl() {}
@@ -28,19 +29,105 @@ CertCRLCollectionImpl::~CertCRLCollectionImpl()
 
 array<X509Cert> CertCRLCollectionImpl::SelectCertsSync(X509CertMatchParameters const& param)
 {
-    TH_THROW(std::runtime_error, "SelectCertsSync not implemented");
+    if (this->collection_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "collection obj is nullptr!");
+        return {};
+    }
+    HcfX509CertMatchParams matchParam = {};
+    if (!BuildX509CertMatchParams(param, matchParam)) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "build x509 cert match params failed!");
+        return {};
+    }
+    HcfX509CertificateArray hcfCerts = {};
+    CfResult res = this->collection_->selectCerts(this->collection_, &matchParam, &hcfCerts);
+    FreeX509CertMatchParams(matchParam);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "select certs failed!");
+        return {};
+    }
+    array<X509Cert> certs(hcfCerts.count, make_holder<X509CertImpl, X509Cert>());
+    for (size_t i = 0; i < hcfCerts.count; i++) {
+        certs[i] = make_holder<X509CertImpl, X509Cert>(hcfCerts.data[i]);
+    }
+    return certs;
 }
 
 array<X509CRL> CertCRLCollectionImpl::SelectCRLsSync(X509CRLMatchParameters const& param)
 {
-    TH_THROW(std::runtime_error, "SelectCRLsSync not implemented");
+    if (this->collection_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "collection obj is nullptr!");
+        return {};
+    }
+    CfBlobArray issuer = {};
+    CfBlob updateDateTime = {};
+    CfBlob maxCRL = {};
+    CfBlob minCRL = {};
+    HcfX509CrlMatchParams matchParam = {};
+    HcfX509CrlArray hcfCrls = {};
+    array<CfBlob> blobs(param.issuer.has_value() ? param.issuer.value().size() : 0);
+    if (param.issuer.has_value()) {
+        size_t i = 0;
+        for (auto const& blob : param.issuer.value()) {
+            ArrayU8ToDataBlob(blob, blobs[i++]);
+        }
+        issuer.data = blobs.data();
+        issuer.count = blobs.size();
+        matchParam.issuer = &issuer;
+    }
+    if (param.x509Cert.has_value()) {
+        matchParam.x509Cert = reinterpret_cast<HcfCertificate *>(param.x509Cert.value()->GetX509CertObj());
+    }
+    if (param.updateDateTime.has_value()) {
+        StringToDataBlob(param.updateDateTime.value(), updateDateTime);
+        matchParam.updateDateTime = &updateDateTime;
+    }
+    if (param.maxCRL.has_value()) {
+        ArrayU8ToDataBlob(param.maxCRL.value(), maxCRL);
+        matchParam.maxCRL = &maxCRL;
+    }
+    if (param.minCRL.has_value()) {
+        ArrayU8ToDataBlob(param.minCRL.value(), minCRL);
+        matchParam.minCRL = &minCRL;
+    }
+    CfResult res = this->collection_->selectCRLs(this->collection_, &matchParam, &hcfCrls);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "select crls failed!");
+        return {};
+    }
+    array<X509CRL> crls(hcfCrls.count, make_holder<X509CRLImpl, X509CRL>());
+    for (size_t i = 0; i < hcfCrls.count; i++) {
+        crls[i] = make_holder<X509CRLImpl, X509CRL>(hcfCrls.data[i]);
+    }
+    return crls;
 }
 
 CertCRLCollection CreateCertCRLCollection(array_view<X509Cert> certs, optional_view<array<X509CRL>> crls)
 {
-    // The parameters in the make_holder function should be of the same type
-    // as the parameters in the constructor of the actual implementation class.
-    return make_holder<CertCRLCollectionImpl, CertCRLCollection>();
+    HcfX509CertificateArray hcfCerts = {};
+    HcfX509CrlArray hcfCrls = {};
+    array<HcfX509Certificate *> hcfCertsArray(certs.size());
+    array<HcfX509Crl *> hcfCrlsArray(crls.has_value() ? crls.value().size() : 0);
+    size_t i = 0;
+    for (auto const& cert : certs) {
+        hcfCertsArray[i++] = reinterpret_cast<HcfX509Certificate *>(cert->GetX509CertObj());
+    }
+    hcfCerts.data = hcfCertsArray.data();
+    hcfCerts.count = hcfCertsArray.size();
+    if (crls.has_value()) {
+        i = 0;
+        for (auto const& crl : crls.value()) {
+            hcfCrlsArray[i++] = reinterpret_cast<HcfX509Crl *>(crl->GetX509CRLObj());
+        }
+        hcfCrls.data = hcfCrlsArray.data();
+        hcfCrls.count = hcfCrlsArray.size();
+    }
+    HcfCertCrlCollection *collection = nullptr;
+    CfResult res = HcfCertCrlCollectionCreate(&hcfCerts, &hcfCrls, &collection);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "create cert crl collection obj failed!");
+        return make_holder<CertCRLCollectionImpl, CertCRLCollection>();
+    }
+    return make_holder<CertCRLCollectionImpl, CertCRLCollection>(collection);
 }
 } // namespace ANI::CertFramework
 

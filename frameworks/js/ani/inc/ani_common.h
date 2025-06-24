@@ -54,10 +54,10 @@ void DataBlobToArrayU8(const CfBlob &blob, array<uint8_t> &arr);
 void ArrayU8ToBigInteger(const array<uint8_t> &arr, CfBlob &bigInt, bool isReverse = false);
 void BigIntegerToArrayU8(const CfBlob &bigInt, array<uint8_t> &arr, bool isReverse = false);
 void StringToDataBlob(const string &str, CfBlob &blob);
+string DataBlobToString(const CfBlob &blob);
 void CfArrayToDataArray(const CfArray &cfArr, DataArray &dataArr);
 void DataBlobToEncodingBlob(const CfBlob &blob, CfEncodingBlob &encodingBlob,
     CfEncodingFormat encodingFormat = CF_FORMAT_DER);
-bool CopyString(const string &str, char **dst);
 } // namespace ANI::CertFramework
 
 #endif // ANI_COMMON_H

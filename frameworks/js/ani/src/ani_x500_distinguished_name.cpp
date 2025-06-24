@@ -49,14 +49,14 @@ string X500DistinguishedNameImpl::GetName()
         return "";
     }
     CfBlob blob = {};
-    CfResult ret = this->x509Name_->getName(this->x509Name_, NULL, &blob, NULL);
+    CfResult ret = this->x509Name_->getName(this->x509Name_, nullptr, &blob, nullptr);
     if (ret != CF_SUCCESS) {
         ANI_LOGE_THROW(ret, "get name failed.");
         return "";
     }
-    string result = string(reinterpret_cast<char *>(blob.data), blob.size);
+    string str = DataBlobToString(blob);
     CfBlobDataFree(&blob);
-    return result;
+    return str;
 }
 
 string X500DistinguishedNameImpl::GetNameByEnum(EncodingType encodingType)
@@ -74,14 +74,14 @@ array<string> X500DistinguishedNameImpl::GetNameByStr(string_view type)
     CfBlob inPara = {};
     StringToDataBlob(type, inPara);
     CfArray outArr = { nullptr, CF_FORMAT_DER, 0 };
-    CfResult ret = this->x509Name_->getName(this->x509Name_, &inPara, NULL, &outArr);
+    CfResult ret = this->x509Name_->getName(this->x509Name_, &inPara, nullptr, &outArr);
     if (ret != CF_SUCCESS) {
         ANI_LOGE_THROW(ret, "get name failed.");
         return array<string>{};
     }
     array<string> result = array<string>::make(outArr.count, {});
     for (uint32_t i = 0; i < outArr.count; i++) {
-        result[i] = string(reinterpret_cast<char *>(outArr.data[i].data), outArr.data[i].size);
+        result[i] = DataBlobToString(outArr.data[i]);
     }
     CfArrayDataClearAndFree(&outArr);
     return result;

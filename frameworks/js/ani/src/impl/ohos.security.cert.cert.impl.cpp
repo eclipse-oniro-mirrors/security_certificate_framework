@@ -247,6 +247,10 @@ public:
         // Don't forget to implement the constructor.
     }
 
+    int64_t GetX509CRLObj() {
+        TH_THROW(std::runtime_error, "GetX509CRLObj not implemented");
+    }
+
     bool IsRevoked(weak::X509Cert cert) {
         TH_THROW(std::runtime_error, "IsRevoked not implemented");
     }

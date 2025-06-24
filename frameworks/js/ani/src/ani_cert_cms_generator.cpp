@@ -20,6 +20,20 @@
 namespace {
 using namespace ANI::CertFramework;
 
+bool CopyString(const string &str, char **dst)
+{
+    *dst = static_cast<char *>(CfMalloc(str.size() + 1, 0));
+    if (*dst == nullptr) {
+        return false;
+    }
+    if (strcpy_s(*dst, str.size() + 1, str.c_str()) != EOK) {
+        CfFree(*dst);
+        *dst = nullptr;
+        return false;
+    }
+    return true;
+}
+
 bool CopyBlobDataToPrivateKey(CfBlob *blob, CfEncodingBlob *privateKey)
 {
     privateKey->data = static_cast<uint8_t *>(CfMalloc(blob->size, 0));
@@ -70,7 +84,7 @@ bool GetX509CsrSubject(HcfX509DistinguishedName **subject, CsrGenerationConfig c
 
 void FreeCsrCfBlobArray(HcfAttributes *array, uint32_t arrayLen)
 {
-    if (array == NULL) {
+    if (array == nullptr) {
         return;
     }
 
@@ -115,7 +129,7 @@ void FreeGenCsrConf(HcfGenCsrConf *conf)
     if (conf == nullptr) {
         return;
     }
-    if (conf->attribute.array != NULL) {
+    if (conf->attribute.array != nullptr) {
         FreeCsrCfBlobArray(conf->attribute.array, conf->attribute.attributeSize);
     }
 

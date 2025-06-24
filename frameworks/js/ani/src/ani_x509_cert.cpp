@@ -15,18 +15,10 @@
 
 #include "ani_x509_cert.h"
 #include "ani_pub_key.h"
+#include "ani_object.h"
+#include "ani_parameters.h"
 #include "ani_cert_extension.h"
 #include "ani_x500_distinguished_name.h"
-#include "x509_cert_match_parameters.h"
-#include "ani_object.h"
-
-namespace {
-using namespace ANI::CertFramework;
-
-void SetX509CertMatchParameters(X509CertMatchParameters const& param, HcfX509CertMatchParams &matchParam)
-{
-}
-} // namespace
 
 namespace ANI::CertFramework {
 X509CertImpl::X509CertImpl() {}
@@ -210,7 +202,7 @@ string X509CertImpl::GetNotBeforeTime()
         ANI_LOGE_THROW(res, "get not before time failed!");
         return "";
     }
-    string str = string(reinterpret_cast<char *>(blob.data), blob.size);
+    string str = DataBlobToString(blob);
     CfBlobDataFree(&blob);
     return str;
 }
@@ -227,7 +219,7 @@ string X509CertImpl::GetNotAfterTime()
         ANI_LOGE_THROW(res, "get not before time failed!");
         return "";
     }
-    string str = string(reinterpret_cast<char *>(blob.data), blob.size);
+    string str = DataBlobToString(blob);
     CfBlobDataFree(&blob);
     return str;
 }
@@ -262,7 +254,7 @@ string X509CertImpl::GetSignatureAlgName()
         ANI_LOGE_THROW(res, "get signature alg name failed!");
         return "";
     }
-    string str = string(reinterpret_cast<char *>(blob.data), blob.size);
+    string str = DataBlobToString(blob);
     CfBlobDataFree(&blob);
     return str;
 }
@@ -279,7 +271,7 @@ string X509CertImpl::GetSignatureAlgOid()
         ANI_LOGE_THROW(res, "get signature alg oid failed!");
         return "";
     }
-    string str = string(reinterpret_cast<char *>(blob.data), blob.size);
+    string str = DataBlobToString(blob);
     CfBlobDataFree(&blob);
     return str;
 }
@@ -396,7 +388,7 @@ DataBlob X509CertImpl::GetItem(CertItemType itemType)
         ANI_LOGE_THROW(res, errMsg.c_str());
         return {};
     }
-    CfParam *itemParam = NULL; // CfGetParam will return a pointer to the param in the paramSet
+    CfParam *itemParam = nullptr; // CfGetParam will return a pointer to the param in the paramSet
     res = static_cast<CfResult>(CfGetParam(paramSet, CF_TAG_RESULT_BYTES, &itemParam));
     if (res != CF_SUCCESS) {
         CfFreeParamSet(&paramSet);
@@ -411,10 +403,18 @@ DataBlob X509CertImpl::GetItem(CertItemType itemType)
 
 bool X509CertImpl::Match(X509CertMatchParameters const& param)
 {
+    if (this->cert_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        return false;
+    }
     HcfX509CertMatchParams matchParam = {};
-    SetX509CertMatchParameters(param, matchParam);
+    if (!BuildX509CertMatchParams(param, matchParam)) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "build x509 cert match params failed!");
+        return false;
+    }
     bool flag = false;
     CfResult res = this->cert_->match(this->cert_, &matchParam, &flag);
+    FreeX509CertMatchParams(matchParam);
     if (res != CF_SUCCESS) {
         ANI_LOGE_THROW(res, "match cert failed!");
         return false;
@@ -498,7 +498,7 @@ string X509CertImpl::ToString()
         ANI_LOGE_THROW(res, "to string failed!");
         return "";
     }
-    string str = string(reinterpret_cast<char *>(blob.data), blob.size);
+    string str = DataBlobToString(blob);
     CfBlobDataFree(&blob);
     return str;
 }
