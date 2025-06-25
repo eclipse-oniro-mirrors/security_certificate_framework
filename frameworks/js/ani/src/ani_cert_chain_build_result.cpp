@@ -20,19 +20,41 @@
 namespace ANI::CertFramework {
 CertChainBuildResultImpl::CertChainBuildResultImpl() {}
 
-CertChainBuildResultImpl::~CertChainBuildResultImpl() {}
+CertChainBuildResultImpl::CertChainBuildResultImpl(HcfX509CertChainBuildResult *buildResult)
+    : buildResult_(buildResult) {}
+
+CertChainBuildResultImpl::~CertChainBuildResultImpl()
+{
+    CfObjDestroy(this->buildResult_);
+    this->buildResult_ = nullptr;
+}
 
 X509CertChain CertChainBuildResultImpl::GetCertChain()
 {
-    // The parameters in the make_holder function should be of the same type
-    // as the parameters in the constructor of the actual implementation class.
-    return make_holder<X509CertChainImpl, X509CertChain>();
+    if (this->buildResult_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "buildResult_ is nullptr!");
+        return make_holder<X509CertChainImpl, X509CertChain>();
+    }
+    HcfCertChain *certChain = this->buildResult_->certChain;
+    if (certChain == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "certChain is nullptr!");
+        return make_holder<X509CertChainImpl, X509CertChain>();
+    }
+    return make_holder<X509CertChainImpl, X509CertChain>(certChain);
 }
 
 CertChainValidationResult CertChainBuildResultImpl::GetValidationResult()
 {
-    // The parameters in the make_holder function should be of the same type
-    // as the parameters in the constructor of the actual implementation class.
-    return make_holder<CertChainValidationResultImpl, CertChainValidationResult>();
+    if (this->buildResult_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "buildResult_ is nullptr!");
+        return make_holder<CertChainValidationResultImpl, CertChainValidationResult>();
+    }
+    
+    HcfX509CertChainValidateResult *result = &(this->buildResult_->validateResult);
+    if (result == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "validateResult is nullptr!");
+        return make_holder<CertChainValidationResultImpl, CertChainValidationResult>();
+    }
+    return make_holder<CertChainValidationResultImpl, CertChainValidationResult>(result);
 }
 } // namespace ANI::CertFramework

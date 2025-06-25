@@ -73,22 +73,48 @@ let certChainData = "-----BEGIN CERTIFICATE-----\n" +
   "-----END CERTIFICATE-----\n";
 
 function testX509CertChainAsync() {
-let encodingBlob: cert.EncodingBlob = {
-  data: utils.stringToUint8Array(certChainData),
-  encodingFormat: cert.EncodingFormat.FORMAT_PEM
-};
+  let encodingBlob: cert.EncodingBlob = {
+    data: utils.stringToUint8Array(certChainData),
+    encodingFormat: cert.EncodingFormat.FORMAT_PEM
+  };
 
-let certChain = await cert.createX509CertChain(encodingBlob);
-if (certChain) {
-    console.println('createX509CertChain success');
-    try {
-      let certList = certChain.getCertList();
-      console.println('X509CertChain getCertList success.');
-    } catch (err: BusinessError) {
-      let e: BusinessError = err as BusinessError;
-      console.println('X509CertChain getCertList failed, errCode: ' + e.code + ', errMsg: ' + e.message);
+  let certChain = await cert.createX509CertChain(encodingBlob);
+  if (certChain) {
+      console.println('createX509CertChain success');
+      try {
+        let certList = certChain.getCertList();
+        console.println('X509CertChain getCertList success.');
+      } catch (err: BusinessError) {
+        let e: BusinessError = err as BusinessError;
+        console.println('X509CertChain getCertList failed, errCode: ' + e.code + ', errMsg: ' + e.message);
+      }
     }
+}
+
+
+function validateTest() {
+  let encodingBlob: cert.EncodingBlob = {
+    data: utils.stringToUint8Array(certChainData),
+    encodingFormat: cert.EncodingFormat.FORMAT_PEM
+  };
+  const param: cert.CertChainValidationParameters = {
+    date: '20231212080000Z',
+    trustAnchors: [{
+        CAPubKey: new Uint8Array([0x30, 0x2a, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70, 0x03, 0x21, 0x00, 0xbb, 0x16,0x9d, 0x8f, 0x5c, 0x30, 0xd0, 0xba, 0x8f, 0x37, 0x6e, 0x33, 0xaf, 0x6f, 0x23, 0x71, 0x23, 0xa5, 0x49, 0x60,0x1e, 0xd1, 0x07, 0x4b, 0xc9, 0x11, 0x7e, 0x66, 0x01, 0xba, 0x92, 0x52]),
+        CASubject: new Uint8Array([0x30, 0x5a, 0x31, 0x0b, 0x30, 0x09, 0x06, 0x03, 0x55, 0x04, 0x06, 0x13, 0x02, 0x45,0x4e, 0x31, 0x10, 0x30, 0x0e, 0x06, 0x03, 0x55, 0x04, 0x08, 0x13, 0x07, 0x45, 0x6e, 0x67, 0x6c, 0x61, 0x6e,0x64, 0x31, 0x0f, 0x30, 0x0d, 0x06, 0x03, 0x55, 0x04, 0x07, 0x13, 0x06, 0x4c, 0x6f, 0x6e, 0x64, 0x6f, 0x6e,0x31, 0x0c, 0x30, 0x0a, 0x06, 0x03, 0x55, 0x04, 0x0a, 0x13, 0x03, 0x74, 0x73, 0x31, 0x31, 0x0c, 0x30, 0x0a,0x06, 0x03, 0x55, 0x04, 0x0b, 0x13, 0x03, 0x74, 0x73, 0x31, 0x31, 0x0c, 0x30, 0x0a, 0x06, 0x03, 0x55, 0x04,0x03, 0x13, 0x03, 0x74, 0x73, 0x31]),
+    }]
   }
+  let certChain = await cert.createX509CertChain(encodingBlob);
+  if (certChain) {
+      console.println('createX509CertChain success');
+      try {
+        let validationRes = certChain.validate(param);
+        console.println('X509CertChain validate success.');
+      } catch (err: BusinessError) {
+        let e: BusinessError = err as BusinessError;
+        console.println('X509CertChain validate failed, errCode: ' + e.code + ', errMsg: ' + e.message);
+      }
+    }
 }
 
 function certChainToStringTest() {
@@ -307,9 +333,84 @@ function doTestParsePkcs12() {
   }
 }
 
+let certPem = '-----BEGIN CERTIFICATE-----\n' +
+  'MIIDTjCCAjagAwIBAgIBBDANBgkqhkiG9w0BAQsFADASMRAwDgYDVQQDDAdSb290\n' +
+  'IENBMB4XDTI0MDMxOTAyMDQwMVoXDTM0MDMxNzAyMDQwMVowEjEQMA4GA1UEAwwH\n' +
+  'ZGV2aWNlMjCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMIXL3e7UE/c\n' +
+  'Z1dPVgRZ5L8gsQ/azuYVBvoFf7o8ksYrL7G1+qZIJjVRqZkuTirLW4GicbkIkPNW\n' +
+  'eix5cDhkjkC+q5SBCOrSSTTlvX3xcOY1gMlA5MgeBfGixFusq4d5VPF2KceZ20/a\n' +
+  'ygwGD0Uv0X81OERyPom/dYdJUvfaD9ifPFJ1fKIj/cPFG3yJK/ojpEfndZNdESQL\n' +
+  'TkoDekilg2UGOLtY6fb9Ns37ncuIj33gCS/R9m1tgtmqCTcgOQ4hwKhjVF3InmPO\n' +
+  '2BbWKvD1RUX+rHC2a2HHDQILOOtDTy8dHvE+qZlK0efrpRgoFEERJAGPi1GDGWiA\n' +
+  '7UX1c4MCxIECAwEAAaOBrjCBqzAJBgNVHRMEAjAAMB0GA1UdDgQWBBQbkAcMT7ND\n' +
+  'fGp3VPFzYHppZ1zxLTAfBgNVHSMEGDAWgBR0W/koCbvDtFGHUQZLM3j6HKsW2DAd\n' +
+  'BgNVHSUEFjAUBggrBgEFBQcDAQYIKwYBBQUHAwIwCwYDVR0PBAQDAgeAMDIGCCsG\n' +
+  'AQUFBwEBBCYwJDAiBggrBgEFBQcwAYYWaHR0cHM6Ly8xMjcuMC4wLjE6OTk5OTAN\n' +
+  'BgkqhkiG9w0BAQsFAAOCAQEAF1OTzTmbklFOdZCxrF3zg9owUPJR5RB+PbuBlUfI\n' +
+  '8tkGXkMltQ8PN1dv6Cq+d8BluiJdWEzqVoJa/e5SHHJyYQSOhlurRG0GBXllVQ1I\n' +
+  'n1PFaI40+9X2X6wrEcdC5nbzogR1jSiksCiTcARMddj0Xrp5FMrFaaGY8M/xqzdW\n' +
+  'LTDl4nfbuxtA71cIjnE4kOcaemly9/S2wYWdPktsPxQPY1nPUOeJFI7o0sH3rK0c\n' +
+  'JSqtgAG8vnjK+jbx9RpkgqCsXgUbIahL573VTgxrNrsRjCuVal7XVxl/xOKXr6Er\n' +
+  'Gpc+OCrXbHNZkUQE5fZH3yL2tXd7EASEb6J3aEWHfF8YBA==\n' +
+  '-----END CERTIFICATE-----';
+
+let caPem = '-----BEGIN CERTIFICATE-----\n' +
+'MIIC/zCCAeegAwIBAgIBATANBgkqhkiG9w0BAQsFADASMRAwDgYDVQQDDAdSb290\n' +
+'IENBMB4XDTI0MDMxOTAyMDIyNFoXDTM0MDMxNzAyMDIyNFowEjEQMA4GA1UEAwwH\n' +
+'Um9vdCBDQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALxI5SDvRfKU\n' +
+'6XaTeyh2LHlUK0rVSeYfXkYf5Mc3Pgucg+ewzQjxkACMx5NYaW1zfGDNPG1i5IZl\n' +
+'cPeWNz1Tm2g6wTd+LyNoNOOmwfLV8pLXSfAukgNrBREf3BzVrbu7hvPd2MmLH23H\n' +
+'OBM9uDPTIqu3n2CDN2EzwULjaSk2g+jvhVKsDLInu5uKPmZBFhs1FWKgcnVnlbi1\n' +
+'AyAx4efheits6EO70oV6UufCEtS1VsBXQHZRAG4ogshWldRBVNxkU6yHAfg0mM/5\n' +
+'EhrZsfh51fWqlrhNWrInjgNV3xIt5ebTIgKZWUlSVHEA/UqDoGfY+CsAJdteZWOW\n' +
+'KjsrC/DK2O0CAwEAAaNgMF4wHQYDVR0OBBYEFHRb+SgJu8O0UYdRBkszePocqxbY\n' +
+'MB8GA1UdIwQYMBaAFHRb+SgJu8O0UYdRBkszePocqxbYMA8GA1UdEwEB/wQFMAMB\n' +
+'Af8wCwYDVR0PBAQDAgEGMA0GCSqGSIb3DQEBCwUAA4IBAQAKOT1ObfQNMN2wdfHq\n' +
+'PQgFDDp6rBMbZe70LswPirSXljo4S/vfbG+gBoWCdu/SfsV+lyP75kg1wX0IQvzW\n' +
+'xYNh864dgqPmGd0v8TIfM0UT0PpnowUyBHQ+E7LNYIOh/kjHbl3oERdEFA2PUyE9\n' +
+'j3GLdg8oe/LqhEQCSAlH+v2RQgBZ9eVN+mSdUxwywm9U3acb0uqVkGiWK/ywumpg\n' +
+'AmIZLMJtMVvg8uDkfy16Z4lChTEdNaJVUqPczUNk2kHXIF4we4be9HoOuTVz/SD/\n' +
+'IsOhXn/BjS3jnhyS9fxo+opJf9zVTWI02Hlh1WVVtH/m3nIZblyAJhcjCHA2wZSz\n' +
+'sSus\n' +
+'-----END CERTIFICATE-----';
+
+async function createX509CertData(certData: string) {
+  let encodingBlob: cert.EncodingBlob = {
+    data: utils.stringToUint8Array(certData),
+    encodingFormat: cert.EncodingFormat.FORMAT_PEM
+  };
+
+  return await cert.createX509Cert(encodingBlob);
+}
+
+function buildX509CertChain() {
+  try {
+    let caCert: cert.X509Cert =  await createX509CertData(caPem);
+    let x509Cert: cert.X509Cert = await createX509CertData(certPem);
+    let certCrlCollection = cert.createCertCRLCollection([x509Cert]);
+    let param: cert.CertChainBuildParameters = {
+      certMatchParameters: {validDate:'20240812080000Z'},
+      maxLength: 3,
+      validationParameters: {
+        date: '20240812080000Z',
+        certCRLs: [certCrlCollection],
+        trustAnchors: [{CACert:caCert}, {CACert:caCert}],
+      }
+    }
+    let certChainBuildResult = await cert.buildX509CertChain(param);
+    console.println("cert issuer name: " + certChainBuildResult.validationResult.entityCert.getIssuerName().data)
+    console.println("ca subject name: " + certChainBuildResult.validationResult.trustAnchor.CACert?.getSubjectName().data)
+  } catch (error: BusinessError) {
+    let e: BusinessError = error as BusinessError;
+    console.println('createX509CertChain failed, errCode: ' + e.code + ', errMsg: ' + e.message);
+  }
+}
+
 export function testX509CertChain() {
   console.println(">>>>>>>>>>>>>>>>>>>> X509CertChainAsync");
   testX509CertChainAsync();
+  console.println(">>>>>>>>>>>>>>>>>>>> validateTest");
+  validateTest();
   console.println(">>>>>>>>>>>>>>>>>>>> X509CertChainToString");
   certChainToStringTest();
   console.println(">>>>>>>>>>>>>>>>>>>> X509CertChainHashCode");
@@ -318,4 +419,6 @@ export function testX509CertChain() {
   CreateTrustAnchorsWithKeyStoreTest();
   console.println(">>>>>>>>>>>>>>>>>>>> doTestParsePkcs12");
   doTestParsePkcs12();
+  console.println(">>>>>>>>>>>>>>>>>>>> buildX509CertChain");
+  buildX509CertChain();
 }

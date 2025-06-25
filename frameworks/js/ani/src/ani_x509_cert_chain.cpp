@@ -19,6 +19,7 @@
 #include "ani_x509_cert.h"
 #include "ani_x509_cert_chain_validate_result.h"
 #include "ani_cert_chain_build_result.h"
+#include "ani_parameters.h"
 #include "x509_cert_chain.h"
 #include "x509_trust_anchor.h"
 #include "cf_blob.h"
@@ -152,27 +153,43 @@ X509TrustAnchor CreateTrustAnchorFromHcf(HcfX509TrustAnchor* hcfAnchor)
     return anchor;
 }
 
-void FreeX509TrustAnchorObj(HcfX509TrustAnchor *&trustAnchor)
+void FreeX509CertChainBuildParameters(HcfX509CertChainBuildParameters *buildParam)
 {
-    if (trustAnchor == nullptr) {
+    if (buildParam == nullptr) {
         return;
     }
-    CfBlobFree(&trustAnchor->CAPubKey);
-    CfBlobFree(&trustAnchor->CASubject);
-    CfBlobFree(&trustAnchor->nameConstraints);
-    CfObjDestroy(trustAnchor->CACert);
-    trustAnchor->CACert = nullptr;
-
-    CF_FREE_PTR(trustAnchor);
+    FreeX509CertChainValidateParams(buildParam->validateParameters);
+    FreeX509CertMatchParams(buildParam->certMatchParameters);
+    CfFree(buildParam);
+    buildParam = nullptr;
 }
 
-void FreeTrustAnchorArray(HcfX509TrustAnchorArray *&trustAnchors)
+CfResult CreateParams(CertChainBuildParameters const& param, HcfX509CertChainBuildParameters **buildParam)
 {
-    for (uint32_t i = 0; i < trustAnchors->count; ++i) {
-        FreeX509TrustAnchorObj(trustAnchors->data[i]);
+    int32_t maxlength = param.maxLength.has_value() ? param.maxLength.value() : -1;
+    HcfX509CertChainBuildParameters *tempBuildParam =
+        static_cast<HcfX509CertChainBuildParameters *>(CfMalloc(sizeof(HcfX509CertChainBuildParameters), 0));
+    if (tempBuildParam == nullptr) {
+        ANI_LOGE_THROW(CF_ERR_MALLOC, "Failed to allocate memory for buildParam!");
+        return CF_ERR_MALLOC;
     }
-    CfFree(trustAnchors);
-    trustAnchors = nullptr;
+    HcfX509CertMatchParams matchParams = {};
+    if (!BuildX509CertMatchParams(param.certMatchParameters, matchParams)) {
+        FreeX509CertChainBuildParameters(tempBuildParam);
+        ANI_LOGE_THROW(CF_ERR_MALLOC, "SetX509CertMatchParameters failed");
+        return CF_ERR_MALLOC;
+    }
+    tempBuildParam->certMatchParameters = matchParams;
+    tempBuildParam->maxlength = maxlength;
+    HcfX509CertChainValidateParams validateParams = {};
+    if (!BuildX509CertChainValidateParams(param.validationParameters, validateParams)) {
+        FreeX509CertChainBuildParameters(tempBuildParam);
+        ANI_LOGE_THROW(CF_ERR_MALLOC, "SetX509CertChainValidateParams failed");
+        return CF_ERR_MALLOC;
+    }
+    tempBuildParam->validateParameters = validateParams;
+    *buildParam = tempBuildParam;
+    return CF_SUCCESS;
 }
 } // namespace
 
@@ -191,6 +208,7 @@ array<X509Cert> X509CertChainImpl::GetCertList()
 {
     if (this->x509CertChain_ == nullptr) {
         ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509CertChain_ is nullptr");
+        return array<X509Cert>(0, make_holder<X509CertImpl, X509Cert>());
     }
     HcfX509CertificateArray certs = { nullptr, 0 };
     CfResult ret = this->x509CertChain_->getCertList(this->x509CertChain_, &certs);
@@ -207,9 +225,24 @@ array<X509Cert> X509CertChainImpl::GetCertList()
 
 CertChainValidationResult X509CertChainImpl::ValidateSync(CertChainValidationParameters const& param)
 {
-    // The parameters in the make_holder function should be of the same type
-    // as the parameters in the constructor of the actual implementation class.
-    return make_holder<CertChainValidationResultImpl, CertChainValidationResult>();
+    if (this->x509CertChain_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509CertChain_ is nullptr");
+        return make_holder<CertChainValidationResultImpl, CertChainValidationResult>();
+    }
+    HcfX509CertChainValidateParams validateParams = {};
+    if (!BuildX509CertChainValidateParams(param, validateParams)) {
+        ANI_LOGE_THROW(CF_ERR_MALLOC, "SetX509CertChainValidateParams failed");
+        return make_holder<CertChainValidationResultImpl, CertChainValidationResult>();
+    }
+    HcfX509CertChainValidateResult validateResult = {};
+    CfResult ret = this->x509CertChain_->validate(this->x509CertChain_, &validateParams, &validateResult);
+    if (ret != CF_SUCCESS) {
+        FreeX509CertChainValidateParams(validateParams);
+        ANI_LOGE_THROW(ret, "ValidateSync failed");
+        return make_holder<CertChainValidationResultImpl, CertChainValidationResult>();
+    }
+    FreeX509CertChainValidateParams(validateParams);
+    return make_holder<CertChainValidationResultImpl, CertChainValidationResult>(&validateResult);
 }
 
 string X509CertChainImpl::ToString()
@@ -279,9 +312,30 @@ X509CertChain CreateX509CertChain(array_view<X509Cert> certs)
 
 CertChainBuildResult BuildX509CertChainSync(CertChainBuildParameters const& param)
 {
-    // The parameters in the make_holder function should be of the same type
-    // as the parameters in the constructor of the actual implementation class.
-    return make_holder<CertChainBuildResultImpl, CertChainBuildResult>();
+    HcfX509CertChainBuildResult *buildResult = nullptr;
+    HcfX509CertChainBuildParameters *buildParam = nullptr;
+    CfResult ret = CreateParams(param, &buildParam);
+    if (ret != CF_SUCCESS) {
+        FreeX509CertChainBuildParameters(buildParam);
+        ANI_LOGE_THROW(ret, "CreateParams failed");
+        return make_holder<CertChainBuildResultImpl, CertChainBuildResult>();
+    }
+    ret = HcfCertChainBuildResultCreate(buildParam, &buildResult);
+    if (ret != CF_SUCCESS) {
+        FreeX509CertChainBuildParameters(buildParam);
+        ANI_LOGE_THROW(ret, "BuildX509CertChainSync failed");
+        return make_holder<CertChainBuildResultImpl, CertChainBuildResult>();
+    }
+    ret = buildResult->certChain->validate(buildResult->certChain,
+        &(buildParam->validateParameters), &(buildResult->validateResult));
+    if (ret != CF_SUCCESS) {
+        FreeX509CertChainBuildParameters(buildParam);
+        ANI_LOGE_THROW(ret, "Validate failed");
+        return make_holder<CertChainBuildResultImpl, CertChainBuildResult>();
+    }
+    CertChainBuildResult result = make_holder<CertChainBuildResultImpl, CertChainBuildResult>(buildResult);
+    FreeX509CertChainBuildParameters(buildParam);
+    return result;
 }
 
 Pkcs12Data ParsePkcs12(array_view<uint8_t> data, Pkcs12ParsingConfig const& config)

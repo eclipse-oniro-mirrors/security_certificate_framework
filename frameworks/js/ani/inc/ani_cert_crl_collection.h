@@ -28,6 +28,7 @@ public:
     explicit CertCRLCollectionImpl(HcfCertCrlCollection *collection);
     ~CertCRLCollectionImpl();
 
+    int64_t GetCertCrlCollectionObj();
     array<X509Cert> SelectCertsSync(X509CertMatchParameters const& param);
     array<X509CRL> SelectCRLsSync(X509CRLMatchParameters const& param);
 

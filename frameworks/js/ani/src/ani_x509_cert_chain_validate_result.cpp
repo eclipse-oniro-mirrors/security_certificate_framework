@@ -18,18 +18,66 @@
 
 namespace ANI::CertFramework {
 CertChainValidationResultImpl::CertChainValidationResultImpl() {}
+CertChainValidationResultImpl::CertChainValidationResultImpl(HcfX509CertChainValidateResult *validateResult)
+    : validateResult_(validateResult) {}
 
 CertChainValidationResultImpl::~CertChainValidationResultImpl() {}
 
+int64_t CertChainValidationResultImpl::GetCertChainValidationResultObj()
+{
+    return reinterpret_cast<int64_t>(this->validateResult_);
+}
+
 X509TrustAnchor CertChainValidationResultImpl::GetTrustAnchor()
 {
-    TH_THROW(std::runtime_error, "GetTrustAnchor not implemented");
+    if (this->validateResult_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "validateResult_ is nullptr!");
+        return {};
+    }
+    X509TrustAnchor anchor = {
+        .CACert = optional<X509Cert>(std::nullopt),
+        .CAPubKey = optional<array<uint8_t>>(std::nullopt),
+        .CASubject = optional<array<uint8_t>>(std::nullopt),
+        .nameConstraints = optional<array<uint8_t>>(std::nullopt)
+    };
+
+    if (this->validateResult_->trustAnchor->CAPubKey != nullptr) {
+        array<uint8_t> capubkey = {};
+        DataBlobToArrayU8(*(this->validateResult_->trustAnchor->CAPubKey), capubkey);
+        anchor.CAPubKey = optional<array<uint8_t>>(std::in_place, capubkey);
+    }
+
+    if (this->validateResult_->trustAnchor->CACert != nullptr) {
+        anchor.CACert = optional<X509Cert>(std::in_place,
+            make_holder<X509CertImpl, X509Cert>(this->validateResult_->trustAnchor->CACert));
+    }
+
+    if (this->validateResult_->trustAnchor->CASubject != nullptr) {
+        array<uint8_t> casubject = {};
+        DataBlobToArrayU8(*(this->validateResult_->trustAnchor->CASubject), casubject);
+        anchor.CASubject = optional<array<uint8_t>>(std::in_place, casubject);
+    }
+
+    if (this->validateResult_->trustAnchor->nameConstraints != nullptr) {
+        array<uint8_t> nameConstraints = {};
+        DataBlobToArrayU8(*(this->validateResult_->trustAnchor->nameConstraints), nameConstraints);
+        anchor.nameConstraints = optional<array<uint8_t>>(std::in_place, nameConstraints);
+    }
+
+    return anchor;
 }
 
 X509Cert CertChainValidationResultImpl::GetEntityCert()
 {
-    // The parameters in the make_holder function should be of the same type
-    // as the parameters in the constructor of the actual implementation class.
-    return make_holder<X509CertImpl, X509Cert>();
+    if (this->validateResult_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "validateResult_ is nullptr!");
+        return make_holder<X509CertImpl, X509Cert>();
+    }
+    HcfX509Certificate *cert = this->validateResult_->entityCert;
+    if (cert == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "entityCert is nullptr!");
+        return make_holder<X509CertImpl, X509Cert>();
+    }
+    return make_holder<X509CertImpl, X509Cert>(cert);
 }
 } // namespace ANI::CertFramework

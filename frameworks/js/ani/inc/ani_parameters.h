@@ -27,6 +27,7 @@ void FreeX509CertMatchParams(HcfX509CertMatchParams &hcfParam);
 bool BuildX509CertChainValidateParams(CertChainValidationParameters const& param,
     HcfX509CertChainValidateParams &hcfParam);
 void FreeX509CertChainValidateParams(HcfX509CertChainValidateParams &hcfParam);
+void FreeTrustAnchorArray(HcfX509TrustAnchorArray *&trustAnchors);
 } // namespace ANI::CertFramework
 
 #endif // ANI_PARAMETERS_H

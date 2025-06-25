@@ -377,6 +377,10 @@ public:
         // Don't forget to implement the constructor.
     }
 
+    int64_t GetCertCrlCollectionObj() {
+        TH_THROW(std::runtime_error, "GetCertCrlCollectionObj not implemented");
+    }
+
     array<X509Cert> SelectCertsSync(X509CertMatchParameters const& param) {
         TH_THROW(std::runtime_error, "SelectCertsSync not implemented");
     }
@@ -442,6 +446,10 @@ class CertChainValidationResultImpl {
 public:
     CertChainValidationResultImpl() {
         // Don't forget to implement the constructor.
+    }
+
+    int64_t GetCertChainValidationResultObj() {
+        TH_THROW(std::runtime_error, "GetCertChainValidationResultObj not implemented");
     }
 
     X509TrustAnchor GetTrustAnchor() {
