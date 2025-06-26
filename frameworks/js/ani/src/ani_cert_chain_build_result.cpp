@@ -51,10 +51,6 @@ CertChainValidationResult CertChainBuildResultImpl::GetValidationResult()
     }
     
     HcfX509CertChainValidateResult *result = &(this->buildResult_->validateResult);
-    if (result == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "validateResult is nullptr!");
-        return make_holder<CertChainValidationResultImpl, CertChainValidationResult>();
-    }
     return make_holder<CertChainValidationResultImpl, CertChainValidationResult>(result);
 }
 } // namespace ANI::CertFramework
