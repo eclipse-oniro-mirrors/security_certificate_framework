@@ -26,7 +26,8 @@ namespace OHOS {
 namespace CertFramework {
 
 bool BuildX509CertMatchParams(napi_env env, napi_value arg, HcfX509CertMatchParams *&matchParams);
-void FreeX509CertMatchParams(HcfX509CertMatchParams *&matchParams);
+void FreeX509CertMatchParams(HcfX509CertMatchParams *matchParams);
+void FreeX509CertMatchParamsInner(HcfX509CertMatchParams *matchParams);
 
 } // namespace CertFramework
 } // namespace OHOS

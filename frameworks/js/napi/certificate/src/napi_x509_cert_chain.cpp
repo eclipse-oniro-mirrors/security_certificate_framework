@@ -785,11 +785,7 @@ static void FreeHcfParsePKCS12Conf(HcfParsePKCS12Conf *conf)
     if (conf == nullptr) {
         return;
     }
-
-    if (conf->pwd != nullptr && conf->pwd->data != nullptr) {
-        CfBlobFree(&conf->pwd);
-    }
-
+    CfBlobFree(&conf->pwd);
     CfFree(conf);
 }
 
@@ -979,6 +975,16 @@ bool GetValidateParameters(napi_env env, napi_value obj, HcfX509CertChainBuildPa
     return true;
 }
 
+static void FreeHcfX509CertChainBuildParameters(HcfX509CertChainBuildParameters *param)
+{
+    if (param == nullptr) {
+        return;
+    }
+    FreeX509CertMatchParamsInner(&param->certMatchParameters);
+    FreeX509CertChainValidateParams(param->validateParameters);
+    CfFree(param);
+}
+
 bool GetChainBuildParametersFromValue(napi_env env, napi_value obj, HcfX509CertChainBuildParameters **bulidParams)
 {
     HcfX509CertChainBuildParameters *buildParam =
@@ -991,19 +997,19 @@ bool GetChainBuildParametersFromValue(napi_env env, napi_value obj, HcfX509CertC
 
     if (!GetCertMatchParameters(env, obj, &buildParam)) {
         LOGE("failed to get cert match parameters!");
-        CfFree(buildParam);
+        FreeHcfX509CertChainBuildParameters(buildParam);
         buildParam = nullptr;
         return false;
     }
     if (!GetMaxlength(env, obj, &buildParam)) {
         LOGE("failed to get max length!");
-        CfFree(buildParam);
+        FreeHcfX509CertChainBuildParameters(buildParam);
         buildParam = nullptr;
         return false;
     }
     if (!GetValidateParameters(env, obj, &buildParam)) {
         LOGE("failed to get validate parameters!");
-        CfFree(buildParam);
+        FreeHcfX509CertChainBuildParameters(buildParam);
         buildParam = nullptr;
         return false;
     }
