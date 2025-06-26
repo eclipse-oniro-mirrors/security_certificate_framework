@@ -130,7 +130,6 @@ void FreeHcfRevocationCheckParam(HcfRevocationCheckParam *param)
     CfBlobFree(&param->ocspResponses);
     CfBlobFree(&param->crlDownloadURI);
     if (param->options != nullptr) {
-        CfFree(param->options->data);
         CfFree(param->options);
     }
     CfBlobFree(&param->ocspDigest);
@@ -536,29 +535,6 @@ bool BuildX509CertChainValidateParams(CertChainValidationParameters const& param
         return false;
     }
     return true;
-}
-
-void FreeHcfRevocationCheckParam(HcfRevocationCheckParam *param)
-{
-    if (param == nullptr) {
-        return;
-    }
-    if (param->ocspRequestExtension != nullptr) {
-        FreeCfBlobArray(param->ocspRequestExtension->data, param->ocspRequestExtension->count);
-        CfFree(param->ocspRequestExtension);
-    }
-    CfBlobFree(&param->ocspResponderURI);
-    CfBlobFree(&param->ocspResponses);
-    CfBlobFree(&param->crlDownloadURI);
-    if (param->options != nullptr) {
-        if (param->options->data != nullptr) {
-            CfFree(param->options->data);
-        }
-        CfFree(param->options);
-    }
-    CfBlobFree(&param->ocspDigest);
-    CfFree(param);
-    param = nullptr;
 }
 
 void FreeTrustAnchorArray(HcfX509TrustAnchorArray *&trustAnchors)
