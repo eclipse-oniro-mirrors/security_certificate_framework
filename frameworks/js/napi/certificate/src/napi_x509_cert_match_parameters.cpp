@@ -386,7 +386,7 @@ bool BuildX509CertMatchParams(napi_env env, napi_value arg, HcfX509CertMatchPara
     return true;
 }
 
-void FreeX509CertMatchParams(HcfX509CertMatchParams *&matchParams)
+void FreeX509CertMatchParamsInner(HcfX509CertMatchParams *matchParams)
 {
     if (matchParams == nullptr) {
         return;
@@ -421,7 +421,11 @@ void FreeX509CertMatchParams(HcfX509CertMatchParams *&matchParams)
         CfFree(matchParams->subjectAlternativeNames);
         matchParams->subjectAlternativeNames = nullptr;
     }
+}
 
+void FreeX509CertMatchParams(HcfX509CertMatchParams *matchParams)
+{
+    FreeX509CertMatchParamsInner(matchParams);
     CF_FREE_PTR(matchParams);
 }
 
