@@ -2064,11 +2064,20 @@ bool ValidatCertChainX509(STACK_OF(X509) * x509CertChain, HcfX509CertChainValida
     if (rootCert == NULL) {
         return false;
     }
+
+    res = CF_INVALID_PARAMS;
     HcfX509TrustAnchor trustAnchorResult = {};
-    if (ValidateTrustAnchor(params.trustAnchors, rootCert, x509CertChain, &trustAnchorResult) != CF_SUCCESS) {
-        return false;
+    if ((params.trustAnchors != NULL) && (params.trustAnchors->data != NULL) && (params.trustAnchors->count != 0)) {
+        res = ValidateTrustAnchor(params.trustAnchors, rootCert, x509CertChain, &trustAnchorResult);
+    }
+    if ((res != CF_SUCCESS) && (params.trustSystemCa)) {
+        res = ValidateTrustCertDir(rootCert, x509CertChain, &trustAnchorResult);
     }
     FreeTrustAnchorData(&trustAnchorResult);
+    if (res != CF_SUCCESS) {
+        return false;
+    }
+
     if (ValidateCrlLocal(params.certCRLCollections, x509CertChain) != CF_SUCCESS) {
         return false;
     }
