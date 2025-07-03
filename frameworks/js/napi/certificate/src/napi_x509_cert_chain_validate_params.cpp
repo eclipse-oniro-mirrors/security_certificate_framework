@@ -73,7 +73,7 @@ static void FreeTrustAnchorArray(HcfX509TrustAnchorArray *&trustAnchors)
     trustAnchors = nullptr;
 }
 
-static bool GetX509TrustAnchorArray(napi_env env, napi_value arg, HcfX509TrustAnchorArray *&out)
+static bool GetX509TrustAnchorArray(napi_env env, napi_value arg, bool isTrustSystemCa, HcfX509TrustAnchorArray *&out)
 {
     napi_value obj = GetProp(env, arg, CERT_CHAIN_VALIDATE_TAG_TRUSTANCHORS.c_str());
     if (obj == nullptr) {
@@ -84,7 +84,7 @@ static bool GetX509TrustAnchorArray(napi_env env, napi_value arg, HcfX509TrustAn
     uint32_t length;
     if (!GetArrayLength(env, obj, length)) {
         LOGE("get array length failed!");
-        return false;
+        return isTrustSystemCa;
     }
 
     out = static_cast<HcfX509TrustAnchorArray *>(CfMalloc(sizeof(HcfX509TrustAnchorArray), 0));
@@ -526,7 +526,7 @@ bool BuildX509CertChainValidateParams(napi_env env, napi_value arg, HcfX509CertC
         LOGE("Get use system ca failed!");
         return false;
     }
-    if (!GetX509TrustAnchorArray(env, arg, param.trustAnchors) && !(param.trustSystemCa)) {
+    if (!GetX509TrustAnchorArray(env, arg, param.trustSystemCa, param.trustAnchors)) {
         LOGE("Get X509 trust anchor array failed");
         return false;
     }
