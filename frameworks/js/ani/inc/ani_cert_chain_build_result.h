@@ -18,7 +18,6 @@
 
 #include "ani_common.h"
 #include "x509_cert_chain.h"
-#include "x509_cert_chain_validate_result.h"
 
 namespace ANI::CertFramework {
 class CertChainBuildResultImpl {
@@ -31,7 +30,7 @@ public:
     CertChainValidationResult GetValidationResult();
 
 private:
-    HcfX509CertChainBuildResult *buildResult_;
+    HcfX509CertChainBuildResult *buildResult_ = nullptr;
 };
 } // namespace ANI::CertFramework
 
