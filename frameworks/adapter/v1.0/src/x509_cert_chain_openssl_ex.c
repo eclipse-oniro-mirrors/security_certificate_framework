@@ -403,3 +403,226 @@ CfResult AllocateAndConvertCertStack(STACK_OF(X509) *ca, HcfX509P12Collection *c
     }
     return CF_SUCCESS;
 }
+
+static void ProcessP12Data(STACK_OF(X509) *ca, HcfX509TrustAnchorArray *result)
+{
+    for (int i = 0; i < sk_X509_num(ca); i++) {
+        X509 *x509 = sk_X509_value(ca, i);
+        // CACert
+        if (X509ToHcfX509Certificate(x509, &(result->data[i]->CACert)) != CF_SUCCESS) {
+            LOGD("Failed to get %d CACert!", i);
+        }
+
+        // CAPubKey
+        if (GetPubKeyDataFromX509(x509, &(result->data[i]->CAPubKey)) != CF_SUCCESS) {
+            LOGD("Failed to get %d CAPubKey!", i);
+        }
+
+        // CASubject
+        if (GetSubjectNameFromX509(x509, &(result->data[i]->CASubject)) != CF_SUCCESS) {
+            LOGD("Failed to get %d CASubject!", i);
+        }
+
+        // nameConstraints
+        if (GetNameConstraintsFromX509(x509, &(result->data[i]->nameConstraints)) != CF_SUCCESS) {
+            LOGD("Failed to get %d nameConstraints!", i);
+        }
+    }
+}
+
+static void FreeHcfX509TrustAnchorArrayInner(HcfX509TrustAnchorArray *trustAnchorArray)
+{
+    if (trustAnchorArray == NULL) {
+        return;
+    }
+    if (trustAnchorArray->data != NULL) {
+        for (uint32_t i = 0; i < trustAnchorArray->count; i++) {
+            if (trustAnchorArray->data[i] != NULL) {
+                CfObjDestroy(trustAnchorArray->data[i]->CACert);
+                trustAnchorArray->data[i]->CACert = NULL;
+                CfBlobFree(&trustAnchorArray->data[i]->CAPubKey);
+                CfBlobFree(&trustAnchorArray->data[i]->CASubject);
+                CfBlobFree(&trustAnchorArray->data[i]->nameConstraints);
+                CfFree(trustAnchorArray->data[i]);
+                trustAnchorArray->data[i] = NULL;
+            }
+        }
+        CfFree(trustAnchorArray->data);
+        trustAnchorArray->data = NULL;
+    }
+}
+
+static STACK_OF(X509) *GetCaFromP12(const CfBlob *keyStore, const CfBlob *pwd)
+{
+    X509 *cert = NULL;
+    EVP_PKEY *pkey = NULL;
+    STACK_OF(X509) *caStack = NULL;
+    PKCS12 *p12 = NULL;
+    const unsigned char *in = (const unsigned char *)(keyStore->data);
+
+    p12 = d2i_PKCS12(NULL, &in, keyStore->size);
+    if (p12 == NULL) {
+        LOGE("Error convert pkcs12 data to inner struct!");
+        CfPrintOpensslError();
+        return NULL;
+    }
+
+    int ret = PKCS12_parse(p12, (const char *)pwd->data, &pkey, &cert, &caStack);
+    PKCS12_free(p12);
+    if (ret != 1) {
+        LOGE("PKCS12_parse failed!");
+        CfPrintOpensslError();
+        return NULL;
+    }
+
+    EVP_PKEY_free(pkey);
+    if (cert == NULL) {
+        LOGE("P12 does not have a cert!");
+        sk_X509_pop_free(caStack, X509_free);
+        return NULL;
+    }
+    X509_free(cert);
+
+    if (caStack == NULL) {
+        LOGE("P12 does not have ca!");
+    }
+    return caStack;
+}
+
+static HcfX509TrustAnchorArray *MallocTrustAnchorArray(int32_t count)
+{
+    HcfX509TrustAnchorArray *anchor = (HcfX509TrustAnchorArray *)(CfMalloc(sizeof(HcfX509TrustAnchorArray), 0));
+    if (anchor == NULL) {
+        LOGE("Failed to allocate trustAnchorArray memory!");
+        return NULL;
+    }
+
+    anchor->count = count;
+    anchor->data = (HcfX509TrustAnchor **)(CfMalloc(anchor->count * sizeof(HcfX509TrustAnchor *), 0));
+    if (anchor->data == NULL) {
+        LOGE("Failed to allocate data memory!");
+        CfFree(anchor);
+        anchor = NULL;
+        return NULL;
+    }
+
+    for (uint32_t i = 0; i < anchor->count; i++) {
+        anchor->data[i] = (HcfX509TrustAnchor *)(CfMalloc(sizeof(HcfX509TrustAnchor), 0));
+        if (anchor->data[i] == NULL) {
+            LOGE("Failed to allocate data memory!");
+            FreeHcfX509TrustAnchorArrayInner(anchor);
+            CfFree(anchor);
+            anchor = NULL;
+            return NULL;
+        }
+    }
+    return anchor;
+}
+
+CfResult HcfX509CreateTrustAnchorWithKeyStoreFunc(
+    const CfBlob *keyStore, const CfBlob *pwd, HcfX509TrustAnchorArray **trustAnchorArray)
+{
+    if (keyStore == NULL || pwd == NULL || trustAnchorArray == NULL) {
+        LOGE("Invalid params!");
+        return CF_INVALID_PARAMS;
+    }
+
+    STACK_OF(X509) *ca = GetCaFromP12(keyStore, pwd);
+    if (ca == NULL) {
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    int32_t count = sk_X509_num(ca);
+    if (count <= 0) {
+        LOGE("P12 ca num is 0!");
+        sk_X509_pop_free(ca, X509_free);
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    HcfX509TrustAnchorArray *anchor = MallocTrustAnchorArray(count);
+    if (anchor == NULL) {
+        sk_X509_pop_free(ca, X509_free);
+        return CF_ERR_MALLOC;
+    }
+
+    ProcessP12Data(ca, anchor);
+    *trustAnchorArray = anchor;
+    anchor = NULL;
+    sk_X509_pop_free(ca, X509_free);
+    return CF_SUCCESS;
+}
+
+static CfResult ParsePkcs12(const CfBlob *keyStore, const CfBlob *pwd,
+    X509 **cert, EVP_PKEY **pkey, STACK_OF(X509) **caStack)
+{
+    PKCS12 *p12 = NULL;
+    const unsigned char *in = (const unsigned char *)(keyStore->data);
+
+    p12 = d2i_PKCS12(NULL, &in, keyStore->size);
+    if (p12 == NULL) {
+        LOGE("Error convert pkcs12 data to inner struct!");
+        CfPrintOpensslError();
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    int ret = PKCS12_parse(p12, (const char *)pwd->data, pkey, cert, caStack);
+    PKCS12_free(p12);
+    if (ret != 1) {
+        LOGE("PKCS12_parse failed!");
+        CfPrintOpensslError();
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    return CF_SUCCESS;
+}
+
+CfResult HcfX509ParsePKCS12Func(
+    const CfBlob *keyStore, const HcfParsePKCS12Conf *conf, HcfX509P12Collection **p12Collection)
+{
+    X509 *cert = NULL;
+    EVP_PKEY *pkey = NULL;
+    STACK_OF(X509) *caStack = NULL;
+    CfResult ret = ParsePkcs12(keyStore, conf->pwd, &cert, &pkey, &caStack);
+    if (ret != CF_SUCCESS) {
+        LOGE("Failed to parse PKCS12!");
+        return ret;
+    }
+
+    HcfX509P12Collection *collection = (HcfX509P12Collection *)CfMalloc(sizeof(HcfX509P12Collection), 0);
+    if (collection == NULL) {
+        FreeResources(cert, pkey, caStack);
+        LOGE("Failed to malloc collection!");
+        return CF_ERR_MALLOC;
+    }
+
+    ret = AllocateAndConvertCert(cert, collection, conf->isGetCert);
+    if (ret != CF_SUCCESS) {
+        FreeResources(cert, pkey, caStack);
+        FreeHcfX509P12Collection(collection);
+        collection = NULL;
+        LOGE("Failed to convert cert!");
+        return ret;
+    }
+
+    collection->isPem = conf->isPem;
+    ret = AllocateAndConvertPkey(pkey, collection, conf->isGetPriKey);
+    if (ret != CF_SUCCESS) {
+        FreeResources(cert, pkey, caStack);
+        FreeHcfX509P12Collection(collection);
+        collection = NULL;
+        LOGE("Failed to convert pkey!");
+        return ret;
+    }
+
+    ret = AllocateAndConvertCertStack(caStack, collection, conf->isGetOtherCerts);
+    if (ret != CF_SUCCESS) {
+        FreeResources(cert, pkey, caStack);
+        FreeHcfX509P12Collection(collection);
+        collection = NULL;
+        LOGE("Failed to convert caStack!");
+        return ret;
+    }
+
+    *p12Collection = collection;
+    FreeResources(cert, pkey, caStack);
+    return CF_SUCCESS;
+}
