@@ -23,7 +23,7 @@ namespace ANI::CertFramework {
 class CertChainValidationResultImpl {
 public:
     CertChainValidationResultImpl();
-    explicit CertChainValidationResultImpl(HcfX509CertChainValidateResult *validateResult);
+    explicit CertChainValidationResultImpl(HcfX509CertChainValidateResult *validateResult, bool owner = true);
     ~CertChainValidationResultImpl();
 
     int64_t GetCertChainValidationResultObj();
@@ -32,6 +32,7 @@ public:
 
 private:
     HcfX509CertChainValidateResult *validateResult_ = nullptr;
+    bool owner_ = true;
 };
 } // namespace ANI::CertFramework
 

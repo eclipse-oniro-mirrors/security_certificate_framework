@@ -60,11 +60,13 @@ CfResult SetParsePKCS12Conf(Pkcs12ParsingConfig const& config, HcfParsePKCS12Con
     (void)memcpy_s(tmpPwd->data, config.password.size(), config.password.data(), config.password.size());
     tmpPwd->size = config.password.size();
     tmpConf->pwd = tmpPwd;
-
-    tmpConf->isPem = config.privateKeyFormat.has_value() ?
-        config.privateKeyFormat.value() == DER ? false : true : false;
-    tmpConf->isGetPriKey = config.needsPrivateKey.has_value() ? config.needsPrivateKey.value() : false;
-    tmpConf->isGetCert = config.needsCert.has_value() ? config.needsCert.value() : false;
+    if (config.privateKeyFormat.has_value()) {
+        tmpConf->isPem = config.privateKeyFormat.value() == 0 ? true : false;
+    } else {
+        tmpConf->isPem = true;
+    }
+    tmpConf->isGetPriKey = config.needsPrivateKey.has_value() ? config.needsPrivateKey.value() : true;
+    tmpConf->isGetCert = config.needsCert.has_value() ? config.needsCert.value() : true;
     tmpConf->isGetOtherCerts = config.needsOtherCerts.has_value() ? config.needsOtherCerts.value() : false;
     *conf = tmpConf;
     return CF_SUCCESS;
@@ -72,6 +74,11 @@ CfResult SetParsePKCS12Conf(Pkcs12ParsingConfig const& config, HcfParsePKCS12Con
 
 CfResult SetKeyStore(array_view<uint8_t> data, CfBlob **keyStore)
 {
+    if (data.size() == 0) {
+        *keyStore = nullptr;
+        return CF_INVALID_PARAMS;
+    }
+    
     CfBlob *tmpKeyStore = (CfBlob *)CfMalloc(sizeof(CfBlob), 0);
     if (tmpKeyStore == nullptr) {
         ANI_LOGE_THROW(CF_ERR_MALLOC, "malloc failed!");
@@ -79,7 +86,7 @@ CfResult SetKeyStore(array_view<uint8_t> data, CfBlob **keyStore)
     }
     tmpKeyStore->data = (uint8_t *)CfMalloc(data.size(), 0);
     if (tmpKeyStore->data == nullptr) {
-        FreePkcs12Data(nullptr, tmpKeyStore);
+        CfBlobFree(&tmpKeyStore);
         ANI_LOGE_THROW(CF_ERR_MALLOC, "malloc failed!");
         return CF_ERR_MALLOC;
     }
@@ -160,36 +167,19 @@ void FreeX509CertChainBuildParameters(HcfX509CertChainBuildParameters *buildPara
     }
     FreeX509CertChainValidateParams(buildParam->validateParameters);
     FreeX509CertMatchParams(buildParam->certMatchParameters);
-    CfFree(buildParam);
-    buildParam = nullptr;
 }
 
-CfResult CreateParams(CertChainBuildParameters const& param, HcfX509CertChainBuildParameters **buildParam)
+bool CreateParams(CertChainBuildParameters const& param, HcfX509CertChainBuildParameters *buildParam)
 {
     int32_t maxlength = param.maxLength.has_value() ? param.maxLength.value() : -1;
-    HcfX509CertChainBuildParameters *tempBuildParam =
-        static_cast<HcfX509CertChainBuildParameters *>(CfMalloc(sizeof(HcfX509CertChainBuildParameters), 0));
-    if (tempBuildParam == nullptr) {
-        ANI_LOGE_THROW(CF_ERR_MALLOC, "Failed to allocate memory for buildParam!");
-        return CF_ERR_MALLOC;
+    if (!BuildX509CertMatchParams(param.certMatchParameters, buildParam->certMatchParameters)) {
+        return false;
     }
-    HcfX509CertMatchParams matchParams = {};
-    if (!BuildX509CertMatchParams(param.certMatchParameters, matchParams)) {
-        FreeX509CertChainBuildParameters(tempBuildParam);
-        ANI_LOGE_THROW(CF_ERR_MALLOC, "SetX509CertMatchParameters failed");
-        return CF_ERR_MALLOC;
+    buildParam->maxlength = maxlength;
+    if (!BuildX509CertChainValidateParams(param.validationParameters, buildParam->validateParameters)) {
+        return false;
     }
-    tempBuildParam->certMatchParameters = matchParams;
-    tempBuildParam->maxlength = maxlength;
-    HcfX509CertChainValidateParams validateParams = {};
-    if (!BuildX509CertChainValidateParams(param.validationParameters, validateParams)) {
-        FreeX509CertChainBuildParameters(tempBuildParam);
-        ANI_LOGE_THROW(CF_ERR_MALLOC, "SetX509CertChainValidateParams failed");
-        return CF_ERR_MALLOC;
-    }
-    tempBuildParam->validateParameters = validateParams;
-    *buildParam = tempBuildParam;
-    return CF_SUCCESS;
+    return true;
 }
 } // namespace
 
@@ -225,24 +215,31 @@ array<X509Cert> X509CertChainImpl::GetCertList()
 
 CertChainValidationResult X509CertChainImpl::ValidateSync(CertChainValidationParameters const& param)
 {
-    if (this->x509CertChain_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509CertChain_ is nullptr");
-        return make_holder<CertChainValidationResultImpl, CertChainValidationResult>();
-    }
     HcfX509CertChainValidateParams validateParams = {};
     if (!BuildX509CertChainValidateParams(param, validateParams)) {
-        ANI_LOGE_THROW(CF_ERR_MALLOC, "SetX509CertChainValidateParams failed");
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "SetX509CertChainValidateParams failed");
         return make_holder<CertChainValidationResultImpl, CertChainValidationResult>();
     }
-    HcfX509CertChainValidateResult validateResult = {};
-    CfResult ret = this->x509CertChain_->validate(this->x509CertChain_, &validateParams, &validateResult);
+
+    HcfX509CertChainValidateResult *validateResult =
+        (HcfX509CertChainValidateResult *)CfMalloc(sizeof(HcfX509CertChainValidateResult), 0);
+    if (validateResult == nullptr) {
+        FreeX509CertChainValidateParams(validateParams);
+        ANI_LOGE_THROW(CF_ERR_MALLOC, "Failed to allocate validateResult");
+        return make_holder<CertChainValidationResultImpl, CertChainValidationResult>();
+    }
+    CfResult ret = this->x509CertChain_->validate(this->x509CertChain_, &validateParams, validateResult);
     if (ret != CF_SUCCESS) {
         FreeX509CertChainValidateParams(validateParams);
+        CfFree(validateResult);
         ANI_LOGE_THROW(ret, "ValidateSync failed");
         return make_holder<CertChainValidationResultImpl, CertChainValidationResult>();
     }
+
+    CertChainValidationResult result =
+        make_holder<CertChainValidationResultImpl, CertChainValidationResult>(validateResult);
     FreeX509CertChainValidateParams(validateParams);
-    return make_holder<CertChainValidationResultImpl, CertChainValidationResult>(&validateResult);
+    return result;
 }
 
 string X509CertChainImpl::ToString()
@@ -298,43 +295,56 @@ X509CertChain CreateX509CertChainSync(EncodingBlob const& inStream)
 X509CertChain CreateX509CertChain(array_view<X509Cert> certs)
 {
     HcfX509CertificateArray certsArray = { nullptr, 0 };
-    for (uint32_t i = 0; i < certs.size(); i++) {
+    certsArray.count = certs.size();
+    if (certsArray.count == 0) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "certs is empty!");
+        return make_holder<X509CertChainImpl, X509CertChain>();
+    }
+    certsArray.data = (HcfX509Certificate **)CfMalloc(certsArray.count * sizeof(HcfX509Certificate *), 0);
+    if (certsArray.data == nullptr) {
+        ANI_LOGE_THROW(CF_ERR_MALLOC, "malloc failed!");
+        return make_holder<X509CertChainImpl, X509CertChain>();
+    }
+    for (uint32_t i = 0; i < certsArray.count; i++) {
         certsArray.data[i] = reinterpret_cast<HcfX509Certificate *>(certs[i]->GetX509CertObj());
     }
     HcfCertChain *x509CertChain = nullptr;
     CfResult ret = HcfCertChainCreate(nullptr, &certsArray, &x509CertChain);
     if (ret != CF_SUCCESS) {
+        CfFree(certsArray.data);
+        certsArray.data = nullptr;
         ANI_LOGE_THROW(ret, "CreateX509CertChain failed");
         return make_holder<X509CertChainImpl, X509CertChain>();
     }
+    CfFree(certsArray.data);
+    certsArray.data = nullptr;
     return make_holder<X509CertChainImpl, X509CertChain>(x509CertChain);
 }
 
 CertChainBuildResult BuildX509CertChainSync(CertChainBuildParameters const& param)
 {
     HcfX509CertChainBuildResult *buildResult = nullptr;
-    HcfX509CertChainBuildParameters *buildParam = nullptr;
-    CfResult ret = CreateParams(param, &buildParam);
-    if (ret != CF_SUCCESS) {
-        FreeX509CertChainBuildParameters(buildParam);
-        ANI_LOGE_THROW(ret, "CreateParams failed");
+    HcfX509CertChainBuildParameters buildParam = {};
+    if (!CreateParams(param, &buildParam)) {
+        FreeX509CertChainBuildParameters(&buildParam);
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "CreateParams failed");
         return make_holder<CertChainBuildResultImpl, CertChainBuildResult>();
     }
-    ret = HcfCertChainBuildResultCreate(buildParam, &buildResult);
+    CfResult ret = HcfCertChainBuildResultCreate(&buildParam, &buildResult);
     if (ret != CF_SUCCESS) {
-        FreeX509CertChainBuildParameters(buildParam);
+        FreeX509CertChainBuildParameters(&buildParam);
         ANI_LOGE_THROW(ret, "BuildX509CertChainSync failed");
         return make_holder<CertChainBuildResultImpl, CertChainBuildResult>();
     }
     ret = buildResult->certChain->validate(buildResult->certChain,
-        &(buildParam->validateParameters), &(buildResult->validateResult));
+        &(buildParam.validateParameters), &(buildResult->validateResult));
     if (ret != CF_SUCCESS) {
-        FreeX509CertChainBuildParameters(buildParam);
+        FreeX509CertChainBuildParameters(&buildParam);
         ANI_LOGE_THROW(ret, "Validate failed");
         return make_holder<CertChainBuildResultImpl, CertChainBuildResult>();
     }
     CertChainBuildResult result = make_holder<CertChainBuildResultImpl, CertChainBuildResult>(buildResult);
-    FreeX509CertChainBuildParameters(buildParam);
+    FreeX509CertChainBuildParameters(&buildParam);
     return result;
 }
 
@@ -391,15 +401,29 @@ Pkcs12Data ParsePkcs12(array_view<uint8_t> data, Pkcs12ParsingConfig const& conf
 array<X509TrustAnchor> CreateTrustAnchorsWithKeyStoreSync(array_view<uint8_t> keystore, string_view pwd)
 {
     HcfX509TrustAnchorArray* trustAnchors = nullptr;
-    CfBlob keyStore = {};
-    ArrayU8ToDataBlob(keystore, keyStore);
-    CfBlob pwdBlob = {};
-    StringToDataBlob(pwd, pwdBlob);
-
-    CfResult ret = HcfCreateTrustAnchorWithKeyStore(&keyStore, &pwdBlob, &trustAnchors);
+    CfBlob *keyStore = nullptr;
+    CfResult ret = SetKeyStore(keystore, &keyStore);
     if (ret != CF_SUCCESS) {
+        ANI_LOGE_THROW(ret, "set key store failed!");
+        return {};
+    }
+    uint32_t length = pwd.size();
+    if (length == 0) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "pwd is empty!");
+        return {};
+    }
+    CfBlob *pwdBlob = nullptr;
+    if (!StringCopyToBlob(pwd, &pwdBlob)) {
+        CfBlobFree(&keyStore);
+        ANI_LOGE_THROW(CF_ERR_MALLOC, "set pwd blob failed!");
+        return {};
+    }
+    ret = HcfCreateTrustAnchorWithKeyStore(keyStore, pwdBlob, &trustAnchors);
+    if (ret != CF_SUCCESS) {
+        CfBlobFree(&keyStore);
+        CfBlobFree(&pwdBlob);
         ANI_LOGE_THROW(ret, "create trust anchors with keystore failed!");
-        return array<X509TrustAnchor>(0);
+        return {};
     }
 
     uint32_t validCount = CountValidTrustAnchors(trustAnchors);
@@ -414,6 +438,8 @@ array<X509TrustAnchor> CreateTrustAnchorsWithKeyStoreSync(array_view<uint8_t> ke
     }
 
     FreeTrustAnchorArray(trustAnchors);
+    CfBlobFree(&keyStore);
+    CfBlobFree(&pwdBlob);
     return result;
 }
 } // namespace ANI::CertFramework

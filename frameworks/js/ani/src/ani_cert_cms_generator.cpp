@@ -106,9 +106,13 @@ bool GetX509CsrAttributeArray(HcfAttributesArray *attribute, const optional_view
     }
     array<CsrAttribute> attrArray = attributes.value();
     size_t attrSize = attrArray.size();
+    if (attrSize == 0) {
+        attribute->array = nullptr;
+        attribute->attributeSize = 0;
+        return false;
+    }
     attribute->array = static_cast<HcfAttributes *>(CfMalloc(sizeof(HcfAttributes) * attrSize, 0));
     if (attribute->array == nullptr) {
-        ANI_LOGE_THROW(CF_ERR_MALLOC, "malloc attributes array failed");
         return false;
     }
     for (size_t i = 0; i < attrSize; i++) {
@@ -122,6 +126,21 @@ bool GetX509CsrAttributeArray(HcfAttributesArray *attribute, const optional_view
     }
     attribute->attributeSize = attrSize;
     return true;
+}
+
+bool IsValidMdName(const char *mdName)
+{
+    if (mdName == nullptr) {
+        return false;
+    }
+    static const std::unordered_map<std::string, bool> validNames = {
+        {"SHA1", true},
+        {"SHA256", true},
+        {"SHA384", true},
+        {"SHA512", true}
+    };
+    std::string name(mdName);
+    return validNames.find(name) != validNames.end();
 }
 
 void FreeGenCsrConf(HcfGenCsrConf *conf)
@@ -141,19 +160,43 @@ void FreeGenCsrConf(HcfGenCsrConf *conf)
     CfFree(conf);
 }
 
+bool SetConfig(HcfGenCsrConf **csrConfig, CsrGenerationConfig const& config)
+{
+    HcfGenCsrConf *tmpConf = static_cast<HcfGenCsrConf *>(CfMalloc(sizeof(HcfGenCsrConf), 0));
+    if (tmpConf == nullptr) {
+        return false;
+    }
+    if (!GetX509CsrSubject(&tmpConf->subject, config)) {
+        FreeGenCsrConf(tmpConf);
+        return false;
+    }
+    if (!GetX509CsrAttributeArray(&tmpConf->attribute, config.attributes)) {
+        FreeGenCsrConf(tmpConf);
+        return false;
+    }
+    char *mdName = const_cast<char *>(config.mdName.c_str());
+    if (!IsValidMdName(mdName)) {
+        FreeGenCsrConf(tmpConf);
+        return false;
+    }
+    if (!CopyString(config.mdName, &tmpConf->mdName)) {
+        FreeGenCsrConf(tmpConf);
+        return false;
+    }
+    if (config.outFormat.has_value()) {
+        tmpConf->isPem = config.outFormat.value() == 0 ? true : false;
+    } else {
+        tmpConf->isPem = true;
+    }
+    *csrConfig = tmpConf;
+    return true;
+}
+
 void FreeCmsSignerOptions(HcfCmsSignerOptions *options)
 {
     if (options != nullptr) {
         CfFree(options->mdName);
         options->mdName = nullptr;
-        CfFree(options);
-        options = nullptr;
-    }
-}
-
-void FreeCmsGeneratorOptions(HcfCmsGeneratorOptions *options)
-{
-    if (options != nullptr) {
         CfFree(options);
         options = nullptr;
     }
@@ -182,6 +225,7 @@ void FreePrivateKeyInfo(HcfPrivateKeyInfo *privateKey)
             if (len > 0) {
                 (void)memset_s(privateKey->privateKeyPassword, len, 0, len);
                 CfFree(privateKey->privateKeyPassword);
+                privateKey->privateKeyPassword = nullptr;
             }
         }
         CfFree(privateKey);
@@ -242,15 +286,19 @@ CfResult SetPrivateKeyInfo(ThPrivateKeyInfo const& keyInfo, HcfPrivateKeyInfo **
 CfResult SetCmsSignerOptions(HcfCmsSignerOptions **options, CmsSignerConfig const& config)
 {
     *options = static_cast<HcfCmsSignerOptions *>(CfMalloc(sizeof(HcfCmsSignerOptions), 0));
+    if (*options == nullptr) {
+        ANI_LOGE_THROW(CF_ERR_MALLOC, "malloc cms signer options failed");
+        return CF_ERR_MALLOC;
+    }
     if (!CopyString(config.mdName, &(*options)->mdName)) {
         ANI_LOGE_THROW(CF_ERR_COPY, "copy mdName failed");
         CfFree(*options);
         *options = nullptr;
         return CF_ERR_COPY;
     }
-    (*options)->addCert = config.addCert.has_value() ? config.addCert.value() : false;
-    (*options)->addAttr = config.addAttr.has_value() ? config.addAttr.value() : false;
-    (*options)->addSmimeCapAttr = config.addSmimeCapAttr.has_value() ? config.addSmimeCapAttr.value() : false;
+    (*options)->addCert = config.addCert.has_value() ? config.addCert.value() : true;
+    (*options)->addAttr = config.addAttr.has_value() ? config.addAttr.value() : true;
+    (*options)->addSmimeCapAttr = config.addSmimeCapAttr.has_value() ? config.addSmimeCapAttr.value() : true;
     return CF_SUCCESS;
 }
 
@@ -308,42 +356,41 @@ void CmsGeneratorImpl::AddCert(weak::X509Cert cert)
     }
 }
 
-void SetCmsGeneratorOptions(HcfCmsGeneratorOptions **cmsOptions, optional_view<CmsGeneratorOptions> const& config)
-{
-    *cmsOptions = static_cast<HcfCmsGeneratorOptions *>(CfMalloc(sizeof(HcfCmsGeneratorOptions), 0));
-    (*cmsOptions)->dataFormat = config.has_value() ?
-        static_cast<HcfCmsContentDataFormat>(config.value().contentDataFormat.value().get_value()) :
-        HcfCmsContentDataFormat::BINARY;
-    (*cmsOptions)->outFormat = config.has_value() ?
-        static_cast<HcfCmsFormat>(config.value().outFormat.value().get_value()) : HcfCmsFormat::CMS_DER;
-    (*cmsOptions)->isDetachedContent = config.has_value() ? config.value().isDetached.value() : false;
-}
-
 OptStrUint8Arr CmsGeneratorImpl::DoFinalSync(array_view<uint8_t> data, optional_view<CmsGeneratorOptions> options)
 {
     if (this->cmsGenerator_ == nullptr) {
         ANI_LOGE_THROW(CF_INVALID_PARAMS, "CmsGenerator is not initialized");
         return OptStrUint8Arr::make_UINT8ARRAY(array<uint8_t>{});
     }
-    HcfCmsGeneratorOptions *cmsOptions = nullptr;
-    SetCmsGeneratorOptions(&cmsOptions, options);
+    HcfCmsGeneratorOptions cmsOptions = {};
+    cmsOptions.dataFormat = HcfCmsContentDataFormat::BINARY;
+    cmsOptions.outFormat = HcfCmsFormat::CMS_DER;
+    cmsOptions.isDetachedContent = false;
+    if (options.has_value()) {
+        cmsOptions.dataFormat = options.value().contentDataFormat.has_value() ?
+            static_cast<HcfCmsContentDataFormat>(options.value().contentDataFormat.value().get_value()) :
+            HcfCmsContentDataFormat::BINARY;
+        cmsOptions.outFormat = options.value().outFormat.has_value() ?
+            static_cast<HcfCmsFormat>(options.value().outFormat.value().get_value()) :
+            HcfCmsFormat::CMS_DER;
+        cmsOptions.isDetachedContent = options.value().isDetached.has_value() ?
+            options.value().isDetached.value() :
+            false;
+    }
     CfBlob contentBlob = { data.size(), data.data() };
     CfBlob outBlob = { 0,  nullptr, };
-    CfResult ret = this->cmsGenerator_->doFinal(this->cmsGenerator_, &contentBlob, cmsOptions, &outBlob);
+    CfResult ret = this->cmsGenerator_->doFinal(this->cmsGenerator_, &contentBlob, &cmsOptions, &outBlob);
     if (ret != CF_SUCCESS) {
         ANI_LOGE_THROW(ret, "do final failed");
-        FreeCmsGeneratorOptions(cmsOptions);
         return OptStrUint8Arr::make_UINT8ARRAY(array<uint8_t>{});
     }
-    if (cmsOptions->outFormat == HcfCmsFormat::CMS_PEM) {
+    if (cmsOptions.outFormat == HcfCmsFormat::CMS_PEM) {
         CfBlobDataClearAndFree(&outBlob);
-        FreeCmsGeneratorOptions(cmsOptions);
         return OptStrUint8Arr::make_STRING(reinterpret_cast<char *>(outBlob.data), outBlob.size);
     } else {
         array<uint8_t> data = {};
         DataBlobToArrayU8({ outBlob.size, outBlob.data }, data);
         CfBlobDataClearAndFree(&outBlob);
-        FreeCmsGeneratorOptions(cmsOptions);
         return OptStrUint8Arr::make_UINT8ARRAY(data);
     }
 }
@@ -359,37 +406,16 @@ CmsGenerator CreateCmsGenerator(CmsContentType contentType)
     return make_holder<CmsGeneratorImpl, CmsGenerator>(cmsGenerator);
 }
 
-void SetConfig(HcfGenCsrConf **csrConfig, CsrGenerationConfig const& config)
-{
-    HcfGenCsrConf *tmpConf = static_cast<HcfGenCsrConf *>(CfMalloc(sizeof(HcfGenCsrConf), 0));
-    if (tmpConf == nullptr) {
-        ANI_LOGE_THROW(CF_ERR_MALLOC, "malloc csr config failed");
-        return;
-    }
-    if (!GetX509CsrSubject(&tmpConf->subject, config)) {
-        FreeGenCsrConf(tmpConf);
-        return;
-    }
-    if (!GetX509CsrAttributeArray(&tmpConf->attribute, config.attributes)) {
-        FreeGenCsrConf(tmpConf);
-        return;
-    }
-    if (!CopyString(config.mdName, &tmpConf->mdName)) {
-        FreeGenCsrConf(tmpConf);
-        return;
-    }
-    if (config.outFormat.has_value()) {
-        tmpConf->isPem = (config.outFormat.value() == 0);
-    }
-    *csrConfig = tmpConf;
-}
-
 OptStrUint8Arr GenerateCsr(ThPrivateKeyInfo const& keyInfo, CsrGenerationConfig const& config)
 {
     HcfPrivateKeyInfo *privateKey = nullptr;
     SetPrivateKeyInfo(keyInfo, &privateKey);
     HcfGenCsrConf *csrConfig = nullptr;
-    SetConfig(&csrConfig, config);
+    if (!SetConfig(&csrConfig, config)) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "set csr config failed");
+        FreePrivateKeyInfo(privateKey);
+        return OptStrUint8Arr::make_UINT8ARRAY(array<uint8_t>{});
+    }
     CfBlob csrBlob = {};
     CfResult ret = HcfX509CertificateGenCsr(privateKey, csrConfig, &csrBlob);
     if (ret != CF_SUCCESS) {
@@ -398,12 +424,19 @@ OptStrUint8Arr GenerateCsr(ThPrivateKeyInfo const& keyInfo, CsrGenerationConfig 
         FreeGenCsrConf(csrConfig);
         return OptStrUint8Arr::make_UINT8ARRAY(array<uint8_t>{});
     }
-    array<uint8_t> data = {};
-    DataBlobToArrayU8(csrBlob, data);
+    OptStrUint8Arr result = OptStrUint8Arr::make_UINT8ARRAY(array<uint8_t>{});
+    if (csrConfig->isPem) {
+        string str = DataBlobToString(csrBlob);
+        result = OptStrUint8Arr::make_STRING(str);
+    } else {
+        array<uint8_t> blob = {};
+        DataBlobToArrayU8(csrBlob, blob);
+        result = OptStrUint8Arr::make_UINT8ARRAY(blob);
+    }
     CfBlobDataClearAndFree(&csrBlob);
     FreePrivateKeyInfo(privateKey);
     FreeGenCsrConf(csrConfig);
-    return OptStrUint8Arr::make_UINT8ARRAY(data);
+    return result;
 }
 } // namespace ANI::CertFramework
 

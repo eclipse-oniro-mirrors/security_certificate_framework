@@ -51,6 +51,6 @@ CertChainValidationResult CertChainBuildResultImpl::GetValidationResult()
     }
     
     HcfX509CertChainValidateResult *result = &(this->buildResult_->validateResult);
-    return make_holder<CertChainValidationResultImpl, CertChainValidationResult>(result);
+    return make_holder<CertChainValidationResultImpl, CertChainValidationResult>(result, false);
 }
 } // namespace ANI::CertFramework

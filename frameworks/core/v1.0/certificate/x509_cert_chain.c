@@ -247,7 +247,8 @@ CfResult HcfCertChainBuildResultCreate(
 CfResult HcfCreateTrustAnchorWithKeyStore(
     const CfBlob *keyStore, const CfBlob *pwd, HcfX509TrustAnchorArray **trustAnchorArray)
 {
-    if (keyStore == NULL || pwd == NULL || trustAnchorArray == NULL) {
+    if (keyStore == NULL || keyStore->data == NULL || keyStore->size == 0
+        || pwd == NULL || pwd->data == NULL || pwd->size == 0 || trustAnchorArray == NULL) {
         LOGE("invalid param!");
         return CF_INVALID_PARAMS;
     }
@@ -263,7 +264,8 @@ CfResult HcfCreateTrustAnchorWithKeyStore(
 
 CfResult HcfParsePKCS12(const CfBlob *keyStore, const HcfParsePKCS12Conf *conf, HcfX509P12Collection **p12Collection)
 {
-    if (keyStore == NULL || conf == NULL || conf->pwd == NULL || p12Collection == NULL) {
+    if (keyStore == NULL || keyStore->data == NULL || keyStore->size == 0
+        || conf == NULL || conf->pwd == NULL || p12Collection == NULL) {
         LOGE("invalid param!");
         return CF_INVALID_PARAMS;
     }
