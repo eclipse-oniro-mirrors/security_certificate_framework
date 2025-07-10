@@ -25,7 +25,8 @@
           "crypto_framework",
           "hilog",
           "napi",
-          "openssl"
+          "openssl",
+          "runtime_core"
         ],
         "third_party": [
         ]
