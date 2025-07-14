@@ -24,6 +24,7 @@
 #include "napi_cert_defines.h"
 #include "napi_x509_certificate.h"
 #include "napi_x509_crl.h"
+#include "napi_cert_utils.h"
 
 namespace OHOS {
 namespace CertFramework {
@@ -80,7 +81,8 @@ napi_value ConvertCertToNapiValue(napi_env env, HcfX509Certificate *cert)
         },
         nullptr, nullptr);
     if (status != napi_ok) {
-        LOGE("failed to wrap NapiX509Certificate obj!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "failed to wrap obj!"));
+        LOGE("failed to wrap obj!");
         delete x509Cert;
         return nullptr;
     }

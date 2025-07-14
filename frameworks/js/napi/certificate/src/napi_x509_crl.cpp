@@ -262,7 +262,7 @@ static napi_value GenerateCrlEntryArray(napi_env env, CfArray *array, std::strin
             CfObjDestroy(entry);
             return nullptr; /* the C++ objects wrapped will be automatically released by scope manager. */
         }
-        napi_wrap(
+        napi_status status = napi_wrap(
             env, instance, x509CrlEntryClass,
             [](napi_env env, void *data, void *hint) {
                 NapiX509CrlEntry *x509CrlEntryClass = static_cast<NapiX509CrlEntry *>(data);
@@ -270,6 +270,12 @@ static napi_value GenerateCrlEntryArray(napi_env env, CfArray *array, std::strin
                 return;
             },
             nullptr, nullptr);
+        if (status != napi_ok) {
+            napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "failed to wrap obj!"));
+            LOGE("failed to wrap obj!");
+            delete x509CrlEntryClass;
+            return nullptr;
+        }
         napi_set_element(env, returnArray, i, instance);
     }
     return returnArray;
@@ -557,6 +563,30 @@ static bool GetCrlSerialNumberFromNapiValue(napi_env env, napi_value arg, CfBlob
     return true;
 }
 
+static bool WrapX509CrlEntryInstance(napi_env env, napi_value instance, HcfX509CrlEntry *crlEntry)
+{
+    NapiX509CrlEntry *x509CrlEntryClass = new (std::nothrow) NapiX509CrlEntry(crlEntry);
+    if (!x509CrlEntryClass) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to create a x509CrlEntry class"));
+        LOGE("Failed to create a x509CrlEntry class");
+        CfObjDestroy(crlEntry);
+        return false;
+    }
+    napi_status status = napi_wrap(
+        env, instance, x509CrlEntryClass,
+        [](napi_env env, void *data, void *hint) {
+            delete static_cast<NapiX509CrlEntry *>(data);
+        },
+        nullptr, nullptr);
+    if (status != napi_ok) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "failed to wrap obj!"));
+        LOGE("failed to wrap obj!");
+        delete x509CrlEntryClass;
+        return false;
+    }
+    return true;
+}
+
 napi_value NapiX509Crl::GetRevokedCertificate(napi_env env, napi_callback_info info, std::string returnClassName)
 {
     size_t argc = ARGS_SIZE_ONE;
@@ -590,22 +620,9 @@ napi_value NapiX509Crl::GetRevokedCertificate(napi_env env, napi_callback_info i
     }
 
     napi_value instance = NapiX509CrlEntry::CreateX509CrlEntry(env, returnClassName);
-    NapiX509CrlEntry *x509CrlEntryClass = new (std::nothrow) NapiX509CrlEntry(crlEntry);
-    if (x509CrlEntryClass == nullptr) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to create a x509CrlEntry class"));
-        LOGE("Failed to create a x509CrlEntry class");
-        CfObjDestroy(crlEntry);
+    if (!WrapX509CrlEntryInstance(env, instance, crlEntry)) {
         return nullptr;
     }
-
-    napi_wrap(
-        env, instance, x509CrlEntryClass,
-        [](napi_env env, void *data, void *hint) {
-            NapiX509CrlEntry *x509CrlEntryClass = static_cast<NapiX509CrlEntry *>(data);
-            delete x509CrlEntryClass;
-            return;
-        },
-        nullptr, nullptr);
     return instance;
 }
 
@@ -646,7 +663,7 @@ napi_value NapiX509Crl::GetRevokedCertificateWithCert(
         CfObjDestroy(crlEntry);
         return nullptr;
     }
-    napi_wrap(
+    napi_status status = napi_wrap(
         env, instance, x509CrlEntryClass,
         [](napi_env env, void *data, void *hint) {
             NapiX509CrlEntry *x509CrlEntryClass = static_cast<NapiX509CrlEntry *>(data);
@@ -654,6 +671,12 @@ napi_value NapiX509Crl::GetRevokedCertificateWithCert(
             return;
         },
         nullptr, nullptr);
+    if (status != napi_ok) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "failed to wrap obj!"));
+        LOGE("failed to wrap obj!");
+        delete x509CrlEntryClass;
+        return nullptr;
+    }
     return instance;
 }
 
@@ -795,13 +818,19 @@ static napi_value BuildCertExtsObject(napi_env env, CfEncodingBlob *encodingBlob
         extsObj = nullptr;
         return nullptr;
     }
-    napi_wrap(
+    napi_status status = napi_wrap(
         env, jsObject, napiObject,
         [](napi_env env, void *data, void *hint) {
             NapiCertExtension *certExts = static_cast<NapiCertExtension *>(data);
             delete certExts;
             return;
         }, nullptr, nullptr);
+    if (status != napi_ok) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "failed to wrap obj!"));
+        LOGE("failed to wrap obj!");
+        delete napiObject;
+        return nullptr;
+    }
     return jsObject;
 }
 
@@ -1466,7 +1495,7 @@ void NapiX509Crl::CreateX509CrlComplete(napi_env env, napi_status status, void *
         FreeCryptoFwkCtx(env, context);
         return;
     }
-    napi_wrap(
+    status = napi_wrap(
         env, instance, x509CrlClass,
         [](napi_env env, void *data, void *hint) {
             NapiX509Crl *crlClass = static_cast<NapiX509Crl *>(data);
@@ -1474,6 +1503,12 @@ void NapiX509Crl::CreateX509CrlComplete(napi_env env, napi_status status, void *
             return;
         },
         nullptr, nullptr);
+    if (status != napi_ok) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "failed to wrap obj!"));
+        LOGE("failed to wrap obj!");
+        delete x509CrlClass;
+        return;
+    }
     ReturnResult(env, context, instance);
     FreeCryptoFwkCtx(env, context);
 }

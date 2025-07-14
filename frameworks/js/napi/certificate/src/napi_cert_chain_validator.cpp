@@ -211,6 +211,30 @@ static napi_value CertChainValidatorConstructor(napi_env env, napi_callback_info
     return thisVar;
 }
 
+static bool WrapCertChainValidatorInstance(napi_env env, napi_value instance, HcfCertChainValidator *certChainValidator)
+{
+    NapiCertChainValidator *ccvClass = new (std::nothrow) NapiCertChainValidator(certChainValidator);
+    if (!ccvClass) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to create a ccv class"));
+        LOGE("Failed to create a ccv class");
+        CfObjDestroy(certChainValidator);
+        return false;
+    }
+    napi_status status = napi_wrap(
+        env, instance, ccvClass,
+        [](napi_env env, void* data, void *hint) {
+            delete static_cast<NapiCertChainValidator *>(data);
+        },
+        nullptr, nullptr);
+    if (status != napi_ok) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "failed to wrap obj!"));
+        LOGE("failed to wrap obj!");
+        delete ccvClass;
+        return false;
+    }
+    return true;
+}
+
 napi_value NapiCertChainValidator::CreateCertChainValidator(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
@@ -244,22 +268,9 @@ napi_value NapiCertChainValidator::CreateCertChainValidator(napi_env env, napi_c
     napi_get_reference_value(env, classRef_, &constructor);
     napi_new_instance(env, constructor, 0, nullptr, &validatorInstance);
     napi_set_named_property(env, validatorInstance, CERT_TAG_ALGORITHM.c_str(), algValue);
-    NapiCertChainValidator *ccvClass = new (std::nothrow) NapiCertChainValidator(certChainValidator);
-    if (ccvClass == nullptr) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to create a ccv class"));
-        LOGE("Failed to create a ccv class");
-        CfObjDestroy(certChainValidator);
+    if (!WrapCertChainValidatorInstance(env, validatorInstance, certChainValidator)) {
         return nullptr;
     }
-    napi_wrap(
-        env, validatorInstance, ccvClass,
-        [](napi_env env, void* data, void *hint) {
-            NapiCertChainValidator *ccv = static_cast<NapiCertChainValidator *>(data);
-            delete ccv;
-        },
-        nullptr,
-        nullptr);
-
     return validatorInstance;
 }
 
