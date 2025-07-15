@@ -158,7 +158,7 @@ static CfResult ParseX509VerifyErrCode(X509_STORE_CTX *ctx)
 {
     int32_t errCode = X509_STORE_CTX_get_error(ctx);
     LOGE("X509_verify_cert failed: %{public}s\n", X509_verify_cert_error_string(errCode));
-    int i;
+    size_t i;
     for (i = 0; i < sizeof(X509_VERIFY_ERR_MAP) / sizeof(X509_VERIFY_ERR_MAP[0]); i++) {
         if (X509_VERIFY_ERR_MAP[i].errCode == errCode) {
             return X509_VERIFY_ERR_MAP[i].ret;
