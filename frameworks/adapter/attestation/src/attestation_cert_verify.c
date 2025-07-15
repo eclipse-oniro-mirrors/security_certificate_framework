@@ -103,6 +103,8 @@ struct HcfAttestCertVerifyParam {
 #define MAX_CERT_CHAIN_NUM 5
 #define MIN_CERT_CHAIN_NUM 2
 
+#define MAX_CERT_DATA_NUM (10 * 1024 * 1024)
+
 typedef enum {
     HM_ATTEST_TYPE_LEGACY = 0, // RSA cert
     HM_ATTEST_TYPE_STANDARD = 1, // EC cert
@@ -461,6 +463,10 @@ static CfResult ReadX509FromData(const CfEncodingBlob *encodingBlob, STACK_OF(X5
 static CfResult CreateCerts(const CfEncodingBlob *encodingBlob, STACK_OF(X509) **certs)
 {
     STACK_OF(X509) *tmp = NULL;
+    if (encodingBlob->len > MAX_CERT_DATA_NUM) {
+        LOGE("cert data is too large, len = %{public}zu\n", encodingBlob->len);
+        return CF_ERR_PARAMETER_CHECK;
+    }
     CfResult ret = ReadX509FromData(encodingBlob, &tmp);
     if (ret != CF_SUCCESS) {
         LOGE("ReadX509FromData failed, ret = %{public}d\n", ret);
