@@ -150,7 +150,7 @@ static void CreateCertExtsComplete(napi_env env, napi_status status, void *data)
         DeleteExtsAsyncContext(env, context);
         return;
     }
-    napi_wrap(
+    status = napi_wrap(
         env, jsObject, napiObject,
         [](napi_env env, void *data, void *hint) {
             NapiCertExtension *certExts = static_cast<NapiCertExtension *>(data);
@@ -158,7 +158,12 @@ static void CreateCertExtsComplete(napi_env env, napi_status status, void *data)
             return;
         },
         nullptr, nullptr);
-
+    if (status != napi_ok) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "failed to wrap obj!"));
+        LOGE("failed to wrap obj!");
+        delete napiObject;
+        return;
+    }
     ReturnJSResult(env, context->async, jsObject);
     DeleteExtsAsyncContext(env, context);
 }

@@ -188,7 +188,7 @@ static napi_value BuildCreateInstance(napi_env env, HcfCertChain *certChain)
         LOGE("new napi object failed.");
         return nullptr;
     }
-    napi_wrap(
+    napi_status status = napi_wrap(
         env, instance, napiObject,
         [](napi_env env, void *data, void *hint) {
             NapiX509CertChain *certchain = static_cast<NapiX509CertChain *>(data);
@@ -196,6 +196,12 @@ static napi_value BuildCreateInstance(napi_env env, HcfCertChain *certChain)
             return;
         },
         nullptr, nullptr);
+    if (status != napi_ok) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "failed to wrap obj!"));
+        LOGE("failed to wrap obj!");
+        delete napiObject;
+        return nullptr;
+    }
     return instance;
 }
 
