@@ -497,7 +497,7 @@ napi_value NapiCertCmsGenerator::CreateCmsGenerator(napi_env env, napi_callback_
             return;
         }, nullptr, nullptr);
     if (status != napi_ok) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "failed to wrap napiCertCmsGenerator obj!"));
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "failed to wrap napiCertCmsGenerator obj!"));
         LOGE("failed to wrap napiCertCmsGenerator obj!");
         delete napiCmsGenerator;
         return nullptr;

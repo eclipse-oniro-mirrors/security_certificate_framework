@@ -194,6 +194,7 @@ napi_value NapiCertCRLCollection::SelectCRLsRet(napi_env env, const HcfX509CrlAr
             napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "failed to wrap obj!"));
             LOGE("failed to wrap obj!");
             delete x509Crl;
+            crls->data[i] = nullptr;
             return nullptr;
         }
         napi_set_element(env, instance, j++, element);

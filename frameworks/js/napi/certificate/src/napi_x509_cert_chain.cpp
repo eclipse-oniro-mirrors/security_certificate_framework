@@ -547,8 +547,7 @@ static napi_value ConvertX509CertToNapiValue(napi_env env, HcfX509Certificate *c
         },
         nullptr, nullptr);
     if (status != napi_ok) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "failed to wrap obj!"));
-        LOGE("Failed to wrap obj!");
+        LOGE("Failed to wrap x509Cert obj!");
         delete x509Cert;
         return nullptr;
     }
@@ -1194,8 +1193,7 @@ napi_value NapiX509CertChainBulidResult::ConvertToJsBuildResult(napi_env env)
             },
             nullptr, nullptr);
         if (status != napi_ok) {
-            napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "failed to wrap obj!"));
-            LOGE("failed to wrap obj!");
+            LOGE("failed to wrap certChain obj!");
             delete napiObject;
             return nullptr;
         }
