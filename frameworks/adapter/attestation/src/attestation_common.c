@@ -73,10 +73,10 @@ CfResult GetOctectOrUtf8Data(ASN1_TYPE *v, CfBlob *out)
     }
 
     if (ASN1_TYPE_get(v) == V_ASN1_OCTET_STRING) {
-        out->size = ASN1_STRING_length(v->value.octet_string);
+        out->size = (uint32_t)ASN1_STRING_length(v->value.octet_string);
         out->data = (uint8_t *)ASN1_STRING_get0_data(v->value.octet_string);
     } else if (ASN1_TYPE_get(v) == V_ASN1_UTF8STRING) {
-        out->size = ASN1_STRING_length(v->value.utf8string);
+        out->size = (uint32_t)ASN1_STRING_length(v->value.utf8string);
         out->data = (uint8_t *)ASN1_STRING_get0_data(v->value.utf8string);
     } else {
         return CF_ERR_INVALID_EXTENSION;

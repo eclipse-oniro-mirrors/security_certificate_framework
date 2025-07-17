@@ -313,7 +313,7 @@ static CfResult GetOctetStringItem(AttestationRecord *record, const uint8_t *oid
         return CF_ERR_INVALID_EXTENSION;
     }
 
-    out->size = ASN1_STRING_length(octetString);
+    out->size = (uint32_t)ASN1_STRING_length(octetString);
     out->data = (uint8_t *)ASN1_STRING_get0_data(octetString);
     return CF_SUCCESS;
 }
@@ -598,7 +598,7 @@ static CfResult GetAppIdType(AttestationRecord *record, const uint8_t *oid, uint
         return CF_ERR_EXTENSION_NOT_EXIST;
     }
 
-    out->size = ASN1_STRING_length(record->appId->value);
+    out->size = (uint32_t)ASN1_STRING_length(record->appId->value);
     out->data = (uint8_t *)ASN1_STRING_get0_data(record->appId->value);
     return CF_SUCCESS;
 }

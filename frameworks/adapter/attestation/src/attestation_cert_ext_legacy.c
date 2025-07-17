@@ -278,7 +278,7 @@ static CfResult ParseInt64Array(STACK_OF(ASN1_INTEGER) *data, CfInt64Array **out
             return CF_ERR_CRYPTO_OPERATION;
         }
     }
-    array->size = count;
+    array->size = (uint32_t)count;
     *out = array;
     return CF_SUCCESS;
 }
@@ -377,7 +377,7 @@ static CfResult GetOctetString(ASN1_OCTET_STRING *octetString, CfBlob *out)
     if (octetString == NULL) {
         return CF_ERR_EXTENSION_NOT_EXIST;
     }
-    out->size = ASN1_STRING_length(octetString);
+    out->size = (uint32_t)ASN1_STRING_length(octetString);
     out->data = (uint8_t *)ASN1_STRING_get0_data(octetString);
     return CF_SUCCESS;
 }

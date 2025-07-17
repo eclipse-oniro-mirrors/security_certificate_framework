@@ -619,7 +619,7 @@ CfResult CopyMemFromBIO(BIO *bio, CfBlob *outBlob)
         buff = NULL;
         return CF_ERR_CRYPTO_OPERATION;
     }
-    outBlob->size = len;
+    outBlob->size = (uint32_t)len;
     outBlob->data = buff;
     return CF_SUCCESS;
 }
@@ -683,6 +683,11 @@ CfResult CfDeepCopySubAltName(
         return CF_ERR_INTERNAL;
     }
     GENERAL_NAME *generalName = sk_GENERAL_NAME_value(altname, index);
+    if (generalName == NULL) {
+        LOGE("Failed to get general name from altname!");
+        CfPrintOpensslError();
+        return CF_ERR_CRYPTO_OPERATION;
+    }
     unsigned char *derData = NULL;
     int derLength = i2d_GENERAL_NAME(generalName, &derData);
     if (derLength <= 0 || derData == NULL) {
@@ -711,6 +716,11 @@ CfResult CfDeepCopyCertPolices(const CERTIFICATEPOLICIES *certPolicesIn, int32_t
         return CF_ERR_INTERNAL;
     }
     POLICYINFO *policy = sk_POLICYINFO_value(certPolicesIn, index);
+    if (policy == NULL) {
+        LOGE("Failed to get policy info from cert policies!");
+        CfPrintOpensslError();
+        return CF_ERR_CRYPTO_OPERATION;
+    }
     ASN1_OBJECT *policyOid = policy->policyid;
     char policyBuff[OID_STR_MAX_LEN] = { 0 };
     int32_t resLen = OBJ_obj2txt(policyBuff, OID_STR_MAX_LEN, policyOid, 1);
@@ -761,7 +771,7 @@ CfResult CfConvertAsn1String2BoolArray(const ASN1_BIT_STRING *string, CfBlob *bo
         LOGE("Invalid input.");
         return CF_ERR_INTERNAL;
     }
-    uint32_t length = ASN1_STRING_length(string) * CHAR_TO_BIT_LEN;
+    uint32_t length = (uint32_t)ASN1_STRING_length(string) * CHAR_TO_BIT_LEN;
     if ((uint32_t)(string->flags) & ASN1_STRING_FLAG_BITS_LEFT) {
         length -= (uint32_t)(string->flags) & FLAG_BIT_LEFT_NUM;
     }
