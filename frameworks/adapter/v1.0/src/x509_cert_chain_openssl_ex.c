@@ -497,7 +497,7 @@ static HcfX509TrustAnchorArray *MallocTrustAnchorArray(int32_t count)
         return NULL;
     }
 
-    anchor->count = count;
+    anchor->count = (uint32_t)count;
     anchor->data = (HcfX509TrustAnchor **)(CfMalloc(anchor->count * sizeof(HcfX509TrustAnchor *), 0));
     if (anchor->data == NULL) {
         LOGE("Failed to allocate data memory!");
