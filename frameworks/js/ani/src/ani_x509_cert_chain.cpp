@@ -404,7 +404,6 @@ array<X509TrustAnchor> CreateTrustAnchorsWithKeyStoreSync(array_view<uint8_t> ke
 
     uint32_t validCount = CountValidTrustAnchors(trustAnchors);
     array<X509TrustAnchor> result(validCount);
-    
     uint32_t index = 0;
     for (uint32_t i = 0; i < trustAnchors->count; i++) {
         if (trustAnchors->data[i] == nullptr) {

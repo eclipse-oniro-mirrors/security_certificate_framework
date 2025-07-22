@@ -164,9 +164,12 @@ X509CRLEntry X509CRLImpl::GetRevokedCert(array_view<uint8_t> serialNumber)
         ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509Crl obj is nullptr!");
         return make_holder<X509CRLEntryImpl, X509CRLEntry>();
     }
-    HcfX509CrlEntry *crlEntry = nullptr;
     CfBlob serialNumberBlob = {};
-    ArrayU8ToBigInteger(serialNumber, serialNumberBlob, true);
+    if (!ArrayU8ToBigInteger(serialNumber, serialNumberBlob, true)) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "serial number is negative!");
+        return make_holder<X509CRLEntryImpl, X509CRLEntry>();
+    }
+    HcfX509CrlEntry *crlEntry = nullptr;
     CfResult res = this->x509Crl_->getRevokedCert(this->x509Crl_, &serialNumberBlob, &crlEntry);
     if (res != CF_SUCCESS) {
         ANI_LOGE_THROW(res, "get revoked cert failed!");
@@ -328,6 +331,7 @@ bool X509CRLImpl::Match(X509CRLMatchParameters const& param)
     CfBlob maxCRL = {};
     CfBlob minCRL = {};
     HcfX509CrlMatchParams matchParams = {};
+    bool bigintValid = true;
     array<CfBlob> blobs(param.issuer.has_value() ? param.issuer.value().size() : 0);
     if (param.issuer.has_value()) {
         size_t i = 0;
@@ -346,12 +350,16 @@ bool X509CRLImpl::Match(X509CRLMatchParameters const& param)
         matchParams.updateDateTime = &updateDateTime;
     }
     if (param.maxCRL.has_value()) {
-        ArrayU8ToDataBlob(param.maxCRL.value(), maxCRL);
+        bigintValid &= ArrayU8ToBigInteger(param.maxCRL.value(), maxCRL);
         matchParams.maxCRL = &maxCRL;
     }
     if (param.minCRL.has_value()) {
-        ArrayU8ToDataBlob(param.minCRL.value(), minCRL);
+        bigintValid &= ArrayU8ToBigInteger(param.minCRL.value(), minCRL);
         matchParams.minCRL = &minCRL;
+    }
+    if (!bigintValid) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "params is invalid!");
+        return false;
     }
     bool flag = false;
     CfResult res = this->x509Crl_->match(this->x509Crl_, &matchParams, &flag);
