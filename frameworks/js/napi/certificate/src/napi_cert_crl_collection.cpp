@@ -170,7 +170,7 @@ napi_value NapiCertCRLCollection::SelectCRLsRet(napi_env env, const HcfX509CrlAr
         return nullptr;
     }
     if (crls == nullptr) {
-        LOGI("return emtpy erray!");
+        LOGI("return empty erray!");
         return instance;
     }
     int j = 0;
