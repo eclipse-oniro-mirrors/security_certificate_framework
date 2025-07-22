@@ -49,7 +49,7 @@ CertChainValidationResult CertChainBuildResultImpl::GetValidationResult()
         ANI_LOGE_THROW(CF_INVALID_PARAMS, "buildResult_ is nullptr!");
         return make_holder<CertChainValidationResultImpl, CertChainValidationResult>();
     }
-    
+
     HcfX509CertChainValidateResult *result = &(this->buildResult_->validateResult);
     return make_holder<CertChainValidationResultImpl, CertChainValidationResult>(result);
 }

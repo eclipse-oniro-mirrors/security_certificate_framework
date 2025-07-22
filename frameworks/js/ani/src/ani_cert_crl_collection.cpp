@@ -16,6 +16,62 @@
 #include "ani_cert_crl_collection.h"
 #include "ani_parameters.h"
 
+namespace {
+using namespace ANI::CertFramework;
+
+CfResult SelectCerts(HcfCertCrlCollection *collection, X509CertMatchParameters const& param,
+    HcfX509CertificateArray *hcfCerts)
+{
+    HcfX509CertMatchParams matchParam = {};
+    if (!BuildX509CertMatchParams(param, matchParam)) {
+        return CF_INVALID_PARAMS;
+    }
+    CfResult res = collection->selectCerts(collection, &matchParam, hcfCerts);
+    FreeX509CertMatchParams(matchParam);
+    return res;
+}
+
+CfResult SelectCRLs(HcfCertCrlCollection *collection, X509CRLMatchParameters const& param, HcfX509CrlArray *hcfCrls)
+{
+    CfBlobArray issuer = {};
+    CfBlob updateDateTime = {};
+    CfBlob maxCRL = {};
+    CfBlob minCRL = {};
+    HcfX509CrlMatchParams matchParam = {};
+    bool bigintValid = true;
+    array<CfBlob> blobs(param.issuer.has_value() ? param.issuer.value().size() : 0);
+    if (param.issuer.has_value()) {
+        size_t i = 0;
+        for (auto const& blob : param.issuer.value()) {
+            ArrayU8ToDataBlob(blob, blobs[i++]);
+        }
+        issuer.data = blobs.data();
+        issuer.count = blobs.size();
+        matchParam.issuer = &issuer;
+    }
+    if (param.x509Cert.has_value()) {
+        matchParam.x509Cert = reinterpret_cast<HcfCertificate *>(param.x509Cert.value()->GetX509CertObj());
+    }
+    if (param.updateDateTime.has_value()) {
+        StringToDataBlob(param.updateDateTime.value(), updateDateTime);
+        matchParam.updateDateTime = &updateDateTime;
+    }
+    if (param.maxCRL.has_value()) {
+        bigintValid &= ArrayU8ToBigInteger(param.maxCRL.value(), maxCRL);
+        matchParam.maxCRL = &maxCRL;
+    }
+    if (param.minCRL.has_value()) {
+        bigintValid &= ArrayU8ToBigInteger(param.minCRL.value(), minCRL);
+        matchParam.minCRL = &minCRL;
+    }
+    if (!bigintValid) {
+        return CF_INVALID_PARAMS;
+    }
+    CfResult res = collection->selectCRLs(collection, &matchParam, hcfCrls);
+    return res;
+}
+} // namespace
+
 namespace ANI::CertFramework {
 CertCRLCollectionImpl::CertCRLCollectionImpl() {}
 
@@ -38,14 +94,8 @@ array<X509Cert> CertCRLCollectionImpl::SelectCertsSync(X509CertMatchParameters c
         ANI_LOGE_THROW(CF_INVALID_PARAMS, "collection obj is nullptr!");
         return {};
     }
-    HcfX509CertMatchParams matchParam = {};
-    if (!BuildX509CertMatchParams(param, matchParam)) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "build x509 cert match params failed!");
-        return {};
-    }
     HcfX509CertificateArray hcfCerts = {};
-    CfResult res = this->collection_->selectCerts(this->collection_, &matchParam, &hcfCerts);
-    FreeX509CertMatchParams(matchParam);
+    CfResult res = SelectCerts(this->collection_, param, &hcfCerts);
     if (res != CF_SUCCESS) {
         ANI_LOGE_THROW(res, "select certs failed!");
         return {};
@@ -63,38 +113,8 @@ array<X509CRL> CertCRLCollectionImpl::SelectCRLsSync(X509CRLMatchParameters cons
         ANI_LOGE_THROW(CF_INVALID_PARAMS, "collection obj is nullptr!");
         return {};
     }
-    CfBlobArray issuer = {};
-    CfBlob updateDateTime = {};
-    CfBlob maxCRL = {};
-    CfBlob minCRL = {};
-    HcfX509CrlMatchParams matchParam = {};
     HcfX509CrlArray hcfCrls = {};
-    array<CfBlob> blobs(param.issuer.has_value() ? param.issuer.value().size() : 0);
-    if (param.issuer.has_value()) {
-        size_t i = 0;
-        for (auto const& blob : param.issuer.value()) {
-            ArrayU8ToDataBlob(blob, blobs[i++]);
-        }
-        issuer.data = blobs.data();
-        issuer.count = blobs.size();
-        matchParam.issuer = &issuer;
-    }
-    if (param.x509Cert.has_value()) {
-        matchParam.x509Cert = reinterpret_cast<HcfCertificate *>(param.x509Cert.value()->GetX509CertObj());
-    }
-    if (param.updateDateTime.has_value()) {
-        StringToDataBlob(param.updateDateTime.value(), updateDateTime);
-        matchParam.updateDateTime = &updateDateTime;
-    }
-    if (param.maxCRL.has_value()) {
-        ArrayU8ToDataBlob(param.maxCRL.value(), maxCRL);
-        matchParam.maxCRL = &maxCRL;
-    }
-    if (param.minCRL.has_value()) {
-        ArrayU8ToDataBlob(param.minCRL.value(), minCRL);
-        matchParam.minCRL = &minCRL;
-    }
-    CfResult res = this->collection_->selectCRLs(this->collection_, &matchParam, &hcfCrls);
+    CfResult res = SelectCRLs(this->collection_, param, &hcfCrls);
     if (res != CF_SUCCESS) {
         ANI_LOGE_THROW(res, "select crls failed!");
         return {};

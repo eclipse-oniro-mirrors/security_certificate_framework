@@ -355,7 +355,9 @@ bool BuildX509CertMatchParamsV1(X509CertMatchParameters const& param, HcfX509Cer
         if (hcfParam.serialNumber == nullptr) {
             return false;
         }
-        ArrayU8ToBigInteger(param.serialNumber.value(), *hcfParam.serialNumber, true);
+        if (!ArrayU8ToBigInteger(param.serialNumber.value(), *hcfParam.serialNumber, true)) {
+            return false;
+        }
     }
     if (param.subject.has_value()) {
         hcfParam.subject = static_cast<CfBlob *>(CfMalloc(sizeof(CfBlob), 0));

@@ -73,8 +73,12 @@ void DataBlobToArrayU8(const CfBlob &blob, array<uint8_t> &arr)
     arr = array<uint8_t>(move_data_t{}, blob.data, blob.size);
 }
 
-void ArrayU8ToBigInteger(const array<uint8_t> &arr, CfBlob &bigint, bool isReverse /* = false */)
+bool ArrayU8ToBigInteger(const array<uint8_t> &arr, CfBlob &bigint, bool isReverse /* = false */)
 {
+    uint8_t sign = arr.back() >> (sizeof(uint8_t) * 8 - 1);
+    if (sign != 0) { // not support negative of big integer
+        return false;
+    }
     bigint.data = arr.empty() ? nullptr : arr.data();
     bigint.size = arr.size();
     if (bigint.size > 0 && bigint.data[bigint.size - 1] == 0) { // remove the sign bit of big integer
@@ -83,6 +87,7 @@ void ArrayU8ToBigInteger(const array<uint8_t> &arr, CfBlob &bigint, bool isRever
     if (isReverse) { // reverse bigint data for serial number
         std::reverse(bigint.data, bigint.data + bigint.size);
     }
+    return true;
 }
 
 void BigIntegerToArrayU8(const CfBlob &bigint, array<uint8_t> &arr, bool isReverse /* = false */)
@@ -159,5 +164,4 @@ bool ArrayU8CopyToBlob(const array<uint8_t> &arr, CfBlob **blob)
     (*blob)->size = length;
     return true;
 }
-
 } // namespace ANI::CertFramework

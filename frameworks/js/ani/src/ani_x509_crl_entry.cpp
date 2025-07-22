@@ -63,7 +63,7 @@ array<uint8_t> X509CRLEntryImpl::GetSerialNumber()
         return {};
     }
     array<uint8_t> data = {};
-    DataBlobToArrayU8(blob, data);
+    BigIntegerToArrayU8(blob, data, true);
     CfBlobDataFree(&blob);
     return data;
 }
