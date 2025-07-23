@@ -764,10 +764,14 @@ static CfResult ValidateCrlOnline(const HcfX509CertChainValidateParams *params, 
     STACK_OF(X509_CRL) *crlStack = sk_X509_CRL_new_null();
     if (crlStack == NULL) {
         LOGE("Create crl stack failed!");
+        X509_CRL_free(crl);
+        CfPrintOpensslError();
         return CF_ERR_CRYPTO_OPERATION;
     }
     if (sk_X509_CRL_push(crlStack, crl) == 0) {
         LOGE("Push crl stack failed!");
+        X509_CRL_free(crl);
+        CfPrintOpensslError();
         sk_X509_CRL_pop_free(crlStack, X509_CRL_free);
         return CF_ERR_CRYPTO_OPERATION;
     }

@@ -447,6 +447,7 @@ static napi_value CreateX509CertChainByArray(napi_env env, napi_value param)
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "build create instance failed!"));
         return nullptr;
     }
+    CF_FREE_PTR(certs.data);
     return instance;
 }
 
