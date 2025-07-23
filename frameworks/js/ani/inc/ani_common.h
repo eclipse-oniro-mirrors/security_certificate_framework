@@ -43,8 +43,9 @@ using ThPrivateKeyInfo = ohos::security::cert::cert::PrivateKeyInfo;
 
 #define ANI_LOGE_THROW(code, msg) \
     do { \
-        LOGE("%{public}s", msg); \
-        set_business_error(ConvertResultCode(code), msg); \
+        int rc = ConvertResultCode(code); \
+        LOGE("%{public}s, code: %{public}d", msg, rc); \
+        set_business_error(rc, msg); \
     } while (0)
 
 int ConvertResultCode(CfResult res);
