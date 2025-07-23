@@ -18,10 +18,16 @@
 
 namespace ANI::CertFramework {
 CertChainValidationResultImpl::CertChainValidationResultImpl() {}
-CertChainValidationResultImpl::CertChainValidationResultImpl(HcfX509CertChainValidateResult *validateResult)
-    : validateResult_(validateResult) {}
+CertChainValidationResultImpl::CertChainValidationResultImpl(HcfX509CertChainValidateResult *validateResult,
+    bool owner /* = true */) : validateResult_(validateResult), owner_(owner) {}
 
-CertChainValidationResultImpl::~CertChainValidationResultImpl() {}
+CertChainValidationResultImpl::~CertChainValidationResultImpl()
+{
+    if (this->owner_) {
+        CfObjDestroy(this->validateResult_);
+        this->validateResult_ = nullptr;
+    }
+}
 
 int64_t CertChainValidationResultImpl::GetCertChainValidationResultObj()
 {

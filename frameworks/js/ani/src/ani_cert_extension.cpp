@@ -156,8 +156,9 @@ int32_t CertExtensionImpl::CheckCA()
         ANI_LOGE_THROW(ret, "get result failed");
         return ret;
     }
+    int32_t result = resultParam->int32Param;
     CfFreeParamSet(&outParamSet);
-    return resultParam->int32Param;
+    return result;
 }
 
 bool CertExtensionImpl::HasUnsupportedCriticalExtension()
@@ -186,8 +187,9 @@ bool CertExtensionImpl::HasUnsupportedCriticalExtension()
         return false;
     }
 
+    bool result = resultParam->boolParam;
     CfFreeParamSet(&outParamSet);
-    return resultParam->boolParam;
+    return result;
 }
 
 CertExtension CreateCertExtensionSync(EncodingBlob const& inStream)

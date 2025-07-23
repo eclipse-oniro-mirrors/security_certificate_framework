@@ -18,14 +18,19 @@
 namespace {
 using namespace ANI::CertFramework;
 
+constexpr uint32_t MAX_LEN_OF_ARRAY = 1024;
+
 bool BuildKeyUsage(X509CertMatchParameters const& param, HcfX509CertMatchParams &hcfParam)
 {
     if (param.keyUsage.has_value()) {
+        uint32_t count = param.keyUsage.value().size();
+        if (count == 0) {
+            return false;
+        }
         hcfParam.keyUsage = static_cast<CfBlob *>(CfMalloc(sizeof(CfBlob), 0));
         if (hcfParam.keyUsage == nullptr) {
             return false;
         }
-        uint32_t count = param.keyUsage.value().size();
         hcfParam.keyUsage->data = static_cast<uint8_t *>(CfMalloc(count * sizeof(uint8_t), 0));
         if (hcfParam.keyUsage->data == nullptr) {
             return false;
@@ -123,13 +128,16 @@ void FreeHcfRevocationCheckParam(HcfRevocationCheckParam *param)
         return;
     }
     if (param->ocspRequestExtension != nullptr) {
-        FreeCfBlobArray(param->ocspRequestExtension->data, param->ocspRequestExtension->count);
+        CfFree(param->ocspRequestExtension->data);
         CfFree(param->ocspRequestExtension);
     }
     CfBlobFree(&param->ocspResponderURI);
     CfBlobFree(&param->ocspResponses);
     CfBlobFree(&param->crlDownloadURI);
     if (param->options != nullptr) {
+        if (param->options->data != nullptr) {
+            CfFree(param->options->data);
+        }
         CfFree(param->options);
     }
     CfBlobFree(&param->ocspDigest);
@@ -167,19 +175,23 @@ bool BuildTrustAnchor(X509TrustAnchor const& param, HcfX509TrustAnchor **anchor)
 
 bool BuildTrustAnchors(array<X509TrustAnchor> const& param, HcfX509CertChainValidateParams &validateParam)
 {
+    uint32_t count = param.size();
+    if (count == 0 || count > MAX_LEN_OF_ARRAY) {
+        return false;
+    }
     HcfX509TrustAnchorArray *tempTrustAnchors =
         static_cast<HcfX509TrustAnchorArray *>(CfMalloc(sizeof(HcfX509TrustAnchorArray), 0));
     if (tempTrustAnchors == nullptr) {
         return false;
     }
-    tempTrustAnchors->count = param.size();
+    tempTrustAnchors->count = count;
     tempTrustAnchors->data =
-        static_cast<HcfX509TrustAnchor **>(CfMalloc(sizeof(HcfX509TrustAnchor *) * tempTrustAnchors->count, 0));
+        static_cast<HcfX509TrustAnchor **>(CfMalloc(sizeof(HcfX509TrustAnchor *) * count, 0));
     if (tempTrustAnchors->data == nullptr) {
         CfFree(tempTrustAnchors);
         return false;
     }
-    for (size_t i = 0; i < param.size(); ++i) {
+    for (size_t i = 0; i < count; ++i) {
         if (!BuildTrustAnchor(param[i], &tempTrustAnchors->data[i])) {
             FreeTrustAnchorArray(tempTrustAnchors);
             return false;
@@ -230,10 +242,9 @@ bool SetStringRevocationCheckParam(optional<RevocationCheckParameter> const& par
             return false;
         }
     }
-    if (param->ocspDigest.has_value()) {
-        if (!StringCopyToBlob(param->ocspDigest.value(), &(*revocationCheckParam)->ocspDigest)) {
-            return false;
-        }
+    string ocspDigest = param->ocspDigest.has_value() ? param->ocspDigest.value() : "SHA256";
+    if (!StringCopyToBlob(ocspDigest, &(*revocationCheckParam)->ocspDigest)) {
+        return false;
     }
     return true;
 }
@@ -245,6 +256,11 @@ bool SetOcspRequestExtension(optional<array<array<uint8_t>>> const& param, CfBlo
     }
     CfBlobArray *tempOcspRequestExtension = static_cast<CfBlobArray *>(CfMalloc(sizeof(CfBlobArray), 0));
     if (tempOcspRequestExtension == nullptr) {
+        return false;
+    }
+    tempOcspRequestExtension->data = static_cast<CfBlob *>(CfMalloc(sizeof(CfBlob) * param.value().size(), 0));
+    if (tempOcspRequestExtension->data == nullptr) {
+        CfFree(tempOcspRequestExtension);
         return false;
     }
     for (size_t i = 0; i < param.value().size(); i++) {
@@ -260,12 +276,23 @@ bool SetOptions(optional<array<RevocationCheckOptions>> const& param, HcfRevChkO
     if (!param.has_value()) {
         return true;
     }
+    uint32_t count = param.value().size();
+    if (count == 0) {
+        return false;
+    }
     HcfRevChkOpArray *tempOptions = static_cast<HcfRevChkOpArray *>(CfMalloc(sizeof(HcfRevChkOpArray), 0));
     if (tempOptions == nullptr) {
         return false;
     }
-    tempOptions->data = reinterpret_cast<HcfRevChkOption *>(param.value().data());
-    tempOptions->count = param.value().size();
+    tempOptions->data = static_cast<HcfRevChkOption *>(CfMalloc(sizeof(HcfRevChkOption) * count, 0));
+    if (tempOptions->data == nullptr) {
+        CfFree(tempOptions);
+        return false;
+    }
+    for (uint32_t i = 0; i < count; i++) {
+        tempOptions->data[i] = static_cast<HcfRevChkOption>(param.value()[i].get_value());
+    }
+    tempOptions->count = count;
     *options = tempOptions;
     return true;
 }
@@ -282,21 +309,20 @@ bool BuildRevocationCheckParam(optional<RevocationCheckParameter> const& param,
         return false;
     }
     if (!SetOcspRequestExtension(param->ocspRequestExtension, &tempRevocationCheckParam->ocspRequestExtension)) {
-        FreeHcfRevocationCheckParam(tempRevocationCheckParam);
         return false;
     }
     if (param->ocspResponses.has_value()) {
+        if (param->ocspResponses.value().size() == 0) {
+            return false;
+        }
         if (!ArrayU8CopyToBlob(param->ocspResponses.value(), &tempRevocationCheckParam->ocspResponses)) {
-            FreeHcfRevocationCheckParam(tempRevocationCheckParam);
             return false;
         }
     }
     if (!SetOptions(param->options, &tempRevocationCheckParam->options)) {
-        FreeHcfRevocationCheckParam(tempRevocationCheckParam);
         return false;
     }
     if (!SetStringRevocationCheckParam(param, &tempRevocationCheckParam)) {
-        FreeHcfRevocationCheckParam(tempRevocationCheckParam);
         return false;
     }
     tempRevocationCheckParam->ocspResponderCert = param->ocspResponderCert.has_value() ?
@@ -389,6 +415,9 @@ bool BuildX509CertMatchParamsV2(X509CertMatchParameters const& param, HcfX509Cer
         hcfParam.matchAllSubjectAltNames = param.matchAllSubjectAltNames.value();
     }
     if (param.authorityKeyIdentifier.has_value()) {
+        if (param.authorityKeyIdentifier.value().size() == 0) {
+            return false;
+        }
         hcfParam.authorityKeyIdentifier = static_cast<CfBlob *>(CfMalloc(sizeof(CfBlob), 0));
         if (hcfParam.authorityKeyIdentifier == nullptr) {
             return false;
@@ -398,6 +427,9 @@ bool BuildX509CertMatchParamsV2(X509CertMatchParameters const& param, HcfX509Cer
     hcfParam.minPathLenConstraint = param.minPathLenConstraint.has_value() ?
         param.minPathLenConstraint.value() : -1;
     if (param.nameConstraints.has_value()) {
+        if (param.nameConstraints.value().size() == 0) {
+            return false;
+        }
         hcfParam.nameConstraints = static_cast<CfBlob *>(CfMalloc(sizeof(CfBlob), 0));
         if (hcfParam.nameConstraints == nullptr) {
             return false;
@@ -405,6 +437,9 @@ bool BuildX509CertMatchParamsV2(X509CertMatchParameters const& param, HcfX509Cer
         ArrayU8ToDataBlob(param.nameConstraints.value(), *hcfParam.nameConstraints);
     }
     if (param.privateKeyValid.has_value()) {
+        if (param.privateKeyValid.value().size() == 0) {
+            return false;
+        }
         hcfParam.privateKeyValid = static_cast<CfBlob *>(CfMalloc(sizeof(CfBlob), 0));
         if (hcfParam.privateKeyValid == nullptr) {
             return false;
@@ -412,6 +447,9 @@ bool BuildX509CertMatchParamsV2(X509CertMatchParameters const& param, HcfX509Cer
         StringToDataBlob(param.privateKeyValid.value(), *hcfParam.privateKeyValid);
     }
     if (param.subjectKeyIdentifier.has_value()) {
+        if (param.subjectKeyIdentifier.value().size() == 0) {
+            return false;
+        }
         hcfParam.subjectKeyIdentifier = static_cast<CfBlob *>(CfMalloc(sizeof(CfBlob), 0));
         if (hcfParam.subjectKeyIdentifier == nullptr) {
             return false;
@@ -487,6 +525,9 @@ bool BuildX509CertChainValidateParams1(CertChainValidationParameters const& para
     HcfX509CertChainValidateParams &validateParam)
 {
     if (param.date.has_value()) {
+        if (param.date.value().empty()) {
+            return false;
+        }
         validateParam.date = static_cast<CfBlob *>(CfMalloc(sizeof(CfBlob), 0));
         if (validateParam.date == nullptr) {
             return false;
@@ -494,6 +535,9 @@ bool BuildX509CertChainValidateParams1(CertChainValidationParameters const& para
         StringToDataBlob(param.date.value(), *validateParam.date);
     }
     if (param.sslHostname.has_value()) {
+        if (param.sslHostname.value().empty()) {
+            return false;
+        }
         validateParam.sslHostname = static_cast<CfBlob *>(CfMalloc(sizeof(CfBlob), 0));
         if (validateParam.sslHostname == nullptr) {
             CfBlobFree(&validateParam.date);

@@ -104,7 +104,7 @@ void BigIntegerToArrayU8(const CfBlob &bigint, array<uint8_t> &arr, bool isRever
 void StringToDataBlob(const string &str, CfBlob &blob)
 {
     blob.data = str.empty() ? nullptr : reinterpret_cast<uint8_t *>(const_cast<char *>(str.c_str()));
-    blob.size = str.size() + 1;
+    blob.size = str.empty() ? 0 : str.size() + 1;
 }
 
 string DataBlobToString(const CfBlob &blob)
@@ -131,37 +131,41 @@ void DataBlobToEncodingBlob(const CfBlob &blob, CfEncodingBlob &encodingBlob,
 
 bool StringCopyToBlob(const string &str, CfBlob **blob)
 {
+    if (str.size() == 0) {
+        return false;
+    }
     *blob = static_cast<CfBlob *>(CfMalloc(sizeof(CfBlob), 0));
     if (*blob == nullptr) {
         return false;
     }
-    uint32_t length = str.size() + 1;
-    (*blob)->data = (uint8_t *)CfMalloc(length, 0);
+    (*blob)->data = (uint8_t *)CfMalloc(str.size() + 1, 0);
     if ((*blob)->data == nullptr) {
         CfFree(*blob);
         *blob = nullptr;
         return false;
     }
-    (void)memcpy_s((*blob)->data, length, str.c_str(), length);
-    (*blob)->size = length;
+    (void)memcpy_s((*blob)->data, str.size() + 1, str.c_str(), str.size() + 1);
+    (*blob)->size = str.size() + 1;
     return true;
 }
 
 bool ArrayU8CopyToBlob(const array<uint8_t> &arr, CfBlob **blob)
 {
+    if (arr.size() == 0) {
+        return false;
+    }
     *blob = static_cast<CfBlob *>(CfMalloc(sizeof(CfBlob), 0));
     if (*blob == nullptr) {
         return false;
     }
-    uint32_t length = arr.size();
-    (*blob)->data = (uint8_t *)CfMalloc(length, 0);
+    (*blob)->data = (uint8_t *)CfMalloc(arr.size(), 0);
     if ((*blob)->data == nullptr) {
         CfFree(*blob);
         *blob = nullptr;
         return false;
     }
-    (void)memcpy_s((*blob)->data, length, arr.data(), length);
-    (*blob)->size = length;
+    (void)memcpy_s((*blob)->data, arr.size(), arr.data(), arr.size());
+    (*blob)->size = arr.size();
     return true;
 }
 } // namespace ANI::CertFramework
