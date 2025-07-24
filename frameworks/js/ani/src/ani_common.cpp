@@ -15,7 +15,6 @@
 
 #include "ani_common.h"
 #include <unordered_map>
-#include <securec.h>
 
 namespace {
 enum ResultCode {
@@ -75,13 +74,16 @@ void DataBlobToArrayU8(const CfBlob &blob, array<uint8_t> &arr)
 
 bool ArrayU8ToBigInteger(const array<uint8_t> &arr, CfBlob &bigint, bool isReverse /* = false */)
 {
+    if (arr.empty()) {
+        return false;
+    }
     uint8_t sign = arr.back() >> (sizeof(uint8_t) * 8 - 1);
     if (sign != 0) { // not support negative of big integer
         return false;
     }
-    bigint.data = arr.empty() ? nullptr : arr.data();
+    bigint.data = arr.data();
     bigint.size = arr.size();
-    if (bigint.size > 0 && bigint.data[bigint.size - 1] == 0) { // remove the sign bit of big integer
+    if (bigint.size > 1 && bigint.data[bigint.size - 1] == 0) { // remove the sign bit of big integer
         bigint.size--;
     }
     if (isReverse) { // reverse bigint data for serial number

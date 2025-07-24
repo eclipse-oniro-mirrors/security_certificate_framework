@@ -350,11 +350,11 @@ bool X509CRLImpl::Match(X509CRLMatchParameters const& param)
         matchParams.updateDateTime = &updateDateTime;
     }
     if (param.maxCRL.has_value()) {
-        bigintValid &= ArrayU8ToBigInteger(param.maxCRL.value(), maxCRL);
+        bigintValid &= ArrayU8ToBigInteger(param.maxCRL.value(), maxCRL, true);
         matchParams.maxCRL = &maxCRL;
     }
     if (param.minCRL.has_value()) {
-        bigintValid &= ArrayU8ToBigInteger(param.minCRL.value(), minCRL);
+        bigintValid &= ArrayU8ToBigInteger(param.minCRL.value(), minCRL, true);
         matchParams.minCRL = &minCRL;
     }
     if (!bigintValid) {
