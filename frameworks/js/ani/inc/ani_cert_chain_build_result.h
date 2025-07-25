@@ -13,32 +13,25 @@
  * limitations under the License.
  */
 
-#ifndef ANI_PUB_KEY_H
-#define ANI_PUB_KEY_H
+#ifndef ANI_CERT_CHAIN_BUILD_RESULT_H
+#define ANI_CERT_CHAIN_BUILD_RESULT_H
 
 #include "ani_common.h"
-#include "pub_key.h"
-#include "ohos.security.cryptoFramework.cryptoFramework.proj.hpp"
+#include "x509_cert_chain.h"
 
 namespace ANI::CertFramework {
-class PubKeyImpl {
+class CertChainBuildResultImpl {
 public:
-    PubKeyImpl();
-    explicit PubKeyImpl(HcfPubKey *pubKey);
-    ~PubKeyImpl();
+    CertChainBuildResultImpl();
+    explicit CertChainBuildResultImpl(HcfX509CertChainBuildResult *buildResult);
+    ~CertChainBuildResultImpl();
 
-    int64_t GetPubKeyObj();
-    cryptoFramework::OptKeySpec GetAsyKeySpec(cryptoFramework::AsyKeySpecItem itemType);
-    cryptoFramework::DataBlob GetEncodedDer(string_view format);
-    string GetEncodedPem(string_view format);
-    int64_t GetKeyObj();
-    cryptoFramework::DataBlob GetEncoded();
-    string GetFormat();
-    string GetAlgName();
+    X509CertChain GetCertChain();
+    CertChainValidationResult GetValidationResult();
 
 private:
-    HcfPubKey *pubKey_ = nullptr;
+    HcfX509CertChainBuildResult *buildResult_ = nullptr;
 };
 } // namespace ANI::CertFramework
 
-#endif // ANI_PUB_KEY_H
+#endif // ANI_CERT_CHAIN_BUILD_RESULT_H

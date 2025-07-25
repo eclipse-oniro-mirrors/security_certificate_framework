@@ -46,12 +46,22 @@ taihe_shared_library("cert_framework_ani") {
   ]
   sources = get_target_outputs(":run_taihe")
   sources += [
+    "${framework_path}/js/ani/src/ani_cert_chain_build_result.cpp",
     "${framework_path}/js/ani/src/ani_cert_chain_validator.cpp",
+    "${framework_path}/js/ani/src/ani_cert_cms_generator.cpp",
+    "${framework_path}/js/ani/src/ani_cert_crl_collection.cpp",
+    "${framework_path}/js/ani/src/ani_cert_extension.cpp",
     "${framework_path}/js/ani/src/ani_common.cpp",
     "${framework_path}/js/ani/src/ani_constructor.cpp",
+    "${framework_path}/js/ani/src/ani_object.cpp",
+    "${framework_path}/js/ani/src/ani_parameters.cpp",
     "${framework_path}/js/ani/src/ani_pub_key.cpp",
+    "${framework_path}/js/ani/src/ani_x500_distinguished_name.cpp",
     "${framework_path}/js/ani/src/ani_x509_cert.cpp",
     "${framework_path}/js/ani/src/ani_x509_cert_chain.cpp",
+    "${framework_path}/js/ani/src/ani_x509_cert_chain_validate_result.cpp",
+    "${framework_path}/js/ani/src/ani_x509_crl.cpp",
+    "${framework_path}/js/ani/src/ani_x509_crl_entry.cpp",
   ]
   deps = [
     ":run_taihe",

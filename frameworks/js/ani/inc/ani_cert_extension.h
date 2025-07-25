@@ -13,32 +13,27 @@
  * limitations under the License.
  */
 
-#ifndef ANI_PUB_KEY_H
-#define ANI_PUB_KEY_H
+#ifndef ANI_CERT_EXTENSION_H
+#define ANI_CERT_EXTENSION_H
 
 #include "ani_common.h"
-#include "pub_key.h"
-#include "ohos.security.cryptoFramework.cryptoFramework.proj.hpp"
 
 namespace ANI::CertFramework {
-class PubKeyImpl {
+class CertExtensionImpl {
 public:
-    PubKeyImpl();
-    explicit PubKeyImpl(HcfPubKey *pubKey);
-    ~PubKeyImpl();
+    CertExtensionImpl();
+    explicit CertExtensionImpl(CfObject *object);
+    ~CertExtensionImpl();
 
-    int64_t GetPubKeyObj();
-    cryptoFramework::OptKeySpec GetAsyKeySpec(cryptoFramework::AsyKeySpecItem itemType);
-    cryptoFramework::DataBlob GetEncodedDer(string_view format);
-    string GetEncodedPem(string_view format);
-    int64_t GetKeyObj();
-    cryptoFramework::DataBlob GetEncoded();
-    string GetFormat();
-    string GetAlgName();
+    EncodingBlob GetEncoded();
+    DataArray GetOidList(ExtensionOidType valueType);
+    DataBlob GetEntry(ExtensionEntryType valueType, DataBlob const& oid);
+    int32_t CheckCA();
+    bool HasUnsupportedCriticalExtension();
 
 private:
-    HcfPubKey *pubKey_ = nullptr;
+    CfObject *object_ = nullptr;
 };
 } // namespace ANI::CertFramework
 
-#endif // ANI_PUB_KEY_H
+#endif // ANI_CERT_EXTENSION_H

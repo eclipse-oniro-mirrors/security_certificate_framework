@@ -23,6 +23,7 @@ enum ResultCode {
     NOT_SUPPORT = 801,
     ERR_OUT_OF_MEMORY = 19020001,
     ERR_RUNTIME_ERROR = 19020002,
+    ERR_PARAMETER_CHECK_FAILED = 19020003,
     ERR_CRYPTO_OPERATION = 19030001,
     ERR_CERT_SIGNATURE_FAILURE = 19030002,
     ERR_CERT_NOT_YET_VALID = 19030003,
@@ -32,28 +33,155 @@ enum ResultCode {
     ERR_KEYUSAGE_NO_DIGITAL_SIGNATURE = 19030007,
     ERR_MAYBE_WRONG_PASSWORD = 19030008,
 };
+
+static const std::unordered_map<CfResult, int> RESULT_CODE = {
+    { CF_SUCCESS, SUCCESS },
+    { CF_INVALID_PARAMS, INVALID_PARAMS },
+    { CF_NOT_SUPPORT, NOT_SUPPORT },
+    { CF_ERR_MALLOC, ERR_OUT_OF_MEMORY },
+    { CF_ERR_INTERNAL, ERR_RUNTIME_ERROR },
+    { CF_ERR_PARAMETER_CHECK, ERR_PARAMETER_CHECK_FAILED },
+    { CF_ERR_CRYPTO_OPERATION, ERR_CRYPTO_OPERATION },
+    { CF_ERR_CERT_SIGNATURE_FAILURE, ERR_CERT_SIGNATURE_FAILURE },
+    { CF_ERR_CERT_NOT_YET_VALID, ERR_CERT_NOT_YET_VALID },
+    { CF_ERR_CERT_HAS_EXPIRED, ERR_CERT_HAS_EXPIRED },
+    { CF_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY, ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY },
+    { CF_ERR_KEYUSAGE_NO_CERTSIGN, ERR_KEYUSAGE_NO_CERTSIGN },
+    { CF_ERR_KEYUSAGE_NO_DIGITAL_SIGNATURE, ERR_KEYUSAGE_NO_DIGITAL_SIGNATURE },
+    { CF_ERR_CERT_INVALID_PRIVATE_KEY, ERR_MAYBE_WRONG_PASSWORD },
+};
 } // namespace
 
 namespace ANI::CertFramework {
+// template specialization for ArrayU8ToDataBlob
+template
+void ArrayU8ToDataBlob<array<uint8_t>>(const array<uint8_t> &arr, CfBlob &blob);
+template
+void ArrayU8ToDataBlob<array_view<uint8_t>>(const array_view<uint8_t> &arr, CfBlob &blob);
+
+// template specialization for ArrayU8ToBigInteger
+template
+bool ArrayU8ToBigInteger<array<uint8_t>>(const array<uint8_t> &arr, CfBlob &bigint, bool isReverse);
+template
+bool ArrayU8ToBigInteger<array_view<uint8_t>>(const array_view<uint8_t> &arr, CfBlob &bigint, bool isReverse);
+
 int ConvertResultCode(CfResult res)
 {
-    static std::unordered_map<CfResult, int> resCodeMap = {
-        { CF_SUCCESS, SUCCESS },
-        { CF_INVALID_PARAMS, INVALID_PARAMS },
-        { CF_NOT_SUPPORT, NOT_SUPPORT },
-        { CF_ERR_MALLOC, ERR_OUT_OF_MEMORY },
-        { CF_ERR_CRYPTO_OPERATION, ERR_CRYPTO_OPERATION },
-        { CF_ERR_CERT_SIGNATURE_FAILURE, ERR_CERT_SIGNATURE_FAILURE },
-        { CF_ERR_CERT_NOT_YET_VALID, ERR_CERT_NOT_YET_VALID },
-        { CF_ERR_CERT_HAS_EXPIRED, ERR_CERT_HAS_EXPIRED },
-        { CF_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY, ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY },
-        { CF_ERR_KEYUSAGE_NO_CERTSIGN, ERR_KEYUSAGE_NO_CERTSIGN },
-        { CF_ERR_KEYUSAGE_NO_DIGITAL_SIGNATURE, ERR_KEYUSAGE_NO_DIGITAL_SIGNATURE },
-        { CF_ERR_CERT_INVALID_PRIVATE_KEY, ERR_MAYBE_WRONG_PASSWORD },
-    };
-    if (resCodeMap.count(res) > 0) {
-        return resCodeMap[res];
+    if (RESULT_CODE.count(res) > 0) {
+        return RESULT_CODE.at(res);
     }
     return ERR_RUNTIME_ERROR;
+}
+
+template<typename T>
+void ArrayU8ToDataBlob(const T &arr, CfBlob &blob)
+{
+    blob.data = arr.empty() ? nullptr : arr.data();
+    blob.size = arr.size();
+}
+
+void DataBlobToArrayU8(const CfBlob &blob, array<uint8_t> &arr)
+{
+    arr = array<uint8_t>(move_data_t{}, blob.data, blob.size);
+}
+
+template<typename T>
+bool ArrayU8ToBigInteger(const T &arr, CfBlob &bigint, bool isReverse /* = false */)
+{
+    if (arr.empty()) {
+        return false;
+    }
+    uint8_t sign = arr.back() >> (sizeof(uint8_t) * 8 - 1);
+    if (sign != 0) { // not support negative of big integer
+        return false;
+    }
+    bigint.data = arr.data();
+    bigint.size = arr.size();
+    if (bigint.size > 1 && bigint.data[bigint.size - 1] == 0) { // remove the sign bit of big integer
+        bigint.size--;
+    }
+    if (isReverse) { // reverse bigint data for serial number
+        std::reverse(bigint.data, bigint.data + bigint.size);
+    }
+    return true;
+}
+
+void BigIntegerToArrayU8(const CfBlob &bigint, array<uint8_t> &arr, bool isReverse /* = false */)
+{
+    arr = array<uint8_t>(bigint.size + 1);
+    std::copy(bigint.data, bigint.data + bigint.size, arr.data());
+    if (isReverse) { // reverse bigint data for serial number
+        std::reverse(arr.begin(), arr.begin() + bigint.size);
+    }
+    // 0x00 is the sign bit of big integer, it's always a positive number in this implementation
+    arr[bigint.size] = 0x00;
+}
+
+void StringToDataBlob(const string &str, CfBlob &blob)
+{
+    blob.data = str.empty() ? nullptr : reinterpret_cast<uint8_t *>(const_cast<char *>(str.c_str()));
+    blob.size = str.empty() ? 0 : str.size() + 1;
+}
+
+string DataBlobToString(const CfBlob &blob)
+{
+    uint32_t size = blob.data[blob.size - 1] == '\0' ? blob.size - 1 : blob.size;
+    return string(reinterpret_cast<char *>(blob.data), size);
+}
+
+void CfArrayToDataArray(const CfArray &cfArr, DataArray &dataArr)
+{
+    dataArr = { array<array<uint8_t>>::make(cfArr.count, {}) };
+    for (uint32_t i = 0; i < cfArr.count; i++) {
+        DataBlobToArrayU8(cfArr.data[i], dataArr.data[i]);
+    }
+}
+
+void DataBlobToEncodingBlob(const CfBlob &blob, CfEncodingBlob &encodingBlob,
+    CfEncodingFormat encodingFormat /* = CF_FORMAT_DER */)
+{
+    encodingBlob.data = blob.data;
+    encodingBlob.len = blob.size;
+    encodingBlob.encodingFormat = encodingFormat;
+}
+
+bool StringCopyToBlob(const string &str, CfBlob **blob)
+{
+    if (str.size() == 0) {
+        return false;
+    }
+    *blob = static_cast<CfBlob *>(CfMalloc(sizeof(CfBlob), 0));
+    if (*blob == nullptr) {
+        return false;
+    }
+    (*blob)->data = (uint8_t *)CfMalloc(str.size() + 1, 0);
+    if ((*blob)->data == nullptr) {
+        CfFree(*blob);
+        *blob = nullptr;
+        return false;
+    }
+    (void)memcpy_s((*blob)->data, str.size() + 1, str.c_str(), str.size() + 1);
+    (*blob)->size = str.size() + 1;
+    return true;
+}
+
+bool ArrayU8CopyToBlob(const array<uint8_t> &arr, CfBlob **blob)
+{
+    if (arr.size() == 0) {
+        return false;
+    }
+    *blob = static_cast<CfBlob *>(CfMalloc(sizeof(CfBlob), 0));
+    if (*blob == nullptr) {
+        return false;
+    }
+    (*blob)->data = (uint8_t *)CfMalloc(arr.size(), 0);
+    if ((*blob)->data == nullptr) {
+        CfFree(*blob);
+        *blob = nullptr;
+        return false;
+    }
+    (void)memcpy_s((*blob)->data, arr.size(), arr.data(), arr.size());
+    (*blob)->size = arr.size();
+    return true;
 }
 } // namespace ANI::CertFramework

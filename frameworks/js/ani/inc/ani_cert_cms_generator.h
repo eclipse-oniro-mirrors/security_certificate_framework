@@ -13,32 +13,26 @@
  * limitations under the License.
  */
 
-#ifndef ANI_PUB_KEY_H
-#define ANI_PUB_KEY_H
+#ifndef ANI_CERT_CMS_GENERATOR_H
+#define ANI_CERT_CMS_GENERATOR_H
 
 #include "ani_common.h"
-#include "pub_key.h"
-#include "ohos.security.cryptoFramework.cryptoFramework.proj.hpp"
+#include "cert_cms_generator.h"
 
 namespace ANI::CertFramework {
-class PubKeyImpl {
+class CmsGeneratorImpl {
 public:
-    PubKeyImpl();
-    explicit PubKeyImpl(HcfPubKey *pubKey);
-    ~PubKeyImpl();
+    CmsGeneratorImpl();
+    explicit CmsGeneratorImpl(HcfCmsGenerator *cmsGenerator);
+    ~CmsGeneratorImpl();
 
-    int64_t GetPubKeyObj();
-    cryptoFramework::OptKeySpec GetAsyKeySpec(cryptoFramework::AsyKeySpecItem itemType);
-    cryptoFramework::DataBlob GetEncodedDer(string_view format);
-    string GetEncodedPem(string_view format);
-    int64_t GetKeyObj();
-    cryptoFramework::DataBlob GetEncoded();
-    string GetFormat();
-    string GetAlgName();
+    void AddSigner(weak::X509Cert cert, ThPrivateKeyInfo const& keyInfo, CmsSignerConfig const& config);
+    void AddCert(weak::X509Cert cert);
+    OptStrUint8Arr DoFinalSync(array_view<uint8_t> data, optional_view<CmsGeneratorOptions> options);
 
 private:
-    HcfPubKey *pubKey_ = nullptr;
+    HcfCmsGenerator *cmsGenerator_ = nullptr;
 };
 } // namespace ANI::CertFramework
 
-#endif // ANI_PUB_KEY_H
+#endif // ANI_CERT_CMS_GENERATOR_H
