@@ -22,33 +22,37 @@ PubKeyImpl::PubKeyImpl(HcfPubKey *pubKey) : pubKey_(pubKey) {}
 
 PubKeyImpl::~PubKeyImpl()
 {
-    CfObjDestroy(pubKey_);
-    pubKey_ = nullptr;
-}
-
-cryptoFramework::OptKeySpec PubKeyImpl::GetAsyKeySpec(cryptoFramework::AsyKeySpecItem itemType)
-{
-    TH_THROW(std::runtime_error, "GetAsyKeySpec not implemented");
-}
-
-cryptoFramework::DataBlob PubKeyImpl::GetEncodedDer(string_view format)
-{
-    TH_THROW(std::runtime_error, "GetEncodedDer not implemented");
-}
-
-string PubKeyImpl::GetEncodedPem(string_view format)
-{
-    TH_THROW(std::runtime_error, "GetEncodedPem not implemented");
-}
-
-int64_t PubKeyImpl::GetKeyObj()
-{
-    TH_THROW(std::runtime_error, "GetKeyObj not implemented");
+    CfObjDestroy(this->pubKey_);
+    this->pubKey_ = nullptr;
 }
 
 int64_t PubKeyImpl::GetPubKeyObj()
 {
     return reinterpret_cast<int64_t>(this->pubKey_);
+}
+
+cryptoFramework::OptKeySpec PubKeyImpl::GetAsyKeySpec(cryptoFramework::AsyKeySpecItem itemType)
+{
+    ANI_LOGE_THROW(CF_NOT_SUPPORT, "GetAsyKeySpec not supported!");
+    return cryptoFramework::OptKeySpec::make_INT32(-1);
+}
+
+cryptoFramework::DataBlob PubKeyImpl::GetEncodedDer(string_view format)
+{
+    ANI_LOGE_THROW(CF_NOT_SUPPORT, "GetEncodedDer not supported!");
+    return {};
+}
+
+string PubKeyImpl::GetEncodedPem(string_view format)
+{
+    ANI_LOGE_THROW(CF_NOT_SUPPORT, "GetEncodedPem not supported!");
+    return "";
+}
+
+int64_t PubKeyImpl::GetKeyObj()
+{
+    ANI_LOGE_THROW(CF_NOT_SUPPORT, "GetKeyObj not supported!");
+    return -1;
 }
 
 cryptoFramework::DataBlob PubKeyImpl::GetEncoded()
@@ -57,24 +61,27 @@ cryptoFramework::DataBlob PubKeyImpl::GetEncoded()
         ANI_LOGE_THROW(CF_INVALID_PARAMS, "pubKey obj is nullptr!");
         return {};
     }
-    HcfBlob outBlob = { .data = nullptr, .len = 0 };
+    HcfBlob outBlob = {};
     HcfResult res = this->pubKey_->base.getEncoded(&this->pubKey_->base, &outBlob);
     if (res != HCF_SUCCESS) {
         ANI_LOGE_THROW(static_cast<CfResult>(res), "getEncoded failed.");
         return {};
     }
-    array<uint8_t> data(move_data_t{}, outBlob.data, outBlob.len);
+    array<uint8_t> data = {};
+    DataBlobToArrayU8({ outBlob.len, outBlob.data }, data);
     HcfBlobDataClearAndFree(&outBlob);
     return { data };
 }
 
 string PubKeyImpl::GetFormat()
 {
-    TH_THROW(std::runtime_error, "GetFormat not implemented");
+    ANI_LOGE_THROW(CF_NOT_SUPPORT, "GetFormat not supported!");
+    return "";
 }
 
 string PubKeyImpl::GetAlgName()
 {
-    TH_THROW(std::runtime_error, "GetAlgName not implemented");
+    ANI_LOGE_THROW(CF_NOT_SUPPORT, "GetAlgName not supported!");
+    return "";
 }
 } // namespace ANI::CertFramework

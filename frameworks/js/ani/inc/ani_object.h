@@ -13,32 +13,15 @@
  * limitations under the License.
  */
 
-#ifndef ANI_PUB_KEY_H
-#define ANI_PUB_KEY_H
+#ifndef ANI_OBJECT_H
+#define ANI_OBJECT_H
 
 #include "ani_common.h"
-#include "pub_key.h"
-#include "ohos.security.cryptoFramework.cryptoFramework.proj.hpp"
+#include "cf_param.h"
 
 namespace ANI::CertFramework {
-class PubKeyImpl {
-public:
-    PubKeyImpl();
-    explicit PubKeyImpl(HcfPubKey *pubKey);
-    ~PubKeyImpl();
-
-    int64_t GetPubKeyObj();
-    cryptoFramework::OptKeySpec GetAsyKeySpec(cryptoFramework::AsyKeySpecItem itemType);
-    cryptoFramework::DataBlob GetEncodedDer(string_view format);
-    string GetEncodedPem(string_view format);
-    int64_t GetKeyObj();
-    cryptoFramework::DataBlob GetEncoded();
-    string GetFormat();
-    string GetAlgName();
-
-private:
-    HcfPubKey *pubKey_ = nullptr;
-};
+CfResult DoCommonOperation(const CfObject *object, const std::vector<CfParam> &param,
+    CfParamSet **outParamSet, std::string &errMsg);
 } // namespace ANI::CertFramework
 
-#endif // ANI_PUB_KEY_H
+#endif // ANI_OBJECT_H

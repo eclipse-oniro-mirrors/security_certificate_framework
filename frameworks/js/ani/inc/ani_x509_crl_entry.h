@@ -13,32 +13,34 @@
  * limitations under the License.
  */
 
-#ifndef ANI_PUB_KEY_H
-#define ANI_PUB_KEY_H
+#ifndef ANI_X509_CRL_ENTRY_H
+#define ANI_X509_CRL_ENTRY_H
 
 #include "ani_common.h"
-#include "pub_key.h"
-#include "ohos.security.cryptoFramework.cryptoFramework.proj.hpp"
+#include "x509_crl_entry.h"
 
 namespace ANI::CertFramework {
-class PubKeyImpl {
+class X509CRLEntryImpl {
 public:
-    PubKeyImpl();
-    explicit PubKeyImpl(HcfPubKey *pubKey);
-    ~PubKeyImpl();
+    X509CRLEntryImpl();
+    explicit X509CRLEntryImpl(HcfX509CrlEntry *x509CrlEntry);
+    ~X509CRLEntryImpl();
 
-    int64_t GetPubKeyObj();
-    cryptoFramework::OptKeySpec GetAsyKeySpec(cryptoFramework::AsyKeySpecItem itemType);
-    cryptoFramework::DataBlob GetEncodedDer(string_view format);
-    string GetEncodedPem(string_view format);
-    int64_t GetKeyObj();
-    cryptoFramework::DataBlob GetEncoded();
-    string GetFormat();
-    string GetAlgName();
+    EncodingBlob GetEncodedSync();
+    array<uint8_t> GetSerialNumber();
+    DataBlob GetCertIssuer();
+    string GetCertIssuerEx(EncodingType encodingType);
+    string GetRevocationDate();
+    DataBlob GetExtensions();
+    bool HasExtensions();
+    X500DistinguishedName GetCertIssuerX500DistinguishedName();
+    string ToString();
+    array<uint8_t> HashCode();
+    CertExtension GetExtensionsObject();
 
 private:
-    HcfPubKey *pubKey_ = nullptr;
+    HcfX509CrlEntry *x509CrlEntry_ = nullptr;
 };
 } // namespace ANI::CertFramework
 
-#endif // ANI_PUB_KEY_H
+#endif // ANI_X509_CRL_ENTRY_H

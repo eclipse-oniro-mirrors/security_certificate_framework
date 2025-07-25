@@ -13,32 +13,29 @@
  * limitations under the License.
  */
 
-#ifndef ANI_PUB_KEY_H
-#define ANI_PUB_KEY_H
+#ifndef ANI_X509_DISTINGUISHED_NAME_H
+#define ANI_X509_DISTINGUISHED_NAME_H
 
 #include "ani_common.h"
-#include "pub_key.h"
-#include "ohos.security.cryptoFramework.cryptoFramework.proj.hpp"
+#include "x509_distinguished_name.h"
 
 namespace ANI::CertFramework {
-class PubKeyImpl {
+class X500DistinguishedNameImpl {
 public:
-    PubKeyImpl();
-    explicit PubKeyImpl(HcfPubKey *pubKey);
-    ~PubKeyImpl();
+    X500DistinguishedNameImpl();
+    explicit X500DistinguishedNameImpl(HcfX509DistinguishedName *x509Name);
+    ~X500DistinguishedNameImpl();
 
-    int64_t GetPubKeyObj();
-    cryptoFramework::OptKeySpec GetAsyKeySpec(cryptoFramework::AsyKeySpecItem itemType);
-    cryptoFramework::DataBlob GetEncodedDer(string_view format);
-    string GetEncodedPem(string_view format);
-    int64_t GetKeyObj();
-    cryptoFramework::DataBlob GetEncoded();
-    string GetFormat();
-    string GetAlgName();
+    int64_t GetX500DistinguishedNameObj();
+    string GetName();
+    string GetNameByEnum(EncodingType encodingType);
+    array<string> GetNameByStr(string_view type);
+    EncodingBlob GetEncoded();
 
 private:
-    HcfPubKey *pubKey_ = nullptr;
+    HcfX509DistinguishedName *x509Name_ = nullptr;
 };
 } // namespace ANI::CertFramework
 
-#endif // ANI_PUB_KEY_H
+
+#endif // ANI_X509_DISTINGUISHED_NAME_H

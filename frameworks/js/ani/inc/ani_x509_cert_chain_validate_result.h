@@ -13,32 +13,27 @@
  * limitations under the License.
  */
 
-#ifndef ANI_PUB_KEY_H
-#define ANI_PUB_KEY_H
+#ifndef ANI_X509_CERT_CHAIN_VALIDATE_RESULT_H
+#define ANI_X509_CERT_CHAIN_VALIDATE_RESULT_H
 
 #include "ani_common.h"
-#include "pub_key.h"
-#include "ohos.security.cryptoFramework.cryptoFramework.proj.hpp"
+#include "x509_cert_chain_validate_result.h"
 
 namespace ANI::CertFramework {
-class PubKeyImpl {
+class CertChainValidationResultImpl {
 public:
-    PubKeyImpl();
-    explicit PubKeyImpl(HcfPubKey *pubKey);
-    ~PubKeyImpl();
+    CertChainValidationResultImpl();
+    explicit CertChainValidationResultImpl(HcfX509CertChainValidateResult *validateResult, bool owner = true);
+    ~CertChainValidationResultImpl();
 
-    int64_t GetPubKeyObj();
-    cryptoFramework::OptKeySpec GetAsyKeySpec(cryptoFramework::AsyKeySpecItem itemType);
-    cryptoFramework::DataBlob GetEncodedDer(string_view format);
-    string GetEncodedPem(string_view format);
-    int64_t GetKeyObj();
-    cryptoFramework::DataBlob GetEncoded();
-    string GetFormat();
-    string GetAlgName();
+    int64_t GetCertChainValidationResultObj();
+    X509TrustAnchor GetTrustAnchor();
+    X509Cert GetEntityCert();
 
 private:
-    HcfPubKey *pubKey_ = nullptr;
+    HcfX509CertChainValidateResult *validateResult_ = nullptr;
+    bool owner_ = true;
 };
 } // namespace ANI::CertFramework
 
-#endif // ANI_PUB_KEY_H
+#endif // ANI_X509_CERT_CHAIN_VALIDATE_RESULT_H

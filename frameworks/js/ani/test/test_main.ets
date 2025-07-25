@@ -13,10 +13,28 @@
  * limitations under the License.
  */
 
+import utils from "./test_utils";
 import { testX509Cert } from "./test_x509_cert";
 import { testCertChainValidator } from "./test_cert_chain_validator";
+import { testX509Crl } from "./test_x509_crl";
+import { testX509CrlEntry } from "./test_x509_crl_entry";
+import { testCertCrlCollection } from "./test_cert_crl_collection";
+import { testCertCmsGenerator } from "./test_cert_cms_generator";
+import { testX500DistinguishedName } from "./test_x500_distinguished_name";
+import { testX509CertChain } from "./test_x509_cert_chain";
+import { testCertExtension } from "./test_cert_extension";
 
 function main() {
-    testX509Cert();
-    testCertChainValidator();
+  testX509Cert();
+  testCertChainValidator();
+  testX509Crl();
+  testX509CrlEntry();
+  testCertCrlCollection();
+  testX500DistinguishedName();
+  testCertCmsGenerator();
+  testX509CertChain();
+  testCertExtension();
+
+  utils.doFullGC();
+  utils.stopTaskPool();
 }

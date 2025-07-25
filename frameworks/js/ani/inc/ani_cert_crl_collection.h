@@ -13,32 +13,28 @@
  * limitations under the License.
  */
 
-#ifndef ANI_PUB_KEY_H
-#define ANI_PUB_KEY_H
+#ifndef ANI_CERT_CRL_COLLECTION_H
+#define ANI_CERT_CRL_COLLECTION_H
 
 #include "ani_common.h"
-#include "pub_key.h"
-#include "ohos.security.cryptoFramework.cryptoFramework.proj.hpp"
+#include "ani_x509_cert.h"
+#include "ani_x509_crl.h"
+#include "cert_crl_collection.h"
 
 namespace ANI::CertFramework {
-class PubKeyImpl {
+class CertCRLCollectionImpl {
 public:
-    PubKeyImpl();
-    explicit PubKeyImpl(HcfPubKey *pubKey);
-    ~PubKeyImpl();
+    CertCRLCollectionImpl();
+    explicit CertCRLCollectionImpl(HcfCertCrlCollection *collection);
+    ~CertCRLCollectionImpl();
 
-    int64_t GetPubKeyObj();
-    cryptoFramework::OptKeySpec GetAsyKeySpec(cryptoFramework::AsyKeySpecItem itemType);
-    cryptoFramework::DataBlob GetEncodedDer(string_view format);
-    string GetEncodedPem(string_view format);
-    int64_t GetKeyObj();
-    cryptoFramework::DataBlob GetEncoded();
-    string GetFormat();
-    string GetAlgName();
+    int64_t GetCertCrlCollectionObj();
+    array<X509Cert> SelectCertsSync(X509CertMatchParameters const& param);
+    array<X509CRL> SelectCRLsSync(X509CRLMatchParameters const& param);
 
 private:
-    HcfPubKey *pubKey_ = nullptr;
+    HcfCertCrlCollection *collection_ = nullptr;
 };
 } // namespace ANI::CertFramework
 
-#endif // ANI_PUB_KEY_H
+#endif // ANI_CERT_CRL_COLLECTION_H

@@ -33,6 +33,12 @@ typedef enum CfResult {
     CF_ERR_MALLOC = -20001,
     /* Indicates that memory copy fails. */
     CF_ERR_COPY = -20002,
+    /* Indicates that call napi api fails. */
+    CF_ERR_NAPI = -20003,
+    /* Indicates internal fails. */
+    CF_ERR_INTERNAL = -20004,
+    /* Indicates parameter check fails. */
+    CF_ERR_PARAMETER_CHECK = -20005,
 
     /* Indicates that third part has something wrong. */
     CF_ERR_CRYPTO_OPERATION = -30001,
@@ -52,5 +58,11 @@ typedef enum CfResult {
     CF_ERR_INVALID_CODE_FORMAT = -30008,
     /* Indicates that private key is invalid. */
     CF_ERR_CERT_INVALID_PRIVATE_KEY = -30009,
+
+    CF_ERR_EXTENSION_NOT_EXIST = -30010,
+
+    CF_ERR_INVALID_EXTENSION = -30011,
+
+    CF_ERR_SHOULD_NOT_CALL = -30012,
 } CfResult;
 #endif
