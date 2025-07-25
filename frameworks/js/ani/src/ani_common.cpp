@@ -53,6 +53,18 @@ static const std::unordered_map<CfResult, int> RESULT_CODE = {
 } // namespace
 
 namespace ANI::CertFramework {
+// template specialization for ArrayU8ToDataBlob
+template
+void ArrayU8ToDataBlob<array<uint8_t>>(const array<uint8_t> &arr, CfBlob &blob);
+template
+void ArrayU8ToDataBlob<array_view<uint8_t>>(const array_view<uint8_t> &arr, CfBlob &blob);
+
+// template specialization for ArrayU8ToBigInteger
+template
+bool ArrayU8ToBigInteger<array<uint8_t>>(const array<uint8_t> &arr, CfBlob &bigint, bool isReverse);
+template
+bool ArrayU8ToBigInteger<array_view<uint8_t>>(const array_view<uint8_t> &arr, CfBlob &bigint, bool isReverse);
+
 int ConvertResultCode(CfResult res)
 {
     if (RESULT_CODE.count(res) > 0) {
@@ -61,7 +73,8 @@ int ConvertResultCode(CfResult res)
     return ERR_RUNTIME_ERROR;
 }
 
-void ArrayU8ToDataBlob(const array<uint8_t> &arr, CfBlob &blob)
+template<typename T>
+void ArrayU8ToDataBlob(const T &arr, CfBlob &blob)
 {
     blob.data = arr.empty() ? nullptr : arr.data();
     blob.size = arr.size();
@@ -72,7 +85,8 @@ void DataBlobToArrayU8(const CfBlob &blob, array<uint8_t> &arr)
     arr = array<uint8_t>(move_data_t{}, blob.data, blob.size);
 }
 
-bool ArrayU8ToBigInteger(const array<uint8_t> &arr, CfBlob &bigint, bool isReverse /* = false */)
+template<typename T>
+bool ArrayU8ToBigInteger(const T &arr, CfBlob &bigint, bool isReverse /* = false */)
 {
     if (arr.empty()) {
         return false;

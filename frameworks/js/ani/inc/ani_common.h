@@ -50,15 +50,21 @@ using ThPrivateKeyInfo = ohos::security::cert::cert::PrivateKeyInfo;
 
 int ConvertResultCode(CfResult res);
 
-void ArrayU8ToDataBlob(const array<uint8_t> &arr, CfBlob &blob);
+template<typename T>
+void ArrayU8ToDataBlob(const T &arr, CfBlob &blob);
 void DataBlobToArrayU8(const CfBlob &blob, array<uint8_t> &arr);
-bool ArrayU8ToBigInteger(const array<uint8_t> &arr, CfBlob &bigInt, bool isReverse = false);
+
+template<typename T>
+bool ArrayU8ToBigInteger(const T &arr, CfBlob &bigInt, bool isReverse = false);
 void BigIntegerToArrayU8(const CfBlob &bigInt, array<uint8_t> &arr, bool isReverse = false);
+
 void StringToDataBlob(const string &str, CfBlob &blob);
 string DataBlobToString(const CfBlob &blob);
+
 void CfArrayToDataArray(const CfArray &cfArr, DataArray &dataArr);
 void DataBlobToEncodingBlob(const CfBlob &blob, CfEncodingBlob &encodingBlob,
     CfEncodingFormat encodingFormat = CF_FORMAT_DER);
+
 bool StringCopyToBlob(const string &str, CfBlob **blob);
 bool ArrayU8CopyToBlob(const array<uint8_t> &arr, CfBlob **blob);
 } // namespace ANI::CertFramework
