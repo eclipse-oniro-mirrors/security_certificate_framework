@@ -51,7 +51,7 @@ struct CfCtx {
     CfEncodingBlob *encodingBlob = nullptr;
     HcfX509CertChainValidateParams params;
     HcfX509CertChainValidateResult result;
-    HcfX509CertChainBuildParameters *bulidParams = nullptr;
+    HcfX509CertChainBuildParameters *buildParams = nullptr;
     HcfX509CertChainBuildResult *buildResult = nullptr;
     CfBlob *keyStore = nullptr;
     CfBlob *pwd = nullptr;
@@ -165,14 +165,14 @@ static void CreateCertChainExecute(napi_env env, void *data)
 static void BuildX509CertChainExecute(napi_env env, void *data)
 {
     CfCtx *context = static_cast<CfCtx *>(data);
-    context->async->errCode = HcfCertChainBuildResultCreate(context->bulidParams, &context->buildResult);
+    context->async->errCode = HcfCertChainBuildResultCreate(context->buildParams, &context->buildResult);
     if (context->async->errCode != CF_SUCCESS) {
         context->async->errMsg = "create cert chain failed";
         return;
     }
     HcfCertChain *certChain = context->buildResult->certChain;
     context->async->errCode = certChain->validate(
-        certChain, &(context->bulidParams->validateParameters), &(context->buildResult->validateResult));
+        certChain, &(context->buildParams->validateParameters), &(context->buildResult->validateResult));
     if (context->async->errCode != CF_SUCCESS) {
         context->async->errMsg = "validate failed";
         CfObjDestroy(context->buildResult->certChain);
@@ -933,7 +933,7 @@ napi_value NapiParsePKCS12(napi_env env, napi_callback_info info)
     return instance;
 }
 
-bool GetCertMatchParameters(napi_env env, napi_value obj, HcfX509CertChainBuildParameters **bulidParams)
+bool GetCertMatchParameters(napi_env env, napi_value obj, HcfX509CertChainBuildParameters **buildParams)
 {
     napi_value data = nullptr;
     napi_status status = napi_get_named_property(env, obj, CERT_TAG_CERT_MATCH_PARAMS.c_str(), &data);
@@ -941,7 +941,7 @@ bool GetCertMatchParameters(napi_env env, napi_value obj, HcfX509CertChainBuildP
         LOGE("failed to get cert match params!");
         return false;
     }
-    HcfX509CertMatchParams *param = &((*bulidParams)->certMatchParameters);
+    HcfX509CertMatchParams *param = &((*buildParams)->certMatchParameters);
     if (!BuildX509CertMatchParams(env, data, param)) {
         LOGE("BuildX509CertMatchParams failed!");
         return false;
@@ -949,7 +949,7 @@ bool GetCertMatchParameters(napi_env env, napi_value obj, HcfX509CertChainBuildP
     return true;
 }
 
-bool GetMaxlength(napi_env env, napi_value obj, HcfX509CertChainBuildParameters **bulidParams)
+bool GetMaxlength(napi_env env, napi_value obj, HcfX509CertChainBuildParameters **buildParams)
 {
     napi_value data = nullptr;
     napi_status status = napi_get_named_property(env, obj, CERT_TAG_MAX_LENGTH.c_str(), &data);
@@ -963,11 +963,11 @@ bool GetMaxlength(napi_env env, napi_value obj, HcfX509CertChainBuildParameters 
         LOGE("%{public}s valueType is null or undefined.", CERT_TAG_MAX_LENGTH.c_str());
         return false;
     }
-    napi_get_value_uint32(env, data, reinterpret_cast<uint32_t *>(&((*bulidParams)->maxlength)));
+    napi_get_value_uint32(env, data, reinterpret_cast<uint32_t *>(&((*buildParams)->maxlength)));
     return true;
 }
 
-bool GetValidateParameters(napi_env env, napi_value obj, HcfX509CertChainBuildParameters **bulidParams)
+bool GetValidateParameters(napi_env env, napi_value obj, HcfX509CertChainBuildParameters **buildParams)
 {
     napi_value data = nullptr;
     napi_status status = napi_get_named_property(env, obj, CERT_TAG_VALIDATE_PARAMS.c_str(), &data);
@@ -975,7 +975,7 @@ bool GetValidateParameters(napi_env env, napi_value obj, HcfX509CertChainBuildPa
         LOGE("failed to get cert validate params!");
         return false;
     }
-    if (!BuildX509CertChainValidateParams(env, data, (*bulidParams)->validateParameters)) {
+    if (!BuildX509CertChainValidateParams(env, data, (*buildParams)->validateParameters)) {
         LOGE("BuildX509CertChainValidateParams failed!");
         return false;
     }
@@ -992,7 +992,7 @@ static void FreeHcfX509CertChainBuildParameters(HcfX509CertChainBuildParameters 
     CfFree(param);
 }
 
-bool GetChainBuildParametersFromValue(napi_env env, napi_value obj, HcfX509CertChainBuildParameters **bulidParams)
+bool GetChainBuildParametersFromValue(napi_env env, napi_value obj, HcfX509CertChainBuildParameters **buildParams)
 {
     HcfX509CertChainBuildParameters *buildParam =
         static_cast<HcfX509CertChainBuildParameters *>(CfMalloc(sizeof(HcfX509CertChainBuildParameters), 0));
@@ -1021,7 +1021,7 @@ bool GetChainBuildParametersFromValue(napi_env env, napi_value obj, HcfX509CertC
         return false;
     }
 
-    *bulidParams = buildParam;
+    *buildParams = buildParam;
     return true;
 }
 
@@ -1051,7 +1051,7 @@ static napi_value CreateX509CertChainExtReturn(napi_env env, size_t argc, napi_v
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Create param ref failed"));
         return nullptr;
     }
-    if (!GetChainBuildParametersFromValue(env, param, &context->bulidParams)) {
+    if (!GetChainBuildParametersFromValue(env, param, &context->buildParams)) {
         LOGE("Get Cert Chain Build Parameters failed!");
         DeleteCertChainContext(env, context);
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Get Cert Chain Build Parameters failed!"));
