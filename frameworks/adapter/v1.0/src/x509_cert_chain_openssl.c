@@ -467,16 +467,14 @@ static CfResult FillValidateResult(HcfX509TrustAnchor *inputAnchor, X509 *cert, 
         return CF_INVALID_PARAMS;
     }
     CfResult res = CF_SUCCESS;
-    result->trustAnchor = inputAnchor;
     HcfX509Certificate *entityCert = NULL;
     res = X509ToHcfX509Certificate(cert, &entityCert);
     if (res != CF_SUCCESS) {
         LOGE("X509ToHcfX509Certificate() failed!");
-        FreeTrustAnchorData(result->trustAnchor);
-        CF_FREE_PTR(result->trustAnchor);
         return res;
     }
 
+    result->trustAnchor = inputAnchor;
     result->entityCert = entityCert;
     return res;
 }
@@ -1769,14 +1767,14 @@ static CfResult Validate(
     if (entityCert == NULL) {
         CfPrintOpensslError();
         FreeTrustAnchorData(trustAnchorResult);
-        CfFree(trustAnchorResult);
+        CF_FREE_PTR(trustAnchorResult);
         return CF_ERR_CRYPTO_OPERATION;
     }
 
     res = FillValidateResult(trustAnchorResult, entityCert, result);
     if (res != CF_SUCCESS) {
         FreeTrustAnchorData(trustAnchorResult);
-        CfFree(trustAnchorResult);
+        CF_FREE_PTR(trustAnchorResult);
     }
     return res;
 }
