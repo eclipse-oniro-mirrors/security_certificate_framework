@@ -229,6 +229,7 @@ void FreePrivateKeyInfo(HcfPrivateKeyInfo *privateKey)
             }
         }
         CfFree(privateKey);
+        privateKey = nullptr;
     }
 }
 
@@ -316,6 +317,7 @@ void CmsGeneratorImpl::AddSigner(weak::X509Cert cert, ThPrivateKeyInfo const& ke
     HcfPrivateKeyInfo *privateKey = nullptr;
     CfResult ret = SetPrivateKeyInfo(keyInfo, &privateKey);
     if (ret != CF_SUCCESS) {
+        FreePrivateKeyInfo(privateKey);
         ANI_LOGE_THROW(ret, "set private key info failed");
         return;
     }
@@ -409,15 +411,20 @@ CmsGenerator CreateCmsGenerator(CmsContentType contentType)
 OptStrUint8Arr GenerateCsr(ThPrivateKeyInfo const& keyInfo, CsrGenerationConfig const& config)
 {
     HcfPrivateKeyInfo *privateKey = nullptr;
-    SetPrivateKeyInfo(keyInfo, &privateKey);
+    CfResult ret = SetPrivateKeyInfo(keyInfo, &privateKey);
+    if (ret != CF_SUCCESS) {
+        FreePrivateKeyInfo(privateKey);
+        ANI_LOGE_THROW(ret, "set private key info failed");
+        return OptStrUint8Arr::make_UINT8ARRAY(array<uint8_t>{});
+    }
     HcfGenCsrConf *csrConfig = nullptr;
     if (!SetConfig(&csrConfig, config)) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "set csr config failed");
         FreePrivateKeyInfo(privateKey);
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "set csr config failed");
         return OptStrUint8Arr::make_UINT8ARRAY(array<uint8_t>{});
     }
     CfBlob csrBlob = {};
-    CfResult ret = HcfX509CertificateGenCsr(privateKey, csrConfig, &csrBlob);
+    ret = HcfX509CertificateGenCsr(privateKey, csrConfig, &csrBlob);
     if (ret != CF_SUCCESS) {
         ANI_LOGE_THROW(ret, "GenerateCsr failed");
         FreePrivateKeyInfo(privateKey);

@@ -78,7 +78,7 @@ CfResult SetKeyStore(array_view<uint8_t> data, CfBlob **keyStore)
         *keyStore = nullptr;
         return CF_INVALID_PARAMS;
     }
-    
+
     CfBlob *tmpKeyStore = (CfBlob *)CfMalloc(sizeof(CfBlob), 0);
     if (tmpKeyStore == nullptr) {
         ANI_LOGE_THROW(CF_ERR_MALLOC, "malloc failed!");
