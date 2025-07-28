@@ -31,7 +31,7 @@ void FreePkcs12Data(HcfParsePKCS12Conf *conf, CfBlob *keyStore)
 {
     if (conf != nullptr) {
         CfBlobDataClearAndFree(conf->pwd);
-        CfFree(conf);
+        CF_FREE_PTR(conf);
     }
     if (keyStore != nullptr) {
         CfBlobFree(&keyStore);
@@ -231,7 +231,7 @@ CertChainValidationResult X509CertChainImpl::ValidateSync(CertChainValidationPar
     CfResult ret = this->x509CertChain_->validate(this->x509CertChain_, &validateParams, validateResult);
     if (ret != CF_SUCCESS) {
         FreeX509CertChainValidateParams(validateParams);
-        CfFree(validateResult);
+        CF_FREE_PTR(validateResult);
         ANI_LOGE_THROW(ret, "ValidateSync failed");
         return make_holder<CertChainValidationResultImpl, CertChainValidationResult>();
     }
@@ -311,13 +311,11 @@ X509CertChain CreateX509CertChain(array_view<X509Cert> certs)
     HcfCertChain *x509CertChain = nullptr;
     CfResult ret = HcfCertChainCreate(nullptr, &certsArray, &x509CertChain);
     if (ret != CF_SUCCESS) {
-        CfFree(certsArray.data);
-        certsArray.data = nullptr;
+        CF_FREE_PTR(certsArray.data);
         ANI_LOGE_THROW(ret, "CreateX509CertChain failed");
         return make_holder<X509CertChainImpl, X509CertChain>();
     }
-    CfFree(certsArray.data);
-    certsArray.data = nullptr;
+    CF_FREE_PTR(certsArray.data);
     return make_holder<X509CertChainImpl, X509CertChain>(x509CertChain);
 }
 
@@ -377,7 +375,7 @@ Pkcs12Data ParsePkcs12(array_view<uint8_t> data, Pkcs12ParsingConfig const& conf
             pkcs12Data.privateKey = optional<OptStrUint8Arr>(std::in_place, OptStrUint8Arr::make_UINT8ARRAY(blob));
         }
         CfBlobDataClearAndFree(p12Collection->prikey);
-        CfFree(p12Collection->prikey);
+        CF_FREE_PTR(p12Collection->prikey);
     }
     if (p12Collection->cert == nullptr) {
         pkcs12Data.cert = optional<X509Cert>(std::nullopt);
@@ -393,7 +391,7 @@ Pkcs12Data ParsePkcs12(array_view<uint8_t> data, Pkcs12ParsingConfig const& conf
             (*pkcs12Data.otherCerts)[i] = make_holder<X509CertImpl, X509Cert>(p12Collection->otherCerts[i]);
         }
     }
-    CfFree(p12Collection);
+    CF_FREE_PTR(p12Collection);
     FreePkcs12Data(conf, keyStore);
     return pkcs12Data;
 }

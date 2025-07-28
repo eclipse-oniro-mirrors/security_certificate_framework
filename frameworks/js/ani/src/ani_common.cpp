@@ -156,8 +156,7 @@ bool StringCopyToBlob(const string &str, CfBlob **blob)
     }
     (*blob)->data = (uint8_t *)CfMalloc(str.size() + 1, 0);
     if ((*blob)->data == nullptr) {
-        CfFree(*blob);
-        *blob = nullptr;
+        CF_FREE_PTR(*blob);
         return false;
     }
     (void)memcpy_s((*blob)->data, str.size() + 1, str.c_str(), str.size() + 1);
@@ -176,8 +175,7 @@ bool ArrayU8CopyToBlob(const array<uint8_t> &arr, CfBlob **blob)
     }
     (*blob)->data = (uint8_t *)CfMalloc(arr.size(), 0);
     if ((*blob)->data == nullptr) {
-        CfFree(*blob);
-        *blob = nullptr;
+        CF_FREE_PTR(*blob);
         return false;
     }
     (void)memcpy_s((*blob)->data, arr.size(), arr.data(), arr.size());

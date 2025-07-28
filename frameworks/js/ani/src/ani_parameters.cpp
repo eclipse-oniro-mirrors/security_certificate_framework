@@ -128,21 +128,20 @@ void FreeHcfRevocationCheckParam(HcfRevocationCheckParam *param)
         return;
     }
     if (param->ocspRequestExtension != nullptr) {
-        CfFree(param->ocspRequestExtension->data);
-        CfFree(param->ocspRequestExtension);
+        CF_FREE_PTR(param->ocspRequestExtension->data);
+        CF_FREE_PTR(param->ocspRequestExtension);
     }
     CfBlobFree(&param->ocspResponderURI);
     CfBlobFree(&param->ocspResponses);
     CfBlobFree(&param->crlDownloadURI);
     if (param->options != nullptr) {
         if (param->options->data != nullptr) {
-            CfFree(param->options->data);
+            CF_FREE_PTR(param->options->data);
         }
-        CfFree(param->options);
+        CF_FREE_PTR(param->options);
     }
     CfBlobFree(&param->ocspDigest);
-    CfFree(param);
-    param = nullptr;
+    CF_FREE_PTR(param);
 }
 
 bool BuildTrustAnchor(X509TrustAnchor const& param, HcfX509TrustAnchor **anchor)
@@ -188,7 +187,7 @@ bool BuildTrustAnchors(array<X509TrustAnchor> const& param, HcfX509CertChainVali
     tempTrustAnchors->data =
         static_cast<HcfX509TrustAnchor **>(CfMalloc(sizeof(HcfX509TrustAnchor *) * count, 0));
     if (tempTrustAnchors->data == nullptr) {
-        CfFree(tempTrustAnchors);
+        CF_FREE_PTR(tempTrustAnchors);
         return false;
     }
     for (size_t i = 0; i < count; ++i) {
@@ -215,7 +214,7 @@ bool BuildCertCRLs(optional<array<CertCRLCollection>> const& param, HcfX509CertC
     tempCertCRLs->data =
         static_cast<HcfCertCrlCollection **>(CfMalloc(sizeof(HcfCertCrlCollection *) * length, 0));
     if (tempCertCRLs->data == nullptr) {
-        CfFree(tempCertCRLs);
+        CF_FREE_PTR(tempCertCRLs);
         return false;
     }
     for (size_t i = 0; i < length; i++) {
@@ -260,7 +259,7 @@ bool SetOcspRequestExtension(optional<array<array<uint8_t>>> const& param, CfBlo
     }
     tempOcspRequestExtension->data = static_cast<CfBlob *>(CfMalloc(sizeof(CfBlob) * param.value().size(), 0));
     if (tempOcspRequestExtension->data == nullptr) {
-        CfFree(tempOcspRequestExtension);
+        CF_FREE_PTR(tempOcspRequestExtension);
         return false;
     }
     for (size_t i = 0; i < param.value().size(); i++) {
@@ -286,7 +285,7 @@ bool SetOptions(optional<array<RevocationCheckOptions>> const& param, HcfRevChkO
     }
     tempOptions->data = static_cast<HcfRevChkOption *>(CfMalloc(sizeof(HcfRevChkOption) * count, 0));
     if (tempOptions->data == nullptr) {
-        CfFree(tempOptions);
+        CF_FREE_PTR(tempOptions);
         return false;
     }
     for (uint32_t i = 0; i < count; i++) {
@@ -343,7 +342,7 @@ bool BuildValidateKeyUsage(optional<array<KeyUsageType>> const& keyUsage, HcfX50
     }
     tempKeyUsageArray->data = static_cast<HcfKeyUsageType *>(CfMalloc(sizeof(HcfKeyUsageType) * length, 0));
     if (tempKeyUsageArray->data == nullptr) {
-        CfFree(tempKeyUsageArray);
+        CF_FREE_PTR(tempKeyUsageArray);
         return false;
     }
     for (size_t i = 0; i < length; i++) {
@@ -496,29 +495,29 @@ bool BuildX509CertMatchParams(X509CertMatchParameters const& param, HcfX509CertM
 void FreeX509CertMatchParams(HcfX509CertMatchParams &hcfParam)
 {
     hcfParam.x509Cert = nullptr;
-    CfFree(hcfParam.validDate);
-    CfFree(hcfParam.issuer);
-    CfFree(hcfParam.serialNumber);
-    CfFree(hcfParam.subject);
-    CfFree(hcfParam.publicKey);
-    CfFree(hcfParam.publicKeyAlgID);
-    CfFree(hcfParam.authorityKeyIdentifier);
-    CfFree(hcfParam.nameConstraints);
-    CfFree(hcfParam.privateKeyValid);
-    CfFree(hcfParam.subjectKeyIdentifier);
+    CF_FREE_PTR(hcfParam.validDate);
+    CF_FREE_PTR(hcfParam.issuer);
+    CF_FREE_PTR(hcfParam.serialNumber);
+    CF_FREE_PTR(hcfParam.subject);
+    CF_FREE_PTR(hcfParam.publicKey);
+    CF_FREE_PTR(hcfParam.publicKeyAlgID);
+    CF_FREE_PTR(hcfParam.authorityKeyIdentifier);
+    CF_FREE_PTR(hcfParam.nameConstraints);
+    CF_FREE_PTR(hcfParam.privateKeyValid);
+    CF_FREE_PTR(hcfParam.subjectKeyIdentifier);
     CfBlobFree(&hcfParam.keyUsage);
     if (hcfParam.extendedKeyUsage != nullptr) {
-        CfFree(hcfParam.extendedKeyUsage->data);
+        CF_FREE_PTR(hcfParam.extendedKeyUsage->data);
     }
-    CfFree(hcfParam.extendedKeyUsage);
+    CF_FREE_PTR(hcfParam.extendedKeyUsage);
     if (hcfParam.certPolicy != nullptr) {
-        CfFree(hcfParam.certPolicy->data);
+        CF_FREE_PTR(hcfParam.certPolicy->data);
     }
-    CfFree(hcfParam.certPolicy);
+    CF_FREE_PTR(hcfParam.certPolicy);
     if (hcfParam.subjectAlternativeNames != nullptr) {
-        CfFree(hcfParam.subjectAlternativeNames->data);
+        CF_FREE_PTR(hcfParam.subjectAlternativeNames->data);
     }
-    CfFree(hcfParam.subjectAlternativeNames);
+    CF_FREE_PTR(hcfParam.subjectAlternativeNames);
 }
 
 bool BuildX509CertChainValidateParams1(CertChainValidationParameters const& param,
@@ -591,26 +590,25 @@ void FreeTrustAnchorArray(HcfX509TrustAnchorArray *&trustAnchors)
     for (uint32_t i = 0; i < trustAnchors->count; ++i) {
         FreeX509TrustAnchorObj(trustAnchors->data[i]);
     }
-    CfFree(trustAnchors);
-    trustAnchors = nullptr;
+    CF_FREE_PTR(trustAnchors);
 }
 
 void FreeX509CertChainValidateParams(HcfX509CertChainValidateParams &hcfParam)
 {
-    CfFree(hcfParam.date);
-    CfFree(hcfParam.sslHostname);
+    CF_FREE_PTR(hcfParam.date);
+    CF_FREE_PTR(hcfParam.sslHostname);
     if (hcfParam.trustAnchors != nullptr) {
         FreeTrustAnchorArray(hcfParam.trustAnchors);
     }
     if (hcfParam.certCRLCollections != nullptr) {
-        CfFree(hcfParam.certCRLCollections->data);
-        CfFree(hcfParam.certCRLCollections);
+        CF_FREE_PTR(hcfParam.certCRLCollections->data);
+        CF_FREE_PTR(hcfParam.certCRLCollections);
         hcfParam.certCRLCollections = nullptr;
     }
     FreeHcfRevocationCheckParam(hcfParam.revocationCheckParam);
     if (hcfParam.keyUsage != nullptr) {
-        CfFree(hcfParam.keyUsage->data);
-        CfFree(hcfParam.keyUsage);
+        CF_FREE_PTR(hcfParam.keyUsage->data);
+        CF_FREE_PTR(hcfParam.keyUsage);
         hcfParam.keyUsage = nullptr;
     }
 }
