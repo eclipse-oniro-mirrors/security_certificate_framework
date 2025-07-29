@@ -112,7 +112,7 @@ CfResult FfiCertCjCfObjectGetOidList(const CjCfObject self, int32_t valueType, C
         return CfResult(ret);
     }
 
-    if (outParamSet->paramSetSize <= 1) {
+    if (outParamSet->paramsCnt <= 1) {
         ret = CF_INVALID_PARAMS;
     } else {
         out->count = outParamSet->paramsCnt - 1;
