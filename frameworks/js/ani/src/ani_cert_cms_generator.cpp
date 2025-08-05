@@ -27,8 +27,7 @@ bool CopyString(const string &str, char **dst)
         return false;
     }
     if (strcpy_s(*dst, str.size() + 1, str.c_str()) != EOK) {
-        CfFree(*dst);
-        *dst = nullptr;
+        CF_FREE_PTR(*dst);
         return false;
     }
     return true;
@@ -43,8 +42,7 @@ bool CopyBlobDataToPrivateKey(CfBlob *blob, CfEncodingBlob *privateKey)
     }
     if (memcpy_s(privateKey->data, blob->size, blob->data, blob->size) != EOK) {
         ANI_LOGE_THROW(CF_ERR_COPY, "memcpy_s private key data failed!");
-        CfFree(privateKey->data);
-        privateKey->data = nullptr;
+        CF_FREE_PTR(privateKey->data);
         return false;
     }
     privateKey->len = blob->size;
@@ -64,8 +62,7 @@ CfResult SetCsrAttribute(HcfAttributes *attr, const CsrAttribute& csrAttr)
 
     if (!CopyString(csrAttr.value, &attr->attributeValue)) {
         ANI_LOGE_THROW(CF_ERR_COPY, "copy attribute value failed");
-        CfFree(attr->attributeName);
-        attr->attributeName = nullptr;
+        CF_FREE_PTR(attr->attributeName);
         return CF_ERR_COPY;
     }
     return CF_SUCCESS;
@@ -89,11 +86,11 @@ void FreeCsrCfBlobArray(HcfAttributes *array, uint32_t arrayLen)
     }
 
     for (uint32_t i = 0; i < arrayLen; ++i) {
-        CfFree(array[i].attributeName);
-        CfFree(array[i].attributeValue);
+        CF_FREE_PTR(array[i].attributeName);
+        CF_FREE_PTR(array[i].attributeValue);
     }
 
-    CfFree(array);
+    CF_FREE_PTR(array);
 }
 
 bool GetX509CsrAttributeArray(HcfAttributesArray *attribute, const optional_view<array<CsrAttribute>> attributes)
@@ -153,11 +150,10 @@ void FreeGenCsrConf(HcfGenCsrConf *conf)
     }
 
     if (conf->mdName != nullptr) {
-        CfFree(conf->mdName);
-        conf->mdName = nullptr;
+        CF_FREE_PTR(conf->mdName);
     }
 
-    CfFree(conf);
+    CF_FREE_PTR(conf);
 }
 
 bool SetConfig(HcfGenCsrConf **csrConfig, CsrGenerationConfig const& config)
@@ -195,10 +191,8 @@ bool SetConfig(HcfGenCsrConf **csrConfig, CsrGenerationConfig const& config)
 void FreeCmsSignerOptions(HcfCmsSignerOptions *options)
 {
     if (options != nullptr) {
-        CfFree(options->mdName);
-        options->mdName = nullptr;
-        CfFree(options);
-        options = nullptr;
+        CF_FREE_PTR(options->mdName);
+        CF_FREE_PTR(options);
     }
 }
 } // namespace
@@ -214,22 +208,21 @@ CmsGeneratorImpl::~CmsGeneratorImpl()
     this->cmsGenerator_ = nullptr;
 }
 
-void FreePrivateKeyInfo(HcfPrivateKeyInfo *privateKey)
+void FreePrivateKeyInfo(HcfPrivateKeyInfo **privateKey)
 {
-    if (privateKey != nullptr) {
-        if (privateKey->privateKey != nullptr) {
-            CfEncodingBlobDataFree(privateKey->privateKey);
+    if (*privateKey != nullptr) {
+        if ((*privateKey)->privateKey != nullptr) {
+            CfEncodingBlobDataFree((*privateKey)->privateKey);
+            (*privateKey)->privateKey = nullptr;
         }
-        if (privateKey->privateKeyPassword != nullptr) {
-            size_t len = strlen(privateKey->privateKeyPassword);
+        if ((*privateKey)->privateKeyPassword != nullptr) {
+            size_t len = strlen((*privateKey)->privateKeyPassword);
             if (len > 0) {
-                (void)memset_s(privateKey->privateKeyPassword, len, 0, len);
-                CfFree(privateKey->privateKeyPassword);
-                privateKey->privateKeyPassword = nullptr;
+                (void)memset_s((*privateKey)->privateKeyPassword, len, 0, len);
+                CF_FREE_PTR((*privateKey)->privateKeyPassword);
             }
         }
-        CfFree(privateKey);
-        privateKey = nullptr;
+        CF_FREE_PTR(*privateKey);
     }
 }
 
@@ -255,7 +248,6 @@ CfResult SetPrivateKeyInfo(ThPrivateKeyInfo const& keyInfo, HcfPrivateKeyInfo **
     (*privateKey)->privateKey = static_cast<CfEncodingBlob *>(CfMalloc(sizeof(CfEncodingBlob), 0));
     if ((*privateKey)->privateKey == nullptr) {
         ANI_LOGE_THROW(CF_ERR_MALLOC, "malloc private key blob failed");
-        FreePrivateKeyInfo(*privateKey);
         return CF_ERR_MALLOC;
     }
     CfBlob keyBlob = {};
@@ -272,13 +264,11 @@ CfResult SetPrivateKeyInfo(ThPrivateKeyInfo const& keyInfo, HcfPrivateKeyInfo **
     }
     if (!CopyBlobDataToPrivateKey(&keyBlob, (*privateKey)->privateKey)) {
         ANI_LOGE_THROW(CF_ERR_MALLOC, "copy blob data to private key failed");
-        FreePrivateKeyInfo(*privateKey);
         return CF_ERR_MALLOC;
     }
     CfResult ret = GetPrivateKeyPassword(&(*privateKey)->privateKeyPassword, keyInfo);
     if (ret != CF_SUCCESS) {
         ANI_LOGE_THROW(ret, "get private key password failed");
-        FreePrivateKeyInfo(*privateKey);
         return ret;
     }
     return ret;
@@ -293,8 +283,7 @@ CfResult SetCmsSignerOptions(HcfCmsSignerOptions **options, CmsSignerConfig cons
     }
     if (!CopyString(config.mdName, &(*options)->mdName)) {
         ANI_LOGE_THROW(CF_ERR_COPY, "copy mdName failed");
-        CfFree(*options);
-        *options = nullptr;
+        CF_FREE_PTR(*options);
         return CF_ERR_COPY;
     }
     (*options)->addCert = config.addCert.has_value() ? config.addCert.value() : true;
@@ -317,14 +306,14 @@ void CmsGeneratorImpl::AddSigner(weak::X509Cert cert, ThPrivateKeyInfo const& ke
     HcfPrivateKeyInfo *privateKey = nullptr;
     CfResult ret = SetPrivateKeyInfo(keyInfo, &privateKey);
     if (ret != CF_SUCCESS) {
-        FreePrivateKeyInfo(privateKey);
+        FreePrivateKeyInfo(&privateKey);
         ANI_LOGE_THROW(ret, "set private key info failed");
         return;
     }
     HcfCmsSignerOptions *options = nullptr;
     ret = SetCmsSignerOptions(&options, config);
     if (ret != CF_SUCCESS) {
-        FreePrivateKeyInfo(privateKey);
+        FreePrivateKeyInfo(&privateKey);
         ANI_LOGE_THROW(ret, "set cms signer options failed");
         return;
     }
@@ -332,11 +321,11 @@ void CmsGeneratorImpl::AddSigner(weak::X509Cert cert, ThPrivateKeyInfo const& ke
     ret = this->cmsGenerator_->addSigner(this->cmsGenerator_, &(x509Cert->base), privateKey, options);
     if (ret != CF_SUCCESS) {
         ANI_LOGE_THROW(ret, "add signer failed");
-        FreePrivateKeyInfo(privateKey);
+        FreePrivateKeyInfo(&privateKey);
         FreeCmsSignerOptions(options);
         return;
     }
-    FreePrivateKeyInfo(privateKey);
+    FreePrivateKeyInfo(&privateKey);
     FreeCmsSignerOptions(options);
 }
 
@@ -413,13 +402,13 @@ OptStrUint8Arr GenerateCsr(ThPrivateKeyInfo const& keyInfo, CsrGenerationConfig 
     HcfPrivateKeyInfo *privateKey = nullptr;
     CfResult ret = SetPrivateKeyInfo(keyInfo, &privateKey);
     if (ret != CF_SUCCESS) {
-        FreePrivateKeyInfo(privateKey);
+        FreePrivateKeyInfo(&privateKey);
         ANI_LOGE_THROW(ret, "set private key info failed");
         return OptStrUint8Arr::make_UINT8ARRAY(array<uint8_t>{});
     }
     HcfGenCsrConf *csrConfig = nullptr;
     if (!SetConfig(&csrConfig, config)) {
-        FreePrivateKeyInfo(privateKey);
+        FreePrivateKeyInfo(&privateKey);
         ANI_LOGE_THROW(CF_INVALID_PARAMS, "set csr config failed");
         return OptStrUint8Arr::make_UINT8ARRAY(array<uint8_t>{});
     }
@@ -427,7 +416,7 @@ OptStrUint8Arr GenerateCsr(ThPrivateKeyInfo const& keyInfo, CsrGenerationConfig 
     ret = HcfX509CertificateGenCsr(privateKey, csrConfig, &csrBlob);
     if (ret != CF_SUCCESS) {
         ANI_LOGE_THROW(ret, "GenerateCsr failed");
-        FreePrivateKeyInfo(privateKey);
+        FreePrivateKeyInfo(&privateKey);
         FreeGenCsrConf(csrConfig);
         return OptStrUint8Arr::make_UINT8ARRAY(array<uint8_t>{});
     }
@@ -441,7 +430,7 @@ OptStrUint8Arr GenerateCsr(ThPrivateKeyInfo const& keyInfo, CsrGenerationConfig 
         result = OptStrUint8Arr::make_UINT8ARRAY(blob);
     }
     CfBlobDataClearAndFree(&csrBlob);
-    FreePrivateKeyInfo(privateKey);
+    FreePrivateKeyInfo(&privateKey);
     FreeGenCsrConf(csrConfig);
     return result;
 }
