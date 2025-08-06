@@ -23,7 +23,7 @@ namespace ANI::CertFramework {
 class X509CertImpl {
 public:
     X509CertImpl();
-    explicit X509CertImpl(HcfX509Certificate *cert);
+    explicit X509CertImpl(HcfX509Certificate *cert, bool owner = true);
     ~X509CertImpl();
 
     int64_t GetX509CertObj();
@@ -60,6 +60,7 @@ public:
 private:
     HcfX509Certificate *cert_ = nullptr;
     CfObject *object_ = nullptr;
+    bool owner_ = true;
 };
 } // namespace ANI::CertFramework
 
