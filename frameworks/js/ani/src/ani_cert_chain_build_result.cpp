@@ -25,7 +25,6 @@ CertChainBuildResultImpl::CertChainBuildResultImpl(HcfX509CertChainBuildResult *
 
 CertChainBuildResultImpl::~CertChainBuildResultImpl()
 {
-    CfObjDestroy(this->buildResult_);
     this->buildResult_ = nullptr;
 }
 
@@ -40,7 +39,7 @@ X509CertChain CertChainBuildResultImpl::GetCertChain()
         ANI_LOGE_THROW(CF_INVALID_PARAMS, "certChain is nullptr!");
         return make_holder<X509CertChainImpl, X509CertChain>();
     }
-    return make_holder<X509CertChainImpl, X509CertChain>(certChain);
+    return make_holder<X509CertChainImpl, X509CertChain>(certChain, false);
 }
 
 CertChainValidationResult CertChainBuildResultImpl::GetValidationResult()

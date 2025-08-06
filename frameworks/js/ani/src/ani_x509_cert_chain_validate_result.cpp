@@ -24,7 +24,6 @@ CertChainValidationResultImpl::CertChainValidationResultImpl(HcfX509CertChainVal
 CertChainValidationResultImpl::~CertChainValidationResultImpl()
 {
     if (this->owner_) {
-        CfObjDestroy(this->validateResult_);
         this->validateResult_ = nullptr;
     }
 }
@@ -55,7 +54,7 @@ X509TrustAnchor CertChainValidationResultImpl::GetTrustAnchor()
 
     if (this->validateResult_->trustAnchor->CACert != nullptr) {
         anchor.CACert = optional<X509Cert>(std::in_place,
-            make_holder<X509CertImpl, X509Cert>(this->validateResult_->trustAnchor->CACert));
+            make_holder<X509CertImpl, X509Cert>(this->validateResult_->trustAnchor->CACert, false));
     }
 
     if (this->validateResult_->trustAnchor->CASubject != nullptr) {
@@ -84,6 +83,6 @@ X509Cert CertChainValidationResultImpl::GetEntityCert()
         ANI_LOGE_THROW(CF_INVALID_PARAMS, "entityCert is nullptr!");
         return make_holder<X509CertImpl, X509Cert>();
     }
-    return make_holder<X509CertImpl, X509Cert>(cert);
+    return make_holder<X509CertImpl, X509Cert>(cert, false);
 }
 } // namespace ANI::CertFramework
