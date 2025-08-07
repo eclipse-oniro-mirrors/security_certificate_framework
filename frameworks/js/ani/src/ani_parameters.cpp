@@ -603,13 +603,11 @@ void FreeX509CertChainValidateParams(HcfX509CertChainValidateParams &hcfParam)
     if (hcfParam.certCRLCollections != nullptr) {
         CF_FREE_PTR(hcfParam.certCRLCollections->data);
         CF_FREE_PTR(hcfParam.certCRLCollections);
-        hcfParam.certCRLCollections = nullptr;
     }
     FreeHcfRevocationCheckParam(hcfParam.revocationCheckParam);
     if (hcfParam.keyUsage != nullptr) {
         CF_FREE_PTR(hcfParam.keyUsage->data);
         CF_FREE_PTR(hcfParam.keyUsage);
-        hcfParam.keyUsage = nullptr;
     }
 }
 } // namespace ANI::CertFramework
