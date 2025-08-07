@@ -186,12 +186,15 @@ bool CreateParams(CertChainBuildParameters const& param, HcfX509CertChainBuildPa
 namespace ANI::CertFramework {
 X509CertChainImpl::X509CertChainImpl() {}
 
-X509CertChainImpl::X509CertChainImpl(HcfCertChain *x509CertChain) : x509CertChain_(x509CertChain) {}
+X509CertChainImpl::X509CertChainImpl(HcfCertChain *x509CertChain, bool owner /* = true */)
+    : x509CertChain_(x509CertChain), owner_(owner) {}
 
 X509CertChainImpl::~X509CertChainImpl()
 {
-    CfObjDestroy(this->x509CertChain_);
-    this->x509CertChain_ = nullptr;
+    if (this->owner_) {
+        CfObjDestroy(this->x509CertChain_);
+        this->x509CertChain_ = nullptr;
+    }
 }
 
 array<X509Cert> X509CertChainImpl::GetCertList()
@@ -229,8 +232,8 @@ CertChainValidationResult X509CertChainImpl::ValidateSync(CertChainValidationPar
         return make_holder<CertChainValidationResultImpl, CertChainValidationResult>();
     }
     CfResult ret = this->x509CertChain_->validate(this->x509CertChain_, &validateParams, validateResult);
+    FreeX509CertChainValidateParams(validateParams);
     if (ret != CF_SUCCESS) {
-        FreeX509CertChainValidateParams(validateParams);
         CF_FREE_PTR(validateResult);
         ANI_LOGE_THROW(ret, "ValidateSync failed");
         return make_holder<CertChainValidationResultImpl, CertChainValidationResult>();
@@ -238,7 +241,6 @@ CertChainValidationResult X509CertChainImpl::ValidateSync(CertChainValidationPar
 
     CertChainValidationResult result =
         make_holder<CertChainValidationResultImpl, CertChainValidationResult>(validateResult);
-    FreeX509CertChainValidateParams(validateParams);
     return result;
 }
 
@@ -336,13 +338,13 @@ CertChainBuildResult BuildX509CertChainSync(CertChainBuildParameters const& para
     }
     ret = buildResult->certChain->validate(buildResult->certChain,
         &(buildParam.validateParameters), &(buildResult->validateResult));
+    FreeX509CertChainBuildParameters(&buildParam);
     if (ret != CF_SUCCESS) {
-        FreeX509CertChainBuildParameters(&buildParam);
+        CfObjDestroy(buildResult);
         ANI_LOGE_THROW(ret, "Validate failed");
         return make_holder<CertChainBuildResultImpl, CertChainBuildResult>();
     }
     CertChainBuildResult result = make_holder<CertChainBuildResultImpl, CertChainBuildResult>(buildResult);
-    FreeX509CertChainBuildParameters(&buildParam);
     return result;
 }
 
