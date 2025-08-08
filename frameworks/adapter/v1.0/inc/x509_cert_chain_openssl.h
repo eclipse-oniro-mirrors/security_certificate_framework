@@ -32,7 +32,7 @@ CfResult HcfX509CreateTrustAnchorWithKeyStoreFunc(
     const CfBlob *keyStore, const CfBlob *pwd, HcfX509TrustAnchorArray **trustAnchorArray);
 CfResult HcfX509ParsePKCS12Func(
     const CfBlob *keyStore, const HcfParsePKCS12Conf *conf, HcfX509P12Collection **p12Collection);
-
+CfResult HcfCreatePkcs12Func(HcfX509P12Collection *p12Collection, HcfPkcs12CreatingConfig *conf, CfBlob *blob);
 #ifdef __cplusplus
 }
 #endif

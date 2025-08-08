@@ -51,4 +51,19 @@ typedef struct {
     uint32_t otherCertsCount;           // otherCertsCount : count of otherCerts
 } HcfX509P12Collection;
 
+typedef struct {
+    int32_t saltLen;       // saltLen : int
+    int32_t iteration;  // iteration : int
+    CfPbesEncryptionAlgorithm alg;         // alg : AES_128_CBC = 0, AES_192_CBC = 1, AES_256_CBC = 2,
+} HcfPbesParams;
+
+typedef struct {
+    CfBlob *pwd;                        // pwd : string
+    HcfPbesParams keyEncParams;         // keyEncParams : PbesParams
+    bool encryptCert;        // encryptCert : boolean default is true
+    HcfPbesParams certEncParams;        // certEncParams : PbesParams
+    int32_t macSaltLen;     // macSalt : int
+    int32_t macIteration; // macIteration : int
+    CfPkcs12MacDigestAlgorithm macAlg;      // macAlg : SHA256 = 0, SHA384 = 1, SHA512 = 2,
+} HcfPkcs12CreatingConfig;
 #endif // X509_TRUST_ANCHOR_H

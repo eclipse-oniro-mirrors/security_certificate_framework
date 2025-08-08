@@ -59,6 +59,7 @@ extern "C" {
 #endif
 
 void CfBlobFree(CfBlob **blob);
+void CfBlobClearAndFree(CfBlob **blob);
 void CfBlobDataFree(CfBlob *blob);
 void CfBlobDataClearAndFree(CfBlob *blob);
 void CfEncodingBlobDataFree(CfEncodingBlob *encodingBlob);

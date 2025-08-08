@@ -17,6 +17,7 @@
 
 #include "cert_crl_common.h"
 #include "cf_api.h"
+#include "cf_blob.h"
 #include "cf_log.h"
 #include "cf_memory.h"
 #include "cf_param.h"
@@ -37,10 +38,44 @@
 #include "x509_cert_chain_validate_params.h"
 #include "x509_certificate.h"
 
+#define CERT_PKCS12_DEFAULT_SALT_LEN 16
+#define CERT_PKCS12_DEFAULT_ITERATION 2048
+
 namespace OHOS {
 namespace CertFramework {
 thread_local napi_ref NapiX509CertChain::classRef_ = nullptr;
 thread_local napi_ref NapiX509CertChainBulidResult::classRef_ = nullptr;
+
+struct ParsePkcs12Ctx {
+    napi_env env = nullptr;
+
+    napi_deferred deferred = nullptr;
+    napi_value promise = nullptr;
+    napi_async_work asyncWork = nullptr;
+    napi_ref cfRef = nullptr;
+
+    CfBlob *keyStore = nullptr;
+    HcfParsePKCS12Conf *conf = nullptr;
+
+    CfResult errCode = CF_SUCCESS;
+    const char *errMsg = nullptr;
+    HcfX509P12Collection *p12Collection = nullptr;
+};
+
+struct CreatePkcs12Ctx {
+    napi_env env = nullptr;
+    napi_deferred deferred = nullptr;
+    napi_value promise = nullptr;
+    napi_async_work asyncWork = nullptr;
+    napi_ref cfRef = nullptr;
+
+    HcfX509P12Collection *p12Collection = nullptr;
+    HcfPkcs12CreatingConfig *conf = nullptr;
+
+    CfResult errCode = CF_SUCCESS;
+    const char *errMsg = nullptr;
+    CfBlob outBlob = { 0, nullptr };
+};
 
 struct CfCtx {
     AsyncCtx async;
@@ -756,11 +791,22 @@ static bool GetP12ConfFromValue(napi_env env, napi_value arg, HcfParsePKCS12Conf
     return true;
 }
 
-static void FreeP12Collection(HcfX509P12Collection *collection)
+static void FreeP12CollectionCommon(HcfX509P12Collection *collection)
 {
     if (collection == nullptr) {
         return;
     }
+    if (collection->prikey != nullptr) {
+        CfFree(collection->prikey->data);
+        collection->prikey->data = nullptr;
+        CfFree(collection->prikey);
+        collection->prikey = nullptr;
+    }
+}
+
+static void FreeP12Collection(HcfX509P12Collection *collection)
+{
+    FreeP12CollectionCommon(collection);
     if (collection->otherCerts != nullptr && collection->otherCertsCount != 0) {
         for (uint32_t i = 0; i < collection->otherCertsCount; i++) {
             if (collection->otherCerts[i] != nullptr) {
@@ -776,15 +822,17 @@ static void FreeP12Collection(HcfX509P12Collection *collection)
         CfFree(collection->cert);
         collection->cert = nullptr;
     }
-
-    if (collection->prikey != nullptr && collection->prikey->data != nullptr) {
-        CfFree(collection->prikey->data);
-        collection->prikey->data = nullptr;
-        CfFree(collection->prikey);
-        collection->prikey = nullptr;
-    }
-
     CfFree(collection);
+}
+
+static void FreeCreateP12Collection(HcfX509P12Collection *collection)
+{
+    FreeP12CollectionCommon(collection);
+    if (collection->otherCerts != nullptr) {
+        CfFree(collection->otherCerts);
+        collection->otherCerts = nullptr;
+    }
+    CF_FREE_PTR(collection);
 }
 
 static void FreeHcfParsePKCS12Conf(HcfParsePKCS12Conf *conf)
@@ -792,8 +840,18 @@ static void FreeHcfParsePKCS12Conf(HcfParsePKCS12Conf *conf)
     if (conf == nullptr) {
         return;
     }
-    CfBlobFree(&conf->pwd);
+    CfBlobClearAndFree(&conf->pwd);
     CfFree(conf);
+}
+
+static void FreeHcfPkcs12CreateConf(HcfPkcs12CreatingConfig *conf)
+{
+    if (conf == nullptr) {
+        return;
+    }
+    CfBlobDataClearAndFree(conf->pwd);
+    conf->pwd = nullptr;
+    CF_FREE_PTR(conf);
 }
 
 static napi_value ConvertBlobToStringNapiValue(napi_env env, CfBlob *blob)
@@ -826,6 +884,7 @@ static napi_value BuildCreateInstanceByP12Collection(napi_env env, HcfX509P12Col
 {
     napi_value instance;
     napi_create_array(env, &instance);
+
     if (instance == nullptr) {
         LOGE("Create return instance failed!");
         return nullptr;
@@ -919,18 +978,745 @@ static napi_value ParsePKCS12WithKeyStore(napi_env env, size_t argc, napi_value 
     return instance;
 }
 
+static void FreeParsePkcs12CtxCommon(napi_env env, ParsePkcs12Ctx *ctx)
+{
+    if (ctx == nullptr) {
+        return;
+    }
+    if (ctx->asyncWork != nullptr) {
+        napi_delete_async_work(env, ctx->asyncWork);
+        ctx->asyncWork = nullptr;
+    }
+    if (ctx->cfRef != nullptr) {
+        napi_delete_reference(env, ctx->cfRef);
+        ctx->cfRef = nullptr;
+    }
+    if (ctx->keyStore != nullptr) {
+        CfBlobFree(&ctx->keyStore);
+        ctx->keyStore = nullptr;
+    }
+    if (ctx->conf != nullptr) {
+        FreeHcfParsePKCS12Conf(ctx->conf);
+        ctx->conf = nullptr;
+    }
+}
+
+static void FreeParsePkcs12Ctx(napi_env env, ParsePkcs12Ctx *ctx)
+{
+    FreeParsePkcs12CtxCommon(env, ctx);
+    if (ctx->p12Collection != nullptr) {
+        FreeP12Collection(ctx->p12Collection);
+        ctx->p12Collection = nullptr;
+    }
+    CfFree(ctx);
+}
+
+static void FreePkcs12Ctx(napi_env env, ParsePkcs12Ctx *ctx)
+{
+    FreeParsePkcs12CtxCommon(env, ctx);
+    if (ctx->p12Collection != nullptr) {
+        FreeCreateP12Collection(ctx->p12Collection);
+    }
+    CfFree(ctx);
+}
+
+static void ParsePkcs12Execute(napi_env env, void *data)
+{
+    ParsePkcs12Ctx *ctx = static_cast<ParsePkcs12Ctx *>(data);
+    ctx->errCode = HcfParsePKCS12(ctx->keyStore, ctx->conf, &ctx->p12Collection);
+    if (ctx->errCode != CF_SUCCESS) {
+        if (ctx->errCode == CF_INVALID_PARAMS) {
+            ctx->errCode = CF_ERR_PARAMETER_CHECK;
+        }
+        LOGE("HcfParsePKCS12 failed.");
+        ctx->errMsg = "HcfParsePKCS12 failed.";
+        return;
+    }
+}
+
+static void ReturnParsePkcs12Promise(napi_env env, ParsePkcs12Ctx *ctx, napi_value result)
+{
+    if (ctx->errCode == CF_SUCCESS) {
+        napi_resolve_deferred(env, ctx->deferred, result);
+    } else {
+        napi_reject_deferred(env, ctx->deferred,
+            CertGenerateBusinessError(env, ctx->errCode, ctx->errMsg));
+    }
+}
+
+static void ParsePkcs12Complete(napi_env env, napi_status status, void *data)
+{
+    ParsePkcs12Ctx *ctx = static_cast<ParsePkcs12Ctx *>(data);
+    if (ctx->errCode != CF_SUCCESS) {
+        ReturnParsePkcs12Promise(env, ctx, nullptr);
+        FreeParsePkcs12Ctx(env, ctx);
+        return;
+    }
+    napi_value instance = BuildCreateInstanceByP12Collection(env, ctx->p12Collection);
+    if (instance == nullptr) {
+        LOGE("Failed to build instance from p12 collection.");
+        ctx->errCode = CF_ERR_MALLOC;
+        ctx->errMsg = "Failed to build instance from p12 collection.";
+        ReturnParsePkcs12Promise(env, ctx, nullptr);
+        FreeParsePkcs12Ctx(env, ctx);
+        return;
+    }
+    ReturnParsePkcs12Promise(env, ctx, instance);
+    FreePkcs12Ctx(env, ctx);
+}
+
+static napi_value ParsePkcs12AsyncWork(napi_env env, napi_value thisVar, ParsePkcs12Ctx *context)
+{
+    if (napi_create_reference(env, thisVar, 1, &context->cfRef) != napi_ok) {
+        LOGE("create reference failed!");
+        FreeParsePkcs12Ctx(env, context);
+        context = nullptr;
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "Create reference failed!"));
+        return nullptr;
+    }
+
+    if (napi_create_promise(env, &context->deferred, &context->promise) != napi_ok) {
+        LOGE("create promise failed!");
+        FreeParsePkcs12Ctx(env, context);
+        context = nullptr;
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "Create promise failed!"));
+        return nullptr;
+    }
+    napi_create_async_work(
+        env, nullptr, CertGetResourceName(env, "parsePkcs12"),
+        ParsePkcs12Execute,
+        ParsePkcs12Complete,
+        static_cast<void *>(context),
+        &context->asyncWork);
+
+    napi_status status = napi_queue_async_work(env, context->asyncWork);
+    if (status != napi_ok) {
+        LOGE("napi_queue_async_work failed!");
+        FreeParsePkcs12Ctx(env, context);
+        context = nullptr;
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "napi_queue_async_work failed!"));
+        return nullptr;
+    }
+    return context->promise;
+}
+
+static napi_value NapiParsePKCS12Async(napi_env env, napi_value thisVar, napi_value param1, napi_value param2)
+{
+    CfBlob *keyStore = CertGetBlobFromUint8ArrJSParams(env, param1);
+    if (keyStore == nullptr) {
+        LOGE("Failed to get pkcs12!");
+        return nullptr;
+    }
+    HcfParsePKCS12Conf *conf = static_cast<HcfParsePKCS12Conf *>(CfMalloc(sizeof(HcfParsePKCS12Conf), 0));
+    if (conf == nullptr) {
+        CfBlobFree(&keyStore);
+        keyStore = nullptr;
+        LOGE("Failed to malloc conf!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to malloc conf."));
+        return nullptr;
+    };
+    conf->pwd = CertGetBlobFromStringJSParams(env, param2);
+    if (conf->pwd == nullptr) {
+        CfBlobFree(&keyStore);
+        keyStore = nullptr;
+        FreeHcfParsePKCS12Conf(conf);
+        conf = nullptr;
+        LOGE("CertGetBlobFromStringJSParams failed.");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_PARAMETER_CHECK,
+            "CertGetBlobFromStringJSParams failed."));
+        return nullptr;
+    }
+    conf->isPem = true;
+    conf->isGetPriKey = true;
+    conf->isGetCert = true;
+    conf->isGetOtherCerts = true;
+
+    ParsePkcs12Ctx *context = static_cast<ParsePkcs12Ctx *>(CfMalloc(sizeof(ParsePkcs12Ctx), 0));
+    if (context == nullptr) {
+        CfBlobFree(&keyStore);
+        keyStore = nullptr;
+        FreeHcfParsePKCS12Conf(conf);
+        conf = nullptr;
+        LOGE("malloc context failed!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc context failed!"));
+        return nullptr;
+    }
+    context->keyStore = keyStore;
+    context->conf = conf;
+    return ParsePkcs12AsyncWork(env, thisVar, context);
+}
+
 napi_value NapiParsePKCS12(napi_env env, napi_callback_info info)
 {
     size_t argc = ARGS_SIZE_TWO;
     napi_value argv[ARGS_SIZE_TWO] = { nullptr };
-    napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
+    napi_value thisVar;
+    if (napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr) != napi_ok) {
+        LOGE("Failed to get cb info!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "Get cb info failed!"));
+        return nullptr;
+    }
     if (argc != ARGS_SIZE_TWO) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "invalid params count"));
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "invalid params count."));
         LOGE("invalid params count!");
         return nullptr;
     }
+    napi_valuetype valueType;
+    napi_status status = napi_typeof(env, argv[PARAM1], &valueType);
+    if (status != napi_ok) {
+        LOGE("Failed to get object type!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "Get object type failed!"));
+        return nullptr;
+    }
+    if (valueType == napi_string) {
+        napi_value instance = NapiParsePKCS12Async(env, thisVar, argv[PARAM0], argv[PARAM1]);
+        return instance;
+    }
     napi_value instance = ParsePKCS12WithKeyStore(env, argc, argv[PARAM0], argv[PARAM1]);
     return instance;
+}
+
+static bool GetPriKeyFromData(napi_env env, napi_value arg, HcfX509P12Collection *data, const char *name)
+{
+    bool result = false;
+    napi_status status = napi_has_named_property(env, arg, name, &result);
+    if (status != napi_ok) {
+        LOGE("check attributes property failed!");
+        return false;
+    }
+    if (!result) {
+        LOGI("%{public}s do not exist!", name);
+        return true;
+    }
+    napi_value obj = nullptr;
+    status = napi_get_named_property(env, arg, name, &obj);
+    if (status != napi_ok || obj == nullptr) {
+        LOGE("get property %{public}s failed!", name);
+        return false;
+    }
+    napi_valuetype valueType;
+    status = napi_typeof(env, obj, &valueType);
+    if (status != napi_ok) {
+        LOGE("Failed to get object type!");
+        return false;
+    }
+    if (valueType == napi_undefined) {
+        LOGE("%{public}s valueType is null or undefined.", name);
+        return false;
+    }
+    if (valueType == napi_string) {
+        data->isPem = true;
+        data->prikey = CertGetBlobFromStringJSParams(env, obj);
+        if (data->prikey == nullptr) {
+            LOGE("Failed to get private key!");
+            return false;
+        }
+    } else {
+        data->isPem = false;
+        data->prikey = CertGetBlobFromUint8ArrJSParams(env, obj);
+        if (data->prikey == nullptr) {
+            LOGE("Failed to get private key!");
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool GetCertFromData(napi_env env, napi_value arg, HcfX509P12Collection *data, const char *name)
+{
+    bool result = false;
+    napi_status status = napi_has_named_property(env, arg, name, &result);
+    if (status != napi_ok) {
+        LOGE("check attributes property failed!");
+        return false;
+    }
+    if (!result) {
+        LOGI("%{public}s do not exist!", name);
+        return true;
+    }
+    napi_value obj = nullptr;
+    status = napi_get_named_property(env, arg, name, &obj);
+    if (status != napi_ok || obj == nullptr) {
+        LOGE("get property %{public}s failed!", name);
+        return false;
+    }
+    napi_valuetype valueType;
+    status = napi_typeof(env, obj, &valueType);
+    if (status != napi_ok) {
+        LOGE("Failed to get object type!");
+        return false;
+    }
+    if (valueType == napi_undefined) {
+        LOGE("%{public}s valueType is null or undefined.", name);
+        return false;
+    }
+    NapiX509Certificate *napiX509Cert = nullptr;
+    status = napi_unwrap(env, obj, reinterpret_cast<void **>(&napiX509Cert));
+    if (status != napi_ok || napiX509Cert == nullptr) {
+        LOGE("Failed to unwrap x509Cert obj!");
+        return false;
+    }
+
+    HcfX509Certificate *cert = napiX509Cert->GetX509Cert();
+    if (cert == nullptr) {
+        LOGE("cert is null!");
+        return false;
+    }
+    data->cert = cert;
+    return true;
+}
+
+static bool GetOtherCertsFromData(napi_env env, napi_value arg, HcfX509P12Collection *data, const char *name)
+{
+    bool result = false;
+    napi_value obj = nullptr;
+    napi_valuetype valueType;
+    HcfX509CertificateArray certs = { nullptr, 0 };
+    if (napi_has_named_property(env, arg, name, &result) != napi_ok) {
+        LOGE("check attributes property failed!");
+        return false;
+    }
+    if (!result) {
+        LOGI("%{public}s do not exist!", name);
+        return true;
+    }
+    if (napi_get_named_property(env, arg, name, &obj) != napi_ok || obj == nullptr ||
+        napi_typeof(env, obj, &valueType) != napi_ok || valueType == napi_undefined) {
+        LOGE("get property or type failed: %{public}s", name);
+        return false;
+    }
+    if (!GetArrayCertFromNapiValue(env, obj, &certs)) {
+        LOGE("get array cert from data failed!");
+        return false;
+    }
+    if (certs.count == 0) {
+        data->otherCerts = nullptr;
+        data->otherCertsCount = 0;
+        LOGI("otherCerts count is 0!");
+        return true;
+    }
+    data->otherCertsCount = certs.count;
+    data->otherCerts = static_cast<HcfX509Certificate **>(CfMalloc(certs.count * sizeof(HcfX509Certificate *), 0));
+    if (data->otherCerts == nullptr) {
+        LOGE("Failed to malloc otherCerts!");
+        CF_FREE_PTR(certs.data);
+        return false;
+    }
+    for (uint32_t i = 0; i < certs.count; i++) {
+        if (certs.data[i] == nullptr) {
+            LOGE("certs.data[%{public}u] is null!", i);
+            CF_FREE_PTR(data->otherCerts);
+            CF_FREE_PTR(certs.data);
+            return false;
+        }
+        data->otherCerts[i] = certs.data[i];
+    }
+    CF_FREE_PTR(certs.data);
+    return true;
+}
+
+static bool GetP12DataFromValue(napi_env env, napi_value arg, HcfX509P12Collection *data)
+{
+    if (!GetPriKeyFromData(env, arg, data, CERT_CHAIN_PKCS12_TAG_PRIKEY.c_str())) {
+        return false;
+    }
+    if (!GetCertFromData(env, arg, data, CERT_CHAIN_PKCS12_TAG_CERT.c_str())) {
+        return false;
+    }
+    if (!GetOtherCertsFromData(env, arg, data, CERT_CHAIN_PKCS12_TAG_OTHER_CERTS.c_str())) {
+        return false;
+    }
+    return true;
+}
+
+static bool GetNumberFromNapiValue(napi_env env, napi_value arg, int32_t &number, const char *name)
+{
+    bool result = false;
+    napi_status status = napi_has_named_property(env, arg, name, &result);
+    if (status != napi_ok) {
+        LOGE("check attributes property failed!");
+        return false;
+    }
+    if (!result) {
+        LOGI("%{public}s do not exist!", name);
+        return true;
+    }
+    napi_value data = nullptr;
+    status = napi_get_named_property(env, arg, name, &data);
+    if (status != napi_ok) {
+        LOGE("failed to get max length!");
+        return false;
+    }
+    napi_valuetype valueType;
+    status = napi_typeof(env, data, &valueType);
+    if (status != napi_ok) {
+        LOGE("Failed to get object type!");
+        return false;
+    }
+    if ((valueType != napi_number) && (valueType != napi_undefined) && (valueType != napi_null)) {
+        LOGE("%{public}s valueType is null or undefined.", name);
+        return false;
+    }
+    napi_get_value_int32(env, data, &number);
+    return true;
+}
+
+static bool GetPbesParamsFromNapiValue(napi_env env, napi_value arg, HcfPbesParams *params, const char *name)
+{
+    params->saltLen = CERT_PKCS12_DEFAULT_SALT_LEN;
+    params->iteration = CERT_PKCS12_DEFAULT_ITERATION;
+    params->alg = AES_256_CBC;
+
+    bool result = false;
+    napi_status status = napi_has_named_property(env, arg, name, &result);
+    if (status != napi_ok) {
+        LOGE("check attributes property failed!");
+        return false;
+    }
+    if (!result) {
+        LOGI("%{public}s do not exist!", name);
+        return true;
+    }
+    napi_value data = nullptr;
+    status = napi_get_named_property(env, arg, name, &data);
+    if (status != napi_ok) {
+        LOGE("napi_get_named_property failed!");
+        return false;
+    }
+
+    if (!GetNumberFromNapiValue(env, data, params->saltLen, CERT_CHAIN_PKCS12_TAG_SALT_LEN.c_str())) {
+        LOGE("Failed to get salt length from value!");
+        return false;
+    }
+    if (!GetNumberFromNapiValue(env, data, params->iteration, CERT_CHAIN_PKCS12_TAG_ITERATIONS.c_str())) {
+        LOGE("Failed to get iteration from value!");
+        return false;
+    }
+    int32_t number = 0;
+    if (!GetNumberFromNapiValue(env, data, number, CERT_CHAIN_PKCS12_TAG_ALG.c_str())) {
+        LOGE("Failed to get iteration from value!");
+        return false;
+    }
+    params->alg = static_cast<CfPbesEncryptionAlgorithm>(number);
+    return true;
+}
+
+static bool GetEncryptCertFromNapiValue(napi_env env, napi_value arg, bool &encryptCert, const char *name)
+{
+    bool result = false;
+    napi_status status = napi_has_named_property(env, arg, name, &result);
+    if (status != napi_ok) {
+        LOGE("check attributes property failed!");
+        return false;
+    }
+    if (!result) {
+        LOGI("%{public}s do not exist!", name);
+        return true;
+    }
+    napi_value data = nullptr;
+    status = napi_get_named_property(env, arg, name, &data);
+    if (status != napi_ok) {
+        LOGE("failed to get encrypt cert!");
+        return false;
+    }
+    napi_valuetype valueType;
+    status = napi_typeof(env, data, &valueType);
+    if (status != napi_ok) {
+        LOGE("Failed to get object type!");
+        return false;
+    }
+    if ((valueType != napi_boolean) && (valueType != napi_undefined) && (valueType != napi_null)) {
+        LOGE("%{public}s valueType is null or undefined.", name);
+        return false;
+    }
+    napi_get_value_bool(env, data, &encryptCert);
+    return true;
+}
+
+static bool GetPassWordFromNapiValue(napi_env env, napi_value arg, CfBlob **pwd)
+{
+    napi_value obj = GetProp(env, arg, CERT_CHAIN_PKCS12_TAG_PASSWORD.c_str());
+    if (obj == nullptr) {
+        LOGE("Failed to get password from value!");
+        return false;
+    }
+    *pwd = CertGetBlobFromStringJSParams(env, obj);
+    if (*pwd == nullptr || (*pwd)->data == nullptr) {
+        LOGE("Failed to get password data from value!");
+        return false;
+    }
+    return true;
+}
+
+static bool GetP12CreateConfFromValue(napi_env env, napi_value arg, HcfPkcs12CreatingConfig *conf)
+{
+    conf->encryptCert = true;
+    conf->macSaltLen = CERT_PKCS12_DEFAULT_SALT_LEN;
+    conf->macIteration = CERT_PKCS12_DEFAULT_ITERATION;
+    conf->macAlg = CF_MAC_SHA256;
+    conf->keyEncParams.alg = AES_256_CBC;
+    conf->certEncParams.alg = AES_256_CBC;
+
+    if (!GetPbesParamsFromNapiValue(env, arg, &conf->keyEncParams, CERT_CHAIN_PKCS12_TAG_KEY_ENC_PARAMS.c_str())) {
+        return false;
+    }
+    if (!GetEncryptCertFromNapiValue(env, arg, conf->encryptCert, CERT_CHAIN_PKCS12_TAG_ENCRYPT_CERT.c_str())) {
+        return false;
+    }
+    if (!GetPbesParamsFromNapiValue(env, arg, &conf->certEncParams, CERT_CHAIN_PKCS12_TAG_CERT_ENC_PARAMS.c_str())) {
+        return false;
+    }
+    
+    if (!GetNumberFromNapiValue(env, arg, conf->macSaltLen, CERT_CHAIN_PKCS12_TAG_MAC_SALT_LEN.c_str())) {
+        return false;
+    }
+    if (!GetNumberFromNapiValue(env, arg, conf->macIteration, CERT_CHAIN_PKCS12_TAG_MAC_ITERATIONS.c_str())) {
+        return false;
+    }
+    int32_t number = 0;
+    if (!GetNumberFromNapiValue(env, arg, number, CERT_CHAIN_PKCS12_TAG_MAC_ALG.c_str())) {
+        LOGE("Failed to get iteration from value!");
+        return false;
+    }
+    conf->macAlg = static_cast<CfPkcs12MacDigestAlgorithm>(number);
+
+    if (!GetPassWordFromNapiValue(env, arg, &conf->pwd)) {
+        return false;
+    }
+    return true;
+}
+
+static napi_value CreatePkcs12(napi_env env, size_t argc, napi_value param0, napi_value param1)
+{
+    HcfX509P12Collection *p12Collection =
+        static_cast<HcfX509P12Collection *>(CfMalloc(sizeof(HcfX509P12Collection), 0));
+    if (p12Collection == nullptr) {
+        LOGE("Failed to malloc p12Collection!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to malloc p12Collection!"));
+        return nullptr;
+    }
+    if (!GetP12DataFromValue(env, param0, p12Collection)) {
+        LOGE("Failed to get p12 data from value!");
+        FreeCreateP12Collection(p12Collection);
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_PARAMETER_CHECK, "Failed to get p12 data from value!"));
+        return nullptr;
+    }
+
+    HcfPkcs12CreatingConfig *conf =
+        static_cast<HcfPkcs12CreatingConfig *>(CfMalloc(sizeof(HcfPkcs12CreatingConfig), 0));
+    if (conf == nullptr) {
+        FreeCreateP12Collection(p12Collection);
+        LOGE("Failed to malloc conf!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to malloc conf!"));
+        return nullptr;
+    }
+    if (!GetP12CreateConfFromValue(env, param1, conf)) {
+        FreeCreateP12Collection(p12Collection);
+        FreeHcfPkcs12CreateConf(conf);
+        LOGE("GetP12CreateConfFromValue failed!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_PARAMETER_CHECK, "GetP12CreateConfFromValue failed!"));
+        return nullptr;
+    }
+    CfBlob blob = { 0, nullptr };
+
+    CfResult ret = HcfCreatePkcs12(p12Collection, conf, &blob);
+    if (ret != CF_SUCCESS) {
+        FreeCreateP12Collection(p12Collection);
+        FreeHcfPkcs12CreateConf(conf);
+        LOGE("HcfCreatePkcs12 failed!");
+        napi_throw(env, CertGenerateBusinessError(env, ret, "HcfCreatePkcs12 failed!"));
+        return nullptr;
+    }
+    FreeCreateP12Collection(p12Collection);
+    FreeHcfPkcs12CreateConf(conf);
+    napi_value returnValue = ConvertBlobToUint8ArrNapiValue(env, &blob);
+    CfBlobDataFree(&blob);
+    return returnValue;
+}
+
+napi_value NapiCreatePkcs12Sync(napi_env env, napi_callback_info info)
+{
+    size_t argc = ARGS_SIZE_TWO;
+    napi_value argv[ARGS_SIZE_TWO] = { nullptr };
+    if (napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr) != napi_ok) {
+        LOGE("Failed to get cb info!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "Get cb info failed!"));
+        return nullptr;
+    }
+    if (argc != ARGS_SIZE_TWO) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_PARAMETER_CHECK, "invalid params count"));
+        LOGE("invalid params count!");
+        return nullptr;
+    }
+    napi_value instance = CreatePkcs12(env, argc, argv[PARAM0], argv[PARAM1]);
+    return instance;
+}
+
+static void CreatePkcs12Execute(napi_env env, void *data)
+{
+    CreatePkcs12Ctx *ctx = static_cast<CreatePkcs12Ctx *>(data);
+    ctx->errCode = HcfCreatePkcs12(ctx->p12Collection, ctx->conf, &(ctx->outBlob));
+    if (ctx->errCode != CF_SUCCESS) {
+        LOGE("HcfCreatePkcs12 failed.");
+        ctx->errMsg = "HcfCreatePkcs12 failed.";
+        return;
+    }
+}
+
+static void FreeCreatePkcs12Ctx(napi_env env, CreatePkcs12Ctx *ctx)
+{
+    if (ctx == nullptr) {
+        return;
+    }
+    if (ctx->asyncWork != nullptr) {
+        napi_delete_async_work(env, ctx->asyncWork);
+        ctx->asyncWork = nullptr;
+    }
+    if (ctx->cfRef != nullptr) {
+        napi_delete_reference(env, ctx->cfRef);
+        ctx->cfRef = nullptr;
+    }
+
+    if (ctx->p12Collection != nullptr) {
+        FreeCreateP12Collection(ctx->p12Collection);
+    }
+    if (ctx->conf != nullptr) {
+        FreeHcfPkcs12CreateConf(ctx->conf);
+    }
+    CfBlobDataFree(&ctx->outBlob);
+   
+    CfFree(ctx);
+}
+
+static void ReturnCreatePkcs12PromiseResult(napi_env env, CreatePkcs12Ctx *context, napi_value result)
+{
+    if (context->errCode == CF_SUCCESS) {
+        napi_resolve_deferred(env, context->deferred, result);
+    } else {
+        napi_reject_deferred(env, context->deferred,
+            CertGenerateBusinessError(env, context->errCode, context->errMsg));
+    }
+}
+
+static void CreatePkcs12Complete(napi_env env, napi_status status, void *data)
+{
+    CreatePkcs12Ctx *ctx = static_cast<CreatePkcs12Ctx *>(data);
+    if (ctx->errCode != CF_SUCCESS) {
+        ReturnCreatePkcs12PromiseResult(env, ctx, nullptr);
+        FreeCreatePkcs12Ctx(env, ctx);
+        return;
+    }
+    napi_value instance =  ConvertBlobToUint8ArrNapiValue(env, &ctx->outBlob);
+    if (instance == nullptr) {
+        LOGE("Failed to convert blob to instance.");
+        ctx->errCode = CF_ERR_MALLOC;
+        ctx->errMsg = "Failed to convert blob to instance.";
+        ReturnCreatePkcs12PromiseResult(env, ctx, nullptr);
+        FreeCreatePkcs12Ctx(env, ctx);
+        return;
+    }
+    ReturnCreatePkcs12PromiseResult(env, ctx, instance);
+    FreeCreatePkcs12Ctx(env, ctx);
+}
+
+static napi_value CreatePkcs12AsyncWork(napi_env env, napi_value thisVar, CreatePkcs12Ctx *context)
+{
+    if (napi_create_reference(env, thisVar, 1, &context->cfRef) != napi_ok) {
+        LOGE("create reference failed!");
+        FreeCreatePkcs12Ctx(env, context);
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "Create reference failed!"));
+        return nullptr;
+    }
+    if (napi_create_promise(env, &context->deferred, &context->promise) != napi_ok) {
+        LOGE("napi_create_promise failed!");
+        FreeCreatePkcs12Ctx(env, context);
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "napi_create_promise failed!"));
+        return nullptr;
+    }
+
+    napi_create_async_work(
+        env, nullptr, CertGetResourceName(env, "createPkcs12"),
+        CreatePkcs12Execute,
+        CreatePkcs12Complete,
+        static_cast<void *>(context),
+        &context->asyncWork);
+
+    napi_status status = napi_queue_async_work(env, context->asyncWork);
+    if (status != napi_ok) {
+        LOGE("napi_queue_async_work failed!");
+        FreeCreatePkcs12Ctx(env, context);
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "napi_queue_async_work failed!"));
+        return nullptr;
+    }
+    return context->promise;
+}
+
+static CreatePkcs12Ctx* BuildCreatePkcs12Context(napi_env env, napi_value* argv)
+{
+    HcfX509P12Collection *p12Collection =
+        static_cast<HcfX509P12Collection *>(CfMalloc(sizeof(HcfX509P12Collection), 0));
+    if (p12Collection == nullptr) {
+        LOGE("Failed to malloc p12Collection!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to malloc p12Collection."));
+        return nullptr;
+    }
+    if (!GetP12DataFromValue(env, argv[PARAM0], p12Collection)) {
+        LOGE("Failed to get p12 data from value!");
+        FreeCreateP12Collection(p12Collection);
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_PARAMETER_CHECK, "Failed to get p12 data from value."));
+        return nullptr;
+    }
+
+    HcfPkcs12CreatingConfig *conf =
+        static_cast<HcfPkcs12CreatingConfig *>(CfMalloc(sizeof(HcfPkcs12CreatingConfig), 0));
+    if (conf == nullptr) {
+        FreeCreateP12Collection(p12Collection);
+        LOGE("Failed to malloc conf!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to malloc conf."));
+        return nullptr;
+    }
+    if (!GetP12CreateConfFromValue(env, argv[PARAM1], conf)) {
+        FreeCreateP12Collection(p12Collection);
+        FreeHcfPkcs12CreateConf(conf);
+        LOGE("Failed to get conf!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_PARAMETER_CHECK, "Failed to get conf."));
+        return nullptr;
+    }
+    CreatePkcs12Ctx *context = static_cast<CreatePkcs12Ctx *>(CfMalloc(sizeof(CreatePkcs12Ctx), 0));
+    if (context == nullptr) {
+        LOGE("malloc context failed!");
+        FreeCreateP12Collection(p12Collection);
+        FreeHcfPkcs12CreateConf(conf);
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc context failed!"));
+        return nullptr;
+    }
+    context->p12Collection = p12Collection;
+    context->conf = conf;
+    return context;
+}
+
+napi_value NapiCreatePkcs12(napi_env env, napi_callback_info info)
+{
+    size_t argc = ARGS_SIZE_TWO;
+    napi_value argv[ARGS_SIZE_TWO] = { nullptr };
+    napi_value thisVar = nullptr;
+    if (napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr) != napi_ok) {
+        LOGE("Failed to get cb info!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "Get cb info failed!"));
+        return nullptr;
+    }
+    if (argc != ARGS_SIZE_TWO) {
+        LOGE("invalid params count!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_PARAMETER_CHECK, "invalid params count"));
+        return nullptr;
+    }
+
+    CreatePkcs12Ctx *context = BuildCreatePkcs12Context(env, argv);
+    if (context == nullptr) {
+        LOGE("BuildCreatePkcs12Context failed!");
+        return nullptr;
+    }
+    return CreatePkcs12AsyncWork(env, thisVar, context);
 }
 
 bool GetCertMatchParameters(napi_env env, napi_value obj, HcfX509CertChainBuildParameters **buildParams)
@@ -1214,6 +2000,8 @@ void NapiX509CertChain::DefineX509CertChainJsClass(napi_env env, napi_value expo
         DECLARE_NAPI_FUNCTION("createX509CertChain", NapiCreateX509CertChain),
         DECLARE_NAPI_FUNCTION("createTrustAnchorsWithKeyStore", NapiCreateTrustAnchorsWithKeyStore),
         DECLARE_NAPI_FUNCTION("parsePkcs12", NapiParsePKCS12),
+        DECLARE_NAPI_FUNCTION("createPkcs12Sync", NapiCreatePkcs12Sync),
+        DECLARE_NAPI_FUNCTION("createPkcs12", NapiCreatePkcs12),
     };
     napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
 

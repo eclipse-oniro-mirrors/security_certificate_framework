@@ -30,6 +30,16 @@ void CfBlobFree(CfBlob **blob)
     *blob = NULL;
 }
 
+void CfBlobClearAndFree(CfBlob **blob)
+{
+    if (blob == NULL) {
+        return;
+    }
+    CfBlobDataClearAndFree(*blob);
+    CfFree(*blob);
+    *blob = NULL;
+}
+
 void CfBlobDataFree(CfBlob *blob)
 {
     if ((blob == NULL) || (blob->data == NULL)) {

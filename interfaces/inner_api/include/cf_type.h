@@ -158,6 +158,18 @@ typedef enum {
     DER = 1,
 } CfEncodinigBaseFormat;
 
+typedef enum {
+    AES_128_CBC = 0,
+    AES_192_CBC = 1,
+    AES_256_CBC = 2,
+} CfPbesEncryptionAlgorithm;
+
+typedef enum {
+    CF_MAC_SHA256 = 0,
+    CF_MAC_SHA384 = 1,
+    CF_MAC_SHA512 = 2,
+} CfPkcs12MacDigestAlgorithm;
+
 typedef struct {
     uint32_t tag;
     union {
