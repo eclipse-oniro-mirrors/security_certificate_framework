@@ -15,6 +15,7 @@
 
 #include "ani_x509_cert_chain_validate_result.h"
 #include "ani_x509_cert.h"
+#include "ani_parameters.h"
 
 namespace ANI::CertFramework {
 CertChainValidationResultImpl::CertChainValidationResultImpl() {}
@@ -24,7 +25,8 @@ CertChainValidationResultImpl::CertChainValidationResultImpl(HcfX509CertChainVal
 CertChainValidationResultImpl::~CertChainValidationResultImpl()
 {
     if (this->owner_) {
-        this->validateResult_ = nullptr;
+        FreeCertChainValidateResult(this->validateResult_);
+        CF_FREE_PTR(this->validateResult_);
     }
 }
 
@@ -35,8 +37,8 @@ int64_t CertChainValidationResultImpl::GetCertChainValidationResultObj()
 
 X509TrustAnchor CertChainValidationResultImpl::GetTrustAnchor()
 {
-    if (this->validateResult_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "validateResult_ is nullptr!");
+    if (this->validateResult_ == nullptr || this->validateResult_->trustAnchor == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "trustAnchor is nullptr!");
         return {};
     }
     X509TrustAnchor anchor = {
@@ -47,9 +49,9 @@ X509TrustAnchor CertChainValidationResultImpl::GetTrustAnchor()
     };
 
     if (this->validateResult_->trustAnchor->CAPubKey != nullptr) {
-        array<uint8_t> capubkey = {};
-        DataBlobToArrayU8(*(this->validateResult_->trustAnchor->CAPubKey), capubkey);
-        anchor.CAPubKey = optional<array<uint8_t>>(std::in_place, capubkey);
+        array<uint8_t> caPubkey = {};
+        DataBlobToArrayU8(*(this->validateResult_->trustAnchor->CAPubKey), caPubkey);
+        anchor.CAPubKey = optional<array<uint8_t>>(std::in_place, caPubkey);
     }
 
     if (this->validateResult_->trustAnchor->CACert != nullptr) {
@@ -58,9 +60,9 @@ X509TrustAnchor CertChainValidationResultImpl::GetTrustAnchor()
     }
 
     if (this->validateResult_->trustAnchor->CASubject != nullptr) {
-        array<uint8_t> casubject = {};
-        DataBlobToArrayU8(*(this->validateResult_->trustAnchor->CASubject), casubject);
-        anchor.CASubject = optional<array<uint8_t>>(std::in_place, casubject);
+        array<uint8_t> caSubject = {};
+        DataBlobToArrayU8(*(this->validateResult_->trustAnchor->CASubject), caSubject);
+        anchor.CASubject = optional<array<uint8_t>>(std::in_place, caSubject);
     }
 
     if (this->validateResult_->trustAnchor->nameConstraints != nullptr) {

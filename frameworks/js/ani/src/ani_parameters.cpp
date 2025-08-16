@@ -110,10 +110,13 @@ bool BuildCertPolicy(X509CertMatchParameters const& param, HcfX509CertMatchParam
     return true;
 }
 
-void FreeX509TrustAnchorObj(HcfX509TrustAnchor *&trustAnchor)
+void FreeX509TrustAnchor(HcfX509TrustAnchor *&trustAnchor, bool freeCert = true)
 {
     if (trustAnchor == nullptr) {
         return;
+    }
+    if (freeCert) {
+        CfObjDestroy(trustAnchor->CACert);
     }
     trustAnchor->CACert = nullptr;
     CfBlobFree(&trustAnchor->CAPubKey);
@@ -588,7 +591,7 @@ void FreeTrustAnchorArray(HcfX509TrustAnchorArray *&trustAnchors)
         return;
     }
     for (uint32_t i = 0; i < trustAnchors->count; ++i) {
-        FreeX509TrustAnchorObj(trustAnchors->data[i]);
+        FreeX509TrustAnchor(trustAnchors->data[i], false);
     }
     CF_FREE_PTR(trustAnchors);
 }
@@ -609,5 +612,14 @@ void FreeX509CertChainValidateParams(HcfX509CertChainValidateParams &hcfParam)
         CF_FREE_PTR(hcfParam.keyUsage->data);
         CF_FREE_PTR(hcfParam.keyUsage);
     }
+}
+
+void FreeCertChainValidateResult(HcfX509CertChainValidateResult *result)
+{
+    if (result == nullptr) {
+        return;
+    }
+    CfObjDestroy(result->entityCert);
+    FreeX509TrustAnchor(result->trustAnchor);
 }
 } // namespace ANI::CertFramework
