@@ -19,6 +19,7 @@
 #include "ani_common.h"
 #include "x509_cert_match_parameters.h"
 #include "x509_cert_chain_validate_params.h"
+#include "x509_cert_chain_validate_result.h"
 
 namespace ANI::CertFramework {
 bool BuildX509CertMatchParams(X509CertMatchParameters const& param, HcfX509CertMatchParams &hcfParam);
@@ -28,6 +29,8 @@ bool BuildX509CertChainValidateParams(CertChainValidationParameters const& param
     HcfX509CertChainValidateParams &hcfParam);
 void FreeX509CertChainValidateParams(HcfX509CertChainValidateParams &hcfParam);
 void FreeTrustAnchorArray(HcfX509TrustAnchorArray *&trustAnchors);
+
+void FreeCertChainValidateResult(HcfX509CertChainValidateResult *result);
 } // namespace ANI::CertFramework
 
 #endif // ANI_PARAMETERS_H
