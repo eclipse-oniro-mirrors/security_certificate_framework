@@ -23,8 +23,7 @@
 namespace ANI::CertFramework {
 X509CertImpl::X509CertImpl() {}
 
-X509CertImpl::X509CertImpl(HcfX509Certificate *cert, bool owner /* = true */)
-    : cert_(cert), object_(nullptr), owner_(owner)
+X509CertImpl::X509CertImpl(HcfX509Certificate *cert, bool owner /* = true */) : cert_(cert), owner_(owner)
 {
     CfEncodingBlob encodingBlob = {};
     CfResult res = this->cert_->base.getEncoded(&(this->cert_->base), &encodingBlob);
