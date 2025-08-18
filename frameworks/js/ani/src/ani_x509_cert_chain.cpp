@@ -340,7 +340,8 @@ CertChainBuildResult BuildX509CertChainSync(CertChainBuildParameters const& para
         &(buildParam.validateParameters), &(buildResult->validateResult));
     FreeX509CertChainBuildParameters(&buildParam);
     if (ret != CF_SUCCESS) {
-        CfObjDestroy(buildResult);
+        CfObjDestroy(buildResult->certChain);
+        CF_FREE_PTR(buildResult);
         ANI_LOGE_THROW(ret, "Validate failed");
         return make_holder<CertChainBuildResultImpl, CertChainBuildResult>();
     }

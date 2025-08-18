@@ -16,6 +16,7 @@
 #include "ani_cert_chain_build_result.h"
 #include "ani_x509_cert_chain.h"
 #include "ani_x509_cert_chain_validate_result.h"
+#include "ani_parameters.h"
 
 namespace ANI::CertFramework {
 CertChainBuildResultImpl::CertChainBuildResultImpl() {}
@@ -25,7 +26,11 @@ CertChainBuildResultImpl::CertChainBuildResultImpl(HcfX509CertChainBuildResult *
 
 CertChainBuildResultImpl::~CertChainBuildResultImpl()
 {
-    this->buildResult_ = nullptr;
+    if (this->buildResult_ != nullptr) {
+        FreeCertChainValidateResult(&this->buildResult_->validateResult);
+        CfObjDestroy(this->buildResult_->certChain);
+        CF_FREE_PTR(this->buildResult_);
+    }
 }
 
 X509CertChain CertChainBuildResultImpl::GetCertChain()
