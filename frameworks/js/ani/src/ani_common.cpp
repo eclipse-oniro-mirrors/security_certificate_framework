@@ -108,13 +108,30 @@ bool ArrayU8ToBigInteger(const T &arr, CfBlob &bigint, bool isReverse /* = false
 
 void BigIntegerToArrayU8(const CfBlob &bigint, array<uint8_t> &arr, bool isReverse /* = false */)
 {
-    arr = array<uint8_t>(bigint.size + 1);
+    arr = array<uint8_t>(bigint.size + 1, 0);
     std::copy(bigint.data, bigint.data + bigint.size, arr.data());
     if (isReverse) { // reverse bigint data for serial number
         std::reverse(arr.begin(), arr.begin() + bigint.size);
     }
     // 0x00 is the sign bit of big integer, it's always a positive number in this implementation
     arr[bigint.size] = 0x00;
+}
+
+bool ArrayU8ToCrlNumber(const array<uint8_t> &arr, CfBlob &crlNum)
+{
+    CfBlob bigint = {};
+    if (!ArrayU8ToBigInteger(arr, bigint)) {
+        return false;
+    }
+    size_t size = ((bigint.size + 7) / 8) * 8; // the crl number is aligned to 8 bytes
+    uint8_t *data = static_cast<uint8_t *>(CfMalloc(size, 0));
+    if (data == nullptr) {
+        return false;
+    }
+    (void)memcpy_s(data, size, bigint.data, bigint.size); // size >= bigint.size
+    crlNum.data = data;
+    crlNum.size = size;
+    return true;
 }
 
 void StringToDataBlob(const string &str, CfBlob &blob)
@@ -154,7 +171,7 @@ bool StringCopyToBlob(const string &str, CfBlob **blob)
     if (*blob == nullptr) {
         return false;
     }
-    (*blob)->data = (uint8_t *)CfMalloc(str.size() + 1, 0);
+    (*blob)->data = static_cast<uint8_t *>(CfMalloc(str.size() + 1, 0));
     if ((*blob)->data == nullptr) {
         CF_FREE_PTR(*blob);
         return false;
@@ -173,7 +190,7 @@ bool ArrayU8CopyToBlob(const array<uint8_t> &arr, CfBlob **blob)
     if (*blob == nullptr) {
         return false;
     }
-    (*blob)->data = (uint8_t *)CfMalloc(arr.size(), 0);
+    (*blob)->data = static_cast<uint8_t *>(CfMalloc(arr.size(), 0));
     if ((*blob)->data == nullptr) {
         CF_FREE_PTR(*blob);
         return false;

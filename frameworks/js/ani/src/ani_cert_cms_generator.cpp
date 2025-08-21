@@ -369,7 +369,7 @@ OptStrUint8Arr CmsGeneratorImpl::DoFinalSync(array_view<uint8_t> data, optional_
             false;
     }
     CfBlob contentBlob = { data.size(), data.data() };
-    CfBlob outBlob = { 0,  nullptr, };
+    CfBlob outBlob = {};
     CfResult ret = this->cmsGenerator_->doFinal(this->cmsGenerator_, &contentBlob, &cmsOptions, &outBlob);
     if (ret != CF_SUCCESS) {
         ANI_LOGE_THROW(ret, "do final failed");
@@ -380,7 +380,7 @@ OptStrUint8Arr CmsGeneratorImpl::DoFinalSync(array_view<uint8_t> data, optional_
         return OptStrUint8Arr::make_STRING(reinterpret_cast<char *>(outBlob.data), outBlob.size);
     } else {
         array<uint8_t> data = {};
-        DataBlobToArrayU8({ outBlob.size, outBlob.data }, data);
+        DataBlobToArrayU8(outBlob, data);
         CfBlobDataClearAndFree(&outBlob);
         return OptStrUint8Arr::make_UINT8ARRAY(data);
     }

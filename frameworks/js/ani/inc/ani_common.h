@@ -44,7 +44,7 @@ using ThPrivateKeyInfo = ohos::security::cert::cert::PrivateKeyInfo;
 #define ANI_LOGE_THROW(code, msg) \
     do { \
         int rc = ConvertResultCode(code); \
-        LOGE("%{public}s, code: %{public}d", msg, rc); \
+        LOGE("%{public}s code: %{public}d", msg, rc); \
         set_business_error(rc, msg); \
     } while (0)
 
@@ -57,6 +57,8 @@ void DataBlobToArrayU8(const CfBlob &blob, array<uint8_t> &arr);
 template<typename T>
 bool ArrayU8ToBigInteger(const T &arr, CfBlob &bigInt, bool isReverse = false);
 void BigIntegerToArrayU8(const CfBlob &bigInt, array<uint8_t> &arr, bool isReverse = false);
+
+bool ArrayU8ToCrlNumber(const array<uint8_t> &arr, CfBlob &crlNum);
 
 void StringToDataBlob(const string &str, CfBlob &blob);
 string DataBlobToString(const CfBlob &blob);
