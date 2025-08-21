@@ -57,17 +57,20 @@ CfResult SelectCRLs(HcfCertCrlCollection *collection, X509CRLMatchParameters con
         matchParam.updateDateTime = &updateDateTime;
     }
     if (param.maxCRL.has_value()) {
-        bigintValid &= ArrayU8ToBigInteger(param.maxCRL.value(), maxCRL, true);
+        bigintValid &= ArrayU8ToCrlNumber(param.maxCRL.value(), maxCRL);
         matchParam.maxCRL = &maxCRL;
     }
     if (param.minCRL.has_value()) {
-        bigintValid &= ArrayU8ToBigInteger(param.minCRL.value(), minCRL, true);
+        bigintValid &= ArrayU8ToCrlNumber(param.minCRL.value(), minCRL);
         matchParam.minCRL = &minCRL;
     }
-    if (!bigintValid) {
-        return CF_INVALID_PARAMS;
+    CfResult res = CF_INVALID_PARAMS;
+    if (bigintValid) {
+        res = collection->selectCRLs(collection, &matchParam, hcfCrls);
     }
-    return collection->selectCRLs(collection, &matchParam, hcfCrls);
+    CfBlobDataFree(&maxCRL);
+    CfBlobDataFree(&minCRL);
+    return res;
 }
 } // namespace
 
