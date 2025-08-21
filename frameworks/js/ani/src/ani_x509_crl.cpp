@@ -350,22 +350,22 @@ bool X509CRLImpl::Match(X509CRLMatchParameters const& param)
         matchParams.updateDateTime = &updateDateTime;
     }
     if (param.maxCRL.has_value()) {
-        bigintValid &= ArrayU8ToBigInteger(param.maxCRL.value(), maxCRL, true);
+        bigintValid &= ArrayU8ToCrlNumber(param.maxCRL.value(), maxCRL);
         matchParams.maxCRL = &maxCRL;
     }
     if (param.minCRL.has_value()) {
-        bigintValid &= ArrayU8ToBigInteger(param.minCRL.value(), minCRL, true);
+        bigintValid &= ArrayU8ToCrlNumber(param.minCRL.value(), minCRL);
         matchParams.minCRL = &minCRL;
     }
-    if (!bigintValid) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "params is invalid!");
-        return false;
-    }
     bool flag = false;
-    CfResult res = this->x509Crl_->match(this->x509Crl_, &matchParams, &flag);
+    CfResult res = CF_INVALID_PARAMS;
+    if (bigintValid) {
+        res = this->x509Crl_->match(this->x509Crl_, &matchParams, &flag);
+    }
+    CfBlobDataFree(&maxCRL);
+    CfBlobDataFree(&minCRL);
     if (res != CF_SUCCESS) {
         ANI_LOGE_THROW(res, "match failed!");
-        return false;
     }
     return flag;
 }
