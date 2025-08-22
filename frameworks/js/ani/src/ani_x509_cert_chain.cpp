@@ -45,7 +45,7 @@ CfResult SetParsePKCS12Conf(Pkcs12ParsingConfig const& config, HcfParsePKCS12Con
         ANI_LOGE_THROW(CF_ERR_MALLOC, "malloc failed!");
         return CF_ERR_MALLOC;
     }
-    CfBlob *tmpPwd = (CfBlob *)CfMalloc(config.password.size(), 0);
+    CfBlob *tmpPwd = (CfBlob *)CfMalloc(sizeof(CfBlob), 0);
     if (tmpPwd == nullptr) {
         FreePkcs12Data(tmpConf, nullptr);
         ANI_LOGE_THROW(CF_ERR_MALLOC, "malloc failed!");
@@ -72,7 +72,7 @@ CfResult SetParsePKCS12Conf(Pkcs12ParsingConfig const& config, HcfParsePKCS12Con
     return CF_SUCCESS;
 }
 
-CfResult SetKeyStore(array_view<uint8_t> data, CfBlob **keyStore)
+CfResult SetKeyStore(const array_view<uint8_t> &data, CfBlob **keyStore)
 {
     if (data.size() == 0) {
         *keyStore = nullptr;
@@ -96,7 +96,7 @@ CfResult SetKeyStore(array_view<uint8_t> data, CfBlob **keyStore)
     return CF_SUCCESS;
 }
 
-CfResult SetPkcs12Data(Pkcs12ParsingConfig const& config, array_view<uint8_t> data,
+CfResult SetPkcs12Data(Pkcs12ParsingConfig const& config, const array_view<uint8_t> &data,
     HcfParsePKCS12Conf **conf, CfBlob **keyStore)
 {
     if (SetParsePKCS12Conf(config, conf) != CF_SUCCESS) {
@@ -171,11 +171,11 @@ void FreeX509CertChainBuildParameters(HcfX509CertChainBuildParameters *buildPara
 
 bool CreateParams(CertChainBuildParameters const& param, HcfX509CertChainBuildParameters *buildParam)
 {
-    int32_t maxlength = param.maxLength.has_value() ? param.maxLength.value() : -1;
+    int32_t maxLength = param.maxLength.has_value() ? param.maxLength.value() : -1;
     if (!BuildX509CertMatchParams(param.certMatchParameters, buildParam->certMatchParameters)) {
         return false;
     }
-    buildParam->maxlength = maxlength;
+    buildParam->maxlength = maxLength;
     if (!BuildX509CertChainValidateParams(param.validationParameters, buildParam->validateParameters)) {
         return false;
     }
