@@ -31,9 +31,10 @@ CertExtensionImpl::~CertExtensionImpl()
 
 EncodingBlob CertExtensionImpl::GetEncoded()
 {
+    EncodingBlob encodingBlob = { {}, EncodingFormat(EncodingFormat::key_t::FORMAT_DER) };
     if (this->object_ == nullptr) {
         ANI_LOGE_THROW(CF_INVALID_PARAMS, "object is nullptr");
-        return EncodingBlob{array<uint8_t>{}, EncodingFormat(EncodingFormat::key_t::FORMAT_DER)};
+        return encodingBlob;
     }
 
     const std::vector<CfParam> param = {
@@ -45,7 +46,7 @@ EncodingBlob CertExtensionImpl::GetEncoded()
     CfResult ret = DoCommonOperation(this->object_, param, &outParam, errMsg);
     if (ret != CF_SUCCESS) {
         ANI_LOGE_THROW(ret, errMsg.c_str());
-        return EncodingBlob{array<uint8_t>{}, EncodingFormat(EncodingFormat::key_t::FORMAT_DER)};
+        return encodingBlob;
     }
 
     CfParam *resultParam = nullptr;
@@ -53,13 +54,13 @@ EncodingBlob CertExtensionImpl::GetEncoded()
     if (ret != CF_SUCCESS) {
         ANI_LOGE_THROW(ret, "get result failed");
         CfFreeParamSet(&outParam);
-        return EncodingBlob{array<uint8_t>{}, EncodingFormat(EncodingFormat::key_t::FORMAT_DER)};
+        return encodingBlob;
     }
     array<uint8_t> data = {};
     DataBlobToArrayU8(resultParam->blob, data);
-    EncodingBlob result = { data, EncodingFormat(EncodingFormat::key_t::FORMAT_DER) };
+    encodingBlob.data = data;
     CfFreeParamSet(&outParam);
-    return result;
+    return encodingBlob;
 }
 
 DataArray CertExtensionImpl::GetOidList(ExtensionOidType valueType)

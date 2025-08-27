@@ -19,6 +19,7 @@
 #include "ani_parameters.h"
 #include "ani_cert_extension.h"
 #include "ani_x500_distinguished_name.h"
+#include "cf_type.h"
 
 namespace ANI::CertFramework {
 X509CertImpl::X509CertImpl() {}
@@ -164,8 +165,20 @@ DataBlob X509CertImpl::GetIssuerName()
 
 string X509CertImpl::GetIssuerNameEx(EncodingType encodingType)
 {
-    // api 20
-    TH_THROW(std::runtime_error, "GetIssuerNameEx not implemented");
+    if (this->cert_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        return "";
+    }
+    CfBlob blob = {};
+    CfEncodinigType type = static_cast<CfEncodinigType>(encodingType.get_value());
+    CfResult res = this->cert_->getIssuerNameEx(this->cert_, type, &blob);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "get issuer name failed!");
+        return "";
+    }
+    string str = DataBlobToString(blob);
+    CfBlobDataFree(&blob);
+    return str;
 }
 
 DataBlob X509CertImpl::GetSubjectName(optional_view<EncodingType> encodingType)
@@ -507,8 +520,20 @@ string X509CertImpl::ToString()
 
 string X509CertImpl::ToStringEx(EncodingType encodingType)
 {
-    // api 20
-    TH_THROW(std::runtime_error, "ToStringEx not implemented");
+    if (this->cert_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        return "";
+    }
+    CfBlob blob = {};
+    CfEncodinigType type = static_cast<CfEncodinigType>(encodingType.get_value());
+    CfResult res = this->cert_->toStringEx(this->cert_, type, &blob);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "to string failed!");
+        return "";
+    }
+    string str = DataBlobToString(blob);
+    CfBlobDataFree(&blob);
+    return str;
 }
 
 array<uint8_t> X509CertImpl::HashCode()

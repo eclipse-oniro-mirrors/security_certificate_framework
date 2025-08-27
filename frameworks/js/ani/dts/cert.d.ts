@@ -321,6 +321,7 @@ declare namespace cert {
   interface CertChainValidationParameters {
     date?: string;
     trustAnchors: Array<X509TrustAnchor>;
+    trustSystemCa?: boolean;
     certCRLs?: Array<CertCRLCollection>;
     revocationCheckParam?: RevocationCheckParameter;
     policy?: ValidationPolicyType;
