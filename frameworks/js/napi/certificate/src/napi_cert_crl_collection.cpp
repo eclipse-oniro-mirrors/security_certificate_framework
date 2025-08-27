@@ -170,7 +170,7 @@ napi_value NapiCertCRLCollection::SelectCRLsRet(napi_env env, const HcfX509CrlAr
         return nullptr;
     }
     if (crls == nullptr) {
-        LOGI("return emtpy erray!");
+        LOGI("return empty erray!");
         return instance;
     }
     int j = 0;
@@ -182,7 +182,7 @@ napi_value NapiCertCRLCollection::SelectCRLsRet(napi_env env, const HcfX509CrlAr
             continue;
         }
         napi_value element = NapiX509Crl::CreateX509Crl(env, "createX509CRL");
-        napi_wrap(
+        napi_status status = napi_wrap(
             env, element, x509Crl,
             [](napi_env env, void *data, void *hint) {
                 NapiX509Crl *crl = static_cast<NapiX509Crl *>(data);
@@ -190,6 +190,13 @@ napi_value NapiCertCRLCollection::SelectCRLsRet(napi_env env, const HcfX509CrlAr
                 return;
             },
             nullptr, nullptr);
+        if (status != napi_ok) {
+            napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "failed to wrap obj!"));
+            LOGE("failed to wrap obj!");
+            delete x509Crl;
+            crls->data[i] = nullptr;
+            return nullptr;
+        }
         napi_set_element(env, instance, j++, element);
         crls->data[i] = nullptr;
     }
@@ -501,7 +508,7 @@ static napi_value NapiCreateCertCRLCollection(napi_env env, napi_callback_info i
     }
 
     napi_value instance = NapiCertCRLCollection::CreateCertCRLCollection(env);
-    napi_wrap(
+    napi_status status = napi_wrap(
         env, instance, napiObject,
         [](napi_env env, void *data, void *hint) {
             NapiCertCRLCollection *objClass = static_cast<NapiCertCRLCollection *>(data);
@@ -509,6 +516,12 @@ static napi_value NapiCreateCertCRLCollection(napi_env env, napi_callback_info i
             return;
         },
         nullptr, nullptr);
+    if (status != napi_ok) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "failed to wrap obj!"));
+        LOGE("failed to wrap obj!");
+        delete napiObject;
+        return nullptr;
+    }
 
     return instance;
 }

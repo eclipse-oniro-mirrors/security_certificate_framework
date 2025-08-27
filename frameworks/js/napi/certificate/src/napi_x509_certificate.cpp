@@ -330,7 +330,7 @@ napi_value NapiX509Certificate::GetPublicKey(napi_env env, napi_callback_info in
         return nullptr;
     }
     napi_value instance = pubKeyClass->ConvertToJsPubKey(env);
-    napi_wrap(
+    napi_status status = napi_wrap(
         env, instance, pubKeyClass,
         [](napi_env env, void *data, void *hint) {
             NapiPubKey *pubKeyClass = static_cast<NapiPubKey *>(data);
@@ -339,6 +339,12 @@ napi_value NapiX509Certificate::GetPublicKey(napi_env env, napi_callback_info in
             return;
         },
         nullptr, nullptr);
+    if (status != napi_ok) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "failed to wrap obj!"));
+        LOGE("failed to wrap obj!");
+        delete pubKeyClass;
+        return nullptr;
+    }
     return instance;
 }
 
@@ -847,13 +853,19 @@ static napi_value BuildCertExtsObject(napi_env env, CfEncodingBlob *encodingBlob
         }
         return nullptr;
     }
-    napi_wrap(
+    napi_status status = napi_wrap(
         env, jsObject, napiObject,
         [](napi_env env, void *data, void *hint) {
             NapiCertExtension *certExts = static_cast<NapiCertExtension *>(data);
             delete certExts;
             return;
         }, nullptr, nullptr);
+    if (status != napi_ok) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "failed to wrap obj!"));
+        LOGE("failed to wrap obj!");
+        delete napiObject;
+        return nullptr;
+    }
     return jsObject;
 }
 
@@ -962,6 +974,7 @@ napi_value NapiX509Certificate::GetSubjectX500DistinguishedName(napi_env env, na
 
     ret = cert->getSubjectNameDer(cert, &blob);
     if (ret != CF_SUCCESS) {
+        CfObjDestroy(x509Name);
         LOGE("getSubjectNameDer failed!");
         napi_throw(env, CertGenerateBusinessError(env, ret, "get subject name der failed"));
         return nullptr;
@@ -969,6 +982,7 @@ napi_value NapiX509Certificate::GetSubjectX500DistinguishedName(napi_env env, na
     HcfX509DistinguishedName *x509NameUtf8 = nullptr;
     ret = HcfX509DistinguishedNameCreate(&blob, false, &x509NameUtf8);
     if (ret != CF_SUCCESS || x509NameUtf8 == nullptr) {
+        CfObjDestroy(x509Name);
         LOGE("HcfX509DistinguishedNameCreate failed");
         napi_throw(env, CertGenerateBusinessError(env, ret, "HcfX509DistinguishedNameCreate failed"));
         CfBlobDataFree(&blob);
@@ -1489,7 +1503,7 @@ void NapiX509Certificate::CreateX509CertComplete(napi_env env, napi_status statu
         FreeCryptoFwkCtx(env, context);
         return;
     }
-    napi_wrap(
+    status = napi_wrap(
         env, instance, x509CertClass,
         [](napi_env env, void *data, void *hint) {
             NapiX509Certificate *certClass = static_cast<NapiX509Certificate *>(data);
@@ -1497,6 +1511,12 @@ void NapiX509Certificate::CreateX509CertComplete(napi_env env, napi_status statu
             return;
         },
         nullptr, nullptr);
+    if (status != napi_ok) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "failed to wrap obj!"));
+        LOGE("failed to wrap obj!");
+        delete x509CertClass;
+        return;
+    }
     ReturnResult(env, context, instance);
     FreeCryptoFwkCtx(env, context);
 }

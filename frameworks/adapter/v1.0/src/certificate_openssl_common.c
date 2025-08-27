@@ -619,7 +619,7 @@ CfResult CopyMemFromBIO(BIO *bio, CfBlob *outBlob)
         buff = NULL;
         return CF_ERR_CRYPTO_OPERATION;
     }
-    outBlob->size = len;
+    outBlob->size = (uint32_t)len;
     outBlob->data = buff;
     return CF_SUCCESS;
 }
@@ -683,6 +683,11 @@ CfResult CfDeepCopySubAltName(
         return CF_ERR_INTERNAL;
     }
     GENERAL_NAME *generalName = sk_GENERAL_NAME_value(altname, index);
+    if (generalName == NULL) {
+        LOGE("Failed to get general name from altname!");
+        CfPrintOpensslError();
+        return CF_ERR_CRYPTO_OPERATION;
+    }
     unsigned char *derData = NULL;
     int derLength = i2d_GENERAL_NAME(generalName, &derData);
     if (derLength <= 0 || derData == NULL) {
@@ -711,6 +716,11 @@ CfResult CfDeepCopyCertPolices(const CERTIFICATEPOLICIES *certPolicesIn, int32_t
         return CF_ERR_INTERNAL;
     }
     POLICYINFO *policy = sk_POLICYINFO_value(certPolicesIn, index);
+    if (policy == NULL) {
+        LOGE("Failed to get policy info from cert policies!");
+        CfPrintOpensslError();
+        return CF_ERR_CRYPTO_OPERATION;
+    }
     ASN1_OBJECT *policyOid = policy->policyid;
     char policyBuff[OID_STR_MAX_LEN] = { 0 };
     int32_t resLen = OBJ_obj2txt(policyBuff, OID_STR_MAX_LEN, policyOid, 1);
@@ -761,7 +771,7 @@ CfResult CfConvertAsn1String2BoolArray(const ASN1_BIT_STRING *string, CfBlob *bo
         LOGE("Invalid input.");
         return CF_ERR_INTERNAL;
     }
-    uint32_t length = ASN1_STRING_length(string) * CHAR_TO_BIT_LEN;
+    uint32_t length = (uint32_t)ASN1_STRING_length(string) * CHAR_TO_BIT_LEN;
     if ((uint32_t)(string->flags) & ASN1_STRING_FLAG_BITS_LEFT) {
         length -= (uint32_t)(string->flags) & FLAG_BIT_LEFT_NUM;
     }
@@ -777,6 +787,47 @@ CfResult CfConvertAsn1String2BoolArray(const ASN1_BIT_STRING *string, CfBlob *bo
     return CF_SUCCESS;
 }
 
+static int32_t GetGeneralNameData(const GENERAL_NAME *gen, unsigned char **bytes, unsigned char **point)
+{
+    int32_t len = 0;
+    switch (gen->type) {
+        case GEN_X400:
+            len = sizeof(uint8_t) * (gen->d.x400Address->length);
+            *bytes = (unsigned char *)gen->d.x400Address->data;
+            break;
+        case GEN_EDIPARTY:
+            len = i2d_EDIPARTYNAME(gen->d.ediPartyName, bytes);
+            *point = *bytes;
+            break;
+        case GEN_OTHERNAME:
+            len = i2d_OTHERNAME(gen->d.otherName, bytes);
+            *point = *bytes;
+            break;
+        case GEN_EMAIL:
+        case GEN_DNS:
+        case GEN_URI:
+            len = i2d_ASN1_IA5STRING(gen->d.ia5, bytes);
+            *point = *bytes;
+            break;
+        case GEN_DIRNAME:
+            len = i2d_X509_NAME(gen->d.dirn, bytes);
+            *point = *bytes;
+            break;
+        case GEN_IPADD:
+            len = i2d_ASN1_OCTET_STRING(gen->d.ip, bytes);
+            *point = *bytes;
+            break;
+        case GEN_RID:
+            len = i2d_ASN1_OBJECT(gen->d.rid, bytes);
+            *point = *bytes;
+            break;
+        default:
+            LOGE("Unknown type.");
+            break;
+    }
+    return len;
+}
+
 bool CfCompareGN2Blob(const GENERAL_NAME *gen, CfBlob *nc)
 {
     if (gen == NULL || nc == NULL) {
@@ -785,44 +836,11 @@ bool CfCompareGN2Blob(const GENERAL_NAME *gen, CfBlob *nc)
     }
     unsigned char *bytes = NULL;
     unsigned char *point = NULL;
-    int32_t len = 0;
+    int32_t len =  GetGeneralNameData(gen, &bytes, &point);
     bool ret = false;
-    switch (gen->type) {
-        case GEN_X400:
-            len = sizeof(uint8_t) * (gen->d.x400Address->length);
-            bytes = (unsigned char *)gen->d.x400Address->data;
-            break;
-        case GEN_EDIPARTY:
-            len = i2d_EDIPARTYNAME(gen->d.ediPartyName, &bytes);
-            point = bytes;
-            break;
-        case GEN_OTHERNAME:
-            len = i2d_OTHERNAME(gen->d.otherName, &bytes);
-            point = bytes;
-            break;
-        case GEN_EMAIL:
-        case GEN_DNS:
-        case GEN_URI:
-            len = i2d_ASN1_IA5STRING(gen->d.ia5, &bytes);
-            point = bytes;
-            break;
-        case GEN_DIRNAME:
-            len = i2d_X509_NAME(gen->d.dirn, &bytes);
-            point = bytes;
-            break;
-        case GEN_IPADD:
-            len = i2d_ASN1_OCTET_STRING(gen->d.ip, &bytes);
-            point = bytes;
-            break;
-        case GEN_RID:
-            len = i2d_ASN1_OBJECT(gen->d.rid, &bytes);
-            point = bytes;
-            break;
-        default:
-            LOGE("Unknown type.");
-            break;
+    if (bytes != NULL && len > 0) {
+        ret = (len == (int32_t)(nc->size)) && (strncmp((const char *)bytes, (const char *)nc->data, len) == 0);
     }
-    ret = (len == (int32_t)(nc->size)) && (strncmp((const char *)bytes, (const char *)nc->data, len) == 0);
     if (point != NULL) {
         OPENSSL_free(point);
     }

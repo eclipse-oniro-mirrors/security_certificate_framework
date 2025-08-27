@@ -402,13 +402,19 @@ static napi_value BuildCertExtsObject(napi_env env, CfEncodingBlob *encodingBlob
         extsObj = nullptr;
         return nullptr;
     }
-    napi_wrap(
+    napi_status status = napi_wrap(
         env, jsObject, napiObject,
         [](napi_env env, void *data, void *hint) {
             NapiCertExtension *certExts = static_cast<NapiCertExtension *>(data);
             delete certExts;
             return;
         }, nullptr, nullptr);
+    if (status != napi_ok) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "failed to wrap obj!"));
+        LOGE("failed to wrap obj!");
+        delete napiObject;
+        return nullptr;
+    }
     return jsObject;
 }
 

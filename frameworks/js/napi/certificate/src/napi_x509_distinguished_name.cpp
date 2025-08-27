@@ -119,7 +119,7 @@ void NapiX509DistinguishedName::CreateDistinguishedNameComplete(napi_env env, na
         return;
     }
     x509NameClass->SetX509DistinguishedNameUtf8(context->x509Name);
-    napi_wrap(
+    status = napi_wrap(
         env, instance, x509NameClass,
         [](napi_env env, void *data, void *hint) {
             NapiX509DistinguishedName *nameClass = static_cast<NapiX509DistinguishedName *>(data);
@@ -127,6 +127,12 @@ void NapiX509DistinguishedName::CreateDistinguishedNameComplete(napi_env env, na
             return;
         },
         nullptr, nullptr);
+    if (status != napi_ok) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "failed to wrap obj!"));
+        LOGE("failed to wrap obj!");
+        delete x509NameClass;
+        return;
+    }
     ReturnPromiseResult(env, context, instance);
     FreeCryptoFwkCtx(env, context);
 }
@@ -353,13 +359,19 @@ napi_value ConstructX509DistinguishedName(HcfX509DistinguishedName *x509Name,
         return nullptr;
     }
     x509NameClass->SetX509DistinguishedNameUtf8(x509NameUtf8);
-    napi_wrap(
+    napi_status status = napi_wrap(
         env, instance, x509NameClass,
         [](napi_env env, void *data, void *hint) {
             NapiX509DistinguishedName *nameClass = static_cast<NapiX509DistinguishedName *>(data);
             delete nameClass;
             return;
         }, nullptr, nullptr);
+    if (status != napi_ok) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "failed to wrap obj!"));
+        LOGE("failed to wrap obj!");
+        delete x509NameClass;
+        return nullptr;
+    }
     return instance;
 }
 } // namespace CertFramework

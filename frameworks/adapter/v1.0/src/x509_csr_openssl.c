@@ -151,7 +151,7 @@ static CfResult WriteCsrToString(BIO *out, bool isPem, X509_REQ *req, CfBlob *cs
         LOGE("BIO_read failed");
         return CF_ERR_CRYPTO_OPERATION;
     }
-    csrBlob->size = csrLen;
+    csrBlob->size = (uint32_t)csrLen;
     return CF_SUCCESS;
 }
 

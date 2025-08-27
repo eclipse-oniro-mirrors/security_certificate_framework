@@ -37,7 +37,7 @@ napi_value ConvertCertArrToNapiValue(napi_env env, HcfX509CertificateArray *cert
         return nullptr;
     }
     if (certs == nullptr) {
-        LOGI("return emtpy erray!");
+        LOGI("return empty erray!");
         return instance;
     }
     int j = 0;
