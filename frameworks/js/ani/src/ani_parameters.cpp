@@ -413,9 +413,10 @@ bool BuildX509CertMatchParamsV1(X509CertMatchParameters const& param, HcfX509Cer
 
 bool BuildX509CertMatchParamsV2(X509CertMatchParameters const& param, HcfX509CertMatchParams &hcfParam)
 {
-    if (param.matchAllSubjectAltNames.has_value()) {
-        hcfParam.matchAllSubjectAltNames = param.matchAllSubjectAltNames.value();
-    }
+    hcfParam.matchAllSubjectAltNames = param.matchAllSubjectAltNames.has_value() ?
+        param.matchAllSubjectAltNames.value() : false;
+    hcfParam.minPathLenConstraint = param.minPathLenConstraint.has_value() ?
+        param.minPathLenConstraint.value() : -1;
     if (param.authorityKeyIdentifier.has_value()) {
         if (param.authorityKeyIdentifier.value().size() == 0) {
             return false;
@@ -426,8 +427,6 @@ bool BuildX509CertMatchParamsV2(X509CertMatchParameters const& param, HcfX509Cer
         }
         ArrayU8ToDataBlob(param.authorityKeyIdentifier.value(), *hcfParam.authorityKeyIdentifier);
     }
-    hcfParam.minPathLenConstraint = param.minPathLenConstraint.has_value() ?
-        param.minPathLenConstraint.value() : -1;
     if (param.nameConstraints.has_value()) {
         if (param.nameConstraints.value().size() == 0) {
             return false;
@@ -562,12 +561,13 @@ bool BuildX509CertChainValidateParams2(CertChainValidationParameters const& para
     if (!BuildRevocationCheckParam(param.revocationCheckParam, validateParam)) {
         return false;
     }
-    validateParam.policy = static_cast<HcfValPolicyType>(param.policy.has_value() ?
-        param.policy.value() : VALIDATION_POLICY_TYPE_X509);
-
     if (!BuildValidateKeyUsage(param.keyUsage, validateParam)) {
         return false;
     }
+    validateParam.policy = param.policy.has_value() ?
+        static_cast<HcfValPolicyType>(param.policy.value().get_value()) : VALIDATION_POLICY_TYPE_X509;
+    validateParam.trustSystemCa = param.trustSystemCa.has_value() ?
+        param.trustSystemCa.value() : false;
     return true;
 }
 

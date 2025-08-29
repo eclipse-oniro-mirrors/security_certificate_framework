@@ -1110,7 +1110,7 @@ static CfResult GetExtendedKeyUsageX509Openssl(HcfX509CertificateSpi *self, CfAr
     CfResult res = CF_SUCCESS;
     do {
         int32_t size = sk_ASN1_OBJECT_num(extUsage);
-        if (size <= 0) {
+        if ((size <= 0) || ((size_t)size > INT32_MAX / sizeof(CfBlob))) {
             LOGE("The extended key usage size in openssl is invalid!");
             CfPrintOpensslError();
             res = CF_ERR_CRYPTO_OPERATION;
@@ -1202,7 +1202,7 @@ static CfResult GetSubjectAltNamesX509Openssl(HcfX509CertificateSpi *self, CfArr
     CfResult res = CF_SUCCESS;
     do {
         int32_t size = sk_GENERAL_NAME_num(subjectAltName);
-        if (size <= 0) {
+        if ((size <= 0) || ((size_t)size > INT32_MAX / sizeof(CfBlob))) {
             LOGE("The subjectAltName number in openssl is invalid!");
             CfPrintOpensslError();
             res = CF_ERR_CRYPTO_OPERATION;
@@ -1252,7 +1252,7 @@ static CfResult GetIssuerAltNamesX509Openssl(HcfX509CertificateSpi *self, CfArra
     CfResult res = CF_SUCCESS;
     do {
         int32_t size = sk_GENERAL_NAME_num(issuerAltName);
-        if (size <= 0) {
+        if ((size <= 0) || ((size_t)size > INT32_MAX / sizeof(CfBlob))) {
             LOGE("The issuerAltName number in openssl is invalid!");
             CfPrintOpensslError();
             res = CF_ERR_CRYPTO_OPERATION;

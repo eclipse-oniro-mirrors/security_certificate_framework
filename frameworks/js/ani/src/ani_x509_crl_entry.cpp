@@ -88,8 +88,20 @@ DataBlob X509CRLEntryImpl::GetCertIssuer()
 
 string X509CRLEntryImpl::GetCertIssuerEx(EncodingType encodingType)
 {
-    // api 20
-    TH_THROW(std::runtime_error, "GetCertIssuerEx not implemented");
+    if (this->x509CrlEntry_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509CrlEntry obj is nullptr!");
+        return "";
+    }
+    CfBlob blob = {};
+    CfEncodinigType type = static_cast<CfEncodinigType>(encodingType.get_value());
+    CfResult res = this->x509CrlEntry_->getCertIssuerEx(this->x509CrlEntry_, type, &blob);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "get cert issuer failed!");
+        return "";
+    }
+    string str = DataBlobToString(blob);
+    CfBlobDataFree(&blob);
+    return str;
 }
 
 string X509CRLEntryImpl::GetRevocationDate()

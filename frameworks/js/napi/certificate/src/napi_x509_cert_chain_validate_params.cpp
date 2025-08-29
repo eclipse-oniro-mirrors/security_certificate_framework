@@ -73,7 +73,7 @@ static void FreeTrustAnchorArray(HcfX509TrustAnchorArray *&trustAnchors)
     trustAnchors = nullptr;
 }
 
-static bool GetX509TrustAnchorArray(napi_env env, napi_value arg, HcfX509TrustAnchorArray *&out)
+static bool GetX509TrustAnchorArray(napi_env env, napi_value arg, bool isTrustSystemCa, HcfX509TrustAnchorArray *&out)
 {
     napi_value obj = GetProp(env, arg, CERT_CHAIN_VALIDATE_TAG_TRUSTANCHORS.c_str());
     if (obj == nullptr) {
@@ -84,7 +84,7 @@ static bool GetX509TrustAnchorArray(napi_env env, napi_value arg, HcfX509TrustAn
     uint32_t length;
     if (!GetArrayLength(env, obj, length)) {
         LOGE("get array length failed!");
-        return false;
+        return isTrustSystemCa;
     }
 
     out = static_cast<HcfX509TrustAnchorArray *>(CfMalloc(sizeof(HcfX509TrustAnchorArray), 0));
@@ -432,6 +432,31 @@ static bool GetKeyUsage(napi_env env, napi_value arg, HcfKuArray *&out)
     return true;
 }
 
+static bool GetUseSystemCa(napi_env env, napi_value arg, bool *trustSystemCa)
+{
+    bool result = false;
+    napi_has_named_property(env, arg, CERT_CHAIN_VALIDATE_TAG_TRUST_SYSTEM_CA.c_str(), &result);
+    if (!result) {
+        LOGI("%{public}s do not exist!", CERT_CHAIN_VALIDATE_TAG_TRUST_SYSTEM_CA.c_str());
+        *trustSystemCa = false;
+        return true;
+    }
+    napi_value obj = nullptr;
+    napi_status status = napi_get_named_property(env, arg, CERT_CHAIN_VALIDATE_TAG_TRUST_SYSTEM_CA.c_str(), &obj);
+    if (status != napi_ok || obj == nullptr) {
+        LOGE("get property %{public}s failed!", CERT_CHAIN_VALIDATE_TAG_TRUST_SYSTEM_CA.c_str());
+        return false;
+    }
+    napi_valuetype valueType;
+    napi_typeof(env, obj, &valueType);
+    if (valueType == napi_undefined) {
+        LOGE("%{public}s valueType is null or undefined.", CERT_CHAIN_VALIDATE_TAG_TRUST_SYSTEM_CA.c_str());
+        return false;
+    }
+    napi_get_value_bool(env, obj, trustSystemCa);
+    return true;
+}
+
 void FreeX509CertChainValidateParams(HcfX509CertChainValidateParams &param)
 {
     CfBlobFree(&param.date);
@@ -497,7 +522,11 @@ bool BuildX509CertChainValidateParams(napi_env env, napi_value arg, HcfX509CertC
         LOGE("Get valid date failed");
         return false;
     }
-    if (!GetX509TrustAnchorArray(env, arg, param.trustAnchors)) {
+    if (!GetUseSystemCa(env, arg, &(param.trustSystemCa))) {
+        LOGE("Get use system ca failed!");
+        return false;
+    }
+    if (!GetX509TrustAnchorArray(env, arg, param.trustSystemCa, param.trustAnchors)) {
         LOGE("Get X509 trust anchor array failed");
         return false;
     }
@@ -521,7 +550,6 @@ bool BuildX509CertChainValidateParams(napi_env env, napi_value arg, HcfX509CertC
         LOGE("Get key usage failed!");
         return false;
     }
-
     return true;
 }
 

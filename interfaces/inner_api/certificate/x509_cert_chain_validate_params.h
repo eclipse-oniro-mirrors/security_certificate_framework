@@ -78,6 +78,7 @@ struct HcfX509CertChainValidateParams {
     HcfValPolicyType policy;
     CfBlob *sslHostname;
     HcfKuArray *keyUsage;
+    bool trustSystemCa;
 };
 
 #endif // X509_CERT_CHAIN_VALIDATE_PARAMETERS_H

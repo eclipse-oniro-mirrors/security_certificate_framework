@@ -18,6 +18,7 @@
 #include "ani_cert_extension.h"
 #include "ani_x500_distinguished_name.h"
 #include "pub_key.h"
+#include "cf_type.h"
 
 namespace ANI::CertFramework {
 X509CRLImpl::X509CRLImpl() {}
@@ -120,8 +121,20 @@ DataBlob X509CRLImpl::GetIssuerName()
 
 string X509CRLImpl::GetIssuerNameEx(EncodingType encodingType)
 {
-    // api 20
-    TH_THROW(std::runtime_error, "GetIssuerNameEx not implemented");
+    if (this->x509Crl_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509Crl obj is nullptr!");
+        return "";
+    }
+    CfBlob blob = {};
+    CfEncodinigType type = static_cast<CfEncodinigType>(encodingType.get_value());
+    CfResult res = this->x509Crl_->getIssuerNameEx(this->x509Crl_, type, &blob);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "get issuer name failed!");
+        return "";
+    }
+    string str = DataBlobToString(blob);
+    CfBlobDataFree(&blob);
+    return str;
 }
 
 string X509CRLImpl::GetLastUpdate()
@@ -411,8 +424,20 @@ string X509CRLImpl::ToString()
 
 string X509CRLImpl::ToStringEx(EncodingType encodingType)
 {
-    // api 20
-    TH_THROW(std::runtime_error, "ToStringEx not implemented");
+    if (this->x509Crl_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509Crl obj is nullptr!");
+        return "";
+    }
+    CfBlob blob = {};
+    CfEncodinigType type = static_cast<CfEncodinigType>(encodingType.get_value());
+    CfResult res = this->x509Crl_->toStringEx(this->x509Crl_, type, &blob);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "to string failed!");
+        return "";
+    }
+    string str = DataBlobToString(blob);
+    CfBlobDataFree(&blob);
+    return str;
 }
 
 array<uint8_t> X509CRLImpl::HashCode()

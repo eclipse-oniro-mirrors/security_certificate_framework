@@ -22,6 +22,8 @@
 #include "attestation_cert_ext.h"
 #include "hm_attestation_cert_ext_type.h"
 
+#define MAX_ATTESTATION_CLAIM_NUM 128
+
 #define ID_HM_PKI 0x2B, 0x06, 0x01, 0x04, 0x1, 0x8F, 0x5B, 0x02, 0x82, 0x78
 
 #define ID_HM_PKI_CERT_EXT ID_HM_PKI, 0x01
@@ -311,7 +313,7 @@ static CfResult GetOctetStringItem(AttestationRecord *record, const uint8_t *oid
         return CF_ERR_INVALID_EXTENSION;
     }
 
-    out->size = ASN1_STRING_length(octetString);
+    out->size = (uint32_t)ASN1_STRING_length(octetString);
     out->data = (uint8_t *)ASN1_STRING_get0_data(octetString);
     return CF_SUCCESS;
 }
@@ -392,10 +394,14 @@ static CfResult ParseAttestationClaim(STACK_OF(ASN1_TYPE) *exts, int extCount, A
     CfResult ret;
     HmAttestationClaim **claims = NULL;
 
-    if (extCount == 1) {
+    if (extCount <= 1) {
         record->claimNum = 0;
         record->claims = NULL;
         return CF_SUCCESS;
+    }
+    if ((extCount - 1) > MAX_ATTESTATION_CLAIM_NUM) {
+        LOGE("extCount = %{public}d, exceed max claim num = %{public}d\n", extCount, MAX_ATTESTATION_CLAIM_NUM);
+        return CF_ERR_INVALID_EXTENSION;
     }
 
     claims = (HmAttestationClaim **)CfMalloc(sizeof(HmAttestationClaim *) * (extCount - 1), 0);
@@ -433,7 +439,7 @@ static CfResult ParseAttestationExt(X509_EXTENSION *extension, AttestationRecord
     int extValueLen = ASN1_STRING_length(extValue);
     const unsigned char *data = ASN1_STRING_get0_data(extValue);
     if (extValueLen == 0 || data == NULL) {
-        LOGE("extValueLen = %{public}d, data = %{public}p\n", extValueLen, data);
+        LOGE("extValueLen = %{public}d\n", extValueLen);
         return CF_ERR_EXTENSION_NOT_EXIST;
     }
     STACK_OF(ASN1_TYPE) *exts = d2i_ASN1_SEQUENCE_ANY(NULL, &data, extValueLen);
@@ -592,7 +598,7 @@ static CfResult GetAppIdType(AttestationRecord *record, const uint8_t *oid, uint
         return CF_ERR_EXTENSION_NOT_EXIST;
     }
 
-    out->size = ASN1_STRING_length(record->appId->value);
+    out->size = (uint32_t)ASN1_STRING_length(record->appId->value);
     out->data = (uint8_t *)ASN1_STRING_get0_data(record->appId->value);
     return CF_SUCCESS;
 }

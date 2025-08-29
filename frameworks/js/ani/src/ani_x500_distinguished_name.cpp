@@ -14,6 +14,7 @@
  */
 
 #include "ani_x500_distinguished_name.h"
+#include "cf_type.h"
 
 namespace ANI::CertFramework {
 X500DistinguishedNameImpl::X500DistinguishedNameImpl() {}
@@ -49,9 +50,9 @@ string X500DistinguishedNameImpl::GetName()
         return "";
     }
     CfBlob blob = {};
-    CfResult ret = this->x509Name_->getName(this->x509Name_, nullptr, &blob, nullptr);
-    if (ret != CF_SUCCESS) {
-        ANI_LOGE_THROW(ret, "get name failed.");
+    CfResult res = this->x509Name_->getName(this->x509Name_, nullptr, &blob, nullptr);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "get name failed.");
         return "";
     }
     string str = DataBlobToString(blob);
@@ -61,23 +62,35 @@ string X500DistinguishedNameImpl::GetName()
 
 string X500DistinguishedNameImpl::GetNameByEnum(EncodingType encodingType)
 {
-    // api 20
-    TH_THROW(std::runtime_error, "GetNameByEnum not implemented");
+    if (this->x509Name_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x500 distinguished name obj is nullptr!");
+        return "";
+    }
+    CfBlob blob = {};
+    CfEncodinigType type = static_cast<CfEncodinigType>(encodingType.get_value());
+    CfResult res = this->x509Name_->getNameEx(this->x509Name_, type, &blob);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "get name failed.");
+        return "";
+    }
+    string str = DataBlobToString(blob);
+    CfBlobDataFree(&blob);
+    return str;
 }
 
 array<string> X500DistinguishedNameImpl::GetNameByStr(string_view type)
 {
     if (this->x509Name_ == nullptr) {
         ANI_LOGE_THROW(CF_INVALID_PARAMS, "x500 distinguished name obj is nullptr!");
-        return array<string>{};
+        return {};
     }
-    CfBlob inPara = {};
-    StringToDataBlob(type, inPara);
+    CfBlob inType = {};
+    StringToDataBlob(type, inType);
     CfArray outArr = { nullptr, CF_FORMAT_DER, 0 };
-    CfResult ret = this->x509Name_->getName(this->x509Name_, &inPara, nullptr, &outArr);
-    if (ret != CF_SUCCESS) {
-        ANI_LOGE_THROW(ret, "get name failed.");
-        return array<string>{};
+    CfResult res = this->x509Name_->getName(this->x509Name_, &inType, nullptr, &outArr);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "get name failed.");
+        return {};
     }
     array<string> result = array<string>::make(outArr.count, {});
     for (uint32_t i = 0; i < outArr.count; i++) {
@@ -95,9 +108,9 @@ EncodingBlob X500DistinguishedNameImpl::GetEncoded()
         return encodingBlob;
     }
     CfEncodingBlob blob = {};
-    CfResult ret = this->x509Name_->getEncode(this->x509Name_, &blob);
-    if (ret != CF_SUCCESS) {
-        ANI_LOGE_THROW(ret, "get encoded failed.");
+    CfResult res = this->x509Name_->getEncode(this->x509Name_, &blob);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "get encoded failed.");
         return encodingBlob;
     }
     array<uint8_t> data = {};
