@@ -1617,12 +1617,12 @@ static char* AllocateAndCopyString(napi_env env, napi_value strValue, const std:
         LOGE("get string length failed for %{public}s", fieldName.c_str());
         return nullptr;
     }
-    if (strLen <= 0) {
+    if (strLen == 0) {
         LOGE("invalid string length for %{public}s", fieldName.c_str());
         return nullptr;
     }
     
-    char *buffer = static_cast<char *>(malloc(strLen + 1));
+    char *buffer = static_cast<char *>(CfMalloc(strLen + 1, 0));
     if (buffer == nullptr) {
         LOGE("malloc failed for %{public}s", fieldName.c_str());
         return nullptr;
