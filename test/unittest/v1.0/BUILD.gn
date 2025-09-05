@@ -41,6 +41,7 @@ ohos_unittest("cf_version1_test") {
   ]
 
   sources = [
+    "src/attestation_cert_test.cpp",
     "src/cf_mock.cpp",
     "src/crypto_x509_cert_chain_test.cpp",
     "src/crypto_x509_cert_chain_test_ex.cpp",
@@ -56,7 +57,6 @@ ohos_unittest("cf_version1_test") {
     "src/crypto_x509_csr_test.cpp",
     "src/crypto_x509_test_common.cpp",
     "src/x509_distinguished_name_test.cpp",
-    "src/attestation_cert_test.cpp",
   ]
 
   sources += [
@@ -92,8 +92,8 @@ ohos_unittest("cf_version1_test") {
   ]
 
   sources += [
-    "../../../frameworks/adapter/attestation/src/attestation_cert_ext_legacy.c",
     "../../../frameworks/adapter/attestation/src/attestation_cert_ext.c",
+    "../../../frameworks/adapter/attestation/src/attestation_cert_ext_legacy.c",
     "../../../frameworks/adapter/attestation/src/attestation_cert_verify.c",
     "../../../frameworks/adapter/attestation/src/attestation_common.c",
     "../../../frameworks/core/attestation/src/hm_attestation_cert_verify.c",
@@ -177,6 +177,17 @@ ohos_unittest("cf_version1_test") {
     "-Wl,--wrap=X509V3_EXT_d2i",
     "-Wl,--wrap=PKCS12_parse",
     "-Wl,--wrap=CheckIsSelfSigned",
+    "-Wl,--wrap=X509_check_private_key",
+    "-Wl,--wrap=X509_digest",
+    "-Wl,--wrap=PKCS12_add_cert",
+    "-Wl,--wrap=PKCS12_add_localkeyid",
+    "-Wl,--wrap=PKCS12_pack_p7encdata_ex",
+    "-Wl,--wrap=PKCS12_pack_p7data",
+    "-Wl,--wrap=PKCS12_add_safes_ex",
+    "-Wl,--wrap=PKCS12_set_mac",
+    "-Wl,--wrap=PKCS12_SAFEBAG_create_pkcs8_encrypt_ex",
+    "-Wl,--wrap=i2d_PKCS12",
+    "-Wl,--wrap=PKCS12_add_safe",
   ]
 
   if (target_cpu == "arm") {

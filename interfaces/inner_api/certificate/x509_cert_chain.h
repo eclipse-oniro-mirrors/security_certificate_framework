@@ -76,6 +76,8 @@ CfResult HcfCreateTrustAnchorWithKeyStore(
 
 CfResult HcfParsePKCS12(const CfBlob *keyStore, const HcfParsePKCS12Conf *conf, HcfX509P12Collection **p12Collection);
 
+CfResult HcfCreatePkcs12(HcfX509P12Collection *p12Collection, HcfPkcs12CreatingConfig *conf, CfBlob *blob);
+
 #ifdef __cplusplus
 }
 #endif

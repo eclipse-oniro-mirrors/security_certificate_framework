@@ -103,6 +103,23 @@ public:
     MOCK_METHOD(int, i2d_X509_bio, (BIO * bp, X509 *x509));
     MOCK_METHOD(int, PKCS12_parse, (PKCS12 *p12, const char *pass, EVP_PKEY **pkey, X509 **cert, STACK_OF(X509) **ca));
     MOCK_METHOD(bool, CheckIsSelfSigned, (const X509 *cert));
+    MOCK_METHOD(int, X509_check_private_key, (const X509 *x, const EVP_PKEY *k));
+    MOCK_METHOD(int, X509_digest, (const X509 *cert, const EVP_MD *md, unsigned char *data, unsigned int *len));
+    MOCK_METHOD(PKCS12_SAFEBAG *, PKCS12_add_cert, (STACK_OF(PKCS12_SAFEBAG) **pbags, X509 *cert));
+    MOCK_METHOD(int, PKCS12_add_localkeyid, (PKCS12_SAFEBAG *bag, unsigned char *name, int namelen));
+    MOCK_METHOD(PKCS7 *, PKCS12_pack_p7encdata_ex, (int pbe_nid, const char *pass, int passlen,
+        unsigned char *salt, int saltlen, int iter, STACK_OF(PKCS12_SAFEBAG) *bags, OSSL_LIB_CTX *ctx,
+        const char *propq));
+    MOCK_METHOD(PKCS7 *, PKCS12_pack_p7data, (STACK_OF(PKCS12_SAFEBAG) *sk));
+    MOCK_METHOD(PKCS12 *, PKCS12_add_safes_ex, (STACK_OF(PKCS7) *safes, int nid_p7,
+        OSSL_LIB_CTX *ctx, const char *propq));
+    MOCK_METHOD(int, PKCS12_set_mac, (PKCS12 *p12, const char *pass, int passlen, unsigned char *salt,
+        int saltlen, int iter, const EVP_MD *md_type));
+    MOCK_METHOD(PKCS12_SAFEBAG *, PKCS12_SAFEBAG_create_pkcs8_encrypt_ex, (int pbe_nid, const char *pass, int passlen,
+        unsigned char *salt, int saltlen, int iter, PKCS8_PRIV_KEY_INFO *p8inf, OSSL_LIB_CTX *ctx, const char *propq));
+    MOCK_METHOD(int, i2d_PKCS12, (PKCS12 *a, unsigned char **pp));
+    MOCK_METHOD(int, PKCS12_add_safe, (STACK_OF(PKCS7) **psafes, STACK_OF(PKCS12_SAFEBAG) *bags, int nid_safe,
+        int iter, const char *pass));
 
     static NiceMock<X509OpensslMock> &GetInstance(void);
     static void SetMockFlag(bool flag);
@@ -117,6 +134,7 @@ private:
     void SetMockFunDefaultBehaviorPartTwo(void);
     void SetMockFunDefaultBehaviorPartThree(void);
     void SetMockFunDefaultBehaviorPartFour(void);
+    void SetMockFunDefaultBehaviorPartFive(void);
 };
 } // namespace CFMock
 #endif /* CF_MOCK_H */

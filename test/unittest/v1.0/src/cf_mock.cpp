@@ -92,6 +92,21 @@ long __real_BIO_ctrl(BIO *bp, int cmd, long larg, void *parg);
 int __real_i2d_X509_bio(BIO *bp, X509 *x509);
 int __real_PKCS12_parse(PKCS12 *p12, const char *pass, EVP_PKEY **pkey, X509 **cert, STACK_OF(X509) **ca);
 bool __real_CheckIsSelfSigned(const X509 *cert);
+int __real_X509_check_private_key(const X509 *x, const EVP_PKEY *k);
+int __real_X509_digest(const X509 *cert, const EVP_MD *md, unsigned char *data, unsigned int *len);
+PKCS12_SAFEBAG *__real_PKCS12_add_cert(STACK_OF(PKCS12_SAFEBAG) **pbags, X509 *cert);
+int __real_PKCS12_add_localkeyid(PKCS12_SAFEBAG *bag, unsigned char *name, int namelen);
+PKCS7 *__real_PKCS12_pack_p7encdata_ex(int pbe_nid, const char *pass, int passlen, unsigned char *salt, int saltlen,
+    int iter, STACK_OF(PKCS12_SAFEBAG) *bags, OSSL_LIB_CTX *ctx, const char *propq);
+PKCS7 *__real_PKCS12_pack_p7data(STACK_OF(PKCS12_SAFEBAG) *sk);
+PKCS12 *__real_PKCS12_add_safes_ex(STACK_OF(PKCS7) *safes, int nid_p7, OSSL_LIB_CTX *ctx, const char *propq);
+int __real_PKCS12_set_mac(PKCS12 *p12, const char *pass, int passlen, unsigned char *salt, int saltlen,
+    int iter, const EVP_MD *md_type);
+PKCS12_SAFEBAG *__real_PKCS12_SAFEBAG_create_pkcs8_encrypt_ex(int pbe_nid, const char *pass, int passlen,
+    unsigned char *salt, int saltlen, int iter, PKCS8_PRIV_KEY_INFO *p8inf, OSSL_LIB_CTX *ctx, const char *propq);
+int __real_i2d_PKCS12(PKCS12 *a, unsigned char **pp);
+int __real_PKCS12_add_safe(STACK_OF(PKCS7) **psafes, STACK_OF(PKCS12_SAFEBAG) *bags,
+    int nid_safe, int iter, const char *pass);
 #ifdef __cplusplus
 }
 #endif
@@ -336,12 +351,76 @@ void X509OpensslMock::SetMockFunDefaultBehaviorPartFour(void)
         });
 }
 
+void X509OpensslMock::SetMockFunDefaultBehaviorPartFive(void)
+{
+    ON_CALL(*this, X509_check_private_key)
+        .WillByDefault([this](const X509 *x, const EVP_PKEY *k) {
+            return __real_X509_check_private_key(x, k);
+        });
+
+    ON_CALL(*this, X509_digest)
+        .WillByDefault([this](const X509 *cert, const EVP_MD *md, unsigned char *data, unsigned int *len) {
+            return __real_X509_digest(cert, md, data, len);
+        });
+
+    ON_CALL(*this, PKCS12_add_cert)
+        .WillByDefault([this](STACK_OF(PKCS12_SAFEBAG) **pbags, X509 *cert) {
+            return __real_PKCS12_add_cert(pbags, cert);
+        });
+
+    ON_CALL(*this, PKCS12_add_localkeyid)
+        .WillByDefault([this](PKCS12_SAFEBAG *bag, unsigned char *name, int namelen) {
+            return __real_PKCS12_add_localkeyid(bag, name, namelen);
+        });
+
+    ON_CALL(*this, PKCS12_pack_p7encdata_ex)
+        .WillByDefault([this](int pbe_nid, const char *pass, int passlen, unsigned char *salt, int saltlen, int iter,
+            STACK_OF(PKCS12_SAFEBAG) *bags, OSSL_LIB_CTX *ctx, const char *propq) {
+            return __real_PKCS12_pack_p7encdata_ex(pbe_nid, pass, passlen, salt, saltlen, iter, bags, ctx, propq);
+        });
+    
+    ON_CALL(*this, PKCS12_pack_p7data)
+        .WillByDefault([this](STACK_OF(PKCS12_SAFEBAG) *sk) {
+            return __real_PKCS12_pack_p7data(sk);
+        });
+    
+    ON_CALL(*this, PKCS12_add_safes_ex)
+        .WillByDefault([this](STACK_OF(PKCS7) *safes, int nid_p7, OSSL_LIB_CTX *ctx, const char *propq) {
+            return __real_PKCS12_add_safes_ex(safes, nid_p7, ctx, propq);
+        });
+    
+    ON_CALL(*this, PKCS12_set_mac)
+        .WillByDefault([this](PKCS12 *p12, const char *pass, int passlen, unsigned char *salt, int saltlen, int iter,
+                              const EVP_MD *md_type) {
+            return __real_PKCS12_set_mac(p12, pass, passlen, salt, saltlen, iter, md_type);
+        });
+    
+    ON_CALL(*this, PKCS12_SAFEBAG_create_pkcs8_encrypt_ex)
+        .WillByDefault([this](int pbe_nid, const char *pass, int passlen, unsigned char *salt,
+                              int saltlen, int iter, PKCS8_PRIV_KEY_INFO *p8inf, OSSL_LIB_CTX *ctx, const char *propq) {
+            return __real_PKCS12_SAFEBAG_create_pkcs8_encrypt_ex(pbe_nid, pass, passlen, salt, saltlen, iter,
+                                                                 p8inf, ctx, propq);
+        });
+    
+    ON_CALL(*this, i2d_PKCS12)
+        .WillByDefault([this](PKCS12 *a, unsigned char **pp) {
+            return __real_i2d_PKCS12(a, pp);
+        });
+    
+    ON_CALL(*this, PKCS12_add_safe)
+        .WillByDefault([this](STACK_OF(PKCS7) **psafes, STACK_OF(PKCS12_SAFEBAG) *bags,
+                              int nid_safe, int iter, const char *pass) {
+            return __real_PKCS12_add_safe(psafes, bags, nid_safe, iter, pass);
+        });
+}
+
 X509OpensslMock::X509OpensslMock()
 {
     SetMockFunDefaultBehaviorPartOne();
     SetMockFunDefaultBehaviorPartTwo();
     SetMockFunDefaultBehaviorPartThree();
     SetMockFunDefaultBehaviorPartFour();
+    SetMockFunDefaultBehaviorPartFive();
 }
 
 X509OpensslMock::~X509OpensslMock() {}
@@ -1015,6 +1094,123 @@ bool __wrap_CheckIsSelfSigned(const X509 *cert)
         return X509OpensslMock::GetInstance().CheckIsSelfSigned(cert);
     } else {
         return __real_CheckIsSelfSigned(cert);
+    }
+}
+
+int __wrap_X509_check_private_key(const X509 *x, const EVP_PKEY *k)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock X509_check_private_key");
+        return X509OpensslMock::GetInstance().X509_check_private_key(x, k);
+    } else {
+        return __real_X509_check_private_key(x, k);
+    }
+}
+
+int __wrap_X509_digest(const X509 *cert, const EVP_MD *md, unsigned char *data, unsigned int *len)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock X509_digest");
+        return X509OpensslMock::GetInstance().X509_digest(cert, md, data, len);
+    } else {
+        return __real_X509_digest(cert, md, data, len);
+    }
+}
+
+PKCS12_SAFEBAG * __wrap_PKCS12_add_cert(STACK_OF(PKCS12_SAFEBAG) **pbags, X509 *cert)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock PKCS12_add_cert");
+        return X509OpensslMock::GetInstance().PKCS12_add_cert(pbags, cert);
+    } else {
+        return __real_PKCS12_add_cert(pbags, cert);
+    }
+}
+
+int __wrap_PKCS12_add_localkeyid(PKCS12_SAFEBAG *bag, unsigned char *name, int namelen)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock PKCS12_add_localkeyid");
+        return X509OpensslMock::GetInstance().PKCS12_add_localkeyid(bag, name, namelen);
+    } else {
+        return __real_PKCS12_add_localkeyid(bag, name, namelen);
+    }
+}
+
+PKCS7 * __wrap_PKCS12_pack_p7encdata_ex(int pbe_nid, const char *pass, int passlen, unsigned char *salt,
+    int saltlen, int iter, STACK_OF(PKCS12_SAFEBAG) *bags, OSSL_LIB_CTX *ctx, const char *propq)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock PKCS12_pack_p7encdata_ex");
+        return X509OpensslMock::GetInstance().PKCS12_pack_p7encdata_ex(pbe_nid, pass, passlen, salt, saltlen, iter,
+                                                                       bags, ctx, propq);
+    } else {
+        return __real_PKCS12_pack_p7encdata_ex(pbe_nid, pass, passlen, salt, saltlen, iter, bags, ctx, propq);
+    }
+}
+
+PKCS7 * __wrap_PKCS12_pack_p7data(STACK_OF(PKCS12_SAFEBAG) *sk)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock PKCS12_pack_p7data");
+        return X509OpensslMock::GetInstance().PKCS12_pack_p7data(sk);
+    } else {
+        return __real_PKCS12_pack_p7data(sk);
+    }
+}
+
+PKCS12 * __wrap_PKCS12_add_safes_ex(STACK_OF(PKCS7) *safes, int nid_p7, OSSL_LIB_CTX *ctx, const char *propq)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock PKCS12_add_safes_ex");
+        return X509OpensslMock::GetInstance().PKCS12_add_safes_ex(safes, nid_p7, ctx, propq);
+    } else {
+        return __real_PKCS12_add_safes_ex(safes, nid_p7, ctx, propq);
+    }
+}
+
+int  __wrap_PKCS12_set_mac(PKCS12 *p12, const char *pass, int passlen, unsigned char *salt, int saltlen,
+    int iter, const EVP_MD *md_type)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock PKCS12_set_mac");
+        return X509OpensslMock::GetInstance().PKCS12_set_mac(p12, pass, passlen, salt, saltlen, iter, md_type);
+    } else {
+        return __real_PKCS12_set_mac(p12, pass, passlen, salt, saltlen, iter, md_type);
+    }
+}
+
+PKCS12_SAFEBAG *__wrap_PKCS12_SAFEBAG_create_pkcs8_encrypt_ex(int pbe_nid, const char *pass, int passlen,
+    unsigned char *salt, int saltlen, int iter, PKCS8_PRIV_KEY_INFO *p8inf, OSSL_LIB_CTX *ctx, const char *propq)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock PKCS12_SAFEBAG_create_pkcs8_encrypt_ex");
+        return X509OpensslMock::GetInstance().PKCS12_SAFEBAG_create_pkcs8_encrypt_ex(pbe_nid, pass, passlen, salt,
+            saltlen, iter, p8inf, ctx, propq);
+    } else {
+        return __real_PKCS12_SAFEBAG_create_pkcs8_encrypt_ex(pbe_nid, pass, passlen, salt, saltlen, iter, p8inf,
+            ctx, propq);
+    }
+}
+
+int __wrap_i2d_PKCS12(PKCS12 *a, unsigned char **pp)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock i2d_PKCS12");
+        return X509OpensslMock::GetInstance().i2d_PKCS12(a, pp);
+    } else {
+        return __real_i2d_PKCS12(a, pp);
+    }
+}
+
+int __wrap_PKCS12_add_safe(STACK_OF(PKCS7) **psafes, STACK_OF(PKCS12_SAFEBAG) *bags, int nid_safe,
+    int iter, const char *pass)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock PKCS12_add_safe");
+        return X509OpensslMock::GetInstance().PKCS12_add_safe(psafes, bags, nid_safe, iter, pass);
+    } else {
+        return __real_PKCS12_add_safe(psafes, bags, nid_safe, iter, pass);
     }
 }
 

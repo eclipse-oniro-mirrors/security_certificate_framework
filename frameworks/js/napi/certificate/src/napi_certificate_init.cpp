@@ -272,10 +272,36 @@ static napi_value CreateEncodingBaseFormat(napi_env env)
     return encodingBaseFormat;
 }
 
+static napi_value CreatePbesEncAlg(napi_env env)
+{
+    napi_value pbesEncryptionAlgorithm = nullptr;
+    napi_create_object(env, &pbesEncryptionAlgorithm);
+
+    CertAddUint32Property(env, pbesEncryptionAlgorithm, "AES_128_CBC", AES_128_CBC);
+    CertAddUint32Property(env, pbesEncryptionAlgorithm, "AES_192_CBC", AES_192_CBC);
+    CertAddUint32Property(env, pbesEncryptionAlgorithm, "AES_256_CBC", AES_256_CBC);
+
+    return pbesEncryptionAlgorithm;
+}
+
+static napi_value CreatePkcs12MacDigestAlg(napi_env env)
+{
+    napi_value pkcs12MacDigestAlgorithm = nullptr;
+    napi_create_object(env, &pkcs12MacDigestAlgorithm);
+
+    CertAddUint32Property(env, pkcs12MacDigestAlgorithm, "SHA256", CF_MAC_SHA256);
+    CertAddUint32Property(env, pkcs12MacDigestAlgorithm, "SHA384", CF_MAC_SHA384);
+    CertAddUint32Property(env, pkcs12MacDigestAlgorithm, "SHA512", CF_MAC_SHA512);
+
+    return pkcs12MacDigestAlgorithm;
+}
+
 static void DefinePkcs12TypeProperties(napi_env env, napi_value exports)
 {
     napi_property_descriptor desc[] = {
         DECLARE_NAPI_PROPERTY("EncodingBaseFormat", CreateEncodingBaseFormat(env)),
+        DECLARE_NAPI_PROPERTY("PbesEncryptionAlgorithm", CreatePbesEncAlg(env)),
+        DECLARE_NAPI_PROPERTY("Pkcs12MacDigestAlgorithm", CreatePkcs12MacDigestAlg(env)),
     };
     napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
 }

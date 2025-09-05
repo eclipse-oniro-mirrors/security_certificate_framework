@@ -107,6 +107,19 @@ const std::string CERT_CHAIN_PKCS12_TAG_NEEDS_OTHER_CERTS = "needsOtherCerts";
 const std::string CERT_CHAIN_PKCS12_TAG_PRIKEY = "privateKey";
 const std::string CERT_CHAIN_PKCS12_TAG_CERT = "cert";
 const std::string CERT_CHAIN_PKCS12_TAG_OTHER_CERTS = "otherCerts";
+
+// PKCS12 create conf
+const std::string CERT_CHAIN_PKCS12_TAG_KEY_ENC_PARAMS = "keyEncParams";
+const std::string CERT_CHAIN_PKCS12_TAG_ENCRYPT_CERT = "encryptCert";
+const std::string CERT_CHAIN_PKCS12_TAG_CERT_ENC_PARAMS = "certEncParams";
+const std::string CERT_CHAIN_PKCS12_TAG_MAC_SALT_LEN = "macSaltLen";
+const std::string CERT_CHAIN_PKCS12_TAG_MAC_ITERATIONS = "macIterations";
+const std::string CERT_CHAIN_PKCS12_TAG_MAC_ALG = "macDigestAlgorithm";
+
+const std::string CERT_CHAIN_PKCS12_TAG_SALT_LEN = "saltLen";
+const std::string CERT_CHAIN_PKCS12_TAG_ITERATIONS = "iterations";
+const std::string CERT_CHAIN_PKCS12_TAG_ALG = "encryptionAlgorithm";
+
 // CertChainValidateParameters
 const std::string CERT_CHAIN_VALIDATE_TAG_DATE = "date";
 const std::string CERT_CHAIN_VALIDATE_TAG_TRUSTANCHORS = "trustAnchors";

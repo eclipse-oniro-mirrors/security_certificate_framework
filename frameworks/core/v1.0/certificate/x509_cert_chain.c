@@ -270,3 +270,14 @@ CfResult HcfParsePKCS12(const CfBlob *keyStore, const HcfParsePKCS12Conf *conf, 
 
     return HcfX509ParsePKCS12Func(keyStore, conf, p12Collection);
 }
+
+CfResult HcfCreatePkcs12(HcfX509P12Collection *p12Collection, HcfPkcs12CreatingConfig *conf, CfBlob *blob)
+{
+    if (p12Collection == NULL || conf == NULL || conf->pwd == NULL || blob == NULL) {
+        LOGE("invalid param!");
+        return CF_ERR_PARAMETER_CHECK;
+    }
+
+    return HcfCreatePkcs12Func(p12Collection, conf, blob);
+}
+
