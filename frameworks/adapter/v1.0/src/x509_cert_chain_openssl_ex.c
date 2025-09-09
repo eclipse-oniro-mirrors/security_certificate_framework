@@ -1056,7 +1056,7 @@ static CfResult CopyPkcs12ToBlob(PKCS12 *p12, CfBlob *blob)
     }
 
     blob->data = buf;
-    blob->size = len;
+    blob->size = (uint32_t)len;
     return CF_SUCCESS;
 }
 
@@ -1109,6 +1109,8 @@ CfResult HcfCreatePkcs12Func(HcfX509P12Collection *p12Collection, HcfPkcs12Creat
     Pkcs12Params *params = (Pkcs12Params *)CfMalloc(sizeof(Pkcs12Params), 0);
     if (params == NULL) {
         LOGE("Failed to malloc Pkcs12Params!");
+        EVP_PKEY_free(pkey);
+        sk_X509_pop_free(otherCerts, X509_free);
         return CF_ERR_MALLOC;
     }
     FillPkcs12Params(conf, params);
