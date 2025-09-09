@@ -186,6 +186,8 @@ static napi_value CreateRevocationCheckOptions(napi_env env)
         CF_REVOCATION_CHECK_OPTION_FALLBACK_NO_PREFER);
     CertAddUint32Property(env, revocationCheckOptions, "REVOCATION_CHECK_OPTION_FALLBACK_LOCAL",
         CF_REVOCATION_CHECK_OPTION_FALLBACK_LOCAL);
+    CertAddUint32Property(env, revocationCheckOptions, "REVOCATION_CHECK_OPTION_LOCAL_CRL_ONLY_CHECK_END_ENTITY_CERT",
+        CF_REVOCATION_CHECK_OPTION_LOCAL_CRL_ONLY_CHECK_END_ENTITY_CERT);
 
     return revocationCheckOptions;
 }

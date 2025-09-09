@@ -166,7 +166,22 @@ static CfResult GetCertlist(HcfX509CertChainSpi *self, HcfX509CertificateArray *
     return res;
 }
 
-static CfResult CheckCertChainIsRevoked(const STACK_OF(X509_CRL) *crlStack, const STACK_OF(X509) *certChain)
+static bool ContainsOption(HcfRevChkOpArray *options, HcfRevChkOption op)
+{
+    if (options == NULL || options->data == NULL) {
+        return false;
+    }
+
+    for (uint32_t i = 0; i < options->count; i++) {
+        if (options->data[i] == op) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static CfResult CheckCertChainIsRevoked(const HcfX509CertChainValidateParams *params,
+    const STACK_OF(X509_CRL) *crlStack, const STACK_OF(X509) *certChain)
 {
     int cerNum = sk_X509_num(certChain);
     if (cerNum == 0) {
@@ -183,7 +198,6 @@ static CfResult CheckCertChainIsRevoked(const STACK_OF(X509_CRL) *crlStack, cons
             CfPrintOpensslError();
             return CF_ERR_CRYPTO_OPERATION;
         }
-
         /* crl in certcrlcollection object is not null. */
         for (int j = 0; j < cerNum; ++j) {
             X509 *cert = sk_X509_value(certChain, j);
@@ -198,6 +212,12 @@ static CfResult CheckCertChainIsRevoked(const STACK_OF(X509_CRL) *crlStack, cons
             if (res != 0) {
                 LOGE("cert is revoked.");
                 return CF_ERR_CRYPTO_OPERATION;
+            }
+            if (params->revocationCheckParam && params->revocationCheckParam->options &&
+                ContainsOption(params->revocationCheckParam->options,
+                    REVOCATION_CHECK_OPTION_LOCAL_CRL_ONLY_CHECK_END_ENTITY_CERT)) {
+                LOGD("CheckCertChainIsLocalRevoked only check end entity cert!");
+                break;
             }
         }
     }
@@ -575,7 +595,7 @@ static CfResult GetX509Crls(const HcfCertCRLCollectionArray *certCRLCollections,
     return res;
 }
 
-static CfResult ValidateCrlLocal(const HcfCertCRLCollectionArray *collectionArr, STACK_OF(X509) *x509CertChain)
+static CfResult ValidateCrlLocal(const HcfX509CertChainValidateParams *params, STACK_OF(X509) *x509CertChain)
 {
     STACK_OF(X509_CRL) *crlStack = sk_X509_CRL_new_null();
     if (crlStack == NULL) {
@@ -584,7 +604,7 @@ static CfResult ValidateCrlLocal(const HcfCertCRLCollectionArray *collectionArr,
         return CF_ERR_CRYPTO_OPERATION;
     }
 
-    CfResult res = GetX509Crls(collectionArr, crlStack);
+    CfResult res = GetX509Crls(params->certCRLCollections, crlStack);
     if (res != CF_SUCCESS) {
         LOGE("GetX509Crls failed");
         sk_X509_CRL_pop_free(crlStack, X509_CRL_free);
@@ -596,7 +616,8 @@ static CfResult ValidateCrlLocal(const HcfCertCRLCollectionArray *collectionArr,
         sk_X509_CRL_free(crlStack);
         return CF_SUCCESS;
     }
-    res = CheckCertChainIsRevoked(crlStack, x509CertChain);
+
+    res = CheckCertChainIsRevoked(params, crlStack, x509CertChain);
     sk_X509_CRL_pop_free(crlStack, X509_CRL_free);
     return res;
 }
@@ -773,7 +794,7 @@ static CfResult ValidateCrlOnline(const HcfX509CertChainValidateParams *params, 
         sk_X509_CRL_pop_free(crlStack, X509_CRL_free);
         return CF_ERR_CRYPTO_OPERATION;
     }
-    if (CheckCertChainIsRevoked(crlStack, x509CertChain) != CF_SUCCESS) {
+    if (CheckCertChainIsRevoked(params, crlStack, x509CertChain) != CF_SUCCESS) {
         LOGE("Certchain is revoked, verify failed!");
         sk_X509_CRL_pop_free(crlStack, X509_CRL_free);
         return CF_ERR_CRYPTO_OPERATION;
@@ -781,20 +802,6 @@ static CfResult ValidateCrlOnline(const HcfX509CertChainValidateParams *params, 
 
     sk_X509_CRL_pop_free(crlStack, X509_CRL_free);
     return CF_SUCCESS;
-}
-
-static bool ContainsOption(HcfRevChkOpArray *options, HcfRevChkOption op)
-{
-    if (options == NULL || options->data == NULL) {
-        return false;
-    }
-
-    for (uint32_t i = 0; i < options->count; i++) {
-        if (options->data[i] == op) {
-            return true;
-        }
-    }
-    return false;
 }
 
 static CfResult VerifyOcspSigner(OCSP_BASICRESP *bs, STACK_OF(X509) *certChain, X509 *cert)
@@ -1270,7 +1277,7 @@ static CfResult ValidateRevocationOnLine(const HcfX509CertChainValidateParams *p
                                          x509CertChain, trustAnchor, params)) == CF_SUCCESS) {
                 return res;
             }
-            return ValidateCrlLocal(params->certCRLCollections, x509CertChain);
+            return ValidateCrlLocal(params, x509CertChain);
         }
     } else {
         if ((res = ValidateCrlOnline(params, x509CertChain)) == CF_SUCCESS) {
@@ -1282,7 +1289,7 @@ static CfResult ValidateRevocationOnLine(const HcfX509CertChainValidateParams *p
             }
         }
         if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_FALLBACK_LOCAL)) {
-            if ((res = ValidateCrlLocal(params->certCRLCollections, x509CertChain)) == CF_SUCCESS) {
+            if ((res = ValidateCrlLocal(params, x509CertChain)) == CF_SUCCESS) {
                 return res;
             }
             return ValidateOcspLocal((OcspLocalParam) { .req = NULL, .resp = NULL, .certIdInfo = certIdInfo },
@@ -1302,7 +1309,7 @@ static CfResult ValidateRevocationLocal(const HcfX509CertChainValidateParams *pa
             return res;
         }
     } else {
-        if ((res = ValidateCrlLocal(params->certCRLCollections, x509CertChain)) == CF_SUCCESS) {
+        if ((res = ValidateCrlLocal(params, x509CertChain)) == CF_SUCCESS) {
             return res;
         }
     }
@@ -1349,7 +1356,7 @@ static CfResult ValidateRevocation(
         FreeCertIdInfo(&certIdInfo);
         return res;
     } else {
-        return ValidateCrlLocal(params->certCRLCollections, x509CertChain);
+        return ValidateCrlLocal(params, x509CertChain);
     }
 }
 
@@ -2103,7 +2110,7 @@ bool ValidatCertChainX509(STACK_OF(X509) * x509CertChain, HcfX509CertChainValida
         return false;
     }
 
-    if (ValidateCrlLocal(params.certCRLCollections, x509CertChain) != CF_SUCCESS) {
+    if (ValidateCrlLocal(&params, x509CertChain) != CF_SUCCESS) {
         return false;
     }
     return true;

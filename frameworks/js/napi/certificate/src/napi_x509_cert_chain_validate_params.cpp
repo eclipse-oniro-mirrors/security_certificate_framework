@@ -214,6 +214,7 @@ static bool GetRevocationOptions(napi_env env, napi_value rckObj, HcfRevocationC
             case REVOCATION_CHECK_OPTION_ACCESS_NETWORK:
             case REVOCATION_CHECK_OPTION_FALLBACK_NO_PREFER:
             case REVOCATION_CHECK_OPTION_FALLBACK_LOCAL:
+            case REVOCATION_CHECK_OPTION_LOCAL_CRL_ONLY_CHECK_END_ENTITY_CERT:
                 break;
             default:
                 CF_FREE_PTR(out->options->data);
