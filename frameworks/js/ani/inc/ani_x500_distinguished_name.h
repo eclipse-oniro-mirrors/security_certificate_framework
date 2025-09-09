@@ -23,7 +23,7 @@ namespace ANI::CertFramework {
 class X500DistinguishedNameImpl {
 public:
     X500DistinguishedNameImpl();
-    explicit X500DistinguishedNameImpl(HcfX509DistinguishedName *x509Name);
+    explicit X500DistinguishedNameImpl(HcfX509DistinguishedName *x509Name, HcfX509DistinguishedName *x509NameUtf8);
     ~X500DistinguishedNameImpl();
 
     int64_t GetX500DistinguishedNameObj();
@@ -34,6 +34,7 @@ public:
 
 private:
     HcfX509DistinguishedName *x509Name_ = nullptr;
+    HcfX509DistinguishedName *x509NameUtf8_ = nullptr;
 };
 } // namespace ANI::CertFramework
 

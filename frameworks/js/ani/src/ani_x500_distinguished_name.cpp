@@ -19,12 +19,15 @@
 namespace ANI::CertFramework {
 X500DistinguishedNameImpl::X500DistinguishedNameImpl() {}
 
-X500DistinguishedNameImpl::X500DistinguishedNameImpl(HcfX509DistinguishedName *x509Name) : x509Name_(x509Name) {}
+X500DistinguishedNameImpl::X500DistinguishedNameImpl(HcfX509DistinguishedName *x509Name,
+    HcfX509DistinguishedName *x509NameUtf8) : x509Name_(x509Name), x509NameUtf8_(x509NameUtf8) {}
 
 X500DistinguishedNameImpl::~X500DistinguishedNameImpl()
 {
     CfObjDestroy(this->x509Name_);
     this->x509Name_ = nullptr;
+    CfObjDestroy(this->x509NameUtf8_);
+    this->x509NameUtf8_ = nullptr;
 }
 
 int64_t X500DistinguishedNameImpl::GetX500DistinguishedNameObj()
@@ -34,13 +37,13 @@ int64_t X500DistinguishedNameImpl::GetX500DistinguishedNameObj()
 
 X500DistinguishedName CreateX500DistinguishedNameInner(const CfBlob *inStream, bool bString)
 {
-    HcfX509DistinguishedName *x500DistinguishedName = nullptr;
-    CfResult res = HcfX509DistinguishedNameCreate(inStream, bString, &x500DistinguishedName);
+    HcfX509DistinguishedName *x509Name = nullptr;
+    CfResult res = HcfX509DistinguishedNameCreate(inStream, bString, &x509Name);
     if (res != CF_SUCCESS) {
         ANI_LOGE_THROW(res, "create x500 distinguished name failed.");
         return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>();
     }
-    return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>(x500DistinguishedName);
+    return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>(x509Name, x509Name);
 }
 
 string X500DistinguishedNameImpl::GetName()
@@ -62,13 +65,13 @@ string X500DistinguishedNameImpl::GetName()
 
 string X500DistinguishedNameImpl::GetNameByEnum(EncodingType encodingType)
 {
-    if (this->x509Name_ == nullptr) {
+    if (this->x509NameUtf8_ == nullptr) {
         ANI_LOGE_THROW(CF_INVALID_PARAMS, "x500 distinguished name obj is nullptr!");
         return "";
     }
     CfBlob blob = {};
     CfEncodinigType type = static_cast<CfEncodinigType>(encodingType.get_value());
-    CfResult res = this->x509Name_->getNameEx(this->x509Name_, type, &blob);
+    CfResult res = this->x509NameUtf8_->getNameEx(this->x509NameUtf8_, type, &blob);
     if (res != CF_SUCCESS) {
         ANI_LOGE_THROW(res, "get name failed.");
         return "";
@@ -123,16 +126,16 @@ EncodingBlob X500DistinguishedNameImpl::GetEncoded()
 
 X500DistinguishedName CreateX500DistinguishedNameByStrSync(string_view nameStr)
 {
-    CfBlob nameStrBlob = {};
-    StringToDataBlob(nameStr, nameStrBlob);
-    return CreateX500DistinguishedNameInner(&nameStrBlob, true);
+    CfBlob blob = {};
+    StringToDataBlob(nameStr, blob);
+    return CreateX500DistinguishedNameInner(&blob, true);
 }
 
 X500DistinguishedName CreateX500DistinguishedNameByDerSync(array_view<uint8_t> nameDer)
 {
-    CfBlob nameDerBlob = {};
-    ArrayU8ToDataBlob(nameDer, nameDerBlob);
-    return CreateX500DistinguishedNameInner(&nameDerBlob, false);
+    CfBlob blob = {};
+    ArrayU8ToDataBlob(nameDer, blob);
+    return CreateX500DistinguishedNameInner(&blob, false);
 }
 } // namespace ANI::CertFramework
 

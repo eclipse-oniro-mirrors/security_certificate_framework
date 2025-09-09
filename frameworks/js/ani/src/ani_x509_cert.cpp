@@ -462,20 +462,33 @@ X500DistinguishedName X509CertImpl::GetIssuerX500DistinguishedName()
         return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>();
     }
     CfBlob blob = {};
+    // x509Name
     CfResult res = this->cert_->getIssuerName(this->cert_, &blob);
     if (res != CF_SUCCESS) {
-        ANI_LOGE_THROW(res, "getIssuerName failed!");
+        ANI_LOGE_THROW(res, "get issuer name failed!");
         return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>();
     }
     HcfX509DistinguishedName *x509Name = nullptr;
     res = HcfX509DistinguishedNameCreate(&blob, true, &x509Name);
-    if (res != CF_SUCCESS || x509Name == nullptr) {
-        ANI_LOGE_THROW(res, "HcfX509DistinguishedNameCreate failed!");
-        CfBlobDataFree(&blob);
+    CfBlobDataFree(&blob);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "create x509 distinguished name failed!");
         return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>();
     }
+    // x509NameUtf8
+    res = this->cert_->getIssuerNameDer(this->cert_, &blob);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "get issuer name der failed!");
+        return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>();
+    }
+    HcfX509DistinguishedName *x509NameUtf8 = nullptr;
+    res = HcfX509DistinguishedNameCreate(&blob, false, &x509NameUtf8);
     CfBlobDataFree(&blob);
-    return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>(x509Name);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "create x509 distinguished name failed!");
+        return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>();
+    }
+    return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>(x509Name, x509NameUtf8);
 }
 
 X500DistinguishedName X509CertImpl::GetSubjectX500DistinguishedName()
@@ -485,20 +498,33 @@ X500DistinguishedName X509CertImpl::GetSubjectX500DistinguishedName()
         return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>();
     }
     CfBlob blob = {};
+    // x509Name
     CfResult res = this->cert_->getSubjectName(this->cert_, &blob);
     if (res != CF_SUCCESS) {
-        ANI_LOGE_THROW(res, "getSubjectName failed!");
+        ANI_LOGE_THROW(res, "get subject name failed!");
         return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>();
     }
     HcfX509DistinguishedName *x509Name = nullptr;
     res = HcfX509DistinguishedNameCreate(&blob, true, &x509Name);
-    if (res != CF_SUCCESS || x509Name == nullptr) {
-        ANI_LOGE_THROW(res, "HcfX509DistinguishedNameCreate failed!");
-        CfBlobDataFree(&blob);
+    CfBlobDataFree(&blob);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "create x509 distinguished name failed!");
         return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>();
     }
+    // x509NameUtf8
+    res = this->cert_->getSubjectNameDer(this->cert_, &blob);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "get subject name der failed!");
+        return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>();
+    }
+    HcfX509DistinguishedName *x509NameUtf8 = nullptr;
+    res = HcfX509DistinguishedNameCreate(&blob, false, &x509NameUtf8);
     CfBlobDataFree(&blob);
-    return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>(x509Name);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "create x509 distinguished name failed!");
+        return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>();
+    }
+    return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>(x509Name, x509NameUtf8);
 }
 
 string X509CertImpl::ToString()
