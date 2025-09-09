@@ -479,6 +479,7 @@ X500DistinguishedName X509CertImpl::GetIssuerX500DistinguishedName()
     res = this->cert_->getIssuerNameDer(this->cert_, &blob);
     if (res != CF_SUCCESS) {
         ANI_LOGE_THROW(res, "get issuer name der failed!");
+        CfObjDestroy(x509Name);
         return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>();
     }
     HcfX509DistinguishedName *x509NameUtf8 = nullptr;
@@ -486,6 +487,7 @@ X500DistinguishedName X509CertImpl::GetIssuerX500DistinguishedName()
     CfBlobDataFree(&blob);
     if (res != CF_SUCCESS) {
         ANI_LOGE_THROW(res, "create x509 distinguished name failed!");
+        CfObjDestroy(x509Name);
         return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>();
     }
     return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>(x509Name, x509NameUtf8);
@@ -515,6 +517,7 @@ X500DistinguishedName X509CertImpl::GetSubjectX500DistinguishedName()
     res = this->cert_->getSubjectNameDer(this->cert_, &blob);
     if (res != CF_SUCCESS) {
         ANI_LOGE_THROW(res, "get subject name der failed!");
+        CfObjDestroy(x509Name);
         return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>();
     }
     HcfX509DistinguishedName *x509NameUtf8 = nullptr;
@@ -522,6 +525,7 @@ X500DistinguishedName X509CertImpl::GetSubjectX500DistinguishedName()
     CfBlobDataFree(&blob);
     if (res != CF_SUCCESS) {
         ANI_LOGE_THROW(res, "create x509 distinguished name failed!");
+        CfObjDestroy(x509Name);
         return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>();
     }
     return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>(x509Name, x509NameUtf8);
