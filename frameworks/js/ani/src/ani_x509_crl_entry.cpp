@@ -178,6 +178,7 @@ X500DistinguishedName X509CRLEntryImpl::GetCertIssuerX500DistinguishedName()
     res = this->x509CrlEntry_->getCertIssuerDer(this->x509CrlEntry_, &blob);
     if (res != CF_SUCCESS) {
         ANI_LOGE_THROW(res, "get cert issuer der failed!");
+        CfObjDestroy(x509Name);
         return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>();
     }
     HcfX509DistinguishedName *x509NameUtf8 = nullptr;
@@ -185,6 +186,7 @@ X500DistinguishedName X509CRLEntryImpl::GetCertIssuerX500DistinguishedName()
     CfBlobDataFree(&blob);
     if (res != CF_SUCCESS) {
         ANI_LOGE_THROW(res, "create x509 distinguished name failed!");
+        CfObjDestroy(x509Name);
         return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>();
     }
     return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>(x509Name, x509NameUtf8);
