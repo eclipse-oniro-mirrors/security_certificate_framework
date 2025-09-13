@@ -376,6 +376,16 @@ static napi_value CreateCmsRsaSignaturePadding(napi_env env)
     return cmsRsaSignaturePadding;
 }
 
+static napi_value CreateCmsCertType(napi_env env)
+{
+    napi_value cmsCertType = nullptr;
+    napi_create_object(env, &cmsCertType);
+
+    CertAddUint32Property(env, cmsCertType, "SIGNER_CERTS", CMS_CERT_SIGNER_CERTS);
+    CertAddUint32Property(env, cmsCertType, "ALL_CERTS", CMS_CERT_ALL_CERTS);
+    return cmsCertType;
+}
+
 static void DefineCertCmsGeneratorProperties(napi_env env, napi_value exports)
 {
     napi_property_descriptor desc[] = {
@@ -385,6 +395,7 @@ static void DefineCertCmsGeneratorProperties(napi_env env, napi_value exports)
         DECLARE_NAPI_PROPERTY("CmsRecipientEncryptionAlgorithm", CreateCmsRecEncAlg(env)),
         DECLARE_NAPI_PROPERTY("CmsKeyAgreeRecipientDigestAlgorithm", CreateCmsKeyAgreeRecDigAlg(env)),
         DECLARE_NAPI_PROPERTY("CmsRsaSignaturePadding", CreateCmsRsaSignaturePadding(env)),
+        DECLARE_NAPI_PROPERTY("CmsCertType", CreateCmsCertType(env)),
     };
     napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
 }
@@ -421,6 +432,7 @@ static napi_value CertModuleExport(napi_env env, napi_value exports)
     NapiX509CertChainBulidResult::DefineX509CertChainBuildResultJsClass(env, exports);
     NapiCertCRLCollection::DefineCertCRLCollectionJSClass(env, exports);
     NapiCertCmsGenerator::DefineCertCmsGeneratorJSClass(env, exports);
+    NapiCertCmsParser::DefineCertCmsParserJsClass(env, exports);
     return exports;
 }
 

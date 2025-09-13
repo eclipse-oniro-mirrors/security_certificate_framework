@@ -19,6 +19,7 @@
 
 #include "cert_cms_generator.h"
 #include "cf_blob.h"
+#include "cf_mock.h"
 #include "memory_mock.h"
 #include "cf_object_base.h"
 #include "cf_result.h"
@@ -373,9 +374,223 @@ const CfEncodingBlob g_inKeyEccPemStream = {
     .encodingFormat = CF_FORMAT_PEM
 };
 
+static char g_testleftPem[] =
+    "-----BEGIN CERTIFICATE-----\r\n"
+    "MIICejCCAiCgAwIBAgIUGE371/LcCW79mzMm6UiJdyC4khcwCgYIKoZIzj0EAwIw\r\n"
+    "fjELMAkGA1UEBhMCQ04xEDAOBgNVBAgMB0JlaWppbmcxEDAOBgNVBAcMB0JlaWpp\r\n"
+    "bmcxHjAcBgNVBAoMFUVDRFNBIEludGVybWVkaWF0ZSBDQTELMAkGA1UECwwCSVQx\r\n"
+    "HjAcBgNVBAMMFUVDRFNBIEludGVybWVkaWF0ZSBDQTAeFw0yNTA5MjgxMDU0MDVa\r\n"
+    "Fw0zNTA5MjYxMDU0MDVaMHUxCzAJBgNVBAYTAkNOMRAwDgYDVQQIDAdCZWlqaW5n\r\n"
+    "MRAwDgYDVQQHDAdCZWlqaW5nMRswGQYDVQQKDBJFQ0RTQSBFeGFtcGxlIENvcnAx\r\n"
+    "CzAJBgNVBAsMAklUMRgwFgYDVQQDDA93d3cuZXhhbXBsZS5jb20wWTATBgcqhkjO\r\n"
+    "PQIBBggqhkjOPQMBBwNCAAQNKO5YXAsmdm/ShEU5VyQlQSdnV6hNQIofHhQ/GyeK\r\n"
+    "1W7t3KnMie4cv/wnA4Qmor2KeBBXUFUnYJqqWOHsivIuo4GEMIGBMAkGA1UdEwQC\r\n"
+    "MAAwCwYDVR0PBAQDAgK0MCcGA1UdEQQgMB6CD3d3dy5leGFtcGxlLmNvbYILZXhh\r\n"
+    "bXBsZS5jb20wHQYDVR0OBBYEFD7RUSUimy0SWShmPIus91tDS0u9MB8GA1UdIwQY\r\n"
+    "MBaAFFjgVG0DwmSwxzJWELNvxGtm3mxUMAoGCCqGSM49BAMCA0gAMEUCIQCTw7sx\r\n"
+    "X0tt1xiNvIQ9LD4bECzdgzIuBaU97GgYDusIUgIgTkc0wYZ3EUg0COHPly4cVsTj\r\n"
+    "1Cyy/+qufhBUJw5om7E=\r\n"
+    "-----END CERTIFICATE-----\r\n";
+
+static char g_interPem[] =
+    "-----BEGIN CERTIFICATE-----\r\n"
+    "MIICTDCCAfGgAwIBAgIUc1x0keEiLIcS1oKtSpeEiPoaepkwCgYIKoZIzj0EAwIw\r\n"
+    "bjELMAkGA1UEBhMCQ04xEDAOBgNVBAgMB0JlaWppbmcxEDAOBgNVBAcMB0JlaWpp\r\n"
+    "bmcxFjAUBgNVBAoMDUVDRFNBIFJvb3QgQ0ExCzAJBgNVBAsMAklUMRYwFAYDVQQD\r\n"
+    "DA1FQ0RTQSBSb290IENBMB4XDTI1MDkyODEwNTM0OVoXDTMwMDkyNzEwNTM0OVow\r\n"
+    "fjELMAkGA1UEBhMCQ04xEDAOBgNVBAgMB0JlaWppbmcxEDAOBgNVBAcMB0JlaWpp\r\n"
+    "bmcxHjAcBgNVBAoMFUVDRFNBIEludGVybWVkaWF0ZSBDQTELMAkGA1UECwwCSVQx\r\n"
+    "HjAcBgNVBAMMFUVDRFNBIEludGVybWVkaWF0ZSBDQTBZMBMGByqGSM49AgEGCCqG\r\n"
+    "SM49AwEHA0IABGoCqpHBV/glJeezsp693/hhflYOKpHvaNszVBLkTurkqrbhbaMo\r\n"
+    "hw1oO2Zro54rhZ8tom2UAGn1rzNmRVBCxTajXTBbMAwGA1UdEwQFMAMBAf8wCwYD\r\n"
+    "VR0PBAQDAgEGMB0GA1UdDgQWBBRY4FRtA8JksMcyVhCzb8RrZt5sVDAfBgNVHSME\r\n"
+    "GDAWgBTmNm24RfPnLf1HMNCocS90CGalJjAKBggqhkjOPQQDAgNJADBGAiEAstMv\r\n"
+    "puHi/dgAlvycicL3VQ5iITvUSG2fo286LYc01CQCIQCyw4+94ovyRtaT/WWoZh3u\r\n"
+    "ia4tt478nYeQgMChg+xtSw==\r\n"
+    "-----END CERTIFICATE-----\r\n";
+
+static char g_verifyRootPem[] =
+    "-----BEGIN CERTIFICATE-----\r\n"
+    "MIICUzCCAfqgAwIBAgIUPma0DkC+ck+t/3eykmsKsy5D0egwCgYIKoZIzj0EAwIw\r\n"
+    "bjELMAkGA1UEBhMCQ04xEDAOBgNVBAgMB0JlaWppbmcxEDAOBgNVBAcMB0JlaWpp\r\n"
+    "bmcxFjAUBgNVBAoMDUVDRFNBIFJvb3QgQ0ExCzAJBgNVBAsMAklUMRYwFAYDVQQD\r\n"
+    "DA1FQ0RTQSBSb290IENBMB4XDTI1MDkyODEwNTMyN1oXDTM1MDkyNjEwNTMyN1ow\r\n"
+    "bjELMAkGA1UEBhMCQ04xEDAOBgNVBAgMB0JlaWppbmcxEDAOBgNVBAcMB0JlaWpp\r\n"
+    "bmcxFjAUBgNVBAoMDUVDRFNBIFJvb3QgQ0ExCzAJBgNVBAsMAklUMRYwFAYDVQQD\r\n"
+    "DA1FQ0RTQSBSb290IENBMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEA3KYWepl\r\n"
+    "wjHe/Htx2cAhrjaZpWPJOUyL6siUFRayVebaqOQejuUPypbj+u4ZHodsviUe12E1\r\n"
+    "50Q+R9Uayes+WKN2MHQwHQYDVR0OBBYEFOY2bbhF8+ct/Ucw0KhxL3QIZqUmMB8G\r\n"
+    "A1UdIwQYMBaAFOY2bbhF8+ct/Ucw0KhxL3QIZqUmMAsGA1UdDwQEAwIBBjAJBgNV\r\n"
+    "HREEAjAAMAkGA1UdEgQCMAAwDwYDVR0TAQH/BAUwAwEB/zAKBggqhkjOPQQDAgNH\r\n"
+    "ADBEAiAjo+sFDtGVhyc+NqdwxhepqSXOjRI5As6TSz3OYTvERwIgayLgfBn2uABH\r\n"
+    "wYQI60CEJkDF9Pn2fxsGuNEyyn0ks28=\r\n"
+    "-----END CERTIFICATE-----\r\n";
+
+static char g_signedCmsPem[] =
+    "-----BEGIN CMS-----\r\n"
+    "MIIEpQYJKoZIhvcNAQcCoIIEljCCBJICAQExDTALBglghkgBZQMEAgQwEwYJKoZI\r\n"
+    "hvcNAQcBoAYEBAECAwSgggJ+MIICejCCAiCgAwIBAgIUGE371/LcCW79mzMm6UiJ\r\n"
+    "dyC4khcwCgYIKoZIzj0EAwIwfjELMAkGA1UEBhMCQ04xEDAOBgNVBAgMB0JlaWpp\r\n"
+    "bmcxEDAOBgNVBAcMB0JlaWppbmcxHjAcBgNVBAoMFUVDRFNBIEludGVybWVkaWF0\r\n"
+    "ZSBDQTELMAkGA1UECwwCSVQxHjAcBgNVBAMMFUVDRFNBIEludGVybWVkaWF0ZSBD\r\n"
+    "QTAeFw0yNTA5MjgxMDU0MDVaFw0zNTA5MjYxMDU0MDVaMHUxCzAJBgNVBAYTAkNO\r\n"
+    "MRAwDgYDVQQIDAdCZWlqaW5nMRAwDgYDVQQHDAdCZWlqaW5nMRswGQYDVQQKDBJF\r\n"
+    "Q0RTQSBFeGFtcGxlIENvcnAxCzAJBgNVBAsMAklUMRgwFgYDVQQDDA93d3cuZXhh\r\n"
+    "bXBsZS5jb20wWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAQNKO5YXAsmdm/ShEU5\r\n"
+    "VyQlQSdnV6hNQIofHhQ/GyeK1W7t3KnMie4cv/wnA4Qmor2KeBBXUFUnYJqqWOHs\r\n"
+    "ivIuo4GEMIGBMAkGA1UdEwQCMAAwCwYDVR0PBAQDAgK0MCcGA1UdEQQgMB6CD3d3\r\n"
+    "dy5leGFtcGxlLmNvbYILZXhhbXBsZS5jb20wHQYDVR0OBBYEFD7RUSUimy0SWShm\r\n"
+    "PIus91tDS0u9MB8GA1UdIwQYMBaAFFjgVG0DwmSwxzJWELNvxGtm3mxUMAoGCCqG\r\n"
+    "SM49BAMCA0gAMEUCIQCTw7sxX0tt1xiNvIQ9LD4bECzdgzIuBaU97GgYDusIUgIg\r\n"
+    "Tkc0wYZ3EUg0COHPly4cVsTj1Cyy/+qufhBUJw5om7ExggHlMIIB4QIBATCBljB+\r\n"
+    "MQswCQYDVQQGEwJDTjEQMA4GA1UECAwHQmVpamluZzEQMA4GA1UEBwwHQmVpamlu\r\n"
+    "ZzEeMBwGA1UECgwVRUNEU0EgSW50ZXJtZWRpYXRlIENBMQswCQYDVQQLDAJJVDEe\r\n"
+    "MBwGA1UEAwwVRUNEU0EgSW50ZXJtZWRpYXRlIENBAhQYTfvX8twJbv2bMybpSIl3\r\n"
+    "ILiSFzALBglghkgBZQMEAgSggeAwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAc\r\n"
+    "BgkqhkiG9w0BCQUxDxcNMjUwOTI5MDM1NzM1WjArBgkqhkiG9w0BCQQxHgQc/hln\r\n"
+    "L6IKzcanlPftaN11Y8J/ZHkgFkuZHxrQNzB5BgkqhkiG9w0BCQ8xbDBqMAsGCWCG\r\n"
+    "SAFlAwQBKjALBglghkgBZQMEARYwCwYJYIZIAWUDBAECMAoGCCqGSIb3DQMHMA4G\r\n"
+    "CCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggqhkiG9w0D\r\n"
+    "AgIBKDAKBggqhkjOPQQDAQRHMEUCIAn+mv09rGWttN80CgEdVM5hstWDWZhDXX/x\r\n"
+    "NcqMlVCnAiEA7ZPsEoe6fvK+YPzyONcWKAeSwEbM2GH1NOXjjsA3+0M=\r\n"
+    "-----END CMS-----\r\n";
+
+static char g_emmptyDataCms[] =
+    "-----BEGIN CMS-----\r\n"
+    "MIICHgYJKoZIhvcNAQcCoIICDzCCAgsCAQExDTALBglghkgBZQMEAgEwCwYJKoZI\r\n"
+    "hvcNAQcBMYIB6DCCAeQCAQEwgZYwfjELMAkGA1UEBhMCQ04xEDAOBgNVBAgMB0Jl\r\n"
+    "aWppbmcxEDAOBgNVBAcMB0JlaWppbmcxHjAcBgNVBAoMFUVDRFNBIEludGVybWVk\r\n"
+    "aWF0ZSBDQTELMAkGA1UECwwCSVQxHjAcBgNVBAMMFUVDRFNBIEludGVybWVkaWF0\r\n"
+    "ZSBDQQIUGE371/LcCW79mzMm6UiJdyC4khcwCwYJYIZIAWUDBAIBoIHkMBgGCSqG\r\n"
+    "SIb3DQEJAzELBgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkFMQ8XDTI1MTAxMDA4MjU1\r\n"
+    "MVowLwYJKoZIhvcNAQkEMSIEIOOwxEKY/BwUmvv0yJlvuSQnrkHkZJuTTKSVmRt4\r\n"
+    "UrhVMHkGCSqGSIb3DQEJDzFsMGowCwYJYIZIAWUDBAEqMAsGCWCGSAFlAwQBFjAL\r\n"
+    "BglghkgBZQMEAQIwCgYIKoZIhvcNAwcwDgYIKoZIhvcNAwICAgCAMA0GCCqGSIb3\r\n"
+    "DQMCAgFAMAcGBSsOAwIHMA0GCCqGSIb3DQMCAgEoMAoGCCqGSM49BAMCBEYwRAIg\r\n"
+    "TnMwlwpykrJXu5FWwOOfXQHyJS+uvwMqv+3rNNQfFhYCIGnjny8I3suORTF2+FnP\r\n"
+    "WoF6o9ydpYm4wwbJcQdoE2Wa\r\n"
+    "-----END CMS-----\r\n";
+
+static char g_emptyMiddleCert[] =
+    "-----BEGIN CERTIFICATE-----\r\n"
+    "MIICTDCCAfGgAwIBAgIUc1x0keEiLIcS1oKtSpeEiPoaepkwCgYIKoZIzj0EAwIw\r\n"
+    "bjELMAkGA1UEBhMCQ04xEDAOBgNVBAgMB0JlaWppbmcxEDAOBgNVBAcMB0JlaWpp\r\n"
+    "bmcxFjAUBgNVBAoMDUVDRFNBIFJvb3QgQ0ExCzAJBgNVBAsMAklUMRYwFAYDVQQD\r\n"
+    "DA1FQ0RTQSBSb290IENBMB4XDTI1MDkyODEwNTM0OVoXDTMwMDkyNzEwNTM0OVow\r\n"
+    "fjELMAkGA1UEBhMCQ04xEDAOBgNVBAgMB0JlaWppbmcxEDAOBgNVBAcMB0JlaWpp\r\n"
+    "bmcxHjAcBgNVBAoMFUVDRFNBIEludGVybWVkaWF0ZSBDQTELMAkGA1UECwwCSVQx\r\n"
+    "HjAcBgNVBAMMFUVDRFNBIEludGVybWVkaWF0ZSBDQTBZMBMGByqGSM49AgEGCCqG\r\n"
+    "SM49AwEHA0IABGoCqpHBV/glJeezsp693/hhflYOKpHvaNszVBLkTurkqrbhbaMo\r\n"
+    "hw1oO2Zro54rhZ8tom2UAGn1rzNmRVBCxTajXTBbMAwGA1UdEwQFMAMBAf8wCwYD\r\n"
+    "VR0PBAQDAgEGMB0GA1UdDgQWBBRY4FRtA8JksMcyVhCzb8RrZt5sVDAfBgNVHSME\r\n"
+    "GDAWgBTmNm24RfPnLf1HMNCocS90CGalJjAKBggqhkjOPQQDAgNJADBGAiEAstMv\r\n"
+    "puHi/dgAlvycicL3VQ5iITvUSG2fo286LYc01CQCIQCyw4+94ovyRtaT/WWoZh3u\r\n"
+    "ia4tt478nYeQgMChg+xtSw==\r\n"
+    "-----END CERTIFICATE-----\r\n";
+
+static char g_emptyRootCert[] =
+    "-----BEGIN CERTIFICATE-----\r\n"
+    "MIICUzCCAfqgAwIBAgIUPma0DkC+ck+t/3eykmsKsy5D0egwCgYIKoZIzj0EAwIw\r\n"
+    "bjELMAkGA1UEBhMCQ04xEDAOBgNVBAgMB0JlaWppbmcxEDAOBgNVBAcMB0JlaWpp\r\n"
+    "bmcxFjAUBgNVBAoMDUVDRFNBIFJvb3QgQ0ExCzAJBgNVBAsMAklUMRYwFAYDVQQD\r\n"
+    "DA1FQ0RTQSBSb290IENBMB4XDTI1MDkyODEwNTMyN1oXDTM1MDkyNjEwNTMyN1ow\r\n"
+    "bjELMAkGA1UEBhMCQ04xEDAOBgNVBAgMB0JlaWppbmcxEDAOBgNVBAcMB0JlaWpp\r\n"
+    "bmcxFjAUBgNVBAoMDUVDRFNBIFJvb3QgQ0ExCzAJBgNVBAsMAklUMRYwFAYDVQQD\r\n"
+    "DA1FQ0RTQSBSb290IENBMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEA3KYWepl\r\n"
+    "wjHe/Htx2cAhrjaZpWPJOUyL6siUFRayVebaqOQejuUPypbj+u4ZHodsviUe12E1\r\n"
+    "50Q+R9Uayes+WKN2MHQwHQYDVR0OBBYEFOY2bbhF8+ct/Ucw0KhxL3QIZqUmMB8G\r\n"
+    "A1UdIwQYMBaAFOY2bbhF8+ct/Ucw0KhxL3QIZqUmMAsGA1UdDwQEAwIBBjAJBgNV\r\n"
+    "HREEAjAAMAkGA1UdEgQCMAAwDwYDVR0TAQH/BAUwAwEB/zAKBggqhkjOPQQDAgNH\r\n"
+    "ADBEAiAjo+sFDtGVhyc+NqdwxhepqSXOjRI5As6TSz3OYTvERwIgayLgfBn2uABH\r\n"
+    "wYQI60CEJkDF9Pn2fxsGuNEyyn0ks28=\r\n"
+    "-----END CERTIFICATE-----\r\n";
+
+static char g_encryptedCmsPem[] =
+    "-----BEGIN CMS-----\r\n"
+    "MIIEXQYJKoZIhvcNAQcDoIIETjCCBEoCAQIxggQFMIHpAgEAMFIwSDELMAkGA1UE\r\n"
+    "BhMCQ04xCzAJBgNVBAgMAlNYMQ4wDAYDVQQHDAV4aSBhbjENMAsGA1UECgwEVGVz\r\n"
+    "dDENMAsGA1UEAwwEdGVzdAIGAXKnJjrEMA0GCSqGSIb3DQEBAQUABIGAmj9WNBIB\r\n"
+    "uQ9cl7a8YGvKw0sRcRDZtj0ivupGTcHKShj54g3Jxb+WiYvR7YwKjtH/S16z28DQ\r\n"
+    "jdAb4Oh7zRkHRsXwiTcTyu9269tib8LwLyvjhNZ1yIy+IjkNGhXD0xGnyb6BjSHx\r\n"
+    "gZGuWgAWoyvsPWyuwTo69iiWcq142yjuZ2ChggEDAgEDoFGhTzAJBgcqhkjOPQIB\r\n"
+    "A0IABMpGxKtyYoyJNWI/UMjNRnKHBEHtKnZErzYbbh4e6iUtEyCyOg3RGMHCcTKA\r\n"
+    "HZGNd28hVI0nNhDs7iIkvA79vyMwGAYJK4EFEIZIPwACMAsGCWCGSAFlAwQBLTCB\r\n"
+    "kDCBjTBhMFcxCzAJBgNVBAYTAkNOMQ8wDQYDVQQIDAbpmZXopb8xDzANBgNVBAcM\r\n"
+    "Builv+WuiTEPMA0GA1UECgwG5rWL6K+VMRUwEwYDVQQDDAzkuK3mlofmtYvor5UC\r\n"
+    "BgFypyY6wAQonc7hNmlgIo6UA/WjKRvjBHy8xEFjOG7yOJ+BWFL/jbtQc2USKFGa\r\n"
+    "16GCAb4CAQOgggEYoYIBFDAJBgcqhkjOPgIBA4IBBQACggEAN7IzujspteV8tf8T\r\n"
+    "K9zfBa8mKd9mulZt+pylXQhKiKSUXdzP/SLLhwUm7YL8J0kkIeaGQQpzu68bG5Ua\r\n"
+    "NNhhsr07FNbM9D0zi6tzJ/5QI7pVFRex7CxSgsJkx4tIuNYm3xPiQsGnT2PmOgE3\r\n"
+    "1GYJTQtE7g+Ne5aqUvQ73iTEsTFDtvX4yu++KQg3KQJIrG8dyzkazKafs2mHYyQO\r\n"
+    "HVZrfRc7lzV6ef5W0y+9/MdjB2/ERnmS3CBVlf+UkWxUIqUKeZAn6JHt8j2tAzGZ\r\n"
+    "9I71ogpP8zo915pXXnftOPmXGj4AJKaMGn7vAUODW0UZpe01xtKuaB7GvjEsFEjK\r\n"
+    "7NIiFjAaBgsqhkiG9w0BCRADBTALBglghkgBZQMEAS0wgYAwfjBSMEgxCzAJBgNV\r\n"
+    "BAYTAkNOMQswCQYDVQQIDAJTWDEOMAwGA1UEBwwFeGkgYW4xDTALBgNVBAoMBFRl\r\n"
+    "c3QxDTALBgNVBAMMBHRlc3QCBgFypyY6xQQoIr8kwhfnKxAkUS89Vgvwr+cirYKu\r\n"
+    "ASIOwxaLnE8sY8DbWcKZeASbBaJOAgEEMBIEEDEyMzQ1Njc4OTBhYmNkZWYwCwYJ\r\n"
+    "YIZIAWUDBAEtBCh4myONQEamB1ODZIANFV+erQSc87dKLFJCGzhrnFr/oGU2hvNJ\r\n"
+    "SiZaMDwGCSqGSIb3DQEHATAdBglghkgBZQMEASoEEJN4M6Q1ywSjw9o3tZr2YrmA\r\n"
+    "EAcdXtfS+2vx5JYg2sSklG8=\r\n"
+    "-----END CMS-----\r\n";
+
+static char g_privateKey[] =
+    "-----BEGIN EC PRIVATE KEY-----\r\n"
+    "MHcCAQEEIDmMBMiMN2TSAC+MTqT+nlXEGHKy9rH57erwdM/bSpjJoAoGCCqGSM49\r\n"
+    "AwEHoUQDQgAEB06h4SzOryi3d7PW9yN2wACCVxlduBQjVLWZlDKhFKkdZjve8mUy\r\n"
+    "ytSSbBj/rrzR2XmzUzofuNkUbAtje3DDJg==\r\n"
+    "-----END EC PRIVATE KEY-----\r\n";
+
+static char g_pubKey[] =
+    "-----BEGIN CERTIFICATE-----\r\n"
+    "MIICGDCCAb6gAwIBAgIGAXKnJjrAMAoGCCqGSM49BAMCMFcxCzAJBgNVBAYTAkNO\r\n"
+    "MQ8wDQYDVQQIDAbpmZXopb8xDzANBgNVBAcMBuilv+WuiTEPMA0GA1UECgwG5rWL\r\n"
+    "6K+VMRUwEwYDVQQDDAzkuK3mlofmtYvor5UwHhcNMjUwOTE2MDY0MTMwWhcNMzUw\r\n"
+    "OTE0MDY0MTMwWjBXMQswCQYDVQQGEwJDTjEPMA0GA1UECAwG6ZmV6KW/MQ8wDQYD\r\n"
+    "VQQHDAbopb/lrokxDzANBgNVBAoMBua1i+ivlTEVMBMGA1UEAwwM5Lit5paH5rWL\r\n"
+    "6K+VMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEB06h4SzOryi3d7PW9yN2wACC\r\n"
+    "VxlduBQjVLWZlDKhFKkdZjve8mUyytSSbBj/rrzR2XmzUzofuNkUbAtje3DDJqN2\r\n"
+    "MHQwHQYDVR0OBBYEFNtUldgBESf31bwTnYtApIctaSdtMB8GA1UdIwQYMBaAFNtU\r\n"
+    "ldgBESf31bwTnYtApIctaSdtMAsGA1UdDwQEAwIBBjAJBgNVHREEAjAAMAkGA1Ud\r\n"
+    "EgQCMAAwDwYDVR0TAQH/BAUwAwEB/zAKBggqhkjOPQQDAgNIADBFAiEAzxzaG2vR\r\n"
+    "zUnFFL3X3lRQ0IOJrb6cvkSZuaFd4bW2lgUCIHW6QGGnECDFMbDNz7Og9kjkt+3k\r\n"
+    "FmEJWqEMYudBH3Ul\r\n"
+    "-----END CERTIFICATE-----\r\n";
+
+static char g_signedCertCms[] =
+    "-----BEGIN CMS-----\r\n"
+    "MIIDnAYJKoZIhvcNAQcCoIIDjTCCA4kCAQExDTALBglghkgBZQMEAgEwEwYJKoZI\r\n"
+    "hvcNAQcBoAYEBAECAwSgggJiMIICXjCCAcegAwIBAgIGAXKnJjrAMA0GCSqGSIb3\r\n"
+    "DQEBCwUAMEgxCzAJBgNVBAYTAkNOMQwwCgYDVQQIDANzaGExDTALBgNVBAcMBHhp\r\n"
+    "YW4xDTALBgNVBAoMBHRlc3QxDTALBgNVBAMMBHRlc3QwHhcNMjQxMTIyMDkwNTIy\r\n"
+    "WhcNMzQxMTIwMDkwNTIyWjBIMQswCQYDVQQGEwJDTjEMMAoGA1UECAwDc2hhMQ0w\r\n"
+    "CwYDVQQHDAR4aWFuMQ0wCwYDVQQKDAR0ZXN0MQ0wCwYDVQQDDAR0ZXN0MIGfMA0G\r\n"
+    "CSqGSIb3DQEBAQUAA4GNADCBiQKBgQC6nCZTM16Rk2c4P/hwfVm++jqe6GCA/PXX\r\n"
+    "Ge4YL218q1dTKMHBGEw8kXi0XLDcyyC2yUn8ywN2QSyly6ke9EE6PGfZywStLp4g\r\n"
+    "2PTTWB04sS3aXT2y+fToiTXQ3AxfFYRpB+EgSdSCkJs6jKXVwbzu54kEtQTfs8Ud\r\n"
+    "BQ9nVKaJLwIDAQABo1MwUTAdBgNVHQ4EFgQU6QXnt1smb2HRSO/2zuRQnz/SDxow\r\n"
+    "HwYDVR0jBBgwFoAU6QXnt1smb2HRSO/2zuRQnz/SDxowDwYDVR0TAQH/BAUwAwEB\r\n"
+    "/zANBgkqhkiG9w0BAQsFAAOBgQBPR/+5xzFG1XlTdgwWVvqVxvhGUkbMTGW0IviJ\r\n"
+    "+jbKsi57vnVsOtFzEA6y+bYxxG/kEOcwLtzeVHOQA+ZU5SVcc+qc0dfFiWjL2PSA\r\n"
+    "G4bpqSTjujpuUk+g8ugixbG1a26pkDJhNeB/E3eBIbeydSY0A/dIGb6vbGo6BSq2\r\n"
+    "KvnWADGB+TCB9gIBATBSMEgxCzAJBgNVBAYTAkNOMQwwCgYDVQQIDANzaGExDTAL\r\n"
+    "BgNVBAcMBHhpYW4xDTALBgNVBAoMBHRlc3QxDTALBgNVBAMMBHRlc3QCBgFypyY6\r\n"
+    "wDALBglghkgBZQMEAgEwDQYJKoZIhvcNAQEBBQAEgYAgpDdvhRNSeKDoBxYyMjJU\r\n"
+    "YAkTkx41LRJD5+NXCCUXu8tU/Inr6yg/9C3ZPMEpDItnTBD7dLPM/voMtZadmY4W\r\n"
+    "KYcK1GDRnjBiTSgVP95b+bpYCu/ohFkZlZOavw+yi77ONGJa6sr34id/x6JNnO0Y\r\n"
+    "+gk2IADNcyAy/rkdMwP/KQ==\r\n"
+    "-----END CMS-----\r\n";
+
+const CfEncodingBlob g_decryptEnvelopedDataPemStream = {
+    .data = reinterpret_cast<uint8_t *>(g_privateKey),
+    .len = strlen(g_privateKey) + 1,
+    .encodingFormat = CF_FORMAT_PEM
+};
+
 static const char g_testPwd[] = "123456";
 static const char g_testPwdError[] = "1234";
 static const uint8_t g_inContent[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
+static const char g_helloWorldContent[] = "helloworld";
+
 
 static const char g_digestSHA1[] = "SHA1";
 static const char g_digestSHA256[] = "SHA256";
@@ -384,9 +599,115 @@ static const char g_digestSHA512[] = "SHA512";
 static const char g_digestSHA[] = "SHA";
 static const char g_digestMD5[] = "MD5";
 
+static CfResult CreateTrustCertsArray(HcfX509CertificateArray **trustCertsArray,
+    const char *rootCertPem, const char *interCertPem)
+{
+    if (trustCertsArray == nullptr || rootCertPem == nullptr || interCertPem == nullptr) {
+        return CF_INVALID_PARAMS;
+    }
+
+    uint32_t certNum = 2;
+    *trustCertsArray = static_cast<HcfX509CertificateArray *>(CfMalloc(sizeof(HcfX509CertificateArray), 0));
+    if (*trustCertsArray == nullptr) {
+        return CF_ERR_MALLOC;
+    }
+
+    (*trustCertsArray)->data = static_cast<HcfX509Certificate **>(CfMalloc(certNum * sizeof(HcfX509Certificate *), 0));
+    if ((*trustCertsArray)->data == nullptr) {
+        CfFree(*trustCertsArray);
+        *trustCertsArray = nullptr;
+        return CF_ERR_MALLOC;
+    }
+    (*trustCertsArray)->count = certNum;
+
+    CfEncodingBlob rootCertBlob = {0};
+    rootCertBlob.data = reinterpret_cast<uint8_t *>(const_cast<char *>(rootCertPem));
+    rootCertBlob.encodingFormat = CF_FORMAT_PEM;
+    rootCertBlob.len = strlen(rootCertPem) + 1;
+
+    CfResult ret = HcfX509CertificateCreate(&rootCertBlob, &(*trustCertsArray)->data[0]);
+    if (ret != CF_SUCCESS) {
+        CfFree((*trustCertsArray)->data);
+        CfFree(*trustCertsArray);
+        *trustCertsArray = nullptr;
+        return ret;
+    }
+
+    CfEncodingBlob interCertBlob = {0};
+    interCertBlob.data = reinterpret_cast<uint8_t *>(const_cast<char *>(interCertPem));
+    interCertBlob.encodingFormat = CF_FORMAT_PEM;
+    interCertBlob.len = strlen(interCertPem) + 1;
+
+    ret = HcfX509CertificateCreate(&interCertBlob, &(*trustCertsArray)->data[1]);
+    if (ret != CF_SUCCESS) {
+        CfObjDestroy((*trustCertsArray)->data[0]);
+        CfFree((*trustCertsArray)->data);
+        CfFree(*trustCertsArray);
+        *trustCertsArray = nullptr;
+        return ret;
+    }
+
+    return CF_SUCCESS;
+}
+
+static CfResult CreateSignerCertsArray(HcfX509CertificateArray **signerCertsArray, const char *leafCertPem)
+{
+    if (signerCertsArray == nullptr || leafCertPem == nullptr) {
+        return CF_INVALID_PARAMS;
+    }
+
+    uint32_t certNum = 1;
+    *signerCertsArray = static_cast<HcfX509CertificateArray *>(CfMalloc(sizeof(HcfX509CertificateArray), 0));
+    if (*signerCertsArray == nullptr) {
+        return CF_ERR_MALLOC;
+    }
+
+    (*signerCertsArray)->data = static_cast<HcfX509Certificate **>(CfMalloc(certNum * sizeof(HcfX509Certificate *), 0));
+    if ((*signerCertsArray)->data == nullptr) {
+        CfFree(*signerCertsArray);
+        *signerCertsArray = nullptr;
+        return CF_ERR_MALLOC;
+    }
+    (*signerCertsArray)->count = certNum;
+    
+    CfEncodingBlob leafCertBlob = {0};
+    leafCertBlob.data = reinterpret_cast<uint8_t *>(const_cast<char *>(leafCertPem));
+    leafCertBlob.encodingFormat = CF_FORMAT_PEM;
+    leafCertBlob.len = strlen(leafCertPem) + 1;
+    
+    CfResult ret = HcfX509CertificateCreate(&leafCertBlob, &(*signerCertsArray)->data[0]);
+    if (ret != CF_SUCCESS) {
+        CfFree((*signerCertsArray)->data);
+        CfFree(*signerCertsArray);
+        *signerCertsArray = nullptr;
+        return ret;
+    }
+
+    return CF_SUCCESS;
+}
+
+static void DestroyCertsArray(HcfX509CertificateArray **certsArray)
+{
+    if (certsArray == nullptr || *certsArray == nullptr) {
+        return;
+    }
+    
+    if ((*certsArray)->data != nullptr) {
+        for (uint32_t i = 0; i < (*certsArray)->count; i++) {
+            if ((*certsArray)->data[i] != nullptr) {
+                CfObjDestroy((*certsArray)->data[i]);
+            }
+        }
+        CfFree((*certsArray)->data);
+    }
+    CfFree(*certsArray);
+    *certsArray = nullptr;
+}
+
 void CryptoX509CertCmsGeneratorTest::SetUpTestCase()
 {
 }
+
 void CryptoX509CertCmsGeneratorTest::TearDownTestCase()
 {
 }
@@ -1058,5 +1379,593 @@ HWTEST_F(CryptoX509CertCmsGeneratorTest, DoFinal005, TestSize.Level0)
     CfFree(cmsOptions);
     CfObjDestroy(x509Cert);
     CfObjDestroy(cmsGenerator);
+}
+
+static void FreeCmsOptions(HcfCmsParserSignedDataOptions *cmsOptions)
+{
+    if (cmsOptions != nullptr) {
+        DestroyCertsArray(&cmsOptions->trustCerts);
+        DestroyCertsArray(&cmsOptions->signerCerts);
+        CfFree(cmsOptions);
+    }
+}
+
+static CfResult BuildCmsData(HcfCmsParserSignedDataOptions **cmsOptions)
+{
+    HcfX509CertificateArray *trustCertsArray = nullptr;
+    HcfX509CertificateArray *signerCertsArray = nullptr;
+    CfResult res = CreateTrustCertsArray(&trustCertsArray, g_verifyRootPem, g_interPem);
+    EXPECT_EQ(res, CF_SUCCESS);
+    EXPECT_NE(trustCertsArray, nullptr);
+
+    res = CreateSignerCertsArray(&signerCertsArray, g_testleftPem);
+    EXPECT_EQ(res, CF_SUCCESS);
+    EXPECT_NE(signerCertsArray, nullptr);
+
+    HcfCmsParserSignedDataOptions *tmpCmsOptions = static_cast<HcfCmsParserSignedDataOptions *>(
+        CfMalloc(sizeof(HcfCmsParserSignedDataOptions), 0));
+    EXPECT_EQ(res, CF_SUCCESS);
+    EXPECT_NE(tmpCmsOptions, nullptr);
+
+    CfBlob externalContent;
+    externalContent.data = const_cast<uint8_t*>(g_inContent);
+    externalContent.size = sizeof(g_inContent);
+
+    tmpCmsOptions->trustCerts = trustCertsArray;
+    tmpCmsOptions->signerCerts = signerCertsArray;
+    tmpCmsOptions->contentData = &externalContent;
+    tmpCmsOptions->contentDataFormat = BINARY;
+    *cmsOptions = tmpCmsOptions;
+    return CF_SUCCESS;
+}
+
+HWTEST_F(CryptoX509CertCmsGeneratorTest, Verify001, TestSize.Level0)
+{
+    HcfCmsParser *cmsParser = nullptr;
+    CfBlob cmsData;
+    cmsData.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_signedCmsPem));
+    cmsData.size = strlen(g_signedCmsPem) + 1;
+    CfResult res = HcfCreateCmsParser(&cmsParser);
+    EXPECT_EQ(res, CF_SUCCESS);
+    EXPECT_NE(cmsParser, nullptr);
+
+    HcfCmsParserSignedDataOptions *cmsOptions = nullptr;
+    res = BuildCmsData(&cmsOptions);
+    EXPECT_EQ(res, CF_SUCCESS);
+    EXPECT_NE(cmsOptions, nullptr);
+
+    res = cmsParser->setRawData(cmsParser, &cmsData, CMS_PEM);
+    EXPECT_EQ(res, CF_SUCCESS);
+
+    res = cmsParser->verifySignedData(cmsParser, cmsOptions);
+    EXPECT_EQ(res, CF_SUCCESS);
+
+    CfObjDestroy(cmsParser);
+    FreeCmsOptions(cmsOptions);
+}
+
+HWTEST_F(CryptoX509CertCmsGeneratorTest, Verify002, TestSize.Level0)
+{
+    HcfCmsParser *cmsParser = nullptr;
+    CfBlob cmsData;
+    cmsData.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_signedCmsPem));
+    cmsData.size = strlen(g_signedCmsPem) + 1;
+
+    CfResult res = HcfCreateCmsParser(&cmsParser);
+    EXPECT_EQ(res, CF_SUCCESS);
+    EXPECT_NE(cmsParser, nullptr);
+
+    res = cmsParser->setRawData(cmsParser, &cmsData, CMS_PEM);
+    EXPECT_EQ(res, CF_SUCCESS);
+
+    res = cmsParser->verifySignedData(cmsParser, nullptr);
+    EXPECT_EQ(res, CF_INVALID_PARAMS);
+
+    res = cmsParser->verifySignedData(nullptr, nullptr);
+    EXPECT_EQ(res, CF_INVALID_PARAMS);
+
+    CfObjDestroy(cmsParser);
+}
+
+HWTEST_F(CryptoX509CertCmsGeneratorTest, Verify003, TestSize.Level0)
+{
+    HcfCmsParser *cmsParser = nullptr;
+    HcfX509CertificateArray *signerCertsArray = nullptr;
+    CfBlob cmsData;
+    cmsData.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_signedCmsPem));
+    cmsData.size = strlen(g_signedCmsPem) + 1;
+
+    CfResult res = CreateSignerCertsArray(&signerCertsArray, g_testleftPem);
+    EXPECT_EQ(res, CF_SUCCESS);
+    EXPECT_NE(signerCertsArray, nullptr);
+
+    res = HcfCreateCmsParser(&cmsParser);
+    EXPECT_EQ(res, CF_SUCCESS);
+    EXPECT_NE(cmsParser, nullptr);
+
+    res = cmsParser->setRawData(cmsParser, &cmsData, CMS_PEM);
+    EXPECT_EQ(res, CF_SUCCESS);
+
+    HcfCmsParserSignedDataOptions *cmsOptions = static_cast<HcfCmsParserSignedDataOptions *>(
+        CfMalloc(sizeof(HcfCmsParserSignedDataOptions), 0));
+    EXPECT_NE(cmsOptions, nullptr);
+
+    cmsOptions->trustCerts = nullptr;
+    cmsOptions->signerCerts = signerCertsArray;
+    cmsOptions->contentData = nullptr;
+    cmsOptions->contentDataFormat = BINARY;
+
+    res = cmsParser->verifySignedData(cmsParser, cmsOptions);
+    EXPECT_NE(res, CF_SUCCESS);
+
+    CfFree(cmsOptions);
+    CfObjDestroy(cmsParser);
+    DestroyCertsArray(&signerCertsArray);
+}
+
+HWTEST_F(CryptoX509CertCmsGeneratorTest, Verify004, TestSize.Level0)
+{
+    HcfCmsParser *cmsParser = nullptr;
+    CfBlob cmsData;
+    cmsData.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_signedCmsPem));
+    cmsData.size = strlen(g_signedCmsPem) + 1;
+    CfResult res = HcfCreateCmsParser(&cmsParser);
+    EXPECT_EQ(res, CF_SUCCESS);
+    EXPECT_NE(cmsParser, nullptr);
+
+    HcfCmsParserSignedDataOptions *cmsOptions = nullptr;
+    res = BuildCmsData(&cmsOptions);
+    EXPECT_EQ(res, CF_SUCCESS);
+    EXPECT_NE(cmsOptions, nullptr);
+
+    res = cmsParser->setRawData(cmsParser, &cmsData, CMS_PEM);
+    EXPECT_EQ(res, CF_SUCCESS);
+
+    res = cmsParser->verifySignedData(cmsParser, cmsOptions);
+    EXPECT_EQ(res, CF_SUCCESS);
+
+    CfObjDestroy(cmsParser);
+    FreeCmsOptions(cmsOptions);
+}
+
+HWTEST_F(CryptoX509CertCmsGeneratorTest, Verify005, TestSize.Level0)
+{
+    HcfCmsParser *cmsParser = nullptr;
+    
+    CfResult res = HcfCreateCmsParser(nullptr);
+    EXPECT_EQ(res, CF_INVALID_PARAMS);
+
+    res = HcfCreateCmsParser(&cmsParser);
+    EXPECT_EQ(res, CF_SUCCESS);
+    EXPECT_NE(cmsParser, nullptr);
+
+    res = cmsParser->setRawData(cmsParser, nullptr, CMS_PEM);
+    EXPECT_EQ(res, CF_INVALID_PARAMS);
+
+    res = cmsParser->setRawData(nullptr, nullptr, CMS_PEM);
+    EXPECT_EQ(res, CF_INVALID_PARAMS);
+
+    CfObjDestroy(cmsParser);
+}
+
+HWTEST_F(CryptoX509CertCmsGeneratorTest, Verify006, TestSize.Level0)
+{
+    HcfCmsParser *cmsParser = nullptr;
+    CfBlob cmsData;
+    cmsData.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_signedCmsPem));
+    cmsData.size = strlen(g_signedCmsPem) + 1;
+
+    CfResult res = HcfCreateCmsParser(&cmsParser);
+    EXPECT_EQ(res, CF_SUCCESS);
+    EXPECT_NE(cmsParser, nullptr);
+
+    res = cmsParser->setRawData(cmsParser, &cmsData, CMS_PEM);
+    EXPECT_EQ(res, CF_SUCCESS);
+
+    HcfCmsContentType contentType;
+    res = cmsParser->getContentType(cmsParser, &contentType);
+    EXPECT_EQ(res, CF_SUCCESS);
+    EXPECT_EQ(contentType, SIGNED_DATA);
+
+    CfBlob contentData = {0, nullptr};
+    res = cmsParser->getContentData(cmsParser, &contentData);
+    EXPECT_EQ(res, CF_SUCCESS);
+    EXPECT_NE(contentData.data, nullptr);
+    EXPECT_GT(contentData.size, 0);
+
+    uint8_t inContent[] = {0x01, 0x02, 0x03, 0x04};
+    EXPECT_EQ(contentData.size, sizeof(inContent));
+    EXPECT_EQ(memcmp(contentData.data, inContent, sizeof(inContent)), 0);
+
+    CfBlobDataClearAndFree(&contentData);
+
+    CfObjDestroy(cmsParser);
+}
+
+HWTEST_F(CryptoX509CertCmsGeneratorTest, Verify007, TestSize.Level0)
+{
+    HcfCmsParser *cmsParser = nullptr;
+    CfBlob cmsData;
+    cmsData.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_signedCmsPem));
+    cmsData.size = strlen(g_signedCmsPem) + 1;
+
+    CfResult res = HcfCreateCmsParser(&cmsParser);
+    EXPECT_EQ(res, CF_SUCCESS);
+    EXPECT_NE(cmsParser, nullptr);
+
+    res = cmsParser->setRawData(cmsParser, &cmsData, CMS_PEM);
+    EXPECT_EQ(res, CF_SUCCESS);
+
+    HcfX509CertificateArray certs = {nullptr, 0};
+    res = cmsParser->getCerts(cmsParser, CMS_CERT_ALL_CERTS, &certs);
+    EXPECT_EQ(res, CF_SUCCESS);
+    EXPECT_NE(certs.data, nullptr);
+    EXPECT_GT(certs.count, 0);
+
+    EXPECT_GE(certs.count, 1);
+
+    if (certs.data != nullptr) {
+        for (uint32_t i = 0; i < certs.count; i++) {
+            if (certs.data[i] != nullptr) {
+                CfObjDestroy(certs.data[i]);
+            }
+        }
+        CfFree(certs.data);
+    }
+
+    CfObjDestroy(cmsParser);
+}
+
+HWTEST_F(CryptoX509CertCmsGeneratorTest, Decrypt001, TestSize.Level0)
+{
+    HcfCmsParser *cmsParser = nullptr;
+    CfBlob cmsData;
+    cmsData.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_encryptedCmsPem));
+    cmsData.size = strlen(g_encryptedCmsPem) + 1;
+
+    CfResult res = HcfCreateCmsParser(&cmsParser);
+    EXPECT_EQ(res, CF_SUCCESS);
+    EXPECT_NE(cmsParser, nullptr);
+
+    res = cmsParser->setRawData(cmsParser, &cmsData, CMS_PEM);
+    EXPECT_EQ(res, CF_SUCCESS);
+
+    HcfCmsContentType contentType;
+    res = cmsParser->getContentType(cmsParser, &contentType);
+    EXPECT_EQ(res, CF_SUCCESS);
+    EXPECT_EQ(contentType, ENVELOPED_DATA);
+
+    HcfCmsParserDecryptEnvelopedDataOptions *decryptOptions = static_cast<HcfCmsParserDecryptEnvelopedDataOptions *>(
+            CfMalloc(sizeof(HcfCmsParserDecryptEnvelopedDataOptions), 0));
+    EXPECT_NE(decryptOptions, nullptr);
+
+    PrivateKeyInfo *privateKey = static_cast<PrivateKeyInfo *>(
+        CfMalloc(sizeof(PrivateKeyInfo), 0));
+    EXPECT_NE(privateKey, nullptr);
+    privateKey->privateKey = const_cast<CfEncodingBlob*>(&g_decryptEnvelopedDataPemStream);
+    privateKey->privateKeyPassword = nullptr;
+
+    HcfX509Certificate *x509Cert = nullptr;
+    CfEncodingBlob certBlob = {0};
+    certBlob.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_pubKey));
+    certBlob.encodingFormat = CF_FORMAT_PEM;
+    certBlob.len = strlen(g_pubKey) + 1;
+
+    res = HcfX509CertificateCreate(&certBlob, &x509Cert);
+    EXPECT_EQ(res, CF_SUCCESS);
+    EXPECT_NE(x509Cert, nullptr);
+
+    decryptOptions->privateKey = privateKey;
+    decryptOptions->cert = x509Cert;
+    decryptOptions->encryptedContentData = nullptr;
+    decryptOptions->contentDataFormat = BINARY;
+
+    CfBlob decryptedData = {0, nullptr};
+    res = cmsParser->decryptEnvelopedData(cmsParser, decryptOptions, &decryptedData);
+    EXPECT_EQ(res, CF_SUCCESS);
+    EXPECT_NE(decryptedData.data, nullptr);
+    EXPECT_GT(decryptedData.size, 0);
+
+    EXPECT_EQ(decryptedData.size, strlen(g_helloWorldContent));
+    EXPECT_EQ(memcmp(decryptedData.data, g_helloWorldContent, strlen(g_helloWorldContent)), 0);
+    
+    CfBlobDataClearAndFree(&decryptedData);
+    CfFree(decryptOptions);
+    CfFree(privateKey);
+    CfObjDestroy(x509Cert);
+    CfObjDestroy(cmsParser);
+}
+
+HWTEST_F(CryptoX509CertCmsGeneratorTest, Decrypt002, TestSize.Level0)
+{
+    HcfCmsParser *cmsParser = nullptr;
+
+    CfResult res = HcfCreateCmsParser(nullptr);
+    EXPECT_EQ(res, CF_INVALID_PARAMS);
+
+    res = HcfCreateCmsParser(&cmsParser);
+    EXPECT_EQ(res, CF_SUCCESS);
+    EXPECT_NE(cmsParser, nullptr);
+
+    res = cmsParser->decryptEnvelopedData(nullptr, nullptr, nullptr);
+    EXPECT_EQ(res, CF_INVALID_PARAMS);
+
+    res = cmsParser->decryptEnvelopedData(cmsParser, nullptr, nullptr);
+    EXPECT_EQ(res, CF_INVALID_PARAMS);
+
+    CfObjDestroy(cmsParser);
+}
+
+HWTEST_F(CryptoX509CertCmsGeneratorTest, Decrypt003, TestSize.Level0)
+{
+    HcfCmsParser *cmsParser = nullptr;
+    CfBlob cmsData;
+    cmsData.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_encryptedCmsPem));
+    cmsData.size = strlen(g_encryptedCmsPem) + 1;
+
+    CfResult res = HcfCreateCmsParser(&cmsParser);
+    EXPECT_EQ(res, CF_SUCCESS);
+    EXPECT_NE(cmsParser, nullptr);
+
+    res = cmsParser->setRawData(cmsParser, &cmsData, CMS_PEM);
+    EXPECT_EQ(res, CF_SUCCESS);
+
+    HcfCmsParserDecryptEnvelopedDataOptions *decryptOptions =
+        static_cast<HcfCmsParserDecryptEnvelopedDataOptions *>(
+            CfMalloc(sizeof(HcfCmsParserDecryptEnvelopedDataOptions), 0));
+    EXPECT_NE(decryptOptions, nullptr);
+    
+    decryptOptions->privateKey = nullptr;
+    decryptOptions->cert = nullptr;
+    decryptOptions->encryptedContentData = nullptr;
+    decryptOptions->contentDataFormat = BINARY;
+
+    CfBlob decryptedData = {0, nullptr};
+    res = cmsParser->decryptEnvelopedData(cmsParser, decryptOptions, &decryptedData);
+    EXPECT_NE(res, CF_SUCCESS);
+
+    CfFree(decryptOptions);
+    CfObjDestroy(cmsParser);
+}
+
+HWTEST_F(CryptoX509CertCmsGeneratorTest, Decrypt004, TestSize.Level0)
+{
+    HcfCmsParser *cmsParser = nullptr;
+    CfBlob cmsData;
+    cmsData.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_encryptedCmsPem));
+    cmsData.size = strlen(g_encryptedCmsPem) + 1;
+
+    CfResult res = HcfCreateCmsParser(&cmsParser);
+    EXPECT_EQ(res, CF_SUCCESS);
+    EXPECT_NE(cmsParser, nullptr);
+
+    res = cmsParser->setRawData(cmsParser, &cmsData, CMS_PEM);
+    EXPECT_EQ(res, CF_SUCCESS);
+
+    HcfCmsParserDecryptEnvelopedDataOptions *decryptOptions =
+        static_cast<HcfCmsParserDecryptEnvelopedDataOptions *>(
+            CfMalloc(sizeof(HcfCmsParserDecryptEnvelopedDataOptions), 0));
+    EXPECT_NE(decryptOptions, nullptr);
+
+    PrivateKeyInfo *privateKey = static_cast<PrivateKeyInfo *>(
+        CfMalloc(sizeof(PrivateKeyInfo), 0));
+    EXPECT_NE(privateKey, nullptr);
+    privateKey->privateKey = const_cast<CfEncodingBlob*>(&g_decryptEnvelopedDataPemStream);
+    privateKey->privateKeyPassword = nullptr;
+
+    HcfX509Certificate *x509Cert = nullptr;
+    CfEncodingBlob certBlob = {0};
+    certBlob.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_pubKey));
+    certBlob.encodingFormat = CF_FORMAT_PEM;
+    certBlob.len = strlen(g_pubKey) + 1;
+
+    res = HcfX509CertificateCreate(&certBlob, &x509Cert);
+    EXPECT_EQ(res, CF_SUCCESS);
+    EXPECT_NE(x509Cert, nullptr);
+
+    CfBlob encryptedContentData = {0, nullptr};
+    res = cmsParser->getContentData(cmsParser, &encryptedContentData);
+    EXPECT_EQ(res, CF_ERR_PARAMETER_CHECK);
+    EXPECT_EQ(encryptedContentData.data, nullptr);
+    EXPECT_EQ(encryptedContentData.size, 0);
+
+    decryptOptions->privateKey = privateKey;
+    decryptOptions->cert = x509Cert;
+    decryptOptions->encryptedContentData = &encryptedContentData;
+    decryptOptions->contentDataFormat = BINARY;
+
+    CfBlob decryptedData = {0, nullptr};
+    res = cmsParser->decryptEnvelopedData(cmsParser, decryptOptions, &decryptedData);
+    EXPECT_EQ(res, CF_SUCCESS);
+    EXPECT_NE(decryptedData.data, nullptr);
+    EXPECT_GT(decryptedData.size, 0);
+
+    EXPECT_EQ(decryptedData.size, strlen(g_helloWorldContent));
+    EXPECT_EQ(memcmp(decryptedData.data, g_helloWorldContent, strlen(g_helloWorldContent)), 0);
+
+    CfBlobDataClearAndFree(&decryptedData);
+    CfBlobDataClearAndFree(&encryptedContentData);
+    CfFree(decryptOptions);
+    CfFree(privateKey);
+    CfObjDestroy(x509Cert);
+    CfObjDestroy(cmsParser);
+}
+
+HWTEST_F(CryptoX509CertCmsGeneratorTest, Decrypt005, TestSize.Level0)
+{
+    HcfCmsParser *cmsParser = nullptr;
+    CfBlob cmsData;
+    cmsData.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_signedCmsPem));
+    cmsData.size = strlen(g_signedCmsPem) + 1;
+
+    CfResult res = HcfCreateCmsParser(&cmsParser);
+    EXPECT_EQ(res, CF_SUCCESS);
+    EXPECT_NE(cmsParser, nullptr);
+
+    res = cmsParser->setRawData(cmsParser, &cmsData, CMS_PEM);
+    EXPECT_EQ(res, CF_SUCCESS);
+
+    HcfCmsContentType contentType;
+    res = cmsParser->getContentType(cmsParser, &contentType);
+    EXPECT_EQ(res, CF_SUCCESS);
+    EXPECT_EQ(contentType, SIGNED_DATA);
+
+    HcfCmsParserDecryptEnvelopedDataOptions *decryptOptions =
+        static_cast<HcfCmsParserDecryptEnvelopedDataOptions *>(
+            CfMalloc(sizeof(HcfCmsParserDecryptEnvelopedDataOptions), 0));
+    EXPECT_NE(decryptOptions, nullptr);
+
+    PrivateKeyInfo *privateKey = static_cast<PrivateKeyInfo *>(
+        CfMalloc(sizeof(PrivateKeyInfo), 0));
+    EXPECT_NE(privateKey, nullptr);
+    privateKey->privateKey = const_cast<CfEncodingBlob*>(&g_decryptEnvelopedDataPemStream);
+    privateKey->privateKeyPassword = nullptr;
+
+    HcfX509Certificate *x509Cert = nullptr;
+    CfEncodingBlob certBlob = {0};
+    certBlob.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_pubKey));
+    certBlob.encodingFormat = CF_FORMAT_PEM;
+    certBlob.len = strlen(g_pubKey) + 1;
+
+    res = HcfX509CertificateCreate(&certBlob, &x509Cert);
+    EXPECT_EQ(res, CF_SUCCESS);
+    EXPECT_NE(x509Cert, nullptr);
+
+    decryptOptions->privateKey = privateKey;
+    decryptOptions->cert = x509Cert;
+    decryptOptions->encryptedContentData = nullptr;
+    decryptOptions->contentDataFormat = BINARY;
+
+    CfBlob decryptedData = {0, nullptr};
+    res = cmsParser->decryptEnvelopedData(cmsParser, decryptOptions, &decryptedData);
+    EXPECT_NE(res, CF_SUCCESS);
+    
+    CfFree(decryptOptions);
+    CfFree(privateKey);
+    CfObjDestroy(x509Cert);
+    CfObjDestroy(cmsParser);
+}
+
+HWTEST_F(CryptoX509CertCmsGeneratorTest, VerifyWithCustomCerts, TestSize.Level0)
+{
+    HcfCmsParser *cmsParser = nullptr;
+    HcfX509CertificateArray *trustCertsArray = nullptr;
+    HcfX509CertificateArray *signerCertsArray = nullptr;
+    CfBlob cmsData;
+    cmsData.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_emmptyDataCms));
+    cmsData.size = strlen(g_emmptyDataCms) + 1;
+
+    CfResult res = CreateTrustCertsArray(&trustCertsArray, g_emptyRootCert, g_emptyMiddleCert);
+    EXPECT_EQ(res, CF_SUCCESS);
+    EXPECT_NE(trustCertsArray, nullptr);
+
+    res = CreateSignerCertsArray(&signerCertsArray, g_testleftPem);
+    EXPECT_EQ(res, CF_SUCCESS);
+    EXPECT_NE(signerCertsArray, nullptr);
+
+    res = HcfCreateCmsParser(&cmsParser);
+    EXPECT_EQ(res, CF_SUCCESS);
+    EXPECT_NE(cmsParser, nullptr);
+
+    res = cmsParser->setRawData(cmsParser, &cmsData, CMS_PEM);
+    EXPECT_EQ(res, CF_SUCCESS);
+
+    HcfCmsParserSignedDataOptions *cmsOptions = static_cast<HcfCmsParserSignedDataOptions *>(
+        CfMalloc(sizeof(HcfCmsParserSignedDataOptions), 0));
+    EXPECT_NE(cmsOptions, nullptr);
+
+    cmsOptions->trustCerts = trustCertsArray;
+    cmsOptions->signerCerts = signerCertsArray;
+    cmsOptions->contentData = nullptr;
+    cmsOptions->contentDataFormat = BINARY;
+
+    res = cmsParser->verifySignedData(cmsParser, cmsOptions);
+    EXPECT_EQ(res, CF_SUCCESS);
+
+    CfFree(cmsOptions);
+    CfObjDestroy(cmsParser);
+    DestroyCertsArray(&trustCertsArray);
+    DestroyCertsArray(&signerCertsArray);
+}
+
+HWTEST_F(CryptoX509CertCmsGeneratorTest, VerifyDerFormat, TestSize.Level0)
+{
+    HcfCmsParser *cmsParser = nullptr;
+    CfBlob cmsData;
+    cmsData.data = g_testRsaKeyNoPasswordDer;
+    cmsData.size = sizeof(g_testRsaKeyNoPasswordDer);
+
+    CfResult res = HcfCreateCmsParser(&cmsParser);
+    EXPECT_EQ(res, CF_SUCCESS);
+    EXPECT_NE(cmsParser, nullptr);
+
+    res = cmsParser->setRawData(cmsParser, &cmsData, CMS_DER);
+    EXPECT_NE(res, CF_SUCCESS);
+
+    CfObjDestroy(cmsParser);
+}
+
+HWTEST_F(CryptoX509CertCmsGeneratorTest, VerifyGetCerts001, TestSize.Level0)
+{
+    HcfCmsParser *cmsParser = nullptr;
+    CfBlob cmsData;
+    cmsData.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_signedCmsPem));
+    cmsData.size = strlen(g_signedCmsPem) + 1;
+    CfResult res = HcfCreateCmsParser(&cmsParser);
+    EXPECT_EQ(res, CF_SUCCESS);
+    EXPECT_NE(cmsParser, nullptr);
+
+    HcfCmsParserSignedDataOptions *cmsOptions = nullptr;
+    res = BuildCmsData(&cmsOptions);
+    EXPECT_EQ(res, CF_SUCCESS);
+    EXPECT_NE(cmsOptions, nullptr);
+
+    res = cmsParser->setRawData(cmsParser, &cmsData, CMS_PEM);
+    EXPECT_EQ(res, CF_SUCCESS);
+
+    HcfX509CertificateArray allCerts = {nullptr, 0};
+    res = cmsParser->getCerts(cmsParser, CMS_CERT_ALL_CERTS, &allCerts);
+    EXPECT_EQ(res, CF_SUCCESS);
+    EXPECT_NE(allCerts.data, nullptr);
+    EXPECT_GT(allCerts.count, 0);
+
+    if (allCerts.data != nullptr) {
+        for (uint32_t i = 0; i < allCerts.count; i++) {
+            if (allCerts.data[i] != nullptr) {
+                CfObjDestroy(allCerts.data[i]);
+            }
+        }
+        CfFree(allCerts.data);
+    }
+
+    FreeCmsOptions(cmsOptions);
+    CfObjDestroy(cmsParser);
+}
+
+HWTEST_F(CryptoX509CertCmsGeneratorTest, VerifyGetCerts002, TestSize.Level0)
+{
+    HcfCmsParser *cmsParser = nullptr;
+    CfBlob cmsData;
+    cmsData.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_signedCertCms));
+    cmsData.size = strlen(g_signedCertCms) + 1;
+    CfResult res = HcfCreateCmsParser(&cmsParser);
+    EXPECT_EQ(res, CF_SUCCESS);
+    EXPECT_NE(cmsParser, nullptr);
+
+
+    res = cmsParser->setRawData(cmsParser, &cmsData, CMS_PEM);
+    EXPECT_EQ(res, CF_SUCCESS);
+
+    HcfX509CertificateArray signerCerts = {nullptr, 0};
+    res = cmsParser->getCerts(cmsParser, CMS_CERT_SIGNER_CERTS, &signerCerts);
+    EXPECT_NE(res, CF_SUCCESS);
+
+    CfObjDestroy(cmsParser);
+}
+
+HWTEST_F(CryptoX509CertCmsGeneratorTest, VerifyErr001, TestSize.Level0)
+{
+    CfResult ret = HcfCmsParserSpiCreate(nullptr);
+    EXPECT_EQ(ret, CF_ERR_PARAMETER_CHECK);
 }
 }

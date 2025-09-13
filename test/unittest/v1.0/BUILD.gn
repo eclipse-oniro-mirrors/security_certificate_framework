@@ -49,6 +49,7 @@ ohos_unittest("cf_version1_test") {
     "src/crypto_x509_cert_chain_validator_test.cpp",
     "src/crypto_x509_cert_cms_generator_test.cpp",
     "src/crypto_x509_cert_cms_generator_test_part2.cpp",
+    "src/crypto_x509_cert_cms_parser_test_mock.cpp",
     "src/crypto_x509_cert_crl_collection_test.cpp",
     "src/crypto_x509_certificate_test.cpp",
     "src/crypto_x509_certificate_test_part2.cpp",
@@ -201,6 +202,16 @@ ohos_unittest("cf_version1_test") {
     "-Wl,--wrap=CfIsClassMatch",
     "-Wl,--wrap=CMS_set_detached",
     "-Wl,--wrap=X509_get0_pubkey",
+    "-Wl,--wrap=CMS_verify",
+    "-Wl,--wrap=CMS_decrypt",
+    "-Wl,--wrap=PEM_read_bio_CMS",
+    "-Wl,--wrap=d2i_CMS_bio",
+    "-Wl,--wrap=CMS_sign_ex",
+    "-Wl,--wrap=CMS_final",
+    "-Wl,--wrap=CMS_get0_content",
+    "-Wl,--wrap=CMS_get1_certs",
+    "-Wl,--wrap=CMS_get0_signers",
+    "-Wl,--wrap=BIO_write",
   ]
 
   if (target_cpu == "arm") {

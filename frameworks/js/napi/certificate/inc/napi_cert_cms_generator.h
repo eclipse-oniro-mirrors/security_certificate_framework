@@ -48,6 +48,32 @@ public:
 private:
     HcfCmsGenerator *cmsGenerator_ = nullptr;
 };
+
+class NapiCertCmsParser {
+public:
+    explicit NapiCertCmsParser(HcfCmsParser *cmsParser);
+    ~NapiCertCmsParser();
+
+    static napi_value Constructor(napi_env env, napi_callback_info info);
+    static void DefineCertCmsParserJsClass(napi_env env, napi_value exports);
+    static napi_value CreateCertCmsParser(napi_env env, napi_callback_info info);
+    napi_value SetRawData(napi_env env, napi_callback_info info);
+    napi_value GetContentType(napi_env env, napi_callback_info info);
+    napi_value VerifySignedData(napi_env env, napi_callback_info info);
+    napi_value GetContentData(napi_env env, napi_callback_info info);
+    napi_value GetCerts(napi_env env, napi_callback_info info);
+    napi_value DecryptEnvelopedData(napi_env env, napi_callback_info info);
+
+    HcfCmsParser *GetCertCmsParser()
+    {
+        return cmsParser_;
+    }
+
+    static thread_local napi_ref classRef_;
+
+private:
+    HcfCmsParser *cmsParser_ = nullptr;
+};
 } // namespace CertFramework
 } // namespace OHOS
 

@@ -75,6 +75,42 @@ struct HcfCmsGenerator {
     CfResult (*getEncryptedContentData)(HcfCmsGenerator *sel, CfBlob *out);
 };
 
+typedef struct HcfCmsParserSignedDataOptions HcfCmsParserSignedDataOptions;
+struct HcfCmsParserSignedDataOptions {
+    HcfX509CertificateArray *trustCerts;
+    HcfX509CertificateArray *signerCerts;
+    CfBlob *contentData;
+    HcfCmsContentDataFormat contentDataFormat;
+};
+
+typedef struct HcfCmsParserDecryptEnvelopedDataOptions HcfCmsParserDecryptEnvelopedDataOptions;
+struct HcfCmsParserDecryptEnvelopedDataOptions {
+    PrivateKeyInfo *privateKey;
+    HcfX509Certificate *cert;
+    CfBlob *encryptedContentData;
+    HcfCmsContentDataFormat contentDataFormat;
+};
+
+typedef struct HcfCmsParser HcfCmsParser;
+struct HcfCmsParser {
+    struct CfObjectBase base;
+
+    /** set raw data to cms parser. */
+    CfResult (*setRawData)(HcfCmsParser *self, const CfBlob *rawData, HcfCmsFormat cmsFormat);
+    /** get content type of cms parser. */
+    CfResult (*getContentType)(HcfCmsParser *self, HcfCmsContentType *contentType);
+    /** verify signed data of cms parser. */
+    CfResult (*verifySignedData)(HcfCmsParser *self, const HcfCmsParserSignedDataOptions *options);
+    /** get content data of cms parser. */
+    CfResult (*getContentData)(HcfCmsParser *self, CfBlob *contentData);
+    /** get certs of cms parser. */
+    CfResult (*getCerts)(HcfCmsParser *self, HcfCmsCertType cmsCertType, HcfX509CertificateArray *certs);
+    /** decrypt enveloped data of cms parser. */
+    CfResult (*decryptEnvelopedData)(HcfCmsParser *self, const HcfCmsParserDecryptEnvelopedDataOptions *options,
+        CfBlob *encryptedContentData);
+};
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -83,6 +119,11 @@ extern "C" {
  * @brief Generate Cms generator instance.
  */
 CfResult HcfCreateCmsGenerator(HcfCmsContentType type, HcfCmsGenerator **cmsGenerator);
+
+/**
+ * @brief Generate Cms parser instance.
+ */
+CfResult HcfCreateCmsParser(HcfCmsParser **cmsParser);
 
 #ifdef __cplusplus
 }
