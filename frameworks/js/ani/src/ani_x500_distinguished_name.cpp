@@ -24,10 +24,12 @@ X500DistinguishedNameImpl::X500DistinguishedNameImpl(HcfX509DistinguishedName *x
 
 X500DistinguishedNameImpl::~X500DistinguishedNameImpl()
 {
+    if (this->x509Name_ != this->x509NameUtf8_) {
+        CfObjDestroy(this->x509NameUtf8_);
+        this->x509NameUtf8_ = nullptr;
+    }
     CfObjDestroy(this->x509Name_);
     this->x509Name_ = nullptr;
-    CfObjDestroy(this->x509NameUtf8_);
-    this->x509NameUtf8_ = nullptr;
 }
 
 int64_t X500DistinguishedNameImpl::GetX500DistinguishedNameObj()
