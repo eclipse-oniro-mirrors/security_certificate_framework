@@ -412,8 +412,9 @@ HWTEST_F(CryptoX509CertCmsGeneratorTest, CreateCmsGenerator002, TestSize.Level0)
 {
     HcfCmsGenerator *cmsGenerator = nullptr;
     CfResult res = HcfCreateCmsGenerator(static_cast<HcfCmsContentType>(1), &cmsGenerator);
-    EXPECT_EQ(res, CF_INVALID_PARAMS);
-    EXPECT_EQ(cmsGenerator, nullptr);
+    EXPECT_EQ(res, CF_SUCCESS);
+    CfObjDestroy(cmsGenerator);
+    cmsGenerator = nullptr;
     res = HcfCreateCmsGenerator(static_cast<HcfCmsContentType>(-1), &cmsGenerator);
     EXPECT_EQ(res, CF_INVALID_PARAMS);
     EXPECT_EQ(cmsGenerator, nullptr);
@@ -747,7 +748,7 @@ HWTEST_F(CryptoX509CertCmsGeneratorTest, AddSigner007, TestSize.Level0)
     options->addSmimeCapAttr = true;
 
     res = cmsGenerator->addSigner(cmsGenerator, &(x509Cert->base), privateKey, options);
-    EXPECT_EQ(res, CF_NOT_SUPPORT);
+    EXPECT_EQ(res, CF_SUCCESS);
 
     CfFree(privateKey);
     CfFree(options);

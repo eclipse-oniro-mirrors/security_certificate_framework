@@ -34,6 +34,9 @@ public:
     napi_value AddCert(napi_env env, napi_callback_info info);
     napi_value DoFinal(napi_env env, napi_callback_info info);
     napi_value DoFinalSync(napi_env env, napi_callback_info info);
+    napi_value SetRecipientEncryptionAlgorithm(napi_env env, napi_callback_info info);
+    napi_value AddRecipientInfo(napi_env env, napi_callback_info info);
+    napi_value GetEncryptedContentData(napi_env env, napi_callback_info info);
 
     HcfCmsGenerator *GetCertCmsGenerator()
     {

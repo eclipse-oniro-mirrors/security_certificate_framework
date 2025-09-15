@@ -352,6 +352,23 @@ CfResult DeepCopyDataToOut(const char *data, uint32_t len, CfBlob *out)
     return CF_SUCCESS;
 }
 
+CfResult DeepCopyDataToOutEx(const char *data, uint32_t len, CfBlob *out)
+{
+    out->data = (uint8_t *)CfMallocEx(len);
+    if (out->data == NULL) {
+        LOGE("Failed to CfMallocEx!");
+        return CF_ERR_MALLOC;
+    }
+    if (memcpy_s(out->data, len, data, len) != EOK) {
+        LOGE("Failed to memcpy_s");
+        CfFree(out->data);
+        out->data = NULL;
+        return CF_ERR_COPY;
+    }
+    out->size = len;
+    return CF_SUCCESS;
+}
+
 bool CheckIsSelfSigned(const X509 *cert)
 {
     if (cert == NULL) {

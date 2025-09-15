@@ -31,6 +31,19 @@ void *CfMalloc(uint32_t size, char val)
     return addr;
 }
 
+void *CfMallocEx(uint32_t size)
+{
+    if (size == 0) {
+        LOGE("malloc size is invalid");
+        return NULL;
+    }
+    void *addr = malloc(size);
+    if (addr != NULL) {
+        (void)memset_s(addr, size, 0, size);
+    }
+    return addr;
+}
+
 void CfFree(void *addr)
 {
     if (addr != NULL) {

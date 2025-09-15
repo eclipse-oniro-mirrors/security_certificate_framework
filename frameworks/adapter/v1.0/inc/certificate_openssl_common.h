@@ -63,6 +63,7 @@ uint8_t *GetX509EncodedDataStream(const X509 *certificate, int *dataLength);
 char *Asn1TimeToStr(const ASN1_GENERALIZEDTIME *time);
 bool CfArrayContains(const CfArray *self, const CfArray *sub);
 CfResult DeepCopyDataToOut(const char *data, uint32_t len, CfBlob *out);
+CfResult DeepCopyDataToOutEx(const char *data, uint32_t len, CfBlob *out);
 void SubAltNameArrayDataClearAndFree(SubAltNameArray *array);
 bool CheckIsSelfSigned(const X509 *cert);
 bool CheckIsLeafCert(X509 *cert);

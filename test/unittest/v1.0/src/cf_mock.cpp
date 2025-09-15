@@ -107,6 +107,19 @@ PKCS12_SAFEBAG *__real_PKCS12_SAFEBAG_create_pkcs8_encrypt_ex(int pbe_nid, const
 int __real_i2d_PKCS12(PKCS12 *a, unsigned char **pp);
 int __real_PKCS12_add_safe(STACK_OF(PKCS7) **psafes, STACK_OF(PKCS12_SAFEBAG) *bags,
     int nid_safe, int iter, const char *pass);
+EVP_PKEY_CTX *__real_CMS_SignerInfo_get0_pkey_ctx(CMS_SignerInfo *si);
+int __real_EVP_PKEY_CTX_set_rsa_padding(EVP_PKEY_CTX *ctx, int pad_mode);
+const ASN1_OBJECT *__real_CMS_get0_type(const CMS_ContentInfo *cms);
+CMS_RecipientInfo *__real_CMS_add1_recipient_cert(CMS_ContentInfo *cms, X509 *recip,
+                                                  unsigned int flags);
+EVP_PKEY_CTX *__real_CMS_RecipientInfo_get0_pkey_ctx(CMS_RecipientInfo *ri);
+int __real_EVP_PKEY_CTX_set_ecdh_kdf_md(EVP_PKEY_CTX *ctx, const EVP_MD *md);
+STACK_OF(CMS_SignerInfo) *__real_CMS_get0_SignerInfos(CMS_ContentInfo *cms);
+CMS_ContentInfo *__real_CMS_AuthEnvelopedData_create(const EVP_CIPHER *cipher);
+CMS_ContentInfo *__real_CMS_EnvelopedData_create(const EVP_CIPHER *cipher);
+bool __real_CfIsClassMatch(const CfObjectBase *obj, const char *className);
+int __real_CMS_set_detached(CMS_ContentInfo *cms, int detached);
+EVP_PKEY *__real_X509_get0_pubkey(X509 *x);
 #ifdef __cplusplus
 }
 #endif
@@ -414,6 +427,56 @@ void X509OpensslMock::SetMockFunDefaultBehaviorPartFive(void)
         });
 }
 
+void X509OpensslMock::SetMockFunDefaultBehaviorPartSix(void)
+{
+    ON_CALL(*this, CMS_SignerInfo_get0_pkey_ctx).WillByDefault([this](CMS_SignerInfo *si) {
+        return __real_CMS_SignerInfo_get0_pkey_ctx(si);
+    });
+
+    ON_CALL(*this, EVP_PKEY_CTX_set_rsa_padding).WillByDefault([this](EVP_PKEY_CTX *ctx, int pad_mode) {
+        return __real_EVP_PKEY_CTX_set_rsa_padding(ctx, pad_mode);
+    });
+
+    ON_CALL(*this, CMS_get0_type).WillByDefault([this](const CMS_ContentInfo *cms) {
+        return __real_CMS_get0_type(cms);
+    });
+
+    ON_CALL(*this, CMS_add1_recipient_cert).WillByDefault([this](CMS_ContentInfo *cms, X509 *recip,
+                                                                 unsigned int flags) {
+        return __real_CMS_add1_recipient_cert(cms, recip, flags);
+    });
+
+    ON_CALL(*this, CMS_RecipientInfo_get0_pkey_ctx).WillByDefault([this](CMS_RecipientInfo *ri) {
+        return __real_CMS_RecipientInfo_get0_pkey_ctx(ri);
+    });
+
+    ON_CALL(*this, EVP_PKEY_CTX_set_ecdh_kdf_md).WillByDefault([this](EVP_PKEY_CTX *ctx, const EVP_MD *md) {
+        return __real_EVP_PKEY_CTX_set_ecdh_kdf_md(ctx, md);
+    });
+
+    ON_CALL(*this, CMS_get0_SignerInfos).WillByDefault([this](CMS_ContentInfo *cms) {
+        return __real_CMS_get0_SignerInfos(cms);
+    });
+
+    ON_CALL(*this, CMS_AuthEnvelopedData_create).WillByDefault([this](const EVP_CIPHER *cipher) {
+        return __real_CMS_AuthEnvelopedData_create(cipher);
+    });
+
+    ON_CALL(*this, CMS_EnvelopedData_create).WillByDefault([this](const EVP_CIPHER *cipher) {
+        return __real_CMS_EnvelopedData_create(cipher);
+    });
+
+    ON_CALL(*this, CfIsClassMatch).WillByDefault([this](const CfObjectBase *obj, const char *className) {
+        return __real_CfIsClassMatch(obj, className);
+    });
+
+    ON_CALL(*this, CMS_set_detached).WillByDefault([this](CMS_ContentInfo *cms, int detached) {
+        return __real_CMS_set_detached(cms, detached);
+    });
+
+    ON_CALL(*this, X509_get0_pubkey).WillByDefault([this](X509 *x) { return __real_X509_get0_pubkey(x); });
+}
+
 X509OpensslMock::X509OpensslMock()
 {
     SetMockFunDefaultBehaviorPartOne();
@@ -421,6 +484,7 @@ X509OpensslMock::X509OpensslMock()
     SetMockFunDefaultBehaviorPartThree();
     SetMockFunDefaultBehaviorPartFour();
     SetMockFunDefaultBehaviorPartFive();
+    SetMockFunDefaultBehaviorPartSix();
 }
 
 X509OpensslMock::~X509OpensslMock() {}
@@ -1214,6 +1278,126 @@ int __wrap_PKCS12_add_safe(STACK_OF(PKCS7) **psafes, STACK_OF(PKCS12_SAFEBAG) *b
     }
 }
 
+EVP_PKEY_CTX *__wrap_CMS_SignerInfo_get0_pkey_ctx(CMS_SignerInfo *si)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock CMS_SignerInfo_get0_pkey_ctx");
+        return X509OpensslMock::GetInstance().CMS_SignerInfo_get0_pkey_ctx(si);
+    } else {
+        return __real_CMS_SignerInfo_get0_pkey_ctx(si);
+    }
+}
+
+int __wrap_EVP_PKEY_CTX_set_rsa_padding(EVP_PKEY_CTX *ctx, int pad_mode)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock EVP_PKEY_CTX_set_rsa_padding");
+        return X509OpensslMock::GetInstance().EVP_PKEY_CTX_set_rsa_padding(ctx, pad_mode);
+    } else {
+        return __real_EVP_PKEY_CTX_set_rsa_padding(ctx, pad_mode);
+    }
+}
+
+const ASN1_OBJECT *__wrap_CMS_get0_type(const CMS_ContentInfo *cms)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock CMS_get0_type");
+        return X509OpensslMock::GetInstance().CMS_get0_type(cms);
+    } else {
+        return __real_CMS_get0_type(cms);
+    }
+}
+
+CMS_RecipientInfo *__wrap_CMS_add1_recipient_cert(CMS_ContentInfo *cms, X509 *recip,
+                                                  unsigned int flags)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock CMS_add1_recipient_cert");
+        return X509OpensslMock::GetInstance().CMS_add1_recipient_cert(cms, recip, flags);
+    } else {
+        return __real_CMS_add1_recipient_cert(cms, recip, flags);
+    }
+}
+
+EVP_PKEY_CTX *__wrap_CMS_RecipientInfo_get0_pkey_ctx(CMS_RecipientInfo *ri)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock CMS_RecipientInfo_get0_pkey_ctx");
+        return X509OpensslMock::GetInstance().CMS_RecipientInfo_get0_pkey_ctx(ri);
+    } else {
+        return __real_CMS_RecipientInfo_get0_pkey_ctx(ri);
+    }
+}
+
+int __wrap_EVP_PKEY_CTX_set_ecdh_kdf_md(EVP_PKEY_CTX *ctx, const EVP_MD *md)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock EVP_PKEY_CTX_set_ecdh_kdf_md");
+        return X509OpensslMock::GetInstance().EVP_PKEY_CTX_set_ecdh_kdf_md(ctx, md);
+    } else {
+        return __real_EVP_PKEY_CTX_set_ecdh_kdf_md(ctx, md);
+    }
+}
+
+STACK_OF(CMS_SignerInfo) *__wrap_CMS_get0_SignerInfos(CMS_ContentInfo *cms)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock CMS_get0_SignerInfos");
+        return X509OpensslMock::GetInstance().CMS_get0_SignerInfos(cms);
+    } else {
+        return __real_CMS_get0_SignerInfos(cms);
+    }
+}
+
+CMS_ContentInfo *__wrap_CMS_AuthEnvelopedData_create(const EVP_CIPHER *cipher)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock CMS_AuthEnvelopedData_create");
+        return X509OpensslMock::GetInstance().CMS_AuthEnvelopedData_create(cipher);
+    } else {
+        return __real_CMS_AuthEnvelopedData_create(cipher);
+    }
+}
+
+CMS_ContentInfo *__wrap_CMS_EnvelopedData_create(const EVP_CIPHER *cipher)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock CMS_EnvelopedData_create");
+        return X509OpensslMock::GetInstance().CMS_EnvelopedData_create(cipher);
+    } else {
+        return __real_CMS_EnvelopedData_create(cipher);
+    }
+}
+
+bool __wrap_CfIsClassMatch(const CfObjectBase *obj, const char *className)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock CfIsClassMatch");
+        return X509OpensslMock::GetInstance().CfIsClassMatch(obj, className);
+    } else {
+        return __real_CfIsClassMatch(obj, className);
+    }
+}
+
+int __wrap_CMS_set_detached(CMS_ContentInfo *cms, int detached)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock CMS_set_detached");
+        return X509OpensslMock::GetInstance().CMS_set_detached(cms, detached);
+    } else {
+        return __real_CMS_set_detached(cms, detached);
+    }
+}
+
+EVP_PKEY *__wrap_X509_get0_pubkey(X509 *x)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock X509_get0_pubkey");
+        return X509OpensslMock::GetInstance().X509_get0_pubkey(x);
+    } else {
+        return __real_X509_get0_pubkey(x);
+    }
+}
 #ifdef __cplusplus
 }
 #endif

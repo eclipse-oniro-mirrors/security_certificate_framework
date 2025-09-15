@@ -402,6 +402,40 @@ static bool GetMdName(napi_env env, napi_value arg, char **mdName)
     return true;
 }
 
+static bool GetRsaSigPadding(napi_env env, napi_value arg, CfCmsRsaSignaturePadding *rsaSigPadding)
+{
+    bool result = false;
+    napi_status status = napi_has_named_property(env, arg, CMS_GENERATOR_RSA_SIG_PADDING.c_str(), &result);
+    if (status != napi_ok) {
+        LOGE("check attributes property failed!");
+        return false;
+    }
+    if (!result) {
+        LOGI("%{public}s do not exist!", CMS_GENERATOR_RSA_SIG_PADDING.c_str());
+        *rsaSigPadding = PKCS1_PADDING;  // Set default padding to PKCS1
+        return true;
+    }
+    napi_value obj = nullptr;
+    status = napi_get_named_property(env, arg, CMS_GENERATOR_RSA_SIG_PADDING.c_str(), &obj);
+    if (status != napi_ok || obj == nullptr) {
+        LOGE("get property %{public}s failed!", CMS_GENERATOR_RSA_SIG_PADDING.c_str());
+        return false;
+    }
+    napi_valuetype valueType;
+    napi_typeof(env, obj, &valueType);
+    if (valueType == napi_undefined) {
+        LOGI("%{public}s valueType undefined.", CMS_GENERATOR_RSA_SIG_PADDING.c_str());
+        *rsaSigPadding = PKCS1_PADDING;  // Set default padding to PKCS1
+        return true;
+    }
+    status = napi_get_value_uint32(env, obj, reinterpret_cast<uint32_t *>(rsaSigPadding));
+    if (status != napi_ok) {
+        LOGE("get rsa signature padding value failed!");
+        return false;
+    }
+    return true;
+}
+
 static bool GetAddCert(napi_env env, napi_value arg, bool *addCert)
 {
     bool result = false;
@@ -486,6 +520,9 @@ static bool BuildCmsSignerOptions(napi_env env, napi_value obj, HcfCmsSignerOpti
         return false;
     }
     if (!GetMdName(env, obj, &options->mdName)) {
+        return false;
+    }
+    if (!GetRsaSigPadding(env, obj, &options->padding)) {
         return false;
     }
     if (!GetAddCert(env, obj, &options->addCert)) {
