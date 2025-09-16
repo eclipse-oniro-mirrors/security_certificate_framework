@@ -1,0 +1,449 @@
+/*
+ * Copyright (c) 2025-2025 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+use ohos.security.cryptoFramework.cryptoFramework as cryptoFramework;
+
+@!namespace("@ohos.security.cert", "cert")
+
+@!sts_inject("""
+static { loadLibraryWithPermissionCheck("cert_framework_ani.z", "@ohos.security.cert"); }
+""")
+
+enum CertResult: i32 {
+  INVALID_PARAMS = 401,
+  NOT_SUPPORT = 801,
+  ERR_OUT_OF_MEMORY = 19020001,
+  ERR_RUNTIME_ERROR = 19020002,
+  ERR_PARAMETER_CHECK_FAILED = 19020003,
+  ERR_CRYPTO_OPERATION = 19030001,
+  ERR_CERT_SIGNATURE_FAILURE = 19030002,
+  ERR_CERT_NOT_YET_VALID = 19030003,
+  ERR_CERT_HAS_EXPIRED = 19030004,
+  ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY = 19030005,
+  ERR_KEYUSAGE_NO_CERTSIGN = 19030006,
+  ERR_KEYUSAGE_NO_DIGITAL_SIGNATURE = 19030007,
+  ERR_MAYBE_WRONG_PASSWORD = 19030008
+}
+
+union OptStrUint8Arr {
+  STRING: String;
+  UINT8ARRAY: @typedarray Array<u8>;
+}
+
+struct DataBlob {
+  data: @typedarray Array<u8>;
+}
+
+struct DataArray {
+  data: Array<@typedarray Array<u8>>;
+}
+
+enum EncodingFormat: i32 {
+  FORMAT_DER = 0,
+  FORMAT_PEM = 1,
+  FORMAT_PKCS7 = 2
+}
+
+enum CertItemType: i32 {
+  CERT_ITEM_TYPE_TBS = 0,
+  CERT_ITEM_TYPE_PUBLIC_KEY = 1,
+  CERT_ITEM_TYPE_ISSUER_UNIQUE_ID = 2,
+  CERT_ITEM_TYPE_SUBJECT_UNIQUE_ID = 3,
+  CERT_ITEM_TYPE_EXTENSIONS = 4
+}
+
+enum ExtensionOidType: i32 {
+  EXTENSION_OID_TYPE_ALL = 0,
+  EXTENSION_OID_TYPE_CRITICAL = 1,
+  EXTENSION_OID_TYPE_UNCRITICAL = 2
+}
+
+enum ExtensionEntryType: i32 {
+  EXTENSION_ENTRY_TYPE_ENTRY = 0,
+  EXTENSION_ENTRY_TYPE_ENTRY_CRITICAL = 1,
+  EXTENSION_ENTRY_TYPE_ENTRY_VALUE = 2
+}
+
+struct EncodingBlob {
+  data: @typedarray Array<u8>;
+  encodingFormat: EncodingFormat;
+}
+
+struct CertChainData {
+  data: @typedarray Array<u8>;
+  count: i32;
+  encodingFormat: EncodingFormat;
+}
+
+enum EncodingType: i32 {
+  ENCODING_UTF8 = 0
+}
+
+interface X509Cert {
+  GetX509CertObj(): i64;
+  @gen_async("verify")
+  @gen_promise("verify")
+  VerifySync(key: cryptoFramework.PubKey): void;
+  @gen_async("getEncoded")
+  @gen_promise("getEncoded")
+  GetEncodedSync(): EncodingBlob;
+  GetPublicKey(): cryptoFramework.PubKey;
+  CheckValidityWithDate(date: String): void;
+  GetVersion(): i32;
+  GetCertSerialNumber(): @bigint Array<u8>;
+  @overload("getIssuerName")
+  GetIssuerName(): DataBlob;
+  @overload("getIssuerName")
+  GetIssuerNameEx(encodingType: EncodingType): String;
+  GetSubjectName(encodingType: Optional<EncodingType>): DataBlob;
+  GetNotBeforeTime(): String;
+  GetNotAfterTime(): String;
+  GetSignature(): DataBlob;
+  GetSignatureAlgName(): String;
+  GetSignatureAlgOid(): String;
+  GetSignatureAlgParams(): DataBlob;
+  GetKeyUsage(): DataBlob;
+  GetExtKeyUsage(): DataArray;
+  GetBasicConstraints(): i32;
+  GetSubjectAltNames(): DataArray;
+  GetIssuerAltNames(): DataArray;
+  GetItem(itemType: CertItemType): DataBlob;
+  Match(param: X509CertMatchParameters): bool;
+  GetCRLDistributionPoint(): DataArray;
+  GetIssuerX500DistinguishedName(): X500DistinguishedName;
+  GetSubjectX500DistinguishedName(): X500DistinguishedName;
+  @overload("toString")
+  ToString(): String;
+  @overload("toString")
+  ToStringEx(encodingType: EncodingType): String;
+  HashCode(): @typedarray Array<u8>;
+  GetExtensionsObject(): CertExtension;
+}
+@gen_async("createX509Cert")
+@gen_promise("createX509Cert")
+function CreateX509CertSync(inStream: EncodingBlob): X509Cert;
+
+interface CertExtension {
+  GetEncoded(): EncodingBlob;
+  GetOidList(valueType: ExtensionOidType): DataArray;
+  GetEntry(valueType: ExtensionEntryType, oid: DataBlob): DataBlob;
+  CheckCA(): i32;
+  HasUnsupportedCriticalExtension(): bool;
+}
+@gen_async("createCertExtension")
+@gen_promise("createCertExtension")
+function CreateCertExtensionSync(inStream: EncodingBlob): CertExtension;
+
+interface X509CRLEntry {
+  @gen_async("getEncoded")
+  @gen_promise("getEncoded")
+  GetEncodedSync(): EncodingBlob;
+  GetSerialNumber(): @bigint Array<u8>;
+  @overload("getCertIssuer")
+  GetCertIssuer(): DataBlob;
+  @overload("getCertIssuer")
+  GetCertIssuerEx(encodingType: EncodingType): String;
+  GetRevocationDate(): String;
+  GetExtensions(): DataBlob;
+  HasExtensions(): bool;
+  GetCertIssuerX500DistinguishedName(): X500DistinguishedName;
+  ToString(): String;
+  HashCode(): @typedarray Array<u8>;
+  GetExtensionsObject(): CertExtension;
+}
+
+interface X509CRL {
+  GetX509CRLObj(): i64;
+  IsRevoked(cert: X509Cert): bool;
+  GetType(): String;
+  @gen_async("getEncoded")
+  @gen_promise("getEncoded")
+  GetEncodedSync(): EncodingBlob;
+  @gen_async("verify")
+  @gen_promise("verify")
+  VerifySync(key: cryptoFramework.PubKey): void;
+  GetVersion(): i32;
+  @overload("getIssuerName")
+  GetIssuerName(): DataBlob;
+  @overload("getIssuerName")
+  GetIssuerNameEx(encodingType: EncodingType): String;
+  GetLastUpdate(): String;
+  GetNextUpdate(): String;
+  GetRevokedCert(serialNumber: @bigint Array<u8>): X509CRLEntry;
+  GetRevokedCertWithCert(cert: X509Cert): X509CRLEntry;
+  @gen_async("getRevokedCerts")
+  @gen_promise("getRevokedCerts")
+  GetRevokedCertsSync(): Array<X509CRLEntry>;
+  GetTBSInfo(): DataBlob;
+  GetSignature(): DataBlob;
+  GetSignatureAlgName(): String;
+  GetSignatureAlgOid(): String;
+  GetSignatureAlgParams(): DataBlob;
+  GetExtensions(): DataBlob;
+  Match(param: X509CRLMatchParameters): bool;
+  GetIssuerX500DistinguishedName(): X500DistinguishedName;
+  @overload("toString")
+  ToString(): String;
+  @overload("toString")
+  ToStringEx(encodingType: EncodingType): String;
+  HashCode(): @typedarray Array<u8>;
+  GetExtensionsObject(): CertExtension;
+}
+@gen_async("createX509CRL")
+@gen_promise("createX509CRL")
+function CreateX509CRLSync(inStream: EncodingBlob): X509CRL;
+
+interface CertChainValidator {
+  @gen_async("validate")
+  @gen_promise("validate")
+  ValidateSync(certChain: CertChainData): void;
+  @get("algorithm") GetAlgorithm(): String;
+}
+function CreateCertChainValidator(algorithm: String): CertChainValidator;
+
+enum GeneralNameType: i32 {
+  GENERAL_NAME_TYPE_OTHER_NAME = 0,
+  GENERAL_NAME_TYPE_RFC822_NAME = 1,
+  GENERAL_NAME_TYPE_DNS_NAME = 2,
+  GENERAL_NAME_TYPE_X400_ADDRESS = 3,
+  GENERAL_NAME_TYPE_DIRECTORY_NAME = 4,
+  GENERAL_NAME_TYPE_EDI_PARTY_NAME = 5,
+  GENERAL_NAME_TYPE_UNIFORM_RESOURCE_ID = 6,
+  GENERAL_NAME_TYPE_IP_ADDRESS = 7,
+  GENERAL_NAME_TYPE_REGISTERED_ID = 8
+}
+
+struct GeneralName {
+  type: GeneralNameType;
+  name: Optional<@typedarray Array<u8>>;
+}
+
+struct X509CertMatchParameters {
+  subjectAlternativeNames: Optional<Array<GeneralName>>;
+  matchAllSubjectAltNames: Optional<bool>;
+  authorityKeyIdentifier: Optional<@typedarray Array<u8>>;
+  minPathLenConstraint: Optional<i32>;
+  x509Cert: Optional<X509Cert>;
+  validDate: Optional<String>;
+  issuer: Optional<@typedarray Array<u8>>;
+  extendedKeyUsage: Optional<Array<String>>;
+  nameConstraints: Optional<@typedarray Array<u8>>;
+  certPolicy: Optional<Array<String>>;
+  privateKeyValid: Optional<String>;
+  keyUsage: Optional<Array<bool>>;
+  serialNumber: Optional<@bigint Array<u8>>;
+  subject: Optional<@typedarray Array<u8>>;
+  subjectKeyIdentifier: Optional<@typedarray Array<u8>>;
+  publicKey: Optional<DataBlob>;
+  publicKeyAlgID: Optional<String>;
+}
+
+struct X509CRLMatchParameters {
+  issuer: Optional<Array<@typedarray Array<u8>>>;
+  x509Cert: Optional<X509Cert>;
+  updateDateTime: Optional<String>;
+  maxCRL: Optional<@bigint Array<u8>>;
+  minCRL: Optional<@bigint Array<u8>>;
+}
+
+interface CertCRLCollection {
+  GetCertCrlCollectionObj(): i64;
+  @gen_async("selectCerts")
+  @gen_promise("selectCerts")
+  SelectCertsSync(param: X509CertMatchParameters): Array<X509Cert>;
+  @gen_async("selectCRLs")
+  @gen_promise("selectCRLs")
+  SelectCRLsSync(param: X509CRLMatchParameters): Array<X509CRL>;
+}
+function CreateCertCRLCollection(certs: Array<X509Cert>, crls: Optional<Array<X509CRL>>): CertCRLCollection;
+
+interface X509CertChain {
+  GetCertList(): Array<X509Cert>;
+  @gen_async("validate")
+  @gen_promise("validate")
+  ValidateSync(param: CertChainValidationParameters): CertChainValidationResult;
+  ToString(): String;
+  HashCode(): @typedarray Array<u8>;
+}
+@gen_async("createX509CertChain")
+@gen_promise("createX509CertChain")
+function CreateX509CertChainSync(inStream: EncodingBlob): X509CertChain;
+function CreateX509CertChain(certs: Array<X509Cert>): X509CertChain;
+@gen_async("buildX509CertChain")
+@gen_promise("buildX509CertChain")
+function BuildX509CertChainSync(param: CertChainBuildParameters): CertChainBuildResult;
+
+enum EncodingBaseFormat: i32 {
+  PEM = 0,
+  DER = 1
+}
+
+struct Pkcs12Data {
+  privateKey: Optional<OptStrUint8Arr>;
+  cert: Optional<X509Cert>;
+  otherCerts: Optional<Array<X509Cert>>;
+}
+
+struct Pkcs12ParsingConfig {
+  password: String;
+  needsPrivateKey: Optional<bool>;
+  privateKeyFormat: Optional<EncodingBaseFormat>;
+  needsCert: Optional<bool>;
+  needsOtherCerts: Optional<bool>;
+}
+function ParsePkcs12(data: @typedarray Array<u8>, config: Pkcs12ParsingConfig): Pkcs12Data;
+@gen_async("createTrustAnchorsWithKeyStore")
+@gen_promise("createTrustAnchorsWithKeyStore")
+function CreateTrustAnchorsWithKeyStoreSync(keystore: @typedarray Array<u8>, pwd: String): Array<X509TrustAnchor>;
+@gen_async("createX500DistinguishedName")
+@gen_promise("createX500DistinguishedName")
+function CreateX500DistinguishedNameByStrSync(nameStr: String): X500DistinguishedName;
+@gen_async("createX500DistinguishedName")
+@gen_promise("createX500DistinguishedName")
+function CreateX500DistinguishedNameByDerSync(nameDer: @typedarray Array<u8>): X500DistinguishedName;
+
+interface X500DistinguishedName {
+  GetX500DistinguishedNameObj(): i64;
+  @overload("getName")
+  GetName(): String;
+  @overload("getName")
+  GetNameByEnum(encodingType: EncodingType): String;
+  @overload("getName")
+  GetNameByStr(type: String): Array<String>;
+  GetEncoded(): EncodingBlob;
+}
+
+struct X509TrustAnchor {
+  CACert: Optional<X509Cert>;
+  CAPubKey: Optional<@typedarray Array<u8>>;
+  CASubject: Optional<@typedarray Array<u8>>;
+  nameConstraints: Optional<@typedarray Array<u8>>;
+}
+
+enum RevocationCheckOptions: i32 {
+  REVOCATION_CHECK_OPTION_PREFER_OCSP = 0,
+  REVOCATION_CHECK_OPTION_ACCESS_NETWORK,
+  REVOCATION_CHECK_OPTION_FALLBACK_NO_PREFER,
+  REVOCATION_CHECK_OPTION_FALLBACK_LOCAL
+}
+
+enum ValidationPolicyType: i32 {
+  VALIDATION_POLICY_TYPE_X509 = 0,
+  VALIDATION_POLICY_TYPE_SSL
+}
+
+enum KeyUsageType: i32 {
+  KEYUSAGE_DIGITAL_SIGNATURE = 0,
+  KEYUSAGE_NON_REPUDIATION,
+  KEYUSAGE_KEY_ENCIPHERMENT,
+  KEYUSAGE_DATA_ENCIPHERMENT,
+  KEYUSAGE_KEY_AGREEMENT,
+  KEYUSAGE_KEY_CERT_SIGN,
+  KEYUSAGE_CRL_SIGN,
+  KEYUSAGE_ENCIPHER_ONLY,
+  KEYUSAGE_DECIPHER_ONLY
+}
+
+struct RevocationCheckParameter {
+  ocspRequestExtension: Optional<Array<@typedarray Array<u8>>>;
+  ocspResponderURI: Optional<String>;
+  ocspResponderCert: Optional<X509Cert>;
+  ocspResponses: Optional<@typedarray Array<u8>>;
+  crlDownloadURI: Optional<String>;
+  options: Optional<Array<RevocationCheckOptions>>;
+  ocspDigest: Optional<String>;
+}
+
+struct CertChainValidationParameters {
+  date: Optional<String>;
+  trustAnchors: Array<X509TrustAnchor>;
+  trustSystemCa: Optional<bool>;
+  certCRLs: Optional<Array<CertCRLCollection>>;
+  revocationCheckParam: Optional<RevocationCheckParameter>;
+  policy: Optional<ValidationPolicyType>;
+  sslHostname: Optional<String>;
+  keyUsage: Optional<Array<KeyUsageType>>;
+}
+
+interface CertChainValidationResult {
+  GetCertChainValidationResultObj(): i64;
+  @get("trustAnchor") GetTrustAnchor(): X509TrustAnchor;
+  @get("entityCert") GetEntityCert(): X509Cert;
+}
+
+struct CertChainBuildParameters {
+  certMatchParameters: X509CertMatchParameters;
+  maxLength: Optional<i32>;
+  validationParameters: CertChainValidationParameters;
+}
+
+interface CertChainBuildResult {
+  @get("certChain") GetCertChain(): X509CertChain;
+  @get("validationResult") GetValidationResult(): CertChainValidationResult;
+}
+
+enum CmsContentType: i32 {
+  SIGNED_DATA = 0
+}
+
+enum CmsContentDataFormat: i32 {
+  BINARY = 0,
+  TEXT = 1
+}
+
+enum CmsFormat: i32 {
+  PEM = 0,
+  DER = 1
+}
+
+struct PrivateKeyInfo {
+  key: OptStrUint8Arr;
+  password: Optional<String>;
+}
+
+struct CmsSignerConfig {
+  mdName: String;
+  addCert: Optional<bool>;
+  addAttr: Optional<bool>;
+  addSmimeCapAttr: Optional<bool>;
+}
+
+struct CmsGeneratorOptions {
+  contentDataFormat: Optional<CmsContentDataFormat>;
+  outFormat: Optional<CmsFormat>;
+  isDetached: Optional<bool>;
+}
+
+interface CmsGenerator {
+  AddSigner(cert: X509Cert, keyInfo: PrivateKeyInfo, config: CmsSignerConfig): void;
+  AddCert(cert: X509Cert): void;
+  @gen_async("doFinal")
+  @gen_promise("doFinal")
+  DoFinalSync(data: @typedarray Array<u8>, options: Optional<CmsGeneratorOptions>): OptStrUint8Arr;
+}
+function CreateCmsGenerator(contentType: CmsContentType): CmsGenerator;
+
+struct CsrAttribute {
+  type: String;
+  value: String;
+}
+
+struct CsrGenerationConfig {
+  subject: X500DistinguishedName;
+  mdName: String;
+  attributes: Optional<Array<CsrAttribute>>;
+  outFormat: Optional<EncodingBaseFormat>;
+}
+function GenerateCsr(keyInfo: PrivateKeyInfo, config: CsrGenerationConfig): OptStrUint8Arr;
