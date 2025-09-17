@@ -1666,6 +1666,10 @@ static CfResult CompareNameConstraintsX509Openssl(HcfX509CertificateSpi *self, C
         LOGE("The input data is null!");
         return CF_SUCCESS;
     }
+    if (nameConstraints->size == 0 || nameConstraints->data == NULL) {
+        LOGE("invalid param!");
+        return CF_INVALID_PARAMS;
+    }
     HcfOpensslX509Cert *realCert = (HcfOpensslX509Cert *)self;
     X509 *x509 = realCert->x509;
     NAME_CONSTRAINTS *nc = X509_get_ext_d2i(x509, NID_name_constraints, NULL, NULL);
