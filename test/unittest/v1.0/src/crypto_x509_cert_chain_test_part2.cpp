@@ -1145,15 +1145,20 @@ HWTEST_F(CryptoX509CertChainTestPart2, HcfX509CreateTrustAnchorWithKeyStoreFuncT
 HWTEST_F(CryptoX509CertChainTestPart2, HcfCreateTrustAnchorWithKeyStoreTest001, TestSize.Level0)
 {
     CF_LOG_I("HcfCreateTrustAnchorWithKeyStoreTest001");
-    CfBlob keyStore;
-    CfBlob pwd;
+    CfBlob keyStore = {};
+    CfBlob pwd = {};
     HcfX509TrustAnchorArray *trustAnchorArray = NULL;
+    CfResult result = HcfCreateTrustAnchorWithKeyStore(&keyStore, &pwd, &trustAnchorArray);
+    EXPECT_EQ(result, CF_INVALID_PARAMS);
 
     keyStore.data = const_cast<uint8_t *>(g_testChainKeystore);
     keyStore.size = sizeof(g_testChainKeystore);
+    result = HcfCreateTrustAnchorWithKeyStore(&keyStore, &pwd, &trustAnchorArray);
+    EXPECT_EQ(result, CF_INVALID_PARAMS);
+
     pwd.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testKeystorePwd));
     pwd.size = sizeof(g_testKeystorePwd);
-    CfResult result = HcfCreateTrustAnchorWithKeyStore(&keyStore, &pwd, &trustAnchorArray);
+    result = HcfCreateTrustAnchorWithKeyStore(&keyStore, &pwd, &trustAnchorArray);
     EXPECT_EQ(result, CF_SUCCESS);
     ASSERT_TRUE(trustAnchorArray != NULL);
     assert(trustAnchorArray->count > 0);
@@ -1181,7 +1186,6 @@ HWTEST_F(CryptoX509CertChainTestPart2, HcfCreateTrustAnchorWithKeyStoreTest001, 
 
     keyStore.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testSelfSignedCaCert));
     keyStore.size = strlen(g_testSelfSignedCaCert) + 1;
-
     result = HcfCreateTrustAnchorWithKeyStore(&keyStore, &pwd, &trustAnchorArray);
     EXPECT_EQ(result, CF_ERR_CRYPTO_OPERATION);
 }
@@ -1212,17 +1216,19 @@ static void FreeHcfX509P12Collection(HcfX509P12Collection *p12Collection)
 HWTEST_F(CryptoX509CertChainTestPart2, HcfParsePKCS12Test001, TestSize.Level0)
 {
     CF_LOG_I("HcfParsePKCS12Test001");
-    CfBlob keyStore;
-    CfBlob pwd;
+    CfBlob keyStore = {};
+    CfBlob pwd = {};
     HcfX509P12Collection *p12Collection = NULL;
     HcfParsePKCS12Conf conf = { 0 };
+    CfResult result = HcfParsePKCS12(&keyStore, &conf, &p12Collection);
+    EXPECT_EQ(result, CF_INVALID_PARAMS);
 
     keyStore.data = const_cast<uint8_t *>(g_testChainKeystore);
     keyStore.size = sizeof(g_testChainKeystore);
     pwd.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testKeystorePwd));
     pwd.size = strlen(g_testKeystorePwd) + 1;
     conf.pwd = &pwd;
-    CfResult result = HcfParsePKCS12(&keyStore, &conf, &p12Collection);
+    result = HcfParsePKCS12(&keyStore, &conf, &p12Collection);
     EXPECT_EQ(result, CF_SUCCESS);
     EXPECT_EQ(p12Collection != NULL, true);
     FreeHcfX509P12Collection(p12Collection);
