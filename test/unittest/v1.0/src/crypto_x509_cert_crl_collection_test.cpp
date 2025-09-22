@@ -565,69 +565,87 @@ static uint32_t GetRandomInt(uint32_t min, uint32_t max)
 #define MAX_LEN_OF_CERT_OR_CRL_ARR 10
 #define MAX_DATA_LEN_OF_CERT_OR_CRL 256
 
-static void CryptoX509CertCrlCollectionInvalidArrayTest()
+static void CreateCertAndCrl(HcfX509Certificate **cert, HcfX509Crl **crl)
 {
-    HcfX509CertificateArray certArray = { 0 };
-    HcfX509CrlArray crlArray = { 0 };
+    CfEncodingBlob inStreamCert = { 0 };
+    CfEncodingBlob inStreamCrl = { 0 };
     uint8_t data[MAX_DATA_LEN_OF_CERT_OR_CRL] = { 0 };
     uint32_t dataLen = 0;
     CfResult ret;
+    dataLen = GetRandomInt(1, MAX_DATA_LEN_OF_CERT_OR_CRL);
+    RAND_priv_bytes(data, dataLen);
+    inStreamCert.data = data;
+    inStreamCert.encodingFormat = CF_FORMAT_DER;
+    inStreamCert.len = dataLen;
+    ret = HcfX509CertificateCreate(&inStreamCert, cert);
 
     dataLen = GetRandomInt(1, MAX_DATA_LEN_OF_CERT_OR_CRL);
     RAND_priv_bytes(data, dataLen);
+    inStreamCrl.data = data;
+    inStreamCrl.encodingFormat = CF_FORMAT_DER;
+    inStreamCrl.len = dataLen;
+    ret = HcfX509CrlCreate(&inStreamCrl, crl);
+}
 
-    CfEncodingBlob inStream = { 0 };
-    inStream.data = data;
-    inStream.encodingFormat = CF_FORMAT_DER;
-    inStream.len = dataLen;
+static CfResult CryptoX509CertCrlCollectionInvalidArrayTest()
+{
+    HcfX509CertificateArray certArray = { 0 };
+    HcfX509CrlArray crlArray = { 0 };
+    CfResult ret;
     HcfX509Certificate *cert = nullptr;
-    ret = HcfX509CertificateCreate(&inStream, &cert);
-
-    dataLen = GetRandomInt(1, MAX_DATA_LEN_OF_CERT_OR_CRL);
-    RAND_priv_bytes(data, dataLen);
-    inStream.data = data;
-    inStream.encodingFormat = CF_FORMAT_DER;
-    inStream.len = dataLen;
     HcfX509Crl *crl = nullptr;
-    ret = HcfX509CrlCreate(&inStream, &crl);
-
+    CreateCertAndCrl(&cert, &crl);
+    HcfCertCrlCollection *x509CertCrlCollection = nullptr;
     uint32_t certCount = GetRandomInt(1, MAX_LEN_OF_CERT_OR_CRL_ARR);
-    certArray.data = static_cast<HcfX509Certificate **>(CfMalloc(certCount * sizeof(HcfX509Certificate *), 0));
+    uint32_t crlCount = GetRandomInt(1, MAX_LEN_OF_CERT_OR_CRL_ARR);
+
     certArray.count = certCount;
-    ASSERT_NE(certArray.data, nullptr);
+    certArray.data = static_cast<HcfX509Certificate **>(CfMalloc(certCount * sizeof(HcfX509Certificate *), 0));
+    if (certArray.data == nullptr) {
+        ret = CF_ERR_MALLOC;
+        goto exit;
+    }
     for (uint32_t i = 0; i < certCount; i++) {
         certArray.data[i] = cert;
     }
     certArray.data[certCount - 1] = nullptr;
 
-    uint32_t crlCount = GetRandomInt(1, MAX_LEN_OF_CERT_OR_CRL_ARR);
-    crlArray.data = static_cast<HcfX509Crl **>(CfMalloc(crlCount * sizeof(HcfX509Crl *), 0));
     crlArray.count = crlCount;
-    ASSERT_NE(crlArray.data, nullptr);
+    crlArray.data = static_cast<HcfX509Crl **>(CfMalloc(crlCount * sizeof(HcfX509Crl *), 0));
+    if (crlArray.data == nullptr) {
+        ret = CF_ERR_MALLOC;
+        goto exit;
+    }
     for (uint32_t i = 0; i < crlCount; i++) {
         crlArray.data[i] = crl;
     }
-    certArray.data[crlCount - 1] = nullptr;
+    crlArray.data[crlCount - 1] = nullptr;
 
-    HcfCertCrlCollection *x509CertCrlCollection = nullptr;
     ret = HcfCertCrlCollectionCreate(&certArray, &crlArray, &x509CertCrlCollection);
-    ASSERT_EQ(ret, CF_INVALID_PARAMS);
+    if (ret != CF_INVALID_PARAMS) {
+        goto exit;
+    }
     ret = HcfCertCrlCollectionCreate(&certArray, NULL, &x509CertCrlCollection);
-    ASSERT_EQ(ret, CF_INVALID_PARAMS);
+    if (ret != CF_INVALID_PARAMS) {
+        goto exit;
+    }
     ret = HcfCertCrlCollectionCreate(NULL, &crlArray, &x509CertCrlCollection);
-    ASSERT_EQ(ret, CF_INVALID_PARAMS);
 
+exit:
     CfObjDestroy(cert);
     CfObjDestroy(crl);
     CfFree(certArray.data);
     CfFree(crlArray.data);
+    return ret;
 }
 
 HWTEST_F(CryptoX509CertCrlCollectionTest, InvalidArray, TestSize.Level0)
 {
+    CfResult ret;
     uint32_t testCount = 100;
     while (testCount--) {
-        CryptoX509CertCrlCollectionInvalidArrayTest();
+        ret = CryptoX509CertCrlCollectionInvalidArrayTest();
+        ASSERT_EQ(ret, CF_INVALID_PARAMS);
     }
 }
 
