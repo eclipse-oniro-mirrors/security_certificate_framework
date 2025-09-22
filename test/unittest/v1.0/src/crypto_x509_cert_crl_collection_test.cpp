@@ -27,6 +27,7 @@
 #include "securec.h"
 #include "x509_certificate.h"
 #include "x509_certificate_openssl.h"
+#include <openssl/rand.h>
 
 using namespace std;
 using namespace testing::ext;
@@ -552,6 +553,82 @@ HWTEST_F(CryptoX509CertCrlCollectionTest, InvalidCrl, TestSize.Level0)
     CfFree(crlArray->data);
     CfFree(certArray);
     CfFree(crlArray);
+}
+
+static uint32_t GetRandomInt(uint32_t min, uint32_t max)
+{
+    uint32_t a;
+    RAND_priv_bytes(reinterpret_cast<uint8_t *>(&a), sizeof(a));
+    return min + (a % (max - min + 1));
+}
+
+#define MAX_LEN_OF_CERT_OR_CRL_ARR 10
+#define MAX_DATA_LEN_OF_CERT_OR_CRL 256
+
+static void CryptoX509CertCrlCollectionInvalidArrayTest()
+{
+    HcfX509CertificateArray certArray = { 0 };
+    HcfX509CrlArray crlArray = { 0 };
+    uint8_t data[MAX_DATA_LEN_OF_CERT_OR_CRL] = { 0 };
+    uint32_t dataLen = 0;
+    CfResult ret;
+
+    dataLen = GetRandomInt(1, MAX_DATA_LEN_OF_CERT_OR_CRL);
+    RAND_priv_bytes(data, dataLen);
+
+    CfEncodingBlob inStream = { 0 };
+    inStream.data = data;
+    inStream.encodingFormat = CF_FORMAT_DER;
+    inStream.len = dataLen;
+    HcfX509Certificate *cert = nullptr;
+    ret = HcfX509CertificateCreate(&inStream, &cert);
+
+    dataLen = GetRandomInt(1, MAX_DATA_LEN_OF_CERT_OR_CRL);
+    RAND_priv_bytes(data, dataLen);
+    inStream.data = data;
+    inStream.encodingFormat = CF_FORMAT_DER;
+    inStream.len = dataLen;
+    HcfX509Crl *crl = nullptr;
+    ret = HcfX509CrlCreate(&inStream, &crl);
+
+    uint32_t certCount = GetRandomInt(1, MAX_LEN_OF_CERT_OR_CRL_ARR);
+    certArray.data = static_cast<HcfX509Certificate **>(CfMalloc(certCount * sizeof(HcfX509Certificate *), 0));
+    certArray.count = certCount;
+    ASSERT_NE(certArray.data, nullptr);
+    for (uint32_t i = 0; i < certCount; i++) {
+        certArray.data[i] = cert;
+    }
+    certArray.data[certCount - 1] = nullptr;
+
+    uint32_t crlCount = GetRandomInt(1, MAX_LEN_OF_CERT_OR_CRL_ARR);
+    crlArray.data = static_cast<HcfX509Crl **>(CfMalloc(crlCount * sizeof(HcfX509Crl *), 0));
+    crlArray.count = crlCount;
+    ASSERT_NE(crlArray.data, nullptr);
+    for (uint32_t i = 0; i < crlCount; i++) {
+        crlArray.data[i] = crl;
+    }
+    certArray.data[crlCount - 1] = nullptr;
+
+    HcfCertCrlCollection *x509CertCrlCollection = nullptr;
+    ret = HcfCertCrlCollectionCreate(&certArray, &crlArray, &x509CertCrlCollection);
+    ASSERT_EQ(ret, CF_INVALID_PARAMS);
+    ret = HcfCertCrlCollectionCreate(&certArray, NULL, &x509CertCrlCollection);
+    ASSERT_EQ(ret, CF_INVALID_PARAMS);
+    ret = HcfCertCrlCollectionCreate(NULL, &crlArray, &x509CertCrlCollection);
+    ASSERT_EQ(ret, CF_INVALID_PARAMS);
+
+    CfObjDestroy(cert);
+    CfObjDestroy(crl);
+    CfFree(certArray.data);
+    CfFree(crlArray.data);
+}
+
+HWTEST_F(CryptoX509CertCrlCollectionTest, InvalidArray, TestSize.Level0)
+{
+    uint32_t testCount = 100;
+    while (testCount--) {
+        CryptoX509CertCrlCollectionInvalidArrayTest();
+    }
 }
 
 } // namespace

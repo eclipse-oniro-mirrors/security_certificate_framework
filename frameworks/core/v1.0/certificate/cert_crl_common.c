@@ -19,6 +19,10 @@
 
 CfResult CloneCertificateObj(HcfX509Certificate *in, HcfX509Certificate **out)
 {
+    if (in == NULL) {
+        LOGE("The input cert is NULL in CloneCertificateObj.");
+        return CF_INVALID_PARAMS;
+    }
     CfEncodingBlob encodingBlob = { 0 };
     CfResult res = in->base.getEncoded(&(in->base), &encodingBlob);
     if (res != CF_SUCCESS) {
@@ -41,6 +45,10 @@ CfResult CloneCertificateObj(HcfX509Certificate *in, HcfX509Certificate **out)
 
 CfResult CloneCrlObj(HcfX509Crl *in, HcfX509Crl **out)
 {
+    if (in == NULL) {
+        LOGE("The input crl is NULL in CloneCrlObj.");
+        return CF_INVALID_PARAMS;
+    }
     CfEncodingBlob encodingBlob = { 0 };
     CfResult res = in->getEncoded(in, &encodingBlob);
     if (res != CF_SUCCESS) {
