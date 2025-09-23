@@ -377,13 +377,17 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareNameConstraintsTest000, TestSize
 
     HcfX509CertMatchParams certMatchParameters = { 0 };
 
-    CfBlob blob;
-    blob.data = const_cast<uint8_t *>(g_testNameConstraints);
-    blob.size = sizeof(g_testNameConstraints);
+    CfBlob blob = {};
     certMatchParameters.nameConstraints = &blob;
-
+    certMatchParameters.minPathLenConstraint = -1;
     CfResult ret =
         g_testCertWithPrivateKeyValidObj->match(g_testCertWithPrivateKeyValidObj, &certMatchParameters, &bResult);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+
+    blob.data = const_cast<uint8_t *>(g_testNameConstraints);
+    blob.size = sizeof(g_testNameConstraints);
+    certMatchParameters.minPathLenConstraint = 0;
+    ret = g_testCertWithPrivateKeyValidObj->match(g_testCertWithPrivateKeyValidObj, &certMatchParameters, &bResult);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_EQ(bResult, false);
 
