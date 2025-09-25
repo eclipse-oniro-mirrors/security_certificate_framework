@@ -21,24 +21,15 @@
 
 int32_t FfiCertCjX509CertificateNewInstance(const CfEncodingBlob *blob, CjX509Certificate *returnObj)
 {
-    auto cert = static_cast<HcfX509Certificate *>(malloc(sizeof(HcfX509Certificate)));
-    if (cert == nullptr) {
-        return CF_ERR_MALLOC;
-    }
+    HcfX509Certificate *cert = nullptr;
     CfResult errCode = HcfX509CertificateCreate(blob, &cert);
     if (errCode != CF_SUCCESS) {
-        free(cert);
         return errCode;
     }
-    auto cfObj = static_cast<CfObject *>(malloc(sizeof(CfObject)));
-    if (cfObj == nullptr) {
-        free(cert);
-        return CF_ERR_MALLOC;
-    }
+    CfObject *cfObj = nullptr;
     errCode = CfResult(CfCreate(CF_OBJ_TYPE_CERT, blob, &cfObj));
     if (errCode != CF_SUCCESS) {
         CfObjDestroy(cert);
-        free(cfObj);
         return errCode;
     }
     returnObj->cert = cert;
@@ -59,29 +50,17 @@ CfResult FfiCertCjX509CertificateFromHcfCert(HcfX509Certificate *hcfCert, CjX509
     if (errCode != CF_SUCCESS) {
         return errCode;
     }
-    auto cert = static_cast<HcfX509Certificate *>(malloc(sizeof(HcfX509Certificate)));
-    if (cert == nullptr) {
-        free(blob.data);
-        return CF_ERR_MALLOC;
-    }
+    HcfX509Certificate *cert = nullptr;
     errCode = HcfX509CertificateCreate(&blob, &cert);
     if (errCode != CF_SUCCESS) {
         free(blob.data);
-        free(cert);
         return errCode;
     }
-    auto cfObj = static_cast<CfObject *>(malloc(sizeof(CfObject)));
-    if (cfObj == nullptr) {
-        free(blob.data);
-        free(cert);
-        return CF_ERR_MALLOC;
-    }
-
+    CfObject *cfObj = nullptr;
     errCode = CfResult(CfCreate(CF_OBJ_TYPE_CERT, &blob, &cfObj));
     if (errCode != CF_SUCCESS) {
         free(blob.data);
         CfObjDestroy(cert);
-        free(cfObj);
         return errCode;
     }
     returnObj->cert = cert;
