@@ -34,6 +34,9 @@ struct HcfCmsGeneratorSpi {
     /** do final to cms generator. */
     CfResult (*engineDoFinal)(HcfCmsGeneratorSpi *self, const CfBlob *content, const HcfCmsGeneratorOptions *options,
                               CfBlob *out);
+    CfResult (*engineSetRecipientEncryptionAlgorithm)(HcfCmsGeneratorSpi *self, CfCmsRecipientEncryptionAlgorithm alg);
+    CfResult (*engineAddRecipientInfo)(HcfCmsGeneratorSpi *self, CmsRecipientInfo *recipientInfo);
+    CfResult (*engineGetEncryptedContentData)(HcfCmsGeneratorSpi *self, CfBlob *out);
 };
 
 #endif // CERT_CMS_GENERATOR_SPI_H

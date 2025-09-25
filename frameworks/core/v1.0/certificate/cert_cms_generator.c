@@ -42,7 +42,8 @@ typedef struct {
 } HcfCmsGeneratorAbility;
 
 static const HcfCmsGeneratorAbility CERT_PATH_CMS_GENERATOR_ABILITY_SET[] = {
-    { SIGNED_DATA, { HcfCmsGeneratorSpiCreate } }
+    { SIGNED_DATA, { HcfCmsGeneratorSpiCreate } },
+    { ENVELOPED_DATA, { HcfCmsGeneratorSpiCreate } }
 };
 
 static const HcfCmsGeneratorFuncSet *FindAbility(HcfCmsContentType type)
@@ -120,6 +121,48 @@ static CfResult DoFinal(HcfCmsGenerator *self, const CfBlob *content, const HcfC
     return impl->spiObj->engineDoFinal(impl->spiObj, content, options, out);
 }
 
+static CfResult SetRecipientEncryptionAlgorithm(HcfCmsGenerator *self, CfCmsRecipientEncryptionAlgorithm alg)
+{
+    if (self == NULL) {
+        LOGE("Invalid input parameter.");
+        return CF_ERR_PARAMETER_CHECK;
+    }
+    if (!CfIsClassMatch((CfObjectBase *)self, GetCertCmsGeneratorClass())) {
+        LOGE("Class is not match.");
+        return CF_ERR_PARAMETER_CHECK;
+    }
+    CertCmsGeneratorImpl *impl = (CertCmsGeneratorImpl *)self;
+    return impl->spiObj->engineSetRecipientEncryptionAlgorithm(impl->spiObj, alg);
+}
+
+static CfResult AddRecipientInfo(HcfCmsGenerator *self, CmsRecipientInfo *recipientInfo)
+{
+    if (self == NULL || recipientInfo == NULL) {
+        LOGE("Invalid input parameter.");
+        return CF_ERR_PARAMETER_CHECK;
+    }
+    if (!CfIsClassMatch((CfObjectBase *)self, GetCertCmsGeneratorClass())) {
+        LOGE("Class is not match.");
+        return CF_ERR_PARAMETER_CHECK;
+    }
+    CertCmsGeneratorImpl *impl = (CertCmsGeneratorImpl *)self;
+    return impl->spiObj->engineAddRecipientInfo(impl->spiObj, recipientInfo);
+}
+
+static CfResult GetEncryptedContentData(HcfCmsGenerator *self, CfBlob *out)
+{
+    if (self == NULL) {
+        LOGE("Invalid input parameter.");
+        return CF_ERR_PARAMETER_CHECK;
+    }
+    if (!CfIsClassMatch((CfObjectBase *)self, GetCertCmsGeneratorClass())) {
+        LOGE("Class is not match.");
+        return CF_ERR_PARAMETER_CHECK;
+    }
+    CertCmsGeneratorImpl *impl = (CertCmsGeneratorImpl *)self;
+    return impl->spiObj->engineGetEncryptedContentData(impl->spiObj, out);
+}
+
 CfResult HcfCreateCmsGenerator(HcfCmsContentType type, HcfCmsGenerator **cmsGenerator)
 {
     const HcfCmsGeneratorFuncSet *func = FindAbility(type);
@@ -144,6 +187,9 @@ CfResult HcfCreateCmsGenerator(HcfCmsContentType type, HcfCmsGenerator **cmsGene
     returnCmsGenerator->base.addSigner = AddSigner;
     returnCmsGenerator->base.addCert = AddCert;
     returnCmsGenerator->base.doFinal = DoFinal;
+    returnCmsGenerator->base.setRecipientEncryptionAlgorithm = SetRecipientEncryptionAlgorithm;
+    returnCmsGenerator->base.addRecipientInfo = AddRecipientInfo;
+    returnCmsGenerator->base.getEncryptedContentData = GetEncryptedContentData;
     returnCmsGenerator->base.base.destroy = DestroyCertCmsGenerator;
     returnCmsGenerator->base.base.getClass = GetCertCmsGeneratorClass;
     returnCmsGenerator->spiObj = spiObj;

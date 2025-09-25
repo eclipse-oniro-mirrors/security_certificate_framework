@@ -48,6 +48,7 @@ ohos_unittest("cf_version1_test") {
     "src/crypto_x509_cert_chain_test_part2.cpp",
     "src/crypto_x509_cert_chain_validator_test.cpp",
     "src/crypto_x509_cert_cms_generator_test.cpp",
+    "src/crypto_x509_cert_cms_generator_test_part2.cpp",
     "src/crypto_x509_cert_crl_collection_test.cpp",
     "src/crypto_x509_certificate_test.cpp",
     "src/crypto_x509_certificate_test_part2.cpp",
@@ -188,6 +189,18 @@ ohos_unittest("cf_version1_test") {
     "-Wl,--wrap=PKCS12_SAFEBAG_create_pkcs8_encrypt_ex",
     "-Wl,--wrap=i2d_PKCS12",
     "-Wl,--wrap=PKCS12_add_safe",
+    "-Wl,--wrap=CMS_SignerInfo_get0_pkey_ctx",
+    "-Wl,--wrap=EVP_PKEY_CTX_set_rsa_padding",
+    "-Wl,--wrap=CMS_get0_type",
+    "-Wl,--wrap=CMS_add1_recipient_cert",
+    "-Wl,--wrap=CMS_RecipientInfo_get0_pkey_ctx",
+    "-Wl,--wrap=EVP_PKEY_CTX_set_ecdh_kdf_md",
+    "-Wl,--wrap=CMS_get0_SignerInfos",
+    "-Wl,--wrap=CMS_AuthEnvelopedData_create",
+    "-Wl,--wrap=CMS_EnvelopedData_create",
+    "-Wl,--wrap=CfIsClassMatch",
+    "-Wl,--wrap=CMS_set_detached",
+    "-Wl,--wrap=X509_get0_pubkey",
   ]
 
   if (target_cpu == "arm") {

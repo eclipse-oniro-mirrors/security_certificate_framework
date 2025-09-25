@@ -27,6 +27,7 @@
 typedef struct HcfCmsSignerOptions HcfCmsSignerOptions;
 struct HcfCmsSignerOptions {
     char *mdName;
+    CfCmsRsaSignaturePadding padding;
     bool addCert;
     bool addAttr;
     bool addSmimeCapAttr;
@@ -37,6 +38,23 @@ struct HcfCmsGeneratorOptions {
     HcfCmsContentDataFormat dataFormat;
     HcfCmsFormat outFormat;
     bool isDetachedContent;
+};
+
+typedef struct KeyTransRecipientInfo KeyTransRecipientInfo;
+struct KeyTransRecipientInfo {
+    HcfCertificate *recipientCert;
+};
+
+typedef struct KeyAgreeRecipientInfo KeyAgreeRecipientInfo;
+struct KeyAgreeRecipientInfo {
+    HcfCertificate *recipientCert;
+    CfCmsKeyAgreeRecipientDigestAlgorithm digestAlgorithm;
+};
+
+typedef struct CmsRecipientInfo CmsRecipientInfo;
+struct CmsRecipientInfo {
+    KeyTransRecipientInfo *keyTransInfo;
+    KeyAgreeRecipientInfo *keyAgreeInfo;
 };
 
 typedef struct HcfCmsGenerator HcfCmsGenerator;
@@ -52,6 +70,9 @@ struct HcfCmsGenerator {
     /** do final to cms generator. */
     CfResult (*doFinal)(HcfCmsGenerator *self, const CfBlob *content, const HcfCmsGeneratorOptions *options,
                         CfBlob *out);
+    CfResult (*setRecipientEncryptionAlgorithm)(HcfCmsGenerator *self, CfCmsRecipientEncryptionAlgorithm alg);
+    CfResult (*addRecipientInfo)(HcfCmsGenerator *self, CmsRecipientInfo *recipientInfo);
+    CfResult (*getEncryptedContentData)(HcfCmsGenerator *sel, CfBlob *out);
 };
 
 #ifdef __cplusplus

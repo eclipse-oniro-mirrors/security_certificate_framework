@@ -313,6 +313,7 @@ static napi_value CreateCmsContentType(napi_env env)
     napi_create_object(env, &cmsContentType);
 
     CertAddUint32Property(env, cmsContentType, "SIGNED_DATA", SIGNED_DATA);
+    CertAddUint32Property(env, cmsContentType, "ENVELOPED_DATA", ENVELOPED_DATA);
     return cmsContentType;
 }
 
@@ -338,12 +339,50 @@ static napi_value CreateCmsFormat(napi_env env)
     return cmsFormat;
 }
 
+static napi_value CreateCmsRecEncAlg(napi_env env)
+{
+    napi_value cmsRecEncAlg = nullptr;
+    napi_create_object(env, &cmsRecEncAlg);
+
+    CertAddUint32Property(env, cmsRecEncAlg, "AES_128_CBC", CMS_AES_128_CBC);
+    CertAddUint32Property(env, cmsRecEncAlg, "AES_192_CBC", CMS_AES_192_CBC);
+    CertAddUint32Property(env, cmsRecEncAlg, "AES_256_CBC", CMS_AES_256_CBC);
+    CertAddUint32Property(env, cmsRecEncAlg, "AES_128_GCM", CMS_AES_128_GCM);
+    CertAddUint32Property(env, cmsRecEncAlg, "AES_192_GCM", CMS_AES_192_GCM);
+    CertAddUint32Property(env, cmsRecEncAlg, "AES_256_GCM", CMS_AES_256_GCM);
+    return cmsRecEncAlg;
+}
+
+static napi_value CreateCmsKeyAgreeRecDigAlg(napi_env env)
+{
+    napi_value cmsKeyAgreeRecDigAlg = nullptr;
+    napi_create_object(env, &cmsKeyAgreeRecDigAlg);
+
+    CertAddUint32Property(env, cmsKeyAgreeRecDigAlg, "SHA256", CMS_SHA256);
+    CertAddUint32Property(env, cmsKeyAgreeRecDigAlg, "SHA384", CMS_SHA384);
+    CertAddUint32Property(env, cmsKeyAgreeRecDigAlg, "SHA512", CMS_SHA512);
+    return cmsKeyAgreeRecDigAlg;
+}
+
+static napi_value CreateCmsRsaSignaturePadding(napi_env env)
+{
+    napi_value cmsRsaSignaturePadding = nullptr;
+    napi_create_object(env, &cmsRsaSignaturePadding);
+
+    CertAddUint32Property(env, cmsRsaSignaturePadding, "PKCS1_PADDING", PKCS1_PADDING);
+    CertAddUint32Property(env, cmsRsaSignaturePadding, "PKCS1_PSS_PADDING", PKCS1_PSS_PADDING);
+    return cmsRsaSignaturePadding;
+}
+
 static void DefineCertCmsGeneratorProperties(napi_env env, napi_value exports)
 {
     napi_property_descriptor desc[] = {
         DECLARE_NAPI_PROPERTY("CmsContentType", CreateCmsContentType(env)),
         DECLARE_NAPI_PROPERTY("CmsContentDataFormat", CreateCmsContentDataFormat(env)),
         DECLARE_NAPI_PROPERTY("CmsFormat", CreateCmsFormat(env)),
+        DECLARE_NAPI_PROPERTY("CmsRecipientEncryptionAlgorithm", CreateCmsRecEncAlg(env)),
+        DECLARE_NAPI_PROPERTY("CmsKeyAgreeRecipientDigestAlgorithm", CreateCmsKeyAgreeRecDigAlg(env)),
+        DECLARE_NAPI_PROPERTY("CmsRsaSignaturePadding", CreateCmsRsaSignaturePadding(env)),
     };
     napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
 }

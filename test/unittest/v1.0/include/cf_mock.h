@@ -25,6 +25,7 @@
 #include "certificate_openssl_common.h"
 #include "x509_certificate.h"
 #include "x509_certificate_openssl.h"
+#include <openssl/cms.h>
 
 using ::testing::NiceMock;
 
@@ -120,7 +121,19 @@ public:
     MOCK_METHOD(int, i2d_PKCS12, (PKCS12 *a, unsigned char **pp));
     MOCK_METHOD(int, PKCS12_add_safe, (STACK_OF(PKCS7) **psafes, STACK_OF(PKCS12_SAFEBAG) *bags, int nid_safe,
         int iter, const char *pass));
-
+    MOCK_METHOD(EVP_PKEY_CTX *, CMS_SignerInfo_get0_pkey_ctx, (CMS_SignerInfo *si));
+    MOCK_METHOD(int, EVP_PKEY_CTX_set_rsa_padding, (EVP_PKEY_CTX *ctx, int pad_mode));
+    MOCK_METHOD(const ASN1_OBJECT *, CMS_get0_type, (const CMS_ContentInfo *cms));
+    MOCK_METHOD(CMS_RecipientInfo *, CMS_add1_recipient_cert, (CMS_ContentInfo *cms, X509 *recip,
+                                                               unsigned int flags));
+    MOCK_METHOD(EVP_PKEY_CTX *, CMS_RecipientInfo_get0_pkey_ctx, (CMS_RecipientInfo *ri));
+    MOCK_METHOD(int, EVP_PKEY_CTX_set_ecdh_kdf_md, (EVP_PKEY_CTX *ctx, const EVP_MD *md));
+    MOCK_METHOD(STACK_OF(CMS_SignerInfo) *, CMS_get0_SignerInfos, (CMS_ContentInfo *cms));
+    MOCK_METHOD(CMS_ContentInfo *, CMS_AuthEnvelopedData_create, (const EVP_CIPHER *cipher));
+    MOCK_METHOD(CMS_ContentInfo *, CMS_EnvelopedData_create, (const EVP_CIPHER *cipher));
+    MOCK_METHOD(bool, CfIsClassMatch, (const CfObjectBase *obj, const char *className));
+    MOCK_METHOD(int, CMS_set_detached, (CMS_ContentInfo *cms, int detached));
+    MOCK_METHOD(EVP_PKEY *, X509_get0_pubkey, (X509 * x));
     static NiceMock<X509OpensslMock> &GetInstance(void);
     static void SetMockFlag(bool flag);
     static void SetHcfMockFlag(bool flag);
@@ -135,6 +148,7 @@ private:
     void SetMockFunDefaultBehaviorPartThree(void);
     void SetMockFunDefaultBehaviorPartFour(void);
     void SetMockFunDefaultBehaviorPartFive(void);
+    void SetMockFunDefaultBehaviorPartSix(void);
 };
 } // namespace CFMock
 #endif /* CF_MOCK_H */

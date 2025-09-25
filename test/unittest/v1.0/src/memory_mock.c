@@ -48,6 +48,25 @@ void *CfMalloc(uint32_t size, char val)
     return addr;
 }
 
+void *CfMallocEx(uint32_t size)
+{
+    if (g_isMock) {
+        return NULL;
+    }
+    if (g_isRecordMallocNum) {
+        if (g_mallocNum == g_mallocMockIndex) {
+            LOGI("mock malloc return NULL.");
+            return NULL;
+        }
+        g_mallocNum++;
+    }
+    void *addr = malloc(size);
+    if (addr != NULL) {
+        (void)memset_s(addr, size, 0, size);
+    }
+    return addr;
+}
+
 void CfFree(void *addr)
 {
     if (addr != NULL) {

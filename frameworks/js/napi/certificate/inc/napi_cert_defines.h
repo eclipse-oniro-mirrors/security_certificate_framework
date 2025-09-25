@@ -155,6 +155,7 @@ const std::string CERT_CSR_CONF_OUT_FORMAT = "outFormat";
 
 // Cms GENERATOR
 const std::string CMS_GENERATOR_MDNAME = "mdName";
+const std::string CMS_GENERATOR_RSA_SIG_PADDING = "rsaSignaturePadding";
 const std::string CMS_GENERATOR_ADD_ATTR = "addAttr";
 const std::string CMS_GENERATOR_ADD_CERT = "addCert";
 const std::string CMS_GENERATOR_ADD_SMIME_CAP_ATTR = "addSmimeCapAttr";
@@ -163,6 +164,10 @@ const std::string CERT_PASSWORD = "password";
 const std::string CMS_GENERATOR_CONTENT_DATA_FORMAT = "contentDataFormat";
 const std::string CMS_GENERATOR_OUT_FORMAT = "outFormat";
 const std::string CMS_GENERATOR_IS_DETACHED_CONTENT = "isDetached";
+const std::string CMS_GENERATOR_KEY_TRANSINFO = "keyTransInfo";
+const std::string CMS_GENERATOR_KEY_AGREEINFO = "keyAgreeInfo";
+const std::string CMS_GENERATOR_CERT = "cert";
+const std::string CMS_GENERATOR_DIGESTALG = "digestAlgorithm";
 } // namespace CertFramework
 } // namespace OHOS
 

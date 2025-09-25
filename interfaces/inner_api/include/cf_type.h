@@ -194,6 +194,7 @@ static inline bool CfIsAdditionOverflow(uint32_t a, uint32_t b)
 
 typedef enum {
     SIGNED_DATA = 0,
+    ENVELOPED_DATA = 1,
 } HcfCmsContentType;
 
 typedef enum {
@@ -205,6 +206,26 @@ typedef enum {
     CMS_PEM = 0,
     CMS_DER = 1,
 } HcfCmsFormat;
+
+typedef enum {
+    CMS_AES_128_CBC = 0,
+    CMS_AES_192_CBC = 1,
+    CMS_AES_256_CBC = 2,
+    CMS_AES_128_GCM = 3,
+    CMS_AES_192_GCM = 4,
+    CMS_AES_256_GCM = 5,
+} CfCmsRecipientEncryptionAlgorithm;
+
+typedef enum {
+    CMS_SHA256 = 0,
+    CMS_SHA384 = 1,
+    CMS_SHA512 = 2,
+} CfCmsKeyAgreeRecipientDigestAlgorithm;
+
+typedef enum {
+    PKCS1_PADDING = 0,
+    PKCS1_PSS_PADDING = 1,
+} CfCmsRsaSignaturePadding;
 
 #define MAX_COUNT_OID          100
 #define MAX_LEN_OID            128
