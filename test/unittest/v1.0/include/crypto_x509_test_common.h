@@ -505,6 +505,10 @@ extern const CfEncodingBlob g_inStreamChainDataPemDisorder;
 extern const CfEncodingBlob g_inStreamChainDataPem163;
 extern const CfEncodingBlob g_inStreamChainDataPemRoot163;
 extern const CfEncodingBlob g_inStreamOcspResponderCert;
+extern const CfEncodingBlob g_inStreamChainLocalCrlOnlyCheckEndEntityCert;
+extern const CfEncodingBlob g_inStreamChainLocalCrlCaCert;
+extern const CfEncodingBlob g_inStreamChainLocalCrl;
+extern const CfEncodingBlob g_inStreamChainInitialLocalCrl;
 
 const char *GetInvalidCertClass(void);
 const char *GetInvalidCrlClass(void);

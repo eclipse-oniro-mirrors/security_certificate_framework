@@ -1428,4 +1428,227 @@ HWTEST_F(CryptoX509CertChainTestPart2, HcfParsePKCS12Test005, TestSize.Level0)
     FreeHcfX509P12Collection(p12Collection);
     p12Collection = NULL;
 }
+
+HWTEST_F(CryptoX509CertChainTestPart2, ValidateLocalCrlEndEntityOnlyTest001, TestSize.Level0)
+{
+    CF_LOG_I("ValidateLocalCrlEndEntityOnlyTest001");
+    HcfX509CertChainSpi *certChainPemOnlyCrl = nullptr;
+    CfResult ret = HcfX509CertChainByEncSpiCreate(&g_inStreamChainLocalCrlOnlyCheckEndEntityCert, &certChainPemOnlyCrl);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ASSERT_NE(certChainPemOnlyCrl, nullptr);
+
+    HcfX509TrustAnchorArray trustAnchorArray = { 0 };
+    BuildAnchorArr(g_inStreamChainLocalCrlCaCert, trustAnchorArray);
+
+    HcfCertCRLCollectionArray certCRLCollections = { 0 };
+    BuildCollectionArr(&g_inStreamChainLocalCrlCaCert, &g_inStreamChainLocalCrl, certCRLCollections);
+
+    HcfX509CertChainValidateParams params = { 0 };
+    params.trustAnchors = &trustAnchorArray;
+    params.certCRLCollections = &certCRLCollections;
+
+    HcfRevChkOption data[] = { REVOCATION_CHECK_OPTION_LOCAL_CRL_ONLY_CHECK_END_ENTITY_CERT };
+    params.revocationCheckParam = ConstructHcfRevocationCheckParam(data, sizeof(data) / sizeof(data[0]));
+    ASSERT_NE(params.revocationCheckParam, nullptr);
+
+    HcfX509CertChainValidateResult result = { 0 };
+
+    ret = certChainPemOnlyCrl->engineValidate(certChainPemOnlyCrl, &params, &result);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+    EXPECT_EQ(result.entityCert, nullptr);
+    EXPECT_EQ(result.trustAnchor, nullptr);
+
+    FreeValidateResult(result);
+    FreeTrustAnchorArr(trustAnchorArray);
+    FreeCertCrlCollectionArr(certCRLCollections);
+    FreeHcfRevocationCheckParam(params.revocationCheckParam);
+    CfObjDestroy(certChainPemOnlyCrl);
+}
+
+HWTEST_F(CryptoX509CertChainTestPart2, ValidateLocalCrlEndEntityOnlyTest002, TestSize.Level0)
+{
+    CF_LOG_I("ValidateLocalCrlEndEntityOnlyTest002");
+    HcfX509CertChainSpi *certChainPemOnlyCrl = nullptr;
+    CfResult ret = HcfX509CertChainByEncSpiCreate(&g_inStreamChainLocalCrlOnlyCheckEndEntityCert, &certChainPemOnlyCrl);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ASSERT_NE(certChainPemOnlyCrl, nullptr);
+
+    HcfX509TrustAnchorArray trustAnchorArray = { 0 };
+    BuildAnchorArr(g_inStreamChainLocalCrlCaCert, trustAnchorArray);
+
+    HcfCertCRLCollectionArray certCRLCollections = { 0 };
+    BuildCollectionArr(&g_inStreamChainLocalCrlCaCert, &g_inStreamChainInitialLocalCrl, certCRLCollections);
+
+    HcfX509CertChainValidateParams params = { 0 };
+    params.trustAnchors = &trustAnchorArray;
+    params.certCRLCollections = &certCRLCollections;
+
+    HcfRevChkOption data[] = { REVOCATION_CHECK_OPTION_LOCAL_CRL_ONLY_CHECK_END_ENTITY_CERT };
+    params.revocationCheckParam = ConstructHcfRevocationCheckParam(data, sizeof(data) / sizeof(data[0]));
+    ASSERT_NE(params.revocationCheckParam, nullptr);
+
+    HcfX509CertChainValidateResult result = { 0 };
+
+    ret = certChainPemOnlyCrl->engineValidate(certChainPemOnlyCrl, &params, &result);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    EXPECT_NE(result.entityCert, nullptr);
+    EXPECT_NE(result.trustAnchor, nullptr);
+
+    FreeValidateResult(result);
+    FreeTrustAnchorArr(trustAnchorArray);
+    FreeCertCrlCollectionArr(certCRLCollections);
+    FreeHcfRevocationCheckParam(params.revocationCheckParam);
+    CfObjDestroy(certChainPemOnlyCrl);
+}
+
+HWTEST_F(CryptoX509CertChainTestPart2, ValidateLocalCrlEndEntityOnlyTest003, TestSize.Level0)
+{
+    CF_LOG_I("ValidateLocalCrlEndEntityOnlyTest002");
+    HcfX509CertChainSpi *certChainPemOnlyCrl = nullptr;
+    CfResult ret = HcfX509CertChainByEncSpiCreate(&g_inStreamChainLocalCrlOnlyCheckEndEntityCert, &certChainPemOnlyCrl);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ASSERT_NE(certChainPemOnlyCrl, nullptr);
+
+    HcfX509TrustAnchorArray trustAnchorArray = { 0 };
+    BuildAnchorArr(g_inStreamChainLocalCrlCaCert, trustAnchorArray);
+
+    HcfCertCRLCollectionArray certCRLCollections = { 0 };
+    BuildCollectionArr(&g_inStreamChainLocalCrlCaCert, &g_inStreamChainInitialLocalCrl, certCRLCollections);
+
+    HcfX509CertChainValidateParams params = { 0 };
+    params.trustAnchors = &trustAnchorArray;
+    params.certCRLCollections = &certCRLCollections;
+
+    HcfRevChkOption data[] = { REVOCATION_CHECK_OPTION_ACCESS_NETWORK, REVOCATION_CHECK_OPTION_PREFER_OCSP,
+        REVOCATION_CHECK_OPTION_FALLBACK_LOCAL, REVOCATION_CHECK_OPTION_LOCAL_CRL_ONLY_CHECK_END_ENTITY_CERT
+     };
+    params.revocationCheckParam = ConstructHcfRevocationCheckParam(data, sizeof(data) / sizeof(data[0]));
+    ASSERT_NE(params.revocationCheckParam, nullptr);
+
+    HcfX509CertChainValidateResult result = { 0 };
+
+    ret = certChainPemOnlyCrl->engineValidate(certChainPemOnlyCrl, &params, &result);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    EXPECT_NE(result.entityCert, nullptr);
+    EXPECT_NE(result.trustAnchor, nullptr);
+
+    FreeValidateResult(result);
+    FreeTrustAnchorArr(trustAnchorArray);
+    FreeCertCrlCollectionArr(certCRLCollections);
+    FreeHcfRevocationCheckParam(params.revocationCheckParam);
+    CfObjDestroy(certChainPemOnlyCrl);
+}
+
+HWTEST_F(CryptoX509CertChainTestPart2, ValidateLocalCrlEndEntityOnlyTest004, TestSize.Level0)
+{
+    CF_LOG_I("ValidateLocalCrlEndEntityOnlyTest002");
+    HcfX509CertChainSpi *certChainPemOnlyCrl = nullptr;
+    CfResult ret = HcfX509CertChainByEncSpiCreate(&g_inStreamChainLocalCrlOnlyCheckEndEntityCert, &certChainPemOnlyCrl);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ASSERT_NE(certChainPemOnlyCrl, nullptr);
+
+    HcfX509TrustAnchorArray trustAnchorArray = { 0 };
+    BuildAnchorArr(g_inStreamChainLocalCrlCaCert, trustAnchorArray);
+
+    HcfCertCRLCollectionArray certCRLCollections = { 0 };
+    BuildCollectionArr(&g_inStreamChainLocalCrlCaCert, &g_inStreamChainInitialLocalCrl, certCRLCollections);
+
+    HcfX509CertChainValidateParams params = { 0 };
+    params.trustAnchors = &trustAnchorArray;
+    params.certCRLCollections = &certCRLCollections;
+
+    HcfRevChkOption data[] = { REVOCATION_CHECK_OPTION_ACCESS_NETWORK, REVOCATION_CHECK_OPTION_FALLBACK_LOCAL,
+        REVOCATION_CHECK_OPTION_LOCAL_CRL_ONLY_CHECK_END_ENTITY_CERT
+     };
+    params.revocationCheckParam = ConstructHcfRevocationCheckParam(data, sizeof(data) / sizeof(data[0]));
+    ASSERT_NE(params.revocationCheckParam, nullptr);
+
+    HcfX509CertChainValidateResult result = { 0 };
+
+    ret = certChainPemOnlyCrl->engineValidate(certChainPemOnlyCrl, &params, &result);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    EXPECT_NE(result.entityCert, nullptr);
+    EXPECT_NE(result.trustAnchor, nullptr);
+
+    FreeValidateResult(result);
+    FreeTrustAnchorArr(trustAnchorArray);
+    FreeCertCrlCollectionArr(certCRLCollections);
+    FreeHcfRevocationCheckParam(params.revocationCheckParam);
+    CfObjDestroy(certChainPemOnlyCrl);
+}
+
+HWTEST_F(CryptoX509CertChainTestPart2, ValidateLocalCrlEndEntityOnlyTest005, TestSize.Level0)
+{
+    CF_LOG_I("ValidateLocalCrlEndEntityOnlyTest002");
+    HcfX509CertChainSpi *certChainPemOnlyCrl = nullptr;
+    CfResult ret = HcfX509CertChainByEncSpiCreate(&g_inStreamChainLocalCrlOnlyCheckEndEntityCert, &certChainPemOnlyCrl);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ASSERT_NE(certChainPemOnlyCrl, nullptr);
+
+    HcfX509TrustAnchorArray trustAnchorArray = { 0 };
+    BuildAnchorArr(g_inStreamChainLocalCrlCaCert, trustAnchorArray);
+
+    HcfCertCRLCollectionArray certCRLCollections = { 0 };
+    BuildCollectionArr(&g_inStreamChainLocalCrlCaCert, &g_inStreamChainInitialLocalCrl, certCRLCollections);
+
+    HcfX509CertChainValidateParams params = { 0 };
+    params.trustAnchors = &trustAnchorArray;
+    params.certCRLCollections = &certCRLCollections;
+
+    HcfRevChkOption data[] = { REVOCATION_CHECK_OPTION_ACCESS_NETWORK, REVOCATION_CHECK_OPTION_PREFER_OCSP,
+        REVOCATION_CHECK_OPTION_LOCAL_CRL_ONLY_CHECK_END_ENTITY_CERT
+     };
+    params.revocationCheckParam = ConstructHcfRevocationCheckParam(data, sizeof(data) / sizeof(data[0]));
+    ASSERT_NE(params.revocationCheckParam, nullptr);
+
+    HcfX509CertChainValidateResult result = { 0 };
+
+    ret = certChainPemOnlyCrl->engineValidate(certChainPemOnlyCrl, &params, &result);
+    EXPECT_NE(ret, CF_SUCCESS);
+    EXPECT_EQ(result.entityCert, nullptr);
+    EXPECT_EQ(result.trustAnchor, nullptr);
+
+    FreeValidateResult(result);
+    FreeTrustAnchorArr(trustAnchorArray);
+    FreeCertCrlCollectionArr(certCRLCollections);
+    FreeHcfRevocationCheckParam(params.revocationCheckParam);
+    CfObjDestroy(certChainPemOnlyCrl);
+}
+
+HWTEST_F(CryptoX509CertChainTestPart2, ValidateLocalCrlEndEntityOnlyTest006, TestSize.Level0)
+{
+    CF_LOG_I("ValidateLocalCrlEndEntityOnlyTest002");
+    HcfX509CertChainSpi *certChainPemOnlyCrl = nullptr;
+    CfResult ret = HcfX509CertChainByEncSpiCreate(&g_inStreamChainLocalCrlOnlyCheckEndEntityCert, &certChainPemOnlyCrl);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ASSERT_NE(certChainPemOnlyCrl, nullptr);
+
+    HcfX509TrustAnchorArray trustAnchorArray = { 0 };
+    BuildAnchorArr(g_inStreamChainLocalCrlCaCert, trustAnchorArray);
+
+    HcfCertCRLCollectionArray certCRLCollections = { 0 };
+    BuildCollectionArr(&g_inStreamChainLocalCrlCaCert, &g_inStreamChainInitialLocalCrl, certCRLCollections);
+
+    HcfX509CertChainValidateParams params = { 0 };
+    params.trustAnchors = &trustAnchorArray;
+    params.certCRLCollections = &certCRLCollections;
+
+    HcfRevChkOption data[] = { REVOCATION_CHECK_OPTION_ACCESS_NETWORK, REVOCATION_CHECK_OPTION_PREFER_OCSP,
+        REVOCATION_CHECK_OPTION_FALLBACK_NO_PREFER, REVOCATION_CHECK_OPTION_LOCAL_CRL_ONLY_CHECK_END_ENTITY_CERT };
+    params.revocationCheckParam = ConstructHcfRevocationCheckParam(data, sizeof(data) / sizeof(data[0]));
+    ASSERT_NE(params.revocationCheckParam, nullptr);
+
+    HcfX509CertChainValidateResult result = { 0 };
+
+    ret = certChainPemOnlyCrl->engineValidate(certChainPemOnlyCrl, &params, &result);
+    EXPECT_NE(ret, CF_SUCCESS);
+    EXPECT_EQ(result.entityCert, nullptr);
+    EXPECT_EQ(result.trustAnchor, nullptr);
+
+    FreeValidateResult(result);
+    FreeTrustAnchorArr(trustAnchorArray);
+    FreeCertCrlCollectionArr(certCRLCollections);
+    FreeHcfRevocationCheckParam(params.revocationCheckParam);
+    CfObjDestroy(certChainPemOnlyCrl);
+}
 } // namespace

@@ -336,7 +336,7 @@ static void ValidateExecute(napi_env env, void *data)
     CfCtx *context = static_cast<CfCtx *>(data);
     context->async->errCode = context->certChain->validate(context->certChain, &context->params, &context->result);
     if (context->async->errCode != CF_SUCCESS) {
-        context->async->errMsg = "create cert chain failed";
+        context->async->errMsg = "validate cert chain failed.";
     }
 }
 
