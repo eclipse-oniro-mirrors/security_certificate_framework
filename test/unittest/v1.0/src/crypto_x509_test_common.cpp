@@ -181,6 +181,12 @@ const int g_testCertChainPemLocalCrlCaCertSize =
 const int g_testCertChainPemLocalCrlSize =
     sizeof(g_testCertChainPemLocalCrl) / sizeof(char);
 
+const int g_testCertChainPemOnlyCenterCaCertSize =
+    sizeof(g_testCertChainPemOnlyCenterCaCert) / sizeof(char);
+
+const int g_testTrustAnchorCaCertChainPemSize =
+    sizeof(g_testTrustAnchorCaCertChainPem) / sizeof(char);
+
 const int g_testCertChainPemInitialLocalCrlSize =
     sizeof(g_testCertChainPemInitialLocalCrl) / sizeof(char);
 
@@ -290,6 +296,13 @@ const CfEncodingBlob g_inStreamChainInitialLocalCrl = { reinterpret_cast<uint8_t
 const CfEncodingBlob g_inStreamChainLocalCrl = { reinterpret_cast<uint8_t *>(
                                                                  const_cast<char *>(g_testCertChainPemLocalCrl)),
     g_testCertChainPemLocalCrlSize, CF_FORMAT_PEM };
+
+const CfEncodingBlob g_inStreamChainOnlyCenterCaCert = { reinterpret_cast<uint8_t *>(
+    const_cast<char *>(g_testCertChainPemOnlyCenterCaCert)), g_testCertChainPemOnlyCenterCaCertSize, CF_FORMAT_PEM };
+
+const CfEncodingBlob g_inStreamChainTrustAnchorCaCert = { reinterpret_cast<uint8_t *>(
+    const_cast<char *>(g_testTrustAnchorCaCertChainPem)), g_testTrustAnchorCaCertChainPemSize, CF_FORMAT_PEM };
+
 
 const char *GetInvalidCertClass(void)
 {
