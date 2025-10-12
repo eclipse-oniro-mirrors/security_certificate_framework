@@ -1651,4 +1651,37 @@ HWTEST_F(CryptoX509CertChainTestPart2, ValidateLocalCrlEndEntityOnlyTest006, Tes
     FreeHcfRevocationCheckParam(params.revocationCheckParam);
     CfObjDestroy(certChainPemOnlyCrl);
 }
+
+HWTEST_F(CryptoX509CertChainTestPart2, ValidateOnlyCaCertTest001, TestSize.Level0)
+{
+    CF_LOG_I("ValidateOnlyCaCertTest001");
+    HcfX509CertChainSpi *certChainPemOnlyCaCert = nullptr;
+    CfResult ret = HcfX509CertChainByEncSpiCreate(&g_inStreamChainOnlyCenterCaCert, &certChainPemOnlyCaCert);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ASSERT_NE(certChainPemOnlyCaCert, nullptr);
+
+    HcfX509TrustAnchorArray trustAnchorArray = { 0 };
+    BuildAnchorArr(g_inStreamChainTrustAnchorCaCert, trustAnchorArray);
+
+
+    HcfX509CertChainValidateParams params = { 0 };
+    params.trustAnchors = &trustAnchorArray;
+
+    HcfRevChkOption data[] = { REVOCATION_CHECK_OPTION_ACCESS_NETWORK,
+        REVOCATION_CHECK_OPTION_CHECK_INTERMEDIATE_CA_ONLINE };
+    params.revocationCheckParam = ConstructHcfRevocationCheckParam(data, sizeof(data) / sizeof(data[0]));
+    ASSERT_NE(params.revocationCheckParam, nullptr);
+
+    HcfX509CertChainValidateResult result = { 0 };
+
+    ret = certChainPemOnlyCaCert->engineValidate(certChainPemOnlyCaCert, &params, &result);
+    EXPECT_NE(ret, CF_SUCCESS);
+    EXPECT_EQ(result.entityCert, nullptr);
+    EXPECT_EQ(result.trustAnchor, nullptr);
+
+    FreeValidateResult(result);
+    FreeTrustAnchorArr(trustAnchorArray);
+    FreeHcfRevocationCheckParam(params.revocationCheckParam);
+    CfObjDestroy(certChainPemOnlyCaCert);
+}
 } // namespace

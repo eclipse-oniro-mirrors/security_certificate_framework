@@ -509,6 +509,8 @@ extern const CfEncodingBlob g_inStreamChainLocalCrlOnlyCheckEndEntityCert;
 extern const CfEncodingBlob g_inStreamChainLocalCrlCaCert;
 extern const CfEncodingBlob g_inStreamChainLocalCrl;
 extern const CfEncodingBlob g_inStreamChainInitialLocalCrl;
+extern const CfEncodingBlob g_inStreamChainOnlyCenterCaCert;
+extern const CfEncodingBlob g_inStreamChainTrustAnchorCaCert;
 
 const char *GetInvalidCertClass(void);
 const char *GetInvalidCrlClass(void);
