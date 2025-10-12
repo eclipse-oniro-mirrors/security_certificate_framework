@@ -25,6 +25,7 @@ extern "C" {
 #endif
 
 CfResult HcfCmsGeneratorSpiCreate(HcfCmsContentType type, HcfCmsGeneratorSpi **spi);
+CfResult HcfCmsParserSpiCreate(HcfCmsParserSpi **spi);
 
 #ifdef __cplusplus
 }

@@ -39,4 +39,23 @@ struct HcfCmsGeneratorSpi {
     CfResult (*engineGetEncryptedContentData)(HcfCmsGeneratorSpi *self, CfBlob *out);
 };
 
+typedef struct HcfCmsParserSpi HcfCmsParserSpi;
+
+struct HcfCmsParserSpi {
+    CfObjectBase base;
+    /** set raw data to cms parser. */
+    CfResult (*engineSetRawData)(HcfCmsParserSpi *self, const CfBlob *rawData, HcfCmsFormat cmsFormat);
+    /** get content type of cms parser. */
+    CfResult (*engineGetContentType)(HcfCmsParserSpi *self, HcfCmsContentType *contentType);
+    /** verify signed data of cms parser. */
+    CfResult (*engineVerifySignedData)(HcfCmsParserSpi *self, const HcfCmsParserSignedDataOptions *options);
+    /** get content data of cms parser. */
+    CfResult (*engineGetContentData)(HcfCmsParserSpi *self, CfBlob *contentData);
+    /** get certs of cms parser. */
+    CfResult (*engineGetCerts)(HcfCmsParserSpi *self, HcfCmsCertType cmsCertType, HcfX509CertificateArray *certs);
+    /** decrypt enveloped data of cms parser. */
+    CfResult (*engineDecryptEnvelopedData)(HcfCmsParserSpi *self,
+        const HcfCmsParserDecryptEnvelopedDataOptions *options, CfBlob *encryptedContentData);
+};
+
 #endif // CERT_CMS_GENERATOR_SPI_H

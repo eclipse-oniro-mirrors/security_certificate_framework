@@ -168,6 +168,18 @@ const std::string CMS_GENERATOR_KEY_TRANSINFO = "keyTransInfo";
 const std::string CMS_GENERATOR_KEY_AGREEINFO = "keyAgreeInfo";
 const std::string CMS_GENERATOR_CERT = "cert";
 const std::string CMS_GENERATOR_DIGESTALG = "digestAlgorithm";
+
+// CMS PARSER
+const std::string CMS_PARSER_TRUST_CERTS = "trustCerts";
+const std::string CMS_PARSER_SIGNER_CERTS = "signerCerts";
+const std::string CMS_PARSER_CONTENT_DATA = "contentData";
+const std::string CMS_PARSER_CONTENT_DATA_FORMAT = "contentDataFormat";
+
+const std::string CMS_PARSER_ENCRYPTED_CONTENT_DATA = "encryptedContentData";
+const std::string CMS_PARSER_PRIVATE_KEY = "keyInfo";
+const std::string CMS_PARSER_CERT = "cert";
+
+
 } // namespace CertFramework
 } // namespace OHOS
 

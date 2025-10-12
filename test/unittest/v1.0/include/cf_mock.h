@@ -134,6 +134,20 @@ public:
     MOCK_METHOD(bool, CfIsClassMatch, (const CfObjectBase *obj, const char *className));
     MOCK_METHOD(int, CMS_set_detached, (CMS_ContentInfo *cms, int detached));
     MOCK_METHOD(EVP_PKEY *, X509_get0_pubkey, (X509 * x));
+    MOCK_METHOD(int, CMS_verify, (CMS_ContentInfo *cms, STACK_OF(X509) *certs, X509_STORE *store,
+        BIO *dcont, BIO *out, unsigned int flags));
+    MOCK_METHOD(int, CMS_decrypt, (CMS_ContentInfo *cms, EVP_PKEY *pkey, X509 *cert,
+        BIO *dcont, BIO *out, unsigned int flags));
+    MOCK_METHOD(CMS_ContentInfo *, PEM_read_bio_CMS, (BIO *bp, CMS_ContentInfo **x,
+        pem_password_cb *cb, void *u));
+    MOCK_METHOD(CMS_ContentInfo *, d2i_CMS_bio, (BIO *bp, CMS_ContentInfo **cms));
+    MOCK_METHOD(CMS_ContentInfo *, CMS_sign_ex, (X509 *signcert, EVP_PKEY *pkey, STACK_OF(X509) *certs,
+        BIO *data, unsigned int flags, OSSL_LIB_CTX *libctx, const char *propq));
+    MOCK_METHOD(int, CMS_final, (CMS_ContentInfo *cms, BIO *data, BIO *dcont, unsigned int flags));
+    MOCK_METHOD(ASN1_OCTET_STRING **, CMS_get0_content, (CMS_ContentInfo *cms));
+    MOCK_METHOD(STACK_OF(X509) *, CMS_get1_certs, (CMS_ContentInfo *cms));
+    MOCK_METHOD(STACK_OF(X509) *, CMS_get0_signers, (CMS_ContentInfo *cms));
+    MOCK_METHOD(int, BIO_write, (BIO *b, const void *data, int dlen));
     static NiceMock<X509OpensslMock> &GetInstance(void);
     static void SetMockFlag(bool flag);
     static void SetHcfMockFlag(bool flag);
@@ -149,6 +163,8 @@ private:
     void SetMockFunDefaultBehaviorPartFour(void);
     void SetMockFunDefaultBehaviorPartFive(void);
     void SetMockFunDefaultBehaviorPartSix(void);
+    void SetMockFunDefaultBehaviorPartSeven(void);
+    void SetMockFunDefaultBehaviorPartEight(void);
 };
 } // namespace CFMock
 #endif /* CF_MOCK_H */

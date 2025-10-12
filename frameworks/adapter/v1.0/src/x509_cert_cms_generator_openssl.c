@@ -32,6 +32,8 @@
 #include <openssl/encoder.h>
 #include <openssl/pem.h>
 #include <openssl/cms.h>
+#include "securec.h"
+#include "x509_cert_chain_openssl_ex.h"
 
 #define MAX_SIGNER_NUM 20
 #define MAX_CERT_NUM 60
@@ -46,11 +48,39 @@ typedef struct {
     BIO *encryptedContentBio;  // BIO to store encrypted content data from CMS_final
 } HcfCmsGeneratorOpensslImpl;
 
+typedef struct {
+    HcfCmsParserSpi base;
+    CMS_ContentInfo *cms;
+} HcfCmsParserOpensslImpl;
+
 #define X509_CERT_CMS_GENERATOR_OPENSSL_CLASS "X509CertCmsGeneratorOpensslClass"
+#define X509_CERT_CMS_PARSER_OPENSSL_CLASS "X509CertCmsParserOpensslClass"
 
 static const char *GetCmsGeneratorClass(void)
 {
     return X509_CERT_CMS_GENERATOR_OPENSSL_CLASS;
+}
+
+static const char *GetCmsParserClass(void)
+{
+    return X509_CERT_CMS_PARSER_OPENSSL_CLASS;
+}
+
+static void DestroyCmsParser(CfObjectBase *self)
+{
+    if (self == NULL) {
+        LOGE("Invalid params!");
+        return;
+    }
+    if (!CfIsClassMatch(self, GetCmsParserClass())) {
+        LOGE("Class is not match.");
+        return;
+    }
+    HcfCmsParserOpensslImpl *impl = (HcfCmsParserOpensslImpl *)self;
+    if (impl->cms != NULL) {
+        CMS_ContentInfo_free(impl->cms);
+    }
+    CfFree(impl);
 }
 
 static void DestroyCmsGenerator(CfObjectBase *self)
@@ -881,6 +911,600 @@ static CfResult GetEncryptedContentDataOpenssl(HcfCmsGeneratorSpi *self, CfBlob 
     return CF_SUCCESS;
 }
 
+static CfResult GetRawDataType(HcfCmsParserSpi *self, HcfCmsContentType *contentType)
+{
+    HcfCmsParserOpensslImpl *impl = (HcfCmsParserOpensslImpl *)self;
+    const ASN1_OBJECT *type = CMS_get0_type(impl->cms);
+    if (type == NULL) {
+        LOGE("Failed to get CMS content type");
+        CMS_ContentInfo_free(impl->cms);
+        impl->cms = NULL;
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    int typeNid = OBJ_obj2nid(type);
+    if (typeNid == NID_pkcs7_signed) {
+        *contentType = SIGNED_DATA;
+    } else if (typeNid == NID_pkcs7_enveloped) {
+        *contentType = ENVELOPED_DATA;
+    } else if (typeNid == NID_id_smime_ct_authEnvelopedData) {
+        *contentType = ENVELOPED_DATA;
+    } else {
+        LOGE("Unsupported CMS content type: %d", typeNid);
+        CMS_ContentInfo_free(impl->cms);
+        impl->cms = NULL;
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    return CF_SUCCESS;
+}
+
+static CfResult SetRawDataOpenssl(HcfCmsParserSpi *self, const CfBlob *rawData, HcfCmsFormat cmsFormat)
+{
+    if (self == NULL || rawData == NULL) {
+        LOGE("Invalid input parameter.");
+        return CF_ERR_PARAMETER_CHECK;
+    }
+    if (!CfIsClassMatch((CfObjectBase *)self, GetCmsParserClass())) {
+        LOGE("Class is not match.");
+        return CF_ERR_PARAMETER_CHECK;
+    }
+    HcfCmsParserOpensslImpl *impl = (HcfCmsParserOpensslImpl *)self;
+    if (impl->cms != NULL) {
+        CMS_ContentInfo_free(impl->cms);
+        impl->cms = NULL;
+    }
+    BIO *bio = BIO_new_mem_buf(rawData->data, rawData->size);
+    if (bio == NULL) {
+        LOGE("Failed to new memory for bio.");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    CMS_ContentInfo *cms = NULL;
+    if (cmsFormat == CMS_PEM) {
+        if (!PEM_read_bio_CMS(bio, &cms, NULL, NULL)) {
+            LOGE("PEM_read_bio_CMS fail.");
+            CfPrintOpensslError();
+            BIO_free(bio);
+            return CF_ERR_CRYPTO_OPERATION;
+        }
+    } else if (cmsFormat == CMS_DER) {
+        cms = d2i_CMS_bio(bio, NULL);
+        if (cms == NULL) {
+            LOGE("i2d_CMS_bio fail.");
+            CfPrintOpensslError();
+            BIO_free(bio);
+            return CF_ERR_CRYPTO_OPERATION;
+        }
+    } else {
+        LOGE("Invalid cmsFormat.");
+        BIO_free(bio);
+        return CF_ERR_PARAMETER_CHECK;
+    }
+    BIO_free(bio);
+    impl->cms = cms;
+    return CF_SUCCESS;
+}
+
+static CfResult GetContentTypeOpenssl(HcfCmsParserSpi *self, HcfCmsContentType *contentType)
+{
+    if (self == NULL || contentType == NULL) {
+        LOGE("Invalid input parameter.");
+        return CF_ERR_PARAMETER_CHECK;
+    }
+    if (!CfIsClassMatch((CfObjectBase *)self, GetCmsParserClass())) {
+        LOGE("Class is not match.");
+        return CF_ERR_PARAMETER_CHECK;
+    }
+    HcfCmsParserOpensslImpl *impl = (HcfCmsParserOpensslImpl *)self;
+    if (impl->cms == NULL) {
+        LOGE("cms is null.");
+        return CF_ERR_SHOULD_NOT_CALL;
+    }
+    CfResult res = GetRawDataType(self, contentType);
+    if (res != CF_SUCCESS) {
+        LOGE("GetRawDataType fail.");
+        CMS_ContentInfo_free(impl->cms);
+        impl->cms = NULL;
+        return res;
+    }
+    return CF_SUCCESS;
+}
+
+static CfResult  CmsVerifyGetTrustCert(const HcfCmsParserSignedDataOptions *options, X509_STORE **caStore)
+{
+    X509_STORE *tmpCaStore = X509_STORE_new();
+    if (tmpCaStore == NULL) {
+        LOGE("Failed to create X509_STORE");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    if (options->trustCerts != NULL && options->trustCerts->data != NULL && options->trustCerts->count > 0) {
+        for (uint32_t i = 0; i < options->trustCerts->count; i++) {
+            X509 *trustCert = GetX509FromHcfX509Certificate((HcfCertificate *)options->trustCerts->data[i]);
+            if (trustCert == NULL) {
+                LOGE("Failed to get X509 from trust certificate");
+                X509_STORE_free(tmpCaStore);
+                return CF_ERR_CRYPTO_OPERATION;
+            }
+            int result = X509_STORE_add_cert(tmpCaStore, trustCert);
+            if (result != 1) {
+                LOGE("Failed to add trust certificate to store");
+                X509_STORE_free(tmpCaStore);
+                return CF_ERR_CRYPTO_OPERATION;
+            }
+        }
+    }
+    *caStore = tmpCaStore;
+    return CF_SUCCESS;
+}
+
+static CfResult CmsVerifyGetSignerCertStack(const HcfCmsParserSignedDataOptions *options, STACK_OF(X509) **signerCerts)
+{
+    STACK_OF(X509) *tmpSignerCerts = sk_X509_new_null();
+    if (tmpSignerCerts == NULL) {
+        LOGE("Failed to create STACK_OF(X509)");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    if (options->signerCerts != NULL && options->signerCerts->data != NULL && options->signerCerts->count > 0) {
+        for (uint32_t i = 0; i < options->signerCerts->count; i++) {
+            X509 *signerCert = GetX509FromHcfX509Certificate((HcfCertificate *)options->signerCerts->data[i]);
+            if (signerCert == NULL) {
+                LOGE("Failed to get X509 from signer certificate");
+                sk_X509_free(tmpSignerCerts);
+                return CF_ERR_CRYPTO_OPERATION;
+            }
+            int result = sk_X509_push(tmpSignerCerts, signerCert);
+            if (result <= 0) {
+                LOGE("Failed to add signer certificate to stack");
+                sk_X509_free(tmpSignerCerts);
+                return CF_ERR_CRYPTO_OPERATION;
+            }
+        }
+    }
+    *signerCerts = tmpSignerCerts;
+    return CF_SUCCESS;
+}
+
+static CfResult CmsVerifyGetContentData(bool hasCmsContent, const HcfCmsParserSignedDataOptions *options,
+    ASN1_OCTET_STRING **cmsContent, BIO **contentBio)
+{
+    BIO *tmpContentBio = NULL;
+    if (hasCmsContent) {
+        LOGD("CMS contains attached content data, using content from CMS");
+        tmpContentBio = NULL;
+    } else {
+        LOGD("CMS is detached, using manually provided content data");
+        if (options->contentData == NULL || options->contentData->data == NULL || options->contentData->size == 0) {
+            LOGD("content data is empty, skip verification");
+            unsigned char emptyData[] = {};
+            tmpContentBio = BIO_new_mem_buf(emptyData, sizeof(emptyData));
+            if (tmpContentBio == NULL) {
+                LOGE("Failed to create BIO for empty content data");
+                CfPrintOpensslError();
+                return CF_ERR_CRYPTO_OPERATION;
+            }
+            *contentBio = tmpContentBio;
+            return CF_SUCCESS;
+        }
+        tmpContentBio = BIO_new_mem_buf(options->contentData->data, options->contentData->size);
+        if (tmpContentBio == NULL) {
+            LOGE("Failed to create BIO for manual content data");
+            CfPrintOpensslError();
+            return CF_ERR_CRYPTO_OPERATION;
+        }
+    }
+    *contentBio = tmpContentBio;
+    return CF_SUCCESS;
+}
+
+static CfResult BuildVerifyParams(CMS_ContentInfo *cms, const HcfCmsParserSignedDataOptions *options,
+    STACK_OF(X509) **signerCerts, X509_STORE **caStore, BIO **contentBio)
+{
+    bool hasCmsContent = false;
+    ASN1_OCTET_STRING **cmsContent = CMS_get0_content(cms);
+    if (cmsContent != NULL && *cmsContent != NULL) {
+        hasCmsContent = true;
+    }
+    CfResult res = CmsVerifyGetTrustCert(options, caStore);
+    if (res != CF_SUCCESS) {
+        LOGE("Failed to get trust cert");
+        return res;
+    }
+
+    res = CmsVerifyGetSignerCertStack(options, signerCerts);
+    if (res != CF_SUCCESS) {
+        LOGE("Failed to get signer cert stack");
+        return res;
+    }
+
+    res = CmsVerifyGetContentData(hasCmsContent, options, cmsContent, contentBio);
+    if (res != CF_SUCCESS) {
+        LOGE("Failed to get content data");
+        return res;
+    }
+    return CF_SUCCESS;
+}
+
+CfResult VerifySignedDataOpenssl(HcfCmsParserSpi *self, const HcfCmsParserSignedDataOptions *options)
+{
+    if (self == NULL || options == NULL) {
+        LOGE("Invalid input parameter.");
+        return CF_ERR_PARAMETER_CHECK;
+    }
+    if (!CfIsClassMatch((CfObjectBase *)self, GetCmsParserClass())) {
+        LOGE("Class is not match.");
+        return CF_ERR_PARAMETER_CHECK;
+    }
+    HcfCmsParserOpensslImpl *impl = (HcfCmsParserOpensslImpl *)self;
+    if (impl->cms == NULL) {
+        LOGE("cms is null.");
+        return CF_ERR_SHOULD_NOT_CALL;
+    }
+    HcfCmsContentType contentType;
+    CfResult res = GetRawDataType(self, &contentType);
+    if (res != CF_SUCCESS) {
+        LOGE("GetRawDataType fail.");
+        return res;
+    }
+    if (contentType != SIGNED_DATA) {
+        LOGE("CMS content type is not SIGNED_DATA");
+        return CF_ERR_PARAMETER_CHECK;
+    }
+
+    STACK_OF(X509) *signerCerts = NULL;
+    X509_STORE *caStore = NULL;
+    BIO *contentBio = NULL;
+
+    res = BuildVerifyParams(impl->cms, options, &signerCerts, &caStore, &contentBio);
+    if (res != CF_SUCCESS) {
+        sk_X509_free(signerCerts);
+        X509_STORE_free(caStore);
+        BIO_free(contentBio);
+        LOGE("Failed to build verify params");
+        return res;
+    }
+    int result = CMS_verify(impl->cms, signerCerts, caStore, contentBio, NULL, 0);
+    if (result != CF_OPENSSL_SUCCESS) {
+        LOGE("Failed to verify CMS");
+        sk_X509_free(signerCerts);
+        X509_STORE_free(caStore);
+        BIO_free(contentBio);
+        CfPrintOpensslError();
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    BIO_free(contentBio);
+    sk_X509_free(signerCerts);
+    X509_STORE_free(caStore);
+    LOGD("verify signed data success");
+    return CF_SUCCESS;
+}
+
+static CfResult GetCmsAllCerts(HcfCmsParserOpensslImpl *impl, HcfX509CertificateArray *certs)
+{
+    STACK_OF(X509) *certsStack = CMS_get1_certs(impl->cms);
+    if (certsStack == NULL) {
+        LOGE("CMS_get1_certs returned NULL");
+        CfPrintOpensslError();
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    
+    int32_t certsNum = sk_X509_num(certsStack);
+    if (certsNum <= 0) {
+        LOGE("sk X509 num : 0, failed!");
+        sk_X509_pop_free(certsStack, X509_free);
+        CfPrintOpensslError();
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    certs->data = (HcfX509Certificate **)CfMalloc(certsNum * sizeof(HcfX509Certificate *), 0);
+    if (certs->data == NULL) {
+        LOGE("malloc failed");
+        sk_X509_pop_free(certsStack, X509_free);
+        return CF_ERR_MALLOC;
+    }
+    CfResult res = CF_SUCCESS;
+
+    certs->count = (uint32_t)certsNum;
+    for (int32_t i = 0; i < certsNum; ++i) {
+        X509 *cert = sk_X509_value(certsStack, i);
+        if (cert == NULL) {
+            LOGE("sk X509 value is null, failed!");
+            sk_X509_pop_free(certsStack, X509_free);
+            CfPrintOpensslError();
+            FreeCertificateArray(certs);
+            return CF_ERR_CRYPTO_OPERATION;
+        }
+        HcfX509Certificate *x509Cert = NULL;
+        res = X509ToHcfX509Certificate(cert, &x509Cert);
+        if (res != CF_SUCCESS) {
+            LOGE("convert x509 to HcfX509Certificate failed!");
+            sk_X509_pop_free(certsStack, X509_free);
+            FreeCertificateArray(certs);
+            return res;
+        }
+        certs->data[i] = x509Cert;
+    }
+    sk_X509_pop_free(certsStack, X509_free);
+    return res;
+}
+
+static CfResult GetCmsSignerCerts(HcfCmsParserOpensslImpl *impl, HcfX509CertificateArray *certs)
+{
+    STACK_OF(X509) *certsStack = CMS_get0_signers(impl->cms);
+    if (certsStack == NULL) {
+        LOGE("CMS_get0_signers returned NULL");
+        CfPrintOpensslError();
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    
+    int32_t certsNum = sk_X509_num(certsStack);
+    if (certsNum <= 0) {
+        LOGE("sk X509 num : 0, failed!");
+        CfPrintOpensslError();
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    certs->data = (HcfX509Certificate **)CfMalloc(certsNum * sizeof(HcfX509Certificate *), 0);
+    if (certs->data == NULL) {
+        LOGE("malloc failed");
+        return CF_ERR_MALLOC;
+    }
+
+    certs->count = (uint32_t)certsNum;
+    CfResult res = CF_SUCCESS;
+    for (int32_t i = 0; i < certsNum; ++i) {
+        X509 *cert = sk_X509_value(certsStack, i);
+        if (cert == NULL) {
+            LOGE("sk X509 value is null, failed!");
+            CfPrintOpensslError();
+            FreeCertificateArray(certs);
+            return CF_ERR_CRYPTO_OPERATION;
+        }
+        HcfX509Certificate *x509Cert = NULL;
+        res = X509ToHcfX509Certificate(cert, &x509Cert);
+        if (res != CF_SUCCESS) {
+            LOGE("convert x509 to HcfX509Certificate failed!");
+            FreeCertificateArray(certs);
+            return res;
+        }
+        certs->data[i] = x509Cert;
+    }
+    return res;
+}
+
+static CfResult GetContentFromBio(CMS_ContentInfo *cms, CfBlob *out)
+{
+    ASN1_OCTET_STRING **content = CMS_get0_content(cms);
+    if (content == NULL || *content == NULL) {
+        LOGE("Failed to get content data");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    BIO *bio = BIO_new(BIO_s_mem());
+    if (bio == NULL) {
+        LOGE("Failed to create BIO");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    
+    if (BIO_write(bio, (*content)->data, (*content)->length) <= 0) {
+        LOGE("Failed to write content to BIO");
+        BIO_free(bio);
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    
+    BUF_MEM *buf = NULL;
+    BIO_get_mem_ptr(bio, &buf);
+    if (buf == NULL || buf->data == NULL || buf->length == 0) {
+        LOGE("No content data available");
+        BIO_free(bio);
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    out->data = (uint8_t *)CfMalloc(buf->length, 0);
+    if (out->data == NULL) {
+        LOGE("Failed to allocate memory for content data");
+        BIO_free(bio);
+        return CF_ERR_MALLOC;
+    }
+    if (memcpy_s(out->data, buf->length, buf->data, buf->length) != EOK) {
+        LOGE("Failed to copy content data");
+        CfFree(out->data);
+        out->data = NULL;
+        BIO_free(bio);
+        return CF_ERR_COPY;
+    }
+    out->size = buf->length;
+    BIO_free(bio);
+    return CF_SUCCESS;
+}
+
+static CfResult GetContentDataOpenssl(HcfCmsParserSpi *self, CfBlob *out)
+{
+    if ((self == NULL) || (out == NULL)) {
+        LOGE("Invalid input parameter.");
+        return CF_ERR_PARAMETER_CHECK;
+    }
+    if (!CfIsClassMatch((CfObjectBase *)self, GetCmsParserClass())) {
+        LOGE("Class is not match.");
+        return CF_ERR_PARAMETER_CHECK;
+    }
+    HcfCmsParserOpensslImpl *impl = (HcfCmsParserOpensslImpl *)self;
+    if (impl->cms == NULL) {
+        LOGE("cms is null.");
+        return CF_ERR_SHOULD_NOT_CALL;
+    }
+    HcfCmsContentType contentType;
+    CfResult res = GetRawDataType(self, &contentType);
+    if (res != CF_SUCCESS) {
+        LOGE("Get contentType fail.");
+        return res;
+    }
+    if (contentType != SIGNED_DATA) {
+        LOGE("CMS content type is not SIGNED_DATA");
+        return CF_ERR_PARAMETER_CHECK;
+    }
+    res = GetContentFromBio(impl->cms, out);
+    if (res != CF_SUCCESS) {
+        LOGE("Failed to get content from bio");
+        return res;
+    }
+
+    return CF_SUCCESS;
+}
+
+static CfResult GetCertsOpenssl(HcfCmsParserSpi *self, HcfCmsCertType cmsCertType, HcfX509CertificateArray *certs)
+{
+    if (self == NULL || certs == NULL) {
+        LOGE("Invalid input parameter.");
+        return CF_ERR_PARAMETER_CHECK;
+    }
+    if (!CfIsClassMatch((CfObjectBase *)self, GetCmsParserClass())) {
+        LOGE("Class is not match.");
+        return CF_ERR_PARAMETER_CHECK;
+    }
+    HcfCmsParserOpensslImpl *impl = (HcfCmsParserOpensslImpl *)self;
+    if (impl->cms == NULL) {
+        LOGE("cms is null.");
+        return CF_ERR_SHOULD_NOT_CALL;
+    }
+    HcfCmsContentType contentType;
+    CfResult res = GetRawDataType(self, &contentType);
+    if (res != CF_SUCCESS) {
+        LOGE("GetRawDataType fail.");
+        return res;
+    }
+    if (contentType != SIGNED_DATA) {
+        LOGE("CMS content type is not SIGNED_DATA");
+        return CF_ERR_PARAMETER_CHECK;
+    }
+    if (cmsCertType == CMS_CERT_ALL_CERTS) {
+        return GetCmsAllCerts(impl, certs);
+    } else if (cmsCertType == CMS_CERT_SIGNER_CERTS) {
+        return GetCmsSignerCerts(impl, certs);
+    } else {
+        LOGE("Invalid cmsCertType.");
+        return CF_ERR_PARAMETER_CHECK;
+    }
+}
+
+static CfResult CmsDecryptEnvelopedData(CMS_ContentInfo *cms, EVP_PKEY *pkey, X509 *cert, CfBlob *out)
+{
+    if (cms == NULL || pkey == NULL || out == NULL) {
+        LOGE("Invalid input parameter.");
+        return CF_ERR_PARAMETER_CHECK;
+    }
+    BIO *outBio = BIO_new(BIO_s_mem());
+    if (outBio == NULL) {
+        LOGE("Failed to create output BIO");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    if (CMS_decrypt(cms, pkey, cert, NULL, outBio, 0) != CF_OPENSSL_SUCCESS) {
+        CfPrintOpensslError();
+        LOGE("Failed to decrypt CMS");
+        BIO_free(outBio);
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    BUF_MEM *buf = NULL;
+    BIO_get_mem_ptr(outBio, &buf);
+    if (buf == NULL || buf->data == NULL || buf->length == 0) {
+        LOGE("No decrypted data available");
+        BIO_free(outBio);
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    out->data = (uint8_t *)CfMalloc(buf->length, 0);
+    if (out->data == NULL) {
+        LOGE("Failed to allocate memory for decrypted data");
+        BIO_free(outBio);
+        return CF_ERR_MALLOC;
+    }
+
+    if (memcpy_s(out->data, buf->length, buf->data, buf->length) != EOK) {
+        LOGE("Failed to copy decrypted data");
+        CfFree(out->data);
+        out->data = NULL;
+        BIO_free(outBio);
+        return CF_ERR_COPY;
+    }
+    out->size = buf->length;
+    BIO_free(outBio);
+    return CF_SUCCESS;
+}
+
+static CfResult GetCertAndPkey(CMS_ContentInfo *cms, const HcfCmsParserDecryptEnvelopedDataOptions *options,
+    EVP_PKEY **pkey, X509 **cert)
+{
+    if (cms == NULL || options == NULL || pkey == NULL || cert == NULL) {
+        LOGE("Invalid input parameter.");
+        return CF_ERR_PARAMETER_CHECK;
+    }
+    if (options->privateKey == NULL) {
+        *pkey = NULL;
+    } else {
+        CfResult res = GetPrivateKey(options->privateKey, pkey);
+        if (res != CF_SUCCESS) {
+            LOGE("Failed to get EVP_PKEY from private key info");
+            return CF_ERR_CRYPTO_OPERATION;
+        }
+    }
+
+    if (options->cert != NULL) {
+        *cert = GetX509FromHcfX509Certificate((HcfCertificate *)options->cert);
+        if (*cert != NULL) {
+            X509_up_ref(*cert);
+            LOGD("Using certificate from options");
+            return CF_SUCCESS;
+        }
+    }
+    *cert = NULL;
+    return CF_SUCCESS;
+}
+
+static CfResult DecryptEnvelopedDataOpenssl(HcfCmsParserSpi *self,
+    const HcfCmsParserDecryptEnvelopedDataOptions *options, CfBlob *out)
+{
+    if ((self == NULL) || (options == NULL) || (out == NULL)) {
+        LOGE("Invalid input parameter.");
+        return CF_ERR_PARAMETER_CHECK;
+    }
+    if (!CfIsClassMatch((CfObjectBase *)self, GetCmsParserClass())) {
+        LOGE("Class is not match.");
+        return CF_ERR_PARAMETER_CHECK;
+    }
+    HcfCmsParserOpensslImpl *impl = (HcfCmsParserOpensslImpl *)self;
+    if (impl->cms == NULL) {
+        LOGE("cms is null.");
+        return CF_ERR_SHOULD_NOT_CALL;
+    }
+    HcfCmsContentType contentType;
+    CfResult res = GetRawDataType(self, &contentType);
+    if (res != CF_SUCCESS) {
+        LOGE("GetRawDataType fail.");
+        return res;
+    }
+    if (contentType != ENVELOPED_DATA) {
+        LOGE("CMS content type is not ENVELOPED_DATA");
+        return CF_ERR_PARAMETER_CHECK;
+    }
+    EVP_PKEY *pkey = NULL;
+    X509 *cert = NULL;
+    res = GetCertAndPkey(impl->cms, options, &pkey, &cert);
+    if (res != CF_SUCCESS) {
+        EVP_PKEY_free(pkey);
+        X509_free(cert);
+        LOGE("Failed to get cert and pkey");
+        return res;
+    }
+
+    res = CmsDecryptEnvelopedData(impl->cms, pkey, cert, out);
+    if (res != CF_SUCCESS) {
+        EVP_PKEY_free(pkey);
+        X509_free(cert);
+        LOGE("Failed to decrypt CMS");
+        return res;
+    }
+    EVP_PKEY_free(pkey);
+    X509_free(cert);
+    return CF_SUCCESS;
+}
+
 CfResult HcfCmsGeneratorSpiCreate(HcfCmsContentType type, HcfCmsGeneratorSpi **spi)
 {
     if (spi == NULL) {
@@ -921,5 +1545,29 @@ CfResult HcfCmsGeneratorSpiCreate(HcfCmsContentType type, HcfCmsGeneratorSpi **s
     cmsGenerator->base.engineAddRecipientInfo = AddRecipientInfoOpenssl;
     cmsGenerator->base.engineGetEncryptedContentData = GetEncryptedContentDataOpenssl;
     *spi = (HcfCmsGeneratorSpi *)cmsGenerator;
+    return CF_SUCCESS;
+}
+
+CfResult HcfCmsParserSpiCreate(HcfCmsParserSpi **spi)
+{
+    if (spi == NULL) {
+        LOGE("Invalid params, spi is null!");
+        return CF_ERR_PARAMETER_CHECK;
+    }
+    HcfCmsParserOpensslImpl *cmsParser = (HcfCmsParserOpensslImpl *)CfMalloc(sizeof(HcfCmsParserOpensslImpl), 0);
+    if (cmsParser == NULL) {
+        LOGE("Failed to allocate cmsParser memory!");
+        return CF_ERR_MALLOC;
+    }
+    cmsParser->cms = NULL;
+    cmsParser->base.base.getClass = GetCmsParserClass;
+    cmsParser->base.base.destroy = DestroyCmsParser;
+    cmsParser->base.engineSetRawData = SetRawDataOpenssl;
+    cmsParser->base.engineGetContentType = GetContentTypeOpenssl;
+    cmsParser->base.engineVerifySignedData = VerifySignedDataOpenssl;
+    cmsParser->base.engineGetContentData = GetContentDataOpenssl;
+    cmsParser->base.engineGetCerts = GetCertsOpenssl;
+    cmsParser->base.engineDecryptEnvelopedData = DecryptEnvelopedDataOpenssl;
+    *spi = (HcfCmsParserSpi *)cmsParser;
     return CF_SUCCESS;
 }

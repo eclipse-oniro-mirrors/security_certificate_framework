@@ -120,6 +120,19 @@ CMS_ContentInfo *__real_CMS_EnvelopedData_create(const EVP_CIPHER *cipher);
 bool __real_CfIsClassMatch(const CfObjectBase *obj, const char *className);
 int __real_CMS_set_detached(CMS_ContentInfo *cms, int detached);
 EVP_PKEY *__real_X509_get0_pubkey(X509 *x);
+int __real_CMS_verify(CMS_ContentInfo *cms, STACK_OF(X509) *certs, X509_STORE *store,
+    BIO *dcont, BIO *out, unsigned int flags);
+int __real_CMS_decrypt(CMS_ContentInfo *cms, EVP_PKEY *pkey, X509 *cert,
+    BIO *dcont, BIO *out, unsigned int flags);
+CMS_ContentInfo *__real_PEM_read_bio_CMS(BIO *bp, CMS_ContentInfo **x, pem_password_cb *cb, void *u);
+CMS_ContentInfo *__real_d2i_CMS_bio(BIO *bp, CMS_ContentInfo **cms);
+CMS_ContentInfo *__real_CMS_sign_ex(X509 *signcert, EVP_PKEY *pkey, STACK_OF(X509) *certs,
+    BIO *data, unsigned int flags, OSSL_LIB_CTX *libctx, const char *propq);
+int __real_CMS_final(CMS_ContentInfo *cms, BIO *data, BIO *dcont, unsigned int flags);
+ASN1_OCTET_STRING **__real_CMS_get0_content(CMS_ContentInfo *cms);
+STACK_OF(X509) *__real_CMS_get1_certs(CMS_ContentInfo *cms);
+STACK_OF(X509) *__real_CMS_get0_signers(CMS_ContentInfo *cms);
+int __real_BIO_write(BIO *b, const void *data, int dlen);
 #ifdef __cplusplus
 }
 #endif
@@ -477,6 +490,58 @@ void X509OpensslMock::SetMockFunDefaultBehaviorPartSix(void)
     ON_CALL(*this, X509_get0_pubkey).WillByDefault([this](X509 *x) { return __real_X509_get0_pubkey(x); });
 }
 
+void X509OpensslMock::SetMockFunDefaultBehaviorPartSeven(void)
+{
+    ON_CALL(*this, CMS_verify).WillByDefault([this](CMS_ContentInfo *cms, STACK_OF(X509) *certs,
+                                                    X509_STORE *store, BIO *dcont, BIO *out, unsigned int flags) {
+        return __real_CMS_verify(cms, certs, store, dcont, out, flags);
+    });
+
+    ON_CALL(*this, CMS_decrypt).WillByDefault([this](CMS_ContentInfo *cms, EVP_PKEY *pkey, X509 *cert,
+                                                     BIO *dcont, BIO *out, unsigned int flags) {
+        return __real_CMS_decrypt(cms, pkey, cert, dcont, out, flags);
+    });
+
+    ON_CALL(*this, PEM_read_bio_CMS).WillByDefault([this](BIO *bp, CMS_ContentInfo **x,
+                                                          pem_password_cb *cb, void *u) {
+        return __real_PEM_read_bio_CMS(bp, x, cb, u);
+    });
+
+    ON_CALL(*this, d2i_CMS_bio).WillByDefault([this](BIO *bp, CMS_ContentInfo **cms) {
+        return __real_d2i_CMS_bio(bp, cms);
+    });
+
+    ON_CALL(*this, CMS_sign_ex).WillByDefault([this](X509 *signcert, EVP_PKEY *pkey, STACK_OF(X509) *certs,
+                                                     BIO *data, unsigned int flags, OSSL_LIB_CTX *libctx,
+                                                     const char *propq) {
+        return __real_CMS_sign_ex(signcert, pkey, certs, data, flags, libctx, propq);
+    });
+
+    ON_CALL(*this, CMS_final).WillByDefault([this](CMS_ContentInfo *cms, BIO *data,
+                                                   BIO *dcont, unsigned int flags) {
+        return __real_CMS_final(cms, data, dcont, flags);
+    });
+}
+
+void X509OpensslMock::SetMockFunDefaultBehaviorPartEight(void)
+{
+    ON_CALL(*this, CMS_get0_content).WillByDefault([this](CMS_ContentInfo *cms) {
+        return __real_CMS_get0_content(cms);
+    });
+
+    ON_CALL(*this, CMS_get1_certs).WillByDefault([this](CMS_ContentInfo *cms) {
+        return __real_CMS_get1_certs(cms);
+    });
+
+    ON_CALL(*this, CMS_get0_signers).WillByDefault([this](CMS_ContentInfo *cms) {
+        return __real_CMS_get0_signers(cms);
+    });
+
+    ON_CALL(*this, BIO_write).WillByDefault([this](BIO *b, const void *data, int dlen) {
+        return __real_BIO_write(b, data, dlen);
+    });
+}
+
 X509OpensslMock::X509OpensslMock()
 {
     SetMockFunDefaultBehaviorPartOne();
@@ -485,6 +550,8 @@ X509OpensslMock::X509OpensslMock()
     SetMockFunDefaultBehaviorPartFour();
     SetMockFunDefaultBehaviorPartFive();
     SetMockFunDefaultBehaviorPartSix();
+    SetMockFunDefaultBehaviorPartSeven();
+    SetMockFunDefaultBehaviorPartEight();
 }
 
 X509OpensslMock::~X509OpensslMock() {}
@@ -1396,6 +1463,109 @@ EVP_PKEY *__wrap_X509_get0_pubkey(X509 *x)
         return X509OpensslMock::GetInstance().X509_get0_pubkey(x);
     } else {
         return __real_X509_get0_pubkey(x);
+    }
+}
+
+int __wrap_CMS_verify(CMS_ContentInfo *cms, STACK_OF(X509) *certs, X509_STORE *store,
+    BIO *dcont, BIO *out, unsigned int flags)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock CMS_verify");
+        return X509OpensslMock::GetInstance().CMS_verify(cms, certs, store, dcont, out, flags);
+    } else {
+        return __real_CMS_verify(cms, certs, store, dcont, out, flags);
+    }
+}
+
+int __wrap_CMS_decrypt(CMS_ContentInfo *cms, EVP_PKEY *pkey, X509 *cert,
+    BIO *dcont, BIO *out, unsigned int flags)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock CMS_decrypt");
+        return X509OpensslMock::GetInstance().CMS_decrypt(cms, pkey, cert, dcont, out, flags);
+    } else {
+        return __real_CMS_decrypt(cms, pkey, cert, dcont, out, flags);
+    }
+}
+
+CMS_ContentInfo *__wrap_PEM_read_bio_CMS(BIO *bp, CMS_ContentInfo **x, pem_password_cb *cb, void *u)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock PEM_read_bio_CMS");
+        return X509OpensslMock::GetInstance().PEM_read_bio_CMS(bp, x, cb, u);
+    } else {
+        return __real_PEM_read_bio_CMS(bp, x, cb, u);
+    }
+}
+
+CMS_ContentInfo *__wrap_d2i_CMS_bio(BIO *bp, CMS_ContentInfo **cms)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock d2i_CMS_bio");
+        return X509OpensslMock::GetInstance().d2i_CMS_bio(bp, cms);
+    } else {
+        return __real_d2i_CMS_bio(bp, cms);
+    }
+}
+
+CMS_ContentInfo *__wrap_CMS_sign_ex(X509 *signcert, EVP_PKEY *pkey, STACK_OF(X509) *certs,
+    BIO *data, unsigned int flags, OSSL_LIB_CTX *libctx, const char *propq)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock CMS_sign_ex");
+        return X509OpensslMock::GetInstance().CMS_sign_ex(signcert, pkey, certs, data, flags, libctx, propq);
+    } else {
+        return __real_CMS_sign_ex(signcert, pkey, certs, data, flags, libctx, propq);
+    }
+}
+
+int __wrap_CMS_final(CMS_ContentInfo *cms, BIO *data, BIO *dcont, unsigned int flags)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock CMS_final");
+        return X509OpensslMock::GetInstance().CMS_final(cms, data, dcont, flags);
+    } else {
+        return __real_CMS_final(cms, data, dcont, flags);
+    }
+}
+
+ASN1_OCTET_STRING **__wrap_CMS_get0_content(CMS_ContentInfo *cms)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock CMS_get0_content");
+        return X509OpensslMock::GetInstance().CMS_get0_content(cms);
+    } else {
+        return __real_CMS_get0_content(cms);
+    }
+}
+
+STACK_OF(X509) *__wrap_CMS_get1_certs(CMS_ContentInfo *cms)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock CMS_get1_certs");
+        return X509OpensslMock::GetInstance().CMS_get1_certs(cms);
+    } else {
+        return __real_CMS_get1_certs(cms);
+    }
+}
+
+STACK_OF(X509) *__wrap_CMS_get0_signers(CMS_ContentInfo *cms)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock CMS_get0_signers");
+        return X509OpensslMock::GetInstance().CMS_get0_signers(cms);
+    } else {
+        return __real_CMS_get0_signers(cms);
+    }
+}
+
+int __wrap_BIO_write(BIO *b, const void *data, int dlen)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock BIO_write");
+        return X509OpensslMock::GetInstance().BIO_write(b, data, dlen);
+    } else {
+        return __real_BIO_write(b, data, dlen);
     }
 }
 #ifdef __cplusplus

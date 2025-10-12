@@ -23,6 +23,8 @@
 #include "detailed_gcm_params.h"
 #include "detailed_iv_params.h"
 #include "napi_cert_defines.h"
+#include "napi_x509_certificate.h"
+#include "napi_cert_crl_common.h"
 #include "securec.h"
 #include "utils.h"
 #include "napi/native_api.h"
@@ -1606,5 +1608,273 @@ bool ConvertBlobToEncodingBlob(const CfBlob &blob, CfEncodingBlob *encodingBlob)
     encodingBlob->encodingFormat = CF_FORMAT_DER;
     return true;
 }
+
+void FreeCmsParserSignedDataOptions(HcfCmsParserSignedDataOptions *options)
+{
+    if (options == nullptr) {
+        return;
+    }
+    options->trustCerts = nullptr;
+    options->signerCerts = nullptr;
+    CfBlobDataFree(options->contentData);
+    options->contentDataFormat = BINARY;
+    CfFree(options);
+    options = nullptr;
+}
+
+static bool GetCmsCertsFromData(napi_env env, napi_value arg, HcfX509CertificateArray **certs, const char *name)
+{
+    bool result = false;
+    napi_value obj = nullptr;
+    napi_valuetype valueType;
+    HcfX509CertificateArray *certsArray =
+        static_cast<HcfX509CertificateArray *>(CfMalloc(sizeof(HcfX509CertificateArray), 0));
+    if (certsArray == nullptr) {
+        LOGE("malloc certsArray failed!");
+        return false;
+    }
+    if (napi_has_named_property(env, arg, name, &result) != napi_ok) {
+        LOGE("check attributes property failed!");
+        return false;
+    }
+    if (!result && name != CMS_PARSER_TRUST_CERTS.c_str()) {
+        LOGI("%{public}s do not exist!", name);
+        return true;
+    }
+    if (napi_get_named_property(env, arg, name, &obj) != napi_ok || obj == nullptr ||
+        napi_typeof(env, obj, &valueType) != napi_ok || valueType == napi_undefined) {
+        LOGE("get property or type failed: %{public}s", name);
+        return false;
+    }
+    if (!GetArrayCertFromNapiValue(env, obj, certsArray)) {
+        LOGE("get array cert from data failed!");
+        return false;
+    }
+    if (certsArray->count == 0) {
+        certsArray->data = nullptr;
+        certsArray->count = 0;
+        LOGI("certs count is 0!");
+        return true;
+    }
+    *certs = certsArray;
+    return true;
+}
+
+static bool GetContentDataFromValue(napi_env env, napi_value obj, CfBlob **contentData, const char *name)
+{
+    bool hasProperty = false;
+    napi_has_named_property(env, obj, name, &hasProperty);
+    if (!hasProperty) {
+        *contentData = NULL;
+        return true;
+    }
+
+    napi_value data = nullptr;
+    napi_valuetype valueType = napi_undefined;
+    napi_status status = napi_get_named_property(env, obj, name, &data);
+    if (status != napi_ok || data == nullptr) {
+        LOGE("Failed to get %{public}s property!", name);
+        return false;
+    }
+
+    napi_typeof(env, data, &valueType);
+    if (valueType == napi_undefined) {
+        LOGE("Invalid type for %{public}s property!", name);
+        return false;
+    }
+
+    if (valueType == napi_object) {
+        size_t length = 0;
+        size_t offset = 0;
+        void *rawData = nullptr;
+        napi_value arrayBuffer = nullptr;
+        napi_typedarray_type arrayType;
+        napi_status status = napi_get_typedarray_info(
+            env, data, &arrayType, &length, reinterpret_cast<void **>(&rawData), &arrayBuffer, &offset);
+        if (status == napi_ok && arrayType == napi_uint8_array) {
+            if (length == 0 || rawData == nullptr) {
+                LOGD("verify content data is support empty!");
+                *contentData = nullptr;
+                return true;
+            }
+        }
+    }
+
+    CfBlob *blob = nullptr;
+    if (!GetBlobFromData(env, data, &blob, valueType)) {
+        LOGE("get blob from data failed!");
+        return false;
+    }
+    *contentData = blob;
+    return true;
+}
+
+static bool GetContentDataFormatFromValue(napi_env env, napi_value obj, HcfCmsContentDataFormat *contentDataFormat)
+{
+    bool hasProperty = false;
+    napi_has_named_property(env, obj, CMS_PARSER_CONTENT_DATA_FORMAT.c_str(), &hasProperty);
+    if (!hasProperty) {
+        *contentDataFormat = BINARY;
+        return true;
+    }
+
+    napi_value formatValue = nullptr;
+    napi_status status = napi_get_named_property(env, obj, CMS_PARSER_CONTENT_DATA_FORMAT.c_str(), &formatValue);
+    if (status != napi_ok || formatValue == nullptr) {
+        return false;
+    }
+    int32_t format = 0;
+    if (!CertGetInt32FromJSParams(env, formatValue, format)) {
+        LOGE("Failed to get contentDataFormat!");
+        return false;
+    }
+    *contentDataFormat = static_cast<HcfCmsContentDataFormat>(format);
+    return true;
+}
+
+bool CertGetCmsParserSignedDataOptionsFromValue(napi_env env, napi_value obj, HcfCmsParserSignedDataOptions **options)
+{
+    if (obj == nullptr || options == nullptr) {
+        LOGE("Invalid input parameters!");
+        return false;
+    }
+    HcfCmsParserSignedDataOptions *tmpOptions =
+        (HcfCmsParserSignedDataOptions *)CfMalloc(sizeof(HcfCmsParserSignedDataOptions), 0);
+    if (tmpOptions == NULL) {
+        LOGE("Failed to allocate memory for options!");
+        return false;
+    }
+    if (!GetCmsCertsFromData(env, obj, &tmpOptions->trustCerts, CMS_PARSER_TRUST_CERTS.c_str())) {
+        LOGE("Failed to get trustCerts!");
+        FreeCmsParserSignedDataOptions(tmpOptions);
+        return false;
+    }
+    if (!GetCmsCertsFromData(env, obj, &tmpOptions->signerCerts, CMS_PARSER_SIGNER_CERTS.c_str())) {
+        LOGE("Failed to get signerCerts!");
+        FreeCmsParserSignedDataOptions(tmpOptions);
+        return false;
+    }
+
+    if (!GetContentDataFromValue(env, obj, &tmpOptions->contentData, CMS_PARSER_CONTENT_DATA.c_str())) {
+        LOGE("Failed to get contentData!");
+        FreeCmsParserSignedDataOptions(tmpOptions);
+        return false;
+    }
+
+    if (!GetContentDataFormatFromValue(env, obj, &tmpOptions->contentDataFormat)) {
+        LOGE("Failed to get contentDataFormat!");
+        FreeCmsParserSignedDataOptions(tmpOptions);
+        return false;
+    }
+    *options = tmpOptions;
+    return true;
+}
+
+static bool GetKeyInfoFromValue(napi_env env, napi_value obj, PrivateKeyInfo **keyInfo)
+{
+    bool hasProperty = false;
+    napi_has_named_property(env, obj, CMS_PARSER_PRIVATE_KEY.c_str(), &hasProperty);
+    if (!hasProperty) {
+        *keyInfo = NULL;
+        return true;
+    }
+
+    napi_value keyInfoValue = nullptr;
+    napi_status status = napi_get_named_property(env, obj, CMS_PARSER_PRIVATE_KEY.c_str(), &keyInfoValue);
+    if (status != napi_ok || keyInfoValue == nullptr) {
+        *keyInfo = NULL;
+        return true;
+    }
+
+    if (!GetPrivateKeyInfoFromValue(env, keyInfoValue, keyInfo)) {
+        LOGE("Failed to get keyInfo!");
+        return false;
+    }
+    return true;
+}
+
+static bool GetCertFromValue(napi_env env, napi_value obj, HcfX509Certificate **cert)
+{
+    bool hasProperty = false;
+    napi_has_named_property(env, obj, CMS_PARSER_CERT.c_str(), &hasProperty);
+    if (!hasProperty) {
+        *cert = NULL;
+        return true;
+    }
+
+    napi_value certValue = nullptr;
+    napi_status status = napi_get_named_property(env, obj, CMS_PARSER_CERT.c_str(), &certValue);
+    if (status != napi_ok || certValue == nullptr) {
+        *cert = NULL;
+        return true;
+    }
+
+    NapiX509Certificate *napiCertObj = nullptr;
+    napi_unwrap(env, certValue, reinterpret_cast<void **>(&napiCertObj));
+    if (napiCertObj == nullptr) {
+        LOGE("Failed to get certificate!");
+        return false;
+    }
+    
+    *cert = napiCertObj->GetX509Cert();
+    return true;
+}
+
+void FreeCmsParserDecryptEnvelopedDataOptions(HcfCmsParserDecryptEnvelopedDataOptions *options)
+{
+    if (options == nullptr) {
+        return;
+    }
+    options->privateKey = nullptr;
+    options->cert = nullptr;
+    CfBlobDataFree(options->encryptedContentData);
+    options->contentDataFormat = BINARY;
+    CfFree(options);
+    options = nullptr;
+}
+
+bool CertGetCmsParserEnvelopedDataOptionsFromValue(napi_env env, napi_value obj,
+    HcfCmsParserDecryptEnvelopedDataOptions **options)
+{
+    if (obj == nullptr || options == nullptr) {
+        LOGE("Invalid input parameters!");
+        return false;
+    }
+    HcfCmsParserDecryptEnvelopedDataOptions *tmpOptions =
+        (HcfCmsParserDecryptEnvelopedDataOptions *)CfMalloc(sizeof(HcfCmsParserDecryptEnvelopedDataOptions), 0);
+    if (tmpOptions == NULL) {
+        LOGE("Failed to allocate memory for options!");
+        return false;
+    }
+
+    if (!GetKeyInfoFromValue(env, obj, &tmpOptions->privateKey)) {
+        LOGE("Failed to get keyInfo!");
+        FreeCmsParserDecryptEnvelopedDataOptions(tmpOptions);
+        return false;
+    }
+
+    if (!GetCertFromValue(env, obj, &tmpOptions->cert)) {
+        LOGE("Failed to get cert!");
+        FreeCmsParserDecryptEnvelopedDataOptions(tmpOptions);
+        return false;
+    }
+
+    if (!GetContentDataFromValue(
+        env, obj, &tmpOptions->encryptedContentData, CMS_PARSER_ENCRYPTED_CONTENT_DATA.c_str())) {
+        LOGE("Failed to get encryptedContentData!");
+        FreeCmsParserDecryptEnvelopedDataOptions(tmpOptions);
+        return false;
+    }
+
+    if (!GetContentDataFormatFromValue(env, obj, &tmpOptions->contentDataFormat)) {
+        LOGE("Failed to get contentDataFormat!");
+        FreeCmsParserDecryptEnvelopedDataOptions(tmpOptions);
+        return false;
+    }
+
+    *options = tmpOptions;
+    return true;
+}
+
 }  // namespace CertFramework
 }  // namespace OHOS

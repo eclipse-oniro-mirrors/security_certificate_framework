@@ -33,6 +33,12 @@ typedef struct {
 } CertCmsGeneratorImpl;
 
 typedef struct {
+    HcfCmsParser base;
+    HcfCmsParserSpi *spiObj;
+} CertCmsParserImpl;
+
+
+typedef struct {
     CertCmsGeneratorSpiCreateFunc createFunc;
 } HcfCmsGeneratorFuncSet;
 
@@ -62,6 +68,26 @@ static const char *GetCertCmsGeneratorClass(void)
     return "HcfCmsGenerator";
 }
 
+static const char *GetCertCmsParserClass(void)
+{
+    return "HcfCmsParser";
+}
+
+static void DestroyCertCmsParser(CfObjectBase *self)
+{
+    if (self == NULL) {
+        LOGE("Invalid input parameter.");
+        return;
+    }
+    if (!CfIsClassMatch(self, GetCertCmsParserClass())) {
+        LOGE("Class is not match.");
+        return;
+    }
+    CertCmsParserImpl *cmsParserImpl = (CertCmsParserImpl *)self;
+    CfObjDestroy(cmsParserImpl->spiObj);
+    CfFree(cmsParserImpl);
+}
+
 static void DestroyCertCmsGenerator(CfObjectBase *self)
 {
     if (self == NULL) {
@@ -76,6 +102,92 @@ static void DestroyCertCmsGenerator(CfObjectBase *self)
     CfObjDestroy(cmsImpl->spiObj);
     CfFree(cmsImpl);
 }
+
+static CfResult SetRawData(HcfCmsParser *self, const CfBlob *rawData, HcfCmsFormat cmsFormat)
+{
+    if (self == NULL || rawData == NULL) {
+        LOGE("Invalid input parameter.");
+        return CF_INVALID_PARAMS;
+    }
+    if (!CfIsClassMatch((CfObjectBase *)self, GetCertCmsParserClass())) {
+        LOGE("Class is not match.");
+        return CF_INVALID_PARAMS;
+    }
+    CertCmsParserImpl *impl = (CertCmsParserImpl *)self;
+    return impl->spiObj->engineSetRawData(impl->spiObj, rawData, cmsFormat);
+}
+
+static CfResult GetContentType(HcfCmsParser *self, HcfCmsContentType *contentType)
+{
+    if (self == NULL || contentType == NULL) {
+        LOGE("Invalid input parameter.");
+        return CF_INVALID_PARAMS;
+    }
+    if (!CfIsClassMatch((CfObjectBase *)self, GetCertCmsParserClass())) {
+        LOGE("Class is not match.");
+        return CF_INVALID_PARAMS;
+    }
+    CertCmsParserImpl *impl = (CertCmsParserImpl *)self;
+    return impl->spiObj->engineGetContentType(impl->spiObj, contentType);
+}
+
+static CfResult VerifySignedData(HcfCmsParser *self, const HcfCmsParserSignedDataOptions *options)
+{
+    if (self == NULL || options == NULL) {
+        LOGE("Invalid input parameter.");
+        return CF_INVALID_PARAMS;
+    }
+    if (!CfIsClassMatch((CfObjectBase *)self, GetCertCmsParserClass())) {
+        LOGE("Class is not match.");
+        return CF_INVALID_PARAMS;
+    }
+    CertCmsParserImpl *impl = (CertCmsParserImpl *)self;
+    return impl->spiObj->engineVerifySignedData(impl->spiObj, options);
+}
+
+static CfResult GetContentData(HcfCmsParser *self, CfBlob *contentData)
+{
+    if (self == NULL || contentData == NULL) {
+        LOGE("Invalid input parameter.");
+        return CF_INVALID_PARAMS;
+    }
+    if (!CfIsClassMatch((CfObjectBase *)self, GetCertCmsParserClass())) {
+        LOGE("Class is not match.");
+        return CF_INVALID_PARAMS;
+    }
+    CertCmsParserImpl *impl = (CertCmsParserImpl *)self;
+    return impl->spiObj->engineGetContentData(impl->spiObj, contentData);
+}
+
+static CfResult GetCerts(HcfCmsParser *self, HcfCmsCertType cmsCertType, HcfX509CertificateArray *certs)
+{
+    if (self == NULL || certs == NULL) {
+        LOGE("Invalid input parameter.");
+        return CF_INVALID_PARAMS;
+    }
+    if (!CfIsClassMatch((CfObjectBase *)self, GetCertCmsParserClass())) {
+        LOGE("Class is not match.");
+        return CF_INVALID_PARAMS;
+    }
+    CertCmsParserImpl *impl = (CertCmsParserImpl *)self;
+    return impl->spiObj->engineGetCerts(impl->spiObj, cmsCertType, certs);
+}
+
+static CfResult DecryptEnvelopedData(HcfCmsParser *self, const HcfCmsParserDecryptEnvelopedDataOptions *options,
+    CfBlob *encryptedContentData)
+{
+    if (self == NULL || options == NULL || encryptedContentData == NULL) {
+        LOGE("Invalid input parameter.");
+        return CF_INVALID_PARAMS;
+    }
+    if (!CfIsClassMatch((CfObjectBase *)self, GetCertCmsParserClass())) {
+        LOGE("Class is not match.");
+        return CF_INVALID_PARAMS;
+    }
+    CertCmsParserImpl *impl = (CertCmsParserImpl *)self;
+    return impl->spiObj->engineDecryptEnvelopedData(impl->spiObj, options, encryptedContentData);
+}
+
 
 static CfResult AddSigner(HcfCmsGenerator *self, const HcfCertificate *x509Cert,
                           const PrivateKeyInfo *privateKey, const HcfCmsSignerOptions *options)
@@ -194,5 +306,36 @@ CfResult HcfCreateCmsGenerator(HcfCmsContentType type, HcfCmsGenerator **cmsGene
     returnCmsGenerator->base.base.getClass = GetCertCmsGeneratorClass;
     returnCmsGenerator->spiObj = spiObj;
     *cmsGenerator = (HcfCmsGenerator *)returnCmsGenerator;
+    return CF_SUCCESS;
+}
+
+CfResult HcfCreateCmsParser(HcfCmsParser **cmsParser)
+{
+    if (cmsParser == NULL) {
+        LOGE("Invalid input parameter.");
+        return CF_INVALID_PARAMS;
+    }
+    HcfCmsParserSpi *spiObj = NULL;
+    CfResult res = HcfCmsParserSpiCreate(&spiObj);
+    if (res != CF_SUCCESS) {
+        LOGE("Failed to create cms parser spi object!");
+        return res;
+    }
+    CertCmsParserImpl *returnCmsParser = (CertCmsParserImpl *)CfMalloc(sizeof(CertCmsParserImpl), 0);
+    if (returnCmsParser == NULL) {
+        LOGE("Failed to allocate cms parser memory!");
+        CfObjDestroy(spiObj);
+        return CF_ERR_MALLOC;
+    }
+    returnCmsParser->base.setRawData = SetRawData;
+    returnCmsParser->base.getContentType = GetContentType;
+    returnCmsParser->base.verifySignedData = VerifySignedData;
+    returnCmsParser->base.getContentData = GetContentData;
+    returnCmsParser->base.getCerts = GetCerts;
+    returnCmsParser->base.decryptEnvelopedData = DecryptEnvelopedData;
+    returnCmsParser->base.base.getClass = GetCertCmsParserClass;
+    returnCmsParser->base.base.destroy = DestroyCertCmsParser;
+    returnCmsParser->spiObj = spiObj;
+    *cmsParser = (HcfCmsParser *)returnCmsParser;
     return CF_SUCCESS;
 }

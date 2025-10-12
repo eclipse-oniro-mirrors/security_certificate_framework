@@ -228,6 +228,11 @@ typedef enum {
     PKCS1_PSS_PADDING = 1,
 } CfCmsRsaSignaturePadding;
 
+typedef enum {
+    CMS_CERT_SIGNER_CERTS  = 0,
+    CMS_CERT_ALL_CERTS  = 1,
+} HcfCmsCertType;
+
 #define MAX_COUNT_OID          100
 #define MAX_LEN_OID            128
 #define MAX_COUNT_NID          1195
