@@ -24,6 +24,7 @@
 #include "cf_result.h"
 #include "x509_cert_match_parameters.h"
 #include "x509_distinguished_name_spi.h"
+#include "x509_cert_chain_validate_params.h"
 
 #define CF_OPENSSL_SUCCESS 1 /* openssl return 1: success */
 #define OID_STR_MAX_LEN 128
@@ -83,6 +84,10 @@ CfResult CfDeepCopyCertPolices(const CERTIFICATEPOLICIES *certPolicesIn, int32_t
 CfResult CfConvertAsn1String2BoolArray(const ASN1_BIT_STRING *string, CfBlob *boolArr);
 bool CfCompareGN2Blob(const GENERAL_NAME *gen, CfBlob *nc);
 CfResult CfGetCRLDpURI(STACK_OF(DIST_POINT) *crlDp, CfArray *outURI);
+X509_CRL *GetCrlFromCert(const HcfX509CertChainValidateParams *params, X509 *x509);
+X509_CRL *GetCrlFromCertByDp(X509 *x509);
+CfResult ValidateDate(const STACK_OF(X509) *x509CertChain, CfBlob *date);
+CfResult ValidateCertDate(X509 *cert, CfBlob *date);
 #ifdef __cplusplus
 }
 #endif

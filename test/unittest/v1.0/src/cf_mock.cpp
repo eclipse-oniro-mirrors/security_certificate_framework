@@ -133,6 +133,7 @@ ASN1_OCTET_STRING **__real_CMS_get0_content(CMS_ContentInfo *cms);
 STACK_OF(X509) *__real_CMS_get1_certs(CMS_ContentInfo *cms);
 STACK_OF(X509) *__real_CMS_get0_signers(CMS_ContentInfo *cms);
 int __real_BIO_write(BIO *b, const void *data, int dlen);
+int __real_BIO_do_connect_retry(BIO *b, int timeout, int retry);
 #ifdef __cplusplus
 }
 #endif
@@ -540,6 +541,10 @@ void X509OpensslMock::SetMockFunDefaultBehaviorPartEight(void)
     ON_CALL(*this, BIO_write).WillByDefault([this](BIO *b, const void *data, int dlen) {
         return __real_BIO_write(b, data, dlen);
     });
+
+    ON_CALL(*this, BIO_do_connect_retry).WillByDefault([this](BIO *b, int timeout, int retry) {
+        return __real_BIO_do_connect_retry(b, timeout, retry);
+    });
 }
 
 X509OpensslMock::X509OpensslMock()
@@ -742,6 +747,16 @@ void *__wrap_X509_get_ext_d2i(const X509 *x, int nid, int *crit, int *idx)
         return X509OpensslMock::GetInstance().X509_get_ext_d2i(x, nid, crit, idx);
     } else {
         return __real_X509_get_ext_d2i(x, nid, crit, idx);
+    }
+}
+
+int __wrap_BIO_do_connect_retry(BIO *b, int timeout, int retry)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock BIO_do_connect_retry");
+        return X509OpensslMock::GetInstance().BIO_do_connect_retry(b, timeout, retry);
+    } else {
+        return __real_BIO_do_connect_retry(b, timeout, retry);
     }
 }
 

@@ -24,11 +24,13 @@
 #include "cf_memory.h"
 #include "cf_result.h"
 #include "config.h"
+#include "utils.h"
 
 #define TIME_MON_LEN 2
 #define TIME_HOUR_LEN 8
 #define TIME_MIN_LEN 10
 #define TIME_SEC_LEN 12
+#define HTTP_TIMEOUT 10
 
 typedef struct {
     char *oid;
@@ -983,4 +985,139 @@ CfResult CfGetCRLDpURI(STACK_OF(DIST_POINT) *crlDp, CfArray *outURI)
     }
 
     return ret;
+}
+
+static const char *GetDpUrl(DIST_POINT *dp)
+{
+    GENERAL_NAMES *gens = NULL;
+    GENERAL_NAME *gen = NULL;
+    ASN1_STRING *url = NULL;
+
+    if (dp == NULL || dp->distpoint == NULL || dp->distpoint->type != 0) {
+        return NULL;
+    }
+    gens = dp->distpoint->name.fullname;
+    if (gens == NULL) {
+        return NULL;
+    }
+    for (int32_t i = 0; i < sk_GENERAL_NAME_num(gens); i++) {
+        gen = sk_GENERAL_NAME_value(gens, i);
+        if (gen == NULL) {
+            continue;
+        }
+        int gtype;
+        url = GENERAL_NAME_get0_value(gen, &gtype);
+        if (url == NULL) {
+            continue;
+        }
+        if (gtype == GEN_URI && ASN1_STRING_length(url) > GEN_URI) {
+            const char *uptr = (const char *)ASN1_STRING_get0_data(url);
+            if (CfIsHttp(uptr)) {
+                // can/should not use HTTPS here
+                return uptr;
+            }
+        }
+    }
+    return NULL;
+}
+
+static X509_CRL *LoadCrlDp(STACK_OF(DIST_POINT) *crldp)
+{
+    const char *urlptr = NULL;
+    for (int i = 0; i < sk_DIST_POINT_num(crldp); i++) {
+        DIST_POINT *dp = sk_DIST_POINT_value(crldp, i);
+        urlptr = GetDpUrl(dp);
+        if (urlptr != NULL) {
+            return X509_CRL_load_http(urlptr, NULL, NULL, HTTP_TIMEOUT);
+        }
+    }
+    return NULL;
+}
+
+X509_CRL *GetCrlFromCertByDp(X509 *x509)
+{
+    X509_CRL *crl = NULL;
+    STACK_OF(DIST_POINT) *crlStack = X509_get_ext_d2i(x509, NID_crl_distribution_points, NULL, NULL);
+    if (crlStack != NULL) {
+        crl = LoadCrlDp(crlStack);
+        sk_DIST_POINT_pop_free(crlStack, DIST_POINT_free);
+        if (crl != NULL) {
+            return crl;
+        }
+    }
+    return NULL;
+}
+
+X509_CRL *GetCrlFromCert(const HcfX509CertChainValidateParams *params, X509 *x509)
+{
+    X509_CRL *crl = NULL;
+    crl = GetCrlFromCertByDp(x509);
+    if (crl != NULL) {
+        return crl;
+    }
+
+    if (params->revocationCheckParam->crlDownloadURI != NULL &&
+        params->revocationCheckParam->crlDownloadURI->data != NULL) {
+        char *url = (char *)params->revocationCheckParam->crlDownloadURI->data;
+        if (CfIsUrlValid(url)) {
+            return X509_CRL_load_http(url, NULL, NULL, HTTP_TIMEOUT);
+        }
+    }
+
+    return NULL;
+}
+
+CfResult ValidateDate(const STACK_OF(X509) *x509CertChain, CfBlob *date)
+{
+    if (date == NULL) {
+        LOGI("date is null");
+        return CF_SUCCESS;
+    }
+    if (!CfBlobIsStr(date)) {
+        LOGE("time format is invalid");
+        return CF_INVALID_PARAMS;
+    }
+    ASN1_TIME *asn1InputDate = ASN1_TIME_new();
+    if (asn1InputDate == NULL) {
+        LOGE("Failed to malloc for asn1 time.");
+        return CF_ERR_MALLOC;
+    }
+    if (ASN1_TIME_set_string(asn1InputDate, (const char *)date->data) != CF_OPENSSL_SUCCESS) {
+        LOGE("Failed to set time for asn1 time.");
+        CfPrintOpensslError();
+        ASN1_TIME_free(asn1InputDate);
+        return CF_INVALID_PARAMS;
+    }
+    CfResult res = CF_SUCCESS;
+    int certsNum = sk_X509_num(x509CertChain);
+    for (int i = 0; i < certsNum; ++i) {
+        X509 *cert = sk_X509_value(x509CertChain, i);
+        if (cert == NULL) {
+            LOGE("sk X509 value is null, failed!");
+            CfPrintOpensslError();
+            ASN1_TIME_free(asn1InputDate);
+            return CF_ERR_CRYPTO_OPERATION;
+        }
+        res = CompareDateWithCertTime(cert, asn1InputDate);
+        if (res != CF_SUCCESS) {
+            LOGE("check validate failed.");
+            ASN1_TIME_free(asn1InputDate);
+            return res;
+        }
+    }
+    ASN1_TIME_free(asn1InputDate);
+    return res;
+}
+
+CfResult ValidateCertDate(X509 *cert, CfBlob *date)
+{
+    STACK_OF(X509) *x509CertChain = sk_X509_new_null();
+    if (sk_X509_push(x509CertChain, cert) <= 0) {
+        LOGE("Push cert to chain failed!");
+        sk_X509_free(x509CertChain);
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    CfResult res = ValidateDate(x509CertChain, date);
+    sk_X509_free(x509CertChain);
+    return res;
 }

@@ -26,6 +26,7 @@
 #include "crypto_x509_cert_chain_data_pem.h"
 #include "crypto_x509_cert_chain_data_pem_added.h"
 #include "crypto_x509_cert_chain_data_pem_ex.h"
+#include "crypto_x509_cert_chain_data_pem_part2.h"
 #include "key_pair.h"
 #include "memory_mock.h"
 #include "securec.h"
@@ -511,6 +512,8 @@ extern const CfEncodingBlob g_inStreamChainLocalCrl;
 extern const CfEncodingBlob g_inStreamChainInitialLocalCrl;
 extern const CfEncodingBlob g_inStreamChainOnlyCenterCaCert;
 extern const CfEncodingBlob g_inStreamChainTrustAnchorCaCert;
+extern const CfEncodingBlob g_inCaChainWithOcsp;
+extern const CfEncodingBlob g_inCaTrustCertWithOcspPem;
 
 const char *GetInvalidCertClass(void);
 const char *GetInvalidCrlClass(void);
