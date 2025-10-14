@@ -1634,19 +1634,23 @@ static bool GetCmsCertsFromData(napi_env env, napi_value arg, HcfX509Certificate
         return false;
     }
     if (napi_has_named_property(env, arg, name, &result) != napi_ok) {
+        CfFree(certsArray);
         LOGE("check attributes property failed!");
         return false;
     }
     if (!result && name != CMS_PARSER_TRUST_CERTS.c_str()) {
+        CfFree(certsArray);
         LOGI("%{public}s do not exist!", name);
         return true;
     }
     if (napi_get_named_property(env, arg, name, &obj) != napi_ok || obj == nullptr ||
         napi_typeof(env, obj, &valueType) != napi_ok || valueType == napi_undefined) {
+        CfFree(certsArray);
         LOGE("get property or type failed: %{public}s", name);
         return false;
     }
     if (!GetArrayCertFromNapiValue(env, obj, certsArray)) {
+        CfFree(certsArray);
         LOGE("get array cert from data failed!");
         return false;
     }
@@ -1825,11 +1829,11 @@ void FreeCmsParserDecryptEnvelopedDataOptions(HcfCmsParserDecryptEnvelopedDataOp
     if (options == nullptr) {
         return;
     }
-    options->privateKey = nullptr;
+    FreePrivateKeyInfo(options->privateKey);
     options->cert = nullptr;
     CfBlobDataFree(options->encryptedContentData);
     options->contentDataFormat = BINARY;
-    CfFree(options);
+    CF_FREE_PTR(options);
     options = nullptr;
 }
 

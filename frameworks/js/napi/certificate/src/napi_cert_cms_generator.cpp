@@ -1726,7 +1726,6 @@ static bool BuildDecryptEnvelopedDataOption(napi_env env, napi_value arg, CmsPar
         LOGE("Invalid input parameters!");
         return false;
     }
-    // 不需要预先分配内存，CertGetCmsParserEnvelopedDataOptionsFromValue会分配
     ctx->decryptEnvelopedDataOptions = nullptr;
     if (!CertGetCmsParserEnvelopedDataOptionsFromValue(env, arg, &ctx->decryptEnvelopedDataOptions)) {
         LOGE("Cert EnvelopedDataOptions failed!");
