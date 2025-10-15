@@ -465,14 +465,6 @@ static CfResult AddCertOpenssl(HcfCmsGeneratorSpi *self, const HcfCertificate *c
 
 static CfResult WriteBioToCms(CMS_ContentInfo *cms, const HcfCmsGeneratorOptions *options, CfBlob *out)
 {
-    int detached = options->isDetachedContent ? 1 : 0;
-    int ret = CMS_set_detached(cms, detached);
-    if (ret != CF_OPENSSL_SUCCESS) {
-        LOGE("CMS_set_detached fail.");
-        CfPrintOpensslError();
-        return CF_ERR_CRYPTO_OPERATION;
-    }
-
     BIO *outBio = BIO_new(BIO_s_mem());
     if (outBio == NULL) {
         LOGE("BIO_new error");
@@ -582,6 +574,14 @@ static CfResult CmsFinal(HcfCmsGeneratorOpensslImpl *impl, const CfBlob *content
     if (res != CF_SUCCESS) {
         BIO_free(bio);
         return res;
+    }
+    int detached = options->isDetachedContent ? 1 : 0;
+    int result = CMS_set_detached(impl->cms, detached);
+    if (result != CF_OPENSSL_SUCCESS) {
+        LOGE("CMS_set_detached fail.");
+        CfPrintOpensslError();
+        BIO_free(bio);
+        return CF_ERR_CRYPTO_OPERATION;
     }
     int ret = CMS_final(impl->cms, bio, encryptedContentBio, flags);
     BIO_free(bio);
