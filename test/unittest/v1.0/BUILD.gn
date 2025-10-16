@@ -210,7 +210,6 @@ ohos_unittest("cf_version1_test") {
     "-Wl,--wrap=CMS_final",
     "-Wl,--wrap=CMS_get0_content",
     "-Wl,--wrap=CMS_get1_certs",
-    "-Wl,--wrap=CMS_get0_signers",
     "-Wl,--wrap=BIO_write",
   ]
 

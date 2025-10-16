@@ -131,7 +131,6 @@ CMS_ContentInfo *__real_CMS_sign_ex(X509 *signcert, EVP_PKEY *pkey, STACK_OF(X50
 int __real_CMS_final(CMS_ContentInfo *cms, BIO *data, BIO *dcont, unsigned int flags);
 ASN1_OCTET_STRING **__real_CMS_get0_content(CMS_ContentInfo *cms);
 STACK_OF(X509) *__real_CMS_get1_certs(CMS_ContentInfo *cms);
-STACK_OF(X509) *__real_CMS_get0_signers(CMS_ContentInfo *cms);
 int __real_BIO_write(BIO *b, const void *data, int dlen);
 #ifdef __cplusplus
 }
@@ -531,10 +530,6 @@ void X509OpensslMock::SetMockFunDefaultBehaviorPartEight(void)
 
     ON_CALL(*this, CMS_get1_certs).WillByDefault([this](CMS_ContentInfo *cms) {
         return __real_CMS_get1_certs(cms);
-    });
-
-    ON_CALL(*this, CMS_get0_signers).WillByDefault([this](CMS_ContentInfo *cms) {
-        return __real_CMS_get0_signers(cms);
     });
 
     ON_CALL(*this, BIO_write).WillByDefault([this](BIO *b, const void *data, int dlen) {
@@ -1546,16 +1541,6 @@ STACK_OF(X509) *__wrap_CMS_get1_certs(CMS_ContentInfo *cms)
         return X509OpensslMock::GetInstance().CMS_get1_certs(cms);
     } else {
         return __real_CMS_get1_certs(cms);
-    }
-}
-
-STACK_OF(X509) *__wrap_CMS_get0_signers(CMS_ContentInfo *cms)
-{
-    if (g_mockTagX509Openssl) {
-        CF_LOG_I("X509OpensslMock CMS_get0_signers");
-        return X509OpensslMock::GetInstance().CMS_get0_signers(cms);
-    } else {
-        return __real_CMS_get0_signers(cms);
     }
 }
 
