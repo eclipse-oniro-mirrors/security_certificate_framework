@@ -399,7 +399,7 @@ bool CheckIsLeafCert(X509 *cert)
         return false;
     }
 
-    if (X509_check_ca(cert)) {
+    if (X509_check_ca(cert) != 0) {
         return false;
     }
 
@@ -789,7 +789,7 @@ CfResult CfConvertAsn1String2BoolArray(const ASN1_BIT_STRING *string, CfBlob *bo
         return CF_ERR_INTERNAL;
     }
     uint32_t length = (uint32_t)ASN1_STRING_length(string) * CHAR_TO_BIT_LEN;
-    if ((uint32_t)(string->flags) & ASN1_STRING_FLAG_BITS_LEFT) {
+    if (((uint32_t)(string->flags) & ASN1_STRING_FLAG_BITS_LEFT) != 0) {
         length -= (uint32_t)(string->flags) & FLAG_BIT_LEFT_NUM;
     }
     boolArr->data = (uint8_t *)CfMalloc(length, 0);
