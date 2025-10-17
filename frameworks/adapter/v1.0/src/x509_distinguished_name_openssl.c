@@ -243,7 +243,11 @@ static CfResult SetValueToX509Name(X509_NAME *name, int chtype, char *typestr, u
         return CF_SUCCESS;
     }
 
-    if (!X509_NAME_add_entry_by_NID(name, nid, chtype, valstr, strlen((char *)valstr), -1, isMulti ? -1 : 0)) {
+    int set = 0;
+    if (isMulti != 0) {
+        set = -1;
+    }
+    if (X509_NAME_add_entry_by_NID(name, nid, chtype, valstr, strlen((char *)valstr), -1, set) != CF_OPENSSL_SUCCESS) {
         LOGE("Error adding name attribute");
         return CF_INVALID_PARAMS;
     }
@@ -301,6 +305,7 @@ static CfResult CollectAndParseName(const char *cp, char *work, int chtype, X509
 
 static X509_NAME *ParseName(const char *cp, int chtype, const char *desc)
 {
+    (void)desc;
     if (*cp++ != '/') {
         LOGE("name is expected to be in the format");
         return NULL;

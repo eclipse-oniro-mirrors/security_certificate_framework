@@ -970,7 +970,7 @@ static OCSP_RESPONSE *SendReqBioCustom(BIO *bio, const char *host, const char *p
         tryNum--;
     } while ((ret == -1) && BIO_should_retry(bio) && tryNum != 0);
     OCSP_REQ_CTX_free(ctx);
-    if (ret) {
+    if (ret != 0) {
         return resp;
     }
     return NULL;
@@ -1101,7 +1101,7 @@ static BIO *CreateConnectBio(const char *host, const char *port, int ssl)
             BIO_free_all(bio);
             return NULL;
         }
-    } else if (ssl) {
+    } else if (ssl != 0) {
         if (BIO_set_conn_port(bio, HTTPS_PORT) != 1) {
             LOGE("Set port failed.");
             BIO_free_all(bio);
