@@ -108,6 +108,7 @@ int __real_X509_NAME_add_entry_by_NID(
 BIO *__real_BIO_new(const BIO_METHOD *type);
 int __real_X509_print(BIO *bp, X509 *x);
 long __real_BIO_ctrl(BIO *bp, int cmd, long larg, void *parg);
+int __real_BIO_do_connect_retry(BIO *b, int timeout, int retry);
 int __real_i2d_X509_bio(BIO *bp, X509 *x509);
 int __real_PKCS12_parse(PKCS12 *p12, const char *pass, EVP_PKEY **pkey, X509 **cert, STACK_OF(X509) **ca);
 bool __real_CheckIsSelfSigned(const X509 *cert);
@@ -266,6 +267,8 @@ void ResetMockFunctionPartFour(void)
         X509_print(_, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_X509_print));
     EXPECT_CALL(X509OpensslMock::GetInstance(),
         BIO_ctrl(_, _, _, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_BIO_ctrl));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        BIO_do_connect_retry(_, _, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_BIO_do_connect_retry));
     EXPECT_CALL(X509OpensslMock::GetInstance(),
         i2d_X509_bio(_, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_i2d_X509_bio));
     EXPECT_CALL(X509OpensslMock::GetInstance(),
@@ -1650,38 +1653,5 @@ HWTEST_F(CryptoX509CertChainTestPart2, ValidateLocalCrlEndEntityOnlyTest006, Tes
     FreeCertCrlCollectionArr(certCRLCollections);
     FreeHcfRevocationCheckParam(params.revocationCheckParam);
     CfObjDestroy(certChainPemOnlyCrl);
-}
-
-HWTEST_F(CryptoX509CertChainTestPart2, ValidateOnlyCaCertTest001, TestSize.Level0)
-{
-    CF_LOG_I("ValidateOnlyCaCertTest001");
-    HcfX509CertChainSpi *certChainPemOnlyCaCert = nullptr;
-    CfResult ret = HcfX509CertChainByEncSpiCreate(&g_inStreamChainOnlyCenterCaCert, &certChainPemOnlyCaCert);
-    ASSERT_EQ(ret, CF_SUCCESS);
-    ASSERT_NE(certChainPemOnlyCaCert, nullptr);
-
-    HcfX509TrustAnchorArray trustAnchorArray = { 0 };
-    BuildAnchorArr(g_inStreamChainTrustAnchorCaCert, trustAnchorArray);
-
-
-    HcfX509CertChainValidateParams params = { 0 };
-    params.trustAnchors = &trustAnchorArray;
-
-    HcfRevChkOption data[] = { REVOCATION_CHECK_OPTION_ACCESS_NETWORK,
-        REVOCATION_CHECK_OPTION_CHECK_INTERMEDIATE_CA_ONLINE };
-    params.revocationCheckParam = ConstructHcfRevocationCheckParam(data, sizeof(data) / sizeof(data[0]));
-    ASSERT_NE(params.revocationCheckParam, nullptr);
-
-    HcfX509CertChainValidateResult result = { 0 };
-
-    ret = certChainPemOnlyCaCert->engineValidate(certChainPemOnlyCaCert, &params, &result);
-    EXPECT_NE(ret, CF_SUCCESS);
-    EXPECT_EQ(result.entityCert, nullptr);
-    EXPECT_EQ(result.trustAnchor, nullptr);
-
-    FreeValidateResult(result);
-    FreeTrustAnchorArr(trustAnchorArray);
-    FreeHcfRevocationCheckParam(params.revocationCheckParam);
-    CfObjDestroy(certChainPemOnlyCaCert);
 }
 } // namespace

@@ -147,6 +147,7 @@ public:
     MOCK_METHOD(ASN1_OCTET_STRING **, CMS_get0_content, (CMS_ContentInfo *cms));
     MOCK_METHOD(STACK_OF(X509) *, CMS_get1_certs, (CMS_ContentInfo *cms));
     MOCK_METHOD(int, BIO_write, (BIO *b, const void *data, int dlen));
+    MOCK_METHOD(int, BIO_do_connect_retry, (BIO *b, int timeout, int retry));
     static NiceMock<X509OpensslMock> &GetInstance(void);
     static void SetMockFlag(bool flag);
     static void SetHcfMockFlag(bool flag);

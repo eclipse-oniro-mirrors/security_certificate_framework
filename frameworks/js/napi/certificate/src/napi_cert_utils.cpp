@@ -29,6 +29,7 @@
 #include "utils.h"
 #include "napi/native_api.h"
 #include "napi/native_common.h"
+#include "cert_crl_common.h"
 
 namespace OHOS {
 namespace CertFramework {
@@ -1614,12 +1615,17 @@ void FreeCmsParserSignedDataOptions(HcfCmsParserSignedDataOptions *options)
     if (options == nullptr) {
         return;
     }
-    options->trustCerts = nullptr;
-    options->signerCerts = nullptr;
+    if (options->trustCerts != nullptr) {
+        FreeCertArrayData(options->trustCerts);
+        CF_FREE_PTR(options->trustCerts);
+    }
+    if (options->signerCerts != nullptr) {
+        FreeCertArrayData(options->signerCerts);
+        CF_FREE_PTR(options->signerCerts);
+    }
     CfBlobDataFree(options->contentData);
     options->contentDataFormat = BINARY;
-    CfFree(options);
-    options = nullptr;
+    CF_FREE_PTR(options);
 }
 
 static bool GetCmsCertsFromData(napi_env env, napi_value arg, HcfX509CertificateArray **certs, const char *name)
@@ -1658,6 +1664,7 @@ static bool GetCmsCertsFromData(napi_env env, napi_value arg, HcfX509Certificate
         certsArray->data = nullptr;
         certsArray->count = 0;
         LOGI("certs count is 0!");
+        *certs = certsArray;
         return true;
     }
     *certs = certsArray;

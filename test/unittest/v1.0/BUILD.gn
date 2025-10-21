@@ -46,6 +46,7 @@ ohos_unittest("cf_version1_test") {
     "src/crypto_x509_cert_chain_test.cpp",
     "src/crypto_x509_cert_chain_test_ex.cpp",
     "src/crypto_x509_cert_chain_test_part2.cpp",
+    "src/crypto_x509_cert_chain_test_part3.cpp",
     "src/crypto_x509_cert_chain_validator_test.cpp",
     "src/crypto_x509_cert_cms_generator_test.cpp",
     "src/crypto_x509_cert_cms_generator_test_part2.cpp",
@@ -211,6 +212,7 @@ ohos_unittest("cf_version1_test") {
     "-Wl,--wrap=CMS_get0_content",
     "-Wl,--wrap=CMS_get1_certs",
     "-Wl,--wrap=BIO_write",
+    "-Wl,--wrap=BIO_do_connect_retry",
   ]
 
   if (target_cpu == "arm") {
