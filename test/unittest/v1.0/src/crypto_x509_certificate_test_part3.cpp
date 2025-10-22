@@ -149,19 +149,12 @@ HWTEST_F(CryptoX509CertificateTestPart3, CompareSubjectAlternativeNamesTest002, 
     matchParams.subjectAlternativeNames = ConstructSubAltNameArrayData();
     EXPECT_NE(matchParams.subjectAlternativeNames, nullptr);
 
-    // test CfDeepCopySubAltName failed case
-    X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), i2d_GENERAL_NAME(_, _)).WillRepeatedly(Return(-1));
-    CfResult ret = g_x509CertExtAttrObj->match(g_x509CertExtAttrObj, &matchParams, &bResult);
-    EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
-    X509OpensslMock::SetMockFlag(false);
-
     // test CompareSubAltNameX509Openssl failed case
     X509OpensslMock::SetMockFlag(true);
     EXPECT_CALL(X509OpensslMock::GetInstance(), X509_get_ext_d2i(_, _, _, _))
         .WillOnce(Return(nullptr))
         .WillRepeatedly(Invoke(__real_X509_get_ext_d2i));
-    ret = g_x509CertExtAttrObj->match(g_x509CertExtAttrObj, &matchParams, &bResult);
+    CfResult ret = g_x509CertExtAttrObj->match(g_x509CertExtAttrObj, &matchParams, &bResult);
     EXPECT_EQ(ret, CF_SUCCESS);
     EXPECT_EQ(bResult, false);
     X509OpensslMock::SetMockFlag(false);

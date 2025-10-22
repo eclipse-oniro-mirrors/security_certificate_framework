@@ -1615,17 +1615,12 @@ void FreeCmsParserSignedDataOptions(HcfCmsParserSignedDataOptions *options)
     if (options == nullptr) {
         return;
     }
-    if (options->trustCerts != nullptr) {
-        FreeCertArrayData(options->trustCerts);
-        CF_FREE_PTR(options->trustCerts);
-    }
-    if (options->signerCerts != nullptr) {
-        FreeCertArrayData(options->signerCerts);
-        CF_FREE_PTR(options->signerCerts);
-    }
+    options->trustCerts = nullptr;
+    options->signerCerts = nullptr;
     CfBlobDataFree(options->contentData);
     options->contentDataFormat = BINARY;
-    CF_FREE_PTR(options);
+    CfFree(options);
+    options = nullptr;
 }
 
 static bool GetCmsCertsFromData(napi_env env, napi_value arg, HcfX509CertificateArray **certs, const char *name)
