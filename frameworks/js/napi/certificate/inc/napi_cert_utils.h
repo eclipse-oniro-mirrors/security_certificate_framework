@@ -53,6 +53,7 @@ bool CertGetSerialNumberFromBigIntJSParams(napi_env env, napi_value arg, CfBlob 
 CfBlobArray *CertGetBlobArrFromArrUarrJSParams(napi_env env, napi_value arg);
 bool CertGetStringFromJSParams(napi_env env, napi_value arg, std::string &returnStr);
 bool CertGetInt32FromJSParams(napi_env env, napi_value arg, int32_t &returnInt);
+CfResult CertGetInt32FromJSParamsNotThrow(napi_env env, napi_value arg, int32_t &returnInt);
 bool CertGetCallbackFromJSParams(napi_env env, napi_value arg, napi_ref *returnCb);
 bool GetEncodingBlobFromValue(napi_env env, napi_value object, CfEncodingBlob **encodingBlob);
 bool GetCertChainFromValue(napi_env env, napi_value object, HcfCertChainData **certChainData);
@@ -79,8 +80,8 @@ bool GetTrustCerts(napi_env env, napi_value obj, HcfX509CertificateArray **trust
 bool GetSignerCerts(napi_env env, napi_value obj, HcfX509CertificateArray **signerCerts);
 bool GetContentData(napi_env env, napi_value obj, CfBlob **contentData);
 void FreeCmsParserSignedDataOptions(HcfCmsParserSignedDataOptions *options);
-bool CertGetCmsParserSignedDataOptionsFromValue(napi_env env, napi_value obj, HcfCmsParserSignedDataOptions **options);
-bool CertGetCmsParserEnvelopedDataOptionsFromValue(napi_env env, napi_value obj,
+CfResult CertGetCmsParserSignedDataOptionsFromValue(napi_env env, napi_value obj, HcfCmsParserSignedDataOptions **options);
+CfResult CertGetCmsParserEnvelopedDataOptionsFromValue(napi_env env, napi_value obj,
     HcfCmsParserDecryptEnvelopedDataOptions **options);
 void FreeCmsParserDecryptEnvelopedDataOptions(HcfCmsParserDecryptEnvelopedDataOptions *options);
 }  // namespace CertFramework
