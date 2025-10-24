@@ -405,7 +405,7 @@ namespace OHOS {
             OneCrlCollectionTest();
             g_testFlag = false;
         }
-        
+
         if (data == nullptr || size < sizeof(HcfX509Certificate) || size < sizeof(HcfX509Crl)) {
             return;
         }

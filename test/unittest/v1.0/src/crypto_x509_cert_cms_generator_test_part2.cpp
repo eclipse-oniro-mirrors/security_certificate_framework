@@ -813,7 +813,7 @@ HWTEST_F(CryptoX509CertCmsGeneratorTestPart2, addRecipientInfo004, TestSize.Leve
 
     recipientInfo->keyTransInfo = nullptr;
     recipientInfo->keyAgreeInfo = nullptr;
-    
+
     res = cmsGenerator->addRecipientInfo(cmsGenerator, recipientInfo);
     EXPECT_EQ(res, CF_ERR_PARAMETER_CHECK);
 
@@ -888,7 +888,7 @@ HWTEST_F(CryptoX509CertCmsGeneratorTestPart2, addRecipientInfo005, TestSize.Leve
     CfBlobDataClearAndFree(&out);
     CfObjDestroy(cmsGenerator);
 }
- 
+
 HWTEST_F(CryptoX509CertCmsGeneratorTestPart2, addRecipientInfo006, TestSize.Level0)
 {
     HcfCmsGenerator *cmsGenerator = nullptr;
@@ -1174,7 +1174,7 @@ HWTEST_F(CryptoX509CertCmsGeneratorTestPart2, Invalid003, TestSize.Level0)
     EXPECT_EQ(res, CF_ERR_CRYPTO_OPERATION);
     res = cmsGenerator->addCert(cmsGenerator, &(x509Cert->base));
     EXPECT_EQ(res, CF_ERR_CRYPTO_OPERATION);
-    
+
     CfFree(privateKey);
     CfFree(options);
     CfObjDestroy(x509Cert);
@@ -2000,7 +2000,7 @@ HWTEST_F(CryptoX509CertCmsGeneratorTestPart2, Invalid023, TestSize.Level0)
     res = cmsGenerator->engineAddRecipientInfo(cmsGenerator, recipientInfo);
     EXPECT_EQ(res, CF_ERR_PARAMETER_CHECK);
     X509OpensslMock::SetMockFlag(false);
-    
+
     X509OpensslMock::SetMockFlag(true);
     EXPECT_CALL(X509OpensslMock::GetInstance(), CfIsClassMatch(_, _))
         .WillOnce(Return(false))

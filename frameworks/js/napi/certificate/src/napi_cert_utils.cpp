@@ -1821,7 +1821,7 @@ static bool GetCertFromValue(napi_env env, napi_value obj, HcfX509Certificate **
         LOGE("Failed to get certificate!");
         return false;
     }
-    
+
     *cert = napiCertObj->GetX509Cert();
     return true;
 }

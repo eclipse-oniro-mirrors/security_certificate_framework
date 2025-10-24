@@ -1466,7 +1466,7 @@ static bool GetP12CreateConfFromValue(napi_env env, napi_value arg, HcfPkcs12Cre
     if (!GetPbesParamsFromNapiValue(env, arg, &conf->certEncParams, CERT_CHAIN_PKCS12_TAG_CERT_ENC_PARAMS.c_str())) {
         return false;
     }
-    
+
     if (!GetNumberFromNapiValue(env, arg, conf->macSaltLen, CERT_CHAIN_PKCS12_TAG_MAC_SALT_LEN.c_str())) {
         return false;
     }
@@ -1584,7 +1584,7 @@ static void FreeCreatePkcs12Ctx(napi_env env, CreatePkcs12Ctx *ctx)
         FreeHcfPkcs12CreateConf(ctx->conf);
     }
     CfBlobDataFree(&ctx->outBlob);
-   
+
     CfFree(ctx);
 }
 

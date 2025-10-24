@@ -1621,19 +1621,19 @@ static char* AllocateAndCopyString(napi_env env, napi_value strValue, const std:
         LOGE("invalid string length for %{public}s", fieldName.c_str());
         return nullptr;
     }
-    
+
     char *buffer = static_cast<char *>(CfMalloc(strLen + 1, 0));
     if (buffer == nullptr) {
         LOGE("malloc failed for %{public}s", fieldName.c_str());
         return nullptr;
     }
-    
+
     if (napi_get_value_string_utf8(env, strValue, buffer, strLen + 1, &strLen) != napi_ok) {
         LOGE("get string value failed for %{public}s", fieldName.c_str());
         free(buffer);
         return nullptr;
     }
-    
+
     return buffer;
 }
 
@@ -1672,7 +1672,7 @@ static bool ValidateArrayInput(napi_env env, napi_value object, uint32_t *length
         LOGE("array length is invalid!");
         return false;
     }
-    
+
     if (*length > MAX_LEN_OF_ARRAY) {
         LOGE("array length is invalid!");
         return false;
@@ -1687,7 +1687,7 @@ static bool GetStringFromValue(napi_env env, napi_value value, char **outStr)
         LOGE("get string length failed");
         return false;
     }
-    
+
     if (strLen >= CF_PARAM_SET_MAX_SIZE) {
         LOGE("string length would cause overflow");
         return false;
@@ -1894,14 +1894,14 @@ static napi_value CreateDerResult(napi_env env, const CfBlob &csrBlob)
     napi_value result = nullptr;
     napi_value arrayBuffer;
     void* bufferData;
-   
+
     napi_create_arraybuffer(env, csrBlob.size, &bufferData, &arrayBuffer);
     if (memcpy_s(bufferData, csrBlob.size, csrBlob.data, csrBlob.size) != EOK) {
         LOGE("memcpy_s csrString to buffer failed!");
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_COPY, "copy memory failed!"));
         return nullptr;
     }
-   
+
     napi_status status = napi_create_typedarray(env, napi_uint8_array, csrBlob.size, arrayBuffer, 0, &result);
     if (status != napi_ok) {
         LOGE("create uint8 array failed");

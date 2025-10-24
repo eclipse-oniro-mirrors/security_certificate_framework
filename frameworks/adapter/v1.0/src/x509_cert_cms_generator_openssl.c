@@ -1311,13 +1311,13 @@ static CfResult GetContentFromBio(CMS_ContentInfo *cms, CfBlob *out)
         LOGE("Failed to create BIO");
         return CF_ERR_CRYPTO_OPERATION;
     }
-    
+
     if (BIO_write(bio, (*content)->data, (*content)->length) <= 0) {
         LOGE("Failed to write content to BIO");
         BIO_free(bio);
         return CF_ERR_CRYPTO_OPERATION;
     }
-    
+
     BUF_MEM *buf = NULL;
     BIO_get_mem_ptr(bio, &buf);
     if (buf == NULL || buf->data == NULL || buf->length == 0) {

@@ -404,35 +404,35 @@ void X509OpensslMock::SetMockFunDefaultBehaviorPartFive(void)
             STACK_OF(PKCS12_SAFEBAG) *bags, OSSL_LIB_CTX *ctx, const char *propq) {
             return __real_PKCS12_pack_p7encdata_ex(pbe_nid, pass, passlen, salt, saltlen, iter, bags, ctx, propq);
         });
-    
+
     ON_CALL(*this, PKCS12_pack_p7data)
         .WillByDefault([this](STACK_OF(PKCS12_SAFEBAG) *sk) {
             return __real_PKCS12_pack_p7data(sk);
         });
-    
+
     ON_CALL(*this, PKCS12_add_safes_ex)
         .WillByDefault([this](STACK_OF(PKCS7) *safes, int nid_p7, OSSL_LIB_CTX *ctx, const char *propq) {
             return __real_PKCS12_add_safes_ex(safes, nid_p7, ctx, propq);
         });
-    
+
     ON_CALL(*this, PKCS12_set_mac)
         .WillByDefault([this](PKCS12 *p12, const char *pass, int passlen, unsigned char *salt, int saltlen, int iter,
                               const EVP_MD *md_type) {
             return __real_PKCS12_set_mac(p12, pass, passlen, salt, saltlen, iter, md_type);
         });
-    
+
     ON_CALL(*this, PKCS12_SAFEBAG_create_pkcs8_encrypt_ex)
         .WillByDefault([this](int pbe_nid, const char *pass, int passlen, unsigned char *salt,
                               int saltlen, int iter, PKCS8_PRIV_KEY_INFO *p8inf, OSSL_LIB_CTX *ctx, const char *propq) {
             return __real_PKCS12_SAFEBAG_create_pkcs8_encrypt_ex(pbe_nid, pass, passlen, salt, saltlen, iter,
                                                                  p8inf, ctx, propq);
         });
-    
+
     ON_CALL(*this, i2d_PKCS12)
         .WillByDefault([this](PKCS12 *a, unsigned char **pp) {
             return __real_i2d_PKCS12(a, pp);
         });
-    
+
     ON_CALL(*this, PKCS12_add_safe)
         .WillByDefault([this](STACK_OF(PKCS7) **psafes, STACK_OF(PKCS12_SAFEBAG) *bags,
                               int nid_safe, int iter, const char *pass) {
