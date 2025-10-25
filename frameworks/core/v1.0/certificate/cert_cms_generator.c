@@ -221,7 +221,8 @@ static CfResult AddCert(HcfCmsGenerator *self, const HcfCertificate *x509Cert)
 static CfResult DoFinal(HcfCmsGenerator *self, const CfBlob *content, const HcfCmsGeneratorOptions *options,
                         CfBlob *out)
 {
-    if ((self == NULL) || (content == NULL) || (options == NULL) || (out == NULL)) {
+    if ((self == NULL) || (content == NULL || content->data == NULL || content->size == 0)
+        || (options == NULL) || (out == NULL)) {
         LOGE("Invalid input parameter.");
         return CF_INVALID_PARAMS;
     }

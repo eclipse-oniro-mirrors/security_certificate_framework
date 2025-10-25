@@ -38,9 +38,6 @@
 #include "x509_cert_chain_validate_params.h"
 #include "x509_certificate.h"
 
-#define CERT_PKCS12_DEFAULT_SALT_LEN 16
-#define CERT_PKCS12_DEFAULT_ITERATION 2048
-
 namespace OHOS {
 namespace CertFramework {
 thread_local napi_ref NapiX509CertChain::classRef_ = nullptr;

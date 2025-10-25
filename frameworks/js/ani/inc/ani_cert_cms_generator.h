@@ -28,10 +28,30 @@ public:
 
     void AddSigner(weak::X509Cert cert, ThPrivateKeyInfo const& keyInfo, CmsSignerConfig const& config);
     void AddCert(weak::X509Cert cert);
+    void SetRecipientEncryptionAlgorithm(CmsRecipientEncryptionAlgorithm algorithm);
+    void AddRecipientInfoSync(ThCmsRecipientInfo const& recipientInfo);
     OptStrUint8Arr DoFinalSync(array_view<uint8_t> data, optional_view<CmsGeneratorOptions> options);
+    array<uint8_t> GetEncryptedContentDataSync();
 
 private:
     HcfCmsGenerator *cmsGenerator_ = nullptr;
+};
+
+class CmsParserImpl {
+public:
+    CmsParserImpl();
+    explicit CmsParserImpl(HcfCmsParser *cmsParser);
+    ~CmsParserImpl();
+
+    void SetRawDataSync(OptStrUint8Arr const& data, CmsFormat cmsFormat);
+    CmsContentType GetContentType();
+    void VerifySignedDataSync(CmsVerificationConfig const& config);
+    array<uint8_t> GetContentDataSync();
+    array<X509Cert> GetCertsSync(CmsCertType type);
+    array<uint8_t> DecryptEnvelopedDataSync(CmsEnvelopedDecryptionConfig const& config);
+
+private:
+    HcfCmsParser *cmsParser_ = nullptr;
 };
 } // namespace ANI::CertFramework
 

@@ -15,7 +15,6 @@
 
 #include "ohos.security.cert.cert.proj.hpp"
 #include "ohos.security.cert.cert.impl.hpp"
-#include "taihe/runtime.hpp"
 #include "stdexcept"
 
 using namespace taihe;
@@ -496,8 +495,51 @@ public:
         TH_THROW(std::runtime_error, "AddCert not implemented");
     }
 
+    void SetRecipientEncryptionAlgorithm(CmsRecipientEncryptionAlgorithm algorithm) {
+        TH_THROW(std::runtime_error, "SetRecipientEncryptionAlgorithm not implemented");
+    }
+
+    void AddRecipientInfoSync(CmsRecipientInfo const& recipientInfo) {
+        TH_THROW(std::runtime_error, "AddRecipientInfoSync not implemented");
+    }
+
     OptStrUint8Arr DoFinalSync(array_view<uint8_t> data, optional_view<CmsGeneratorOptions> options) {
         TH_THROW(std::runtime_error, "DoFinalSync not implemented");
+    }
+
+    array<uint8_t> GetEncryptedContentDataSync() {
+        TH_THROW(std::runtime_error, "GetEncryptedContentDataSync not implemented");
+    }
+};
+
+class CmsParserImpl {
+public:
+    CmsParserImpl() {
+        // Don't forget to implement the constructor.
+    }
+
+    void SetRawDataSync(OptStrUint8Arr const& data, CmsFormat cmsFormat) {
+        TH_THROW(std::runtime_error, "SetRawDataSync not implemented");
+    }
+
+    CmsContentType GetContentType() {
+        TH_THROW(std::runtime_error, "GetContentType not implemented");
+    }
+
+    void VerifySignedDataSync(CmsVerificationConfig const& config) {
+        TH_THROW(std::runtime_error, "VerifySignedDataSync not implemented");
+    }
+
+    array<uint8_t> GetContentDataSync() {
+        TH_THROW(std::runtime_error, "GetContentDataSync not implemented");
+    }
+
+    array<X509Cert> GetCertsSync(CmsCertType type) {
+        TH_THROW(std::runtime_error, "GetCertsSync not implemented");
+    }
+
+    array<uint8_t> DecryptEnvelopedDataSync(CmsEnvelopedDecryptionConfig const& config) {
+        TH_THROW(std::runtime_error, "DecryptEnvelopedDataSync not implemented");
     }
 };
 
@@ -553,6 +595,10 @@ Pkcs12Data ParsePkcs12(array_view<uint8_t> data, Pkcs12ParsingConfig const& conf
     TH_THROW(std::runtime_error, "ParsePkcs12 not implemented");
 }
 
+Pkcs12Data ParsePkcs12ByPasswdSync(array_view<uint8_t> data, string_view password) {
+    TH_THROW(std::runtime_error, "ParsePkcs12ByPasswdSync not implemented");
+}
+
 array<X509TrustAnchor> CreateTrustAnchorsWithKeyStoreSync(array_view<uint8_t> keystore, string_view pwd) {
     TH_THROW(std::runtime_error, "CreateTrustAnchorsWithKeyStoreSync not implemented");
 }
@@ -575,8 +621,18 @@ CmsGenerator CreateCmsGenerator(CmsContentType contentType) {
     return make_holder<CmsGeneratorImpl, CmsGenerator>();
 }
 
+CmsParser CreateCmsParser() {
+    // The parameters in the make_holder function should be of the same type
+    // as the parameters in the constructor of the actual implementation class.
+    return make_holder<CmsParserImpl, CmsParser>();
+}
+
 OptStrUint8Arr GenerateCsr(PrivateKeyInfo const& keyInfo, CsrGenerationConfig const& config) {
     TH_THROW(std::runtime_error, "GenerateCsr not implemented");
+}
+
+array<uint8_t> CreatePkcs12Sync(Pkcs12Data const& data, Pkcs12CreationConfig const& config) {
+    TH_THROW(std::runtime_error, "CreatePkcs12Sync not implemented");
 }
 }  // namespace
 
@@ -591,9 +647,12 @@ TH_EXPORT_CPP_API_CreateX509CertChainSync(CreateX509CertChainSync);
 TH_EXPORT_CPP_API_CreateX509CertChain(CreateX509CertChain);
 TH_EXPORT_CPP_API_BuildX509CertChainSync(BuildX509CertChainSync);
 TH_EXPORT_CPP_API_ParsePkcs12(ParsePkcs12);
+TH_EXPORT_CPP_API_ParsePkcs12ByPasswdSync(ParsePkcs12ByPasswdSync);
 TH_EXPORT_CPP_API_CreateTrustAnchorsWithKeyStoreSync(CreateTrustAnchorsWithKeyStoreSync);
 TH_EXPORT_CPP_API_CreateX500DistinguishedNameByStrSync(CreateX500DistinguishedNameByStrSync);
 TH_EXPORT_CPP_API_CreateX500DistinguishedNameByDerSync(CreateX500DistinguishedNameByDerSync);
 TH_EXPORT_CPP_API_CreateCmsGenerator(CreateCmsGenerator);
+TH_EXPORT_CPP_API_CreateCmsParser(CreateCmsParser);
 TH_EXPORT_CPP_API_GenerateCsr(GenerateCsr);
+TH_EXPORT_CPP_API_CreatePkcs12Sync(CreatePkcs12Sync);
 // NOLINTEND

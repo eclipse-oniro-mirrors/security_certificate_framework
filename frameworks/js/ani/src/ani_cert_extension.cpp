@@ -199,7 +199,7 @@ CertExtension CreateCertExtensionSync(EncodingBlob const& inStream)
     CfEncodingBlob encodingBlob = {};
     encodingBlob.data = inStream.data.data();
     encodingBlob.len = inStream.data.size();
-    encodingBlob.encodingFormat = static_cast<CfEncodingFormat>(static_cast<int>(inStream.encodingFormat));
+    encodingBlob.encodingFormat = static_cast<CfEncodingFormat>(inStream.encodingFormat.get_value());
     CfResult ret = static_cast<CfResult>(CfCreate(CF_OBJ_TYPE_EXTENSION, &encodingBlob, &object));
     if (ret != CF_SUCCESS) {
         ANI_LOGE_THROW(ret, "create cert extension failed");
