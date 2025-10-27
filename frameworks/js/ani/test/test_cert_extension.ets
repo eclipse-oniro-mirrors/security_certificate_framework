@@ -48,11 +48,17 @@ function createCertExtensionTest() {
         try {
             let entry = certExt.getEntry(cert.ExtensionEntryType.EXTENSION_ENTRY_TYPE_ENTRY, oidBlob);
             console.println('ext getEntry success, entry = ' + JSON.stringify(entry));
-        } catch (err: BusinessError) {
+        } catch (err) {
+            if (!(err instanceof BusinessError)) {
+              throw err;
+            }
             let e: BusinessError = err as BusinessError;
             console.println('ext getEntry failed, errCode: ' + e.code + ', errMsg: ' + e.message);
         }
-    } catch (err: BusinessError) {
+    } catch (err) {
+        if (!(err instanceof BusinessError)) {
+          throw err;
+        }
         let e: BusinessError = err as BusinessError;
         console.println('ext getOidList failed, errCode: ' + e.code + ', errMsg: ' + e.message);
         }
@@ -65,11 +71,17 @@ function testGetOidList() {
     console.println('createCertExtension success');
     try {
         let oidList = certExt.getOidList(cert.ExtensionOidType.EXTENSION_OID_TYPE_ALL);
-    } catch (err: BusinessError) {
+    } catch (err) {
+      if (!(err instanceof BusinessError)) {
+        throw err;
+      }
       let e: BusinessError = err as BusinessError;
       console.println('ext getOidList failed, errCode: ' + e.code + ', errMsg: ' + e.message);
     }
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     let e: BusinessError = err as BusinessError;
     console.println('createCertExtension failed, errCode: ' + e.code + ', errMsg: ' + e.message);
   }
@@ -81,7 +93,10 @@ function testGetEncoded() {
     console.println('createCertExtension success');
     let extEncodedBlob = certExt.getEncoded();
     console.println('ext getEncoded success, encoded = ' + JSON.stringify(extEncodedBlob));
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     let e: BusinessError = err as BusinessError;
     console.println('ext getEncoded failed, errCode: ' + e.code + ', errMsg: ' + e.message);
   }
@@ -93,7 +108,10 @@ function testCheckCA() {
     console.println('createCertExtension success');
     let res = certExt.checkCA();
     console.println('ext checkCA success, res = ' + res);
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     let e: BusinessError = err as BusinessError;
     console.println('ext checkCA failed, errCode: ' + e.code + ', errMsg: ' + e.message);
   }
@@ -106,7 +124,10 @@ function testHasUnsupportedCriticalExtension() {
     console.println('createCertExtension success!');
     const result = extensionObj.hasUnsupportedCriticalExtension()
     console.println('has unsupported critical extension result is:' + result);
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     let e: BusinessError = err as BusinessError;
     console.println('createCertExtension failed, errCode: ' + e.code + ', errMsg: ' + e.message);
   }

@@ -121,7 +121,10 @@ function testX509CertAsync() {
     let certStr = utils.uint8ArrayToHexStr(encoded.data);
     console.println("X509Cert encoded.data: " + certStr);
     console.println("X509Cert encoded.encodingFormat: " + encoded.encodingFormat);
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println(`[error] X509Cert: ${err.code} ${err.message}`);
   }
 }
@@ -132,7 +135,10 @@ function testX509CertVerify() {
     let pubKey = x509Cert.getPublicKey();
     await x509Cert.verify(pubKey);
     console.println("X509Cert verify success");
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println(`[error] verify: ${err.code} ${err.message}`);
   }
 }
@@ -143,7 +149,10 @@ function testX509CertCheckValidityWithDate() {
     let date = '250618021836Z';
     x509Cert.checkValidityWithDate(date);
     console.println("X509Cert checkValidityWithDate success");
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println(`[error] checkValidityWithDate: ${err.code} ${err.message}`);
   }
 }
@@ -171,7 +180,10 @@ function testX509CertGetCertData() {
     console.println("X509Cert signatureAlgOid: " + signatureAlgOid);
     let signatureAlgParams = x509Cert.getSignatureAlgParams();
     console.println("X509Cert signatureAlgParams: " + signatureAlgParams.data);
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println(`[error] cert data: ${err.code} ${err.message}`);
   }
 }
@@ -191,7 +203,10 @@ function testX509CertGetCertData2() {
     console.println("X509Cert issuerAltNames: " + issuerAltNames.data);
     let crlDistributionPoint = x509Cert.getCRLDistributionPoint();
     console.println("X509Cert crlDistributionPoint: " + crlDistributionPoint.data);
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println(`[error] cert data: ${err.code} ${err.message}`);
   }
 }
@@ -209,7 +224,10 @@ function testX509CertGetItem() {
     console.println("X509Cert subjectUniqueId: " + utils.uint8ArrayToHexStr(subjectUniqueId.data));
     let extensions = x509Cert.getItem(cert.CertItemType.CERT_ITEM_TYPE_EXTENSIONS);
     console.println("X509Cert extensions: " + utils.uint8ArrayToHexStr(extensions.data));
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println(`[error] getItem: ${err.code} ${err.message}`);
   }
 }
@@ -226,7 +244,10 @@ function testX509CertMatch() {
     };
     let match = x509Cert.match(param);
     console.println("X509Cert match: " + (match ? "success" : "failed"));
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println(`[error] match: ${err.code} ${err.message}`);
   }
 }
@@ -236,7 +257,10 @@ function testX509CertToString() {
     let x509Cert = createX509Cert();
     let str = x509Cert.toString();
     console.println("X509Cert toString success");
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println(`[error] toString: ${err.code} ${err.message}`);
   }
 }
@@ -246,7 +270,10 @@ function testX509CertHashCode() {
     let x509Cert = createX509Cert();
     let hashCode = x509Cert.hashCode();
     console.println("X509Cert hashCode: " + hashCode);
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println(`[error] hashCode: ${err.code} ${err.message}`);
   }
 }
@@ -260,7 +287,10 @@ function testX509CertGetObject() {
     console.println("X509Cert getSubjectX500DistinguishedName success");
     let extensions = x509Cert.getExtensionsObject();
     console.println("X509Cert getExtensionsObject success");
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println(`[error] getObject: ${err.code} ${err.message}`);
   }
 }

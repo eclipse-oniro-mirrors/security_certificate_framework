@@ -66,7 +66,10 @@ function testCreateCertCRLCollection() {
     let x509Crl = createX509CRL();
     let collection = cert.createCertCRLCollection([x509Cert], [x509Crl]);
     console.println('CertCRLCollection success');
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println(`[error] CertCRLCollection: ${err.code} ${err.message}`);
   }
 }
@@ -89,7 +92,10 @@ function testCertCRLCollectionSelectCerts()
     };
     let certs = await collection.selectCerts(param);
     console.println('selectCerts success');
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println(`[error] CertCRLCollection: ${err.code} ${err.message}`);
   }
 }
@@ -114,7 +120,10 @@ function testCertCRLCollectionSelectCRLs()
     }
     let crls = await collection.selectCRLs(param);
     console.println('selectCRLs success');
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println(`[error] CertCRLCollection: ${err.code} ${err.message}`);
   }
 }

@@ -38,7 +38,10 @@ function testgetEncoded() {
     let crlEntry = x509CrlEntry.getRevokedCert(serialNumber);
     let encoded = crlEntry.getEncoded();
     console.println('getEncoded success: ' + JSON.stringify(encoded));
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if(!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println("testX509CrlEntryAsync failed, errCode: " + err.code + ", errMsg: " + err.message);
   }
 }
@@ -50,7 +53,10 @@ function testgetSerialNumber() {
     let crlEntry = x509CrlEntry.getRevokedCert(serialNumber);
     let serialNumber1 = crlEntry.getSerialNumber();
     console.println('getSerialNumber success: ' + JSON.stringify(serialNumber1));
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println("testX509CrlEntryAsync failed, errCode: " + err.code + ", errMsg: " + err.message);
   }
 }
@@ -62,7 +68,10 @@ function testgetCertIssuer() {
     let crlEntry = x509CrlEntry.getRevokedCert(serialNumber);
     let certIssuer = crlEntry.getCertIssuer();
     console.println('getCertIssuer success: ' + JSON.stringify(certIssuer));
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println("testX509CrlEntryAsync failed, errCode: " + err.code + ", errMsg: " + err.message);
   }
 }
@@ -74,7 +83,10 @@ function testgetRevocationDate() {
     let crlEntry = x509CrlEntry.getRevokedCert(serialNumber);
     let revocationDate = crlEntry.getRevocationDate();
     console.println('getRevocationDate success: ' + JSON.stringify(revocationDate));
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println("testX509CrlEntryAsync failed, errCode: " + err.code + ", errMsg: " + err.message);
   }
 }
@@ -102,7 +114,10 @@ let encodingBlob1: cert.EncodingBlob = {
     let crlEntry = x509CrlEntry.getRevokedCert(serialNumber);
     let extensions = crlEntry.getExtensions();
     console.println('getExtensions success: ' + JSON.stringify(extensions));
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println("testX509CrlEntryAsync failed, errCode: " + err.code + ", errMsg: " + err.message);
   }
 }
@@ -114,7 +129,10 @@ function testhasExtensions() {
     let crlEntry = x509CrlEntry.getRevokedCert(serialNumber);
     let hasExtensions = crlEntry.hasExtensions();
     console.println('hasExtensions success: ' + JSON.stringify(hasExtensions));
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println("testX509CrlEntryAsync failed, errCode: " + err.code + ", errMsg: " + err.message);
   }
 }
@@ -126,7 +144,10 @@ function testgetCertIssuerX500DistinguishedName() {
     let crlEntry = x509CrlEntry.getRevokedCert(serialNumber);
     let certIssuerX500DistinguishedName = crlEntry.getCertIssuerX500DistinguishedName();
     console.println('getCertIssuerX500DistinguishedName success: ' + JSON.stringify(certIssuerX500DistinguishedName));
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println("testX509CrlEntryAsync failed, errCode: " + err.code + ", errMsg: " + err.message);
   }
 }
@@ -138,7 +159,10 @@ function testToString() {
     let crlEntry = x509CrlEntry.getRevokedCert(serialNumber);
     let string = crlEntry.toString();
     console.println('toString success: ' + JSON.stringify(string));
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println("testX509CrlEntryAsync failed, errCode: " + err.code + ", errMsg: " + err.message);
   }
 }
@@ -150,7 +174,10 @@ function testHashCode() {
     let crlEntry = x509CrlEntry.getRevokedCert(serialNumber);
     let hashCode = crlEntry.hashCode();
     console.println('hashCode success: ' + JSON.stringify(hashCode));
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println("testX509CrlEntryAsync failed, errCode: " + err.code + ", errMsg: " + err.message);
   }
 }
@@ -242,7 +269,10 @@ let encodingBlob2: cert.EncodingBlob = {
     let x509CrlEntry = x509Crl.getRevokedCert(serialNumber);
     let extensionObj = x509CrlEntry.getExtensionsObject();
     console.println('getExtensionObj success');
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println("testX509CrlEntryAsync failed, errCode: " + err.code + ", errMsg: " + err.message);
   }
 }
