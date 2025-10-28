@@ -1412,7 +1412,7 @@ static CfResult GetExtensionsObjectX509Openssl(HcfX509CertificateSpi *self, CfBl
         LOGE("i2d_X509_EXTENSIONS error");
         return CF_ERR_CRYPTO_OPERATION;
     }
-    
+
     out->data = (uint8_t *)CfMalloc(len, 0);
     if (out->data == NULL) {
         LOGE("Failed to malloc for extensions data!");

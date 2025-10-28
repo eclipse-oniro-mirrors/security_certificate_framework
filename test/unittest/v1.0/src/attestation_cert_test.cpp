@@ -52,7 +52,7 @@ void CfAttestationTest::SetUp()
 void CfAttestationTest::TearDown()
 {
 }
- 
+
 const char *EC_ROOT_CA = "-----BEGIN CERTIFICATE-----\n"
 "MIIB2TCCAX+gAwIBAgIFAt/cGLEwCgYIKoZIzj0EAwIwQzEPMA0GA1UECgwGVEVT\n"
 "VCBYMTAwLgYDVQQDDCdURVNUIFggRUNDIERldmljZSBBdHRlc3RhdGlvbiBSb290\n"

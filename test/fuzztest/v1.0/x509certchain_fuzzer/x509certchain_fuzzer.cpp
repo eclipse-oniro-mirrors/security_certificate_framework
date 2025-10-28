@@ -71,7 +71,7 @@ namespace OHOS {
         if (certs.count != CERT_COUNT) {
             return CF_INVALID_PARAMS;
         }
-    
+
         return CF_SUCCESS;
     }
 
@@ -752,7 +752,7 @@ namespace OHOS {
         issue.size = size;
         inParams.certMatchParameters.issuer = &issue;
         inParams.certMatchParameters.minPathLenConstraint = -1;
-    
+
         ret = HcfCertChainBuildResultCreate(&inParams, &returnObj);
         if (ret != CF_SUCCESS) {
             FreeX509CertMatchParamsData(&inParams.validateParameters);

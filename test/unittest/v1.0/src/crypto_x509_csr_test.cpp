@@ -108,11 +108,11 @@ HWTEST_F(X509CertificateGenCsrTest, X509CsrTest001, TestSize.Level0)
     char mdname[] = "SHA256";
     char attributeName[] = "challengePassword";
     char attributeValue[] = "test123456";
-    
+
     csrConf->subject = g_x509Name;
     csrConf->isPem = true;
     csrConf->mdName = reinterpret_cast<char *>(mdname);
-    
+
     HcfAttributesArray *attributeArray = (HcfAttributesArray *)CfMalloc(sizeof(HcfAttributesArray), 0);
     attributeArray->array = (HcfAttributes *)CfMalloc(sizeof(HcfAttributes), 0);
     attributeArray->attributeSize = 1;
@@ -120,7 +120,7 @@ HWTEST_F(X509CertificateGenCsrTest, X509CsrTest001, TestSize.Level0)
     attributeArray->array->attributeValue = reinterpret_cast<char *>(attributeValue);
     csrConf->attribute.array = attributeArray->array;
     csrConf->attribute.attributeSize = attributeArray->attributeSize;
-    
+
     PrivateKeyInfo *privateKey = (PrivateKeyInfo *)CfMalloc(sizeof(PrivateKeyInfo), 0);
     privateKey->privateKey = (CfEncodingBlob *)CfMalloc(sizeof(CfEncodingBlob), 0);
     privateKey->privateKey->data = static_cast<uint8_t *>(malloc(g_rsaPrikey.length() + 1));
@@ -134,7 +134,7 @@ HWTEST_F(X509CertificateGenCsrTest, X509CsrTest001, TestSize.Level0)
     CfBlob csrBlob = { 0 };
     EXPECT_EQ(HcfX509CertificateGenCsr(privateKey, csrConf, &csrBlob), CF_SUCCESS);
     EXPECT_NE(csrBlob.data, nullptr);
-    
+
     char* csrString = reinterpret_cast<char*>(csrBlob.data);
     EXPECT_TRUE(strstr(csrString, "BEGIN CERTIFICATE REQUEST") != nullptr);
     EXPECT_TRUE(strstr(csrString, "END CERTIFICATE REQUEST") != nullptr);
@@ -153,7 +153,7 @@ HWTEST_F(X509CertificateGenCsrTest, X509CsrTest002, TestSize.Level0)
     HcfGenCsrConf *csrConf = (HcfGenCsrConf *)CfMalloc(sizeof(HcfGenCsrConf), 0);
     csrConf->subject = g_x509Name;
     csrConf->isPem = true;
-    
+
     PrivateKeyInfo *privateKey = (PrivateKeyInfo *)CfMalloc(sizeof(PrivateKeyInfo), 0);
     privateKey->privateKey = (CfEncodingBlob *)CfMalloc(sizeof(CfEncodingBlob), 0);
     privateKey->privateKey->data = static_cast<uint8_t *>(malloc(g_rsaPrikey.length() + 1));
@@ -190,13 +190,13 @@ HWTEST_F(X509CertificateGenCsrTest, X509CsrTest003, TestSize.Level0)
 HWTEST_F(X509CertificateGenCsrTest, X509CsrTest004, TestSize.Level0)
 {
     const char* digestAlgorithms[] = {"SHA256", "SHA384", "SHA512"};
-    
+
     for (const auto& digest : digestAlgorithms) {
         HcfGenCsrConf *csrConf = (HcfGenCsrConf *)CfMalloc(sizeof(HcfGenCsrConf), 0);
         csrConf->subject = g_x509Name;
         csrConf->isPem = true;
         csrConf->mdName = const_cast<char*>(digest);
-        
+
         PrivateKeyInfo *privateKey = (PrivateKeyInfo *)CfMalloc(sizeof(PrivateKeyInfo), 0);
         privateKey->privateKey = (CfEncodingBlob *)CfMalloc(sizeof(CfEncodingBlob), 0);
         privateKey->privateKey->data = static_cast<uint8_t *>(malloc(g_rsaPrikey.length() + 1));
@@ -235,11 +235,10 @@ HWTEST_F(X509CertificateGenCsrTest, X509CsrTest005, TestSize.Level0)
     for (size_t i = 0; i < attributeCount; i++) {
         HcfGenCsrConf *csrConf = (HcfGenCsrConf *)CfMalloc(sizeof(HcfGenCsrConf), 0);
         char mdname[] = "SHA256";
-        
+
         csrConf->subject = g_x509Name;
         csrConf->isPem = true;
         csrConf->mdName = reinterpret_cast<char *>(mdname);
-        
 
         HcfAttributesArray *attributeArray = (HcfAttributesArray *)CfMalloc(sizeof(HcfAttributesArray), 0);
         attributeArray->array = (HcfAttributes *)CfMalloc(sizeof(HcfAttributes), 0);
@@ -248,7 +247,6 @@ HWTEST_F(X509CertificateGenCsrTest, X509CsrTest005, TestSize.Level0)
         attributeArray->array->attributeValue = const_cast<char*>(testAttributes[i].value);
         csrConf->attribute.array = attributeArray->array;
         csrConf->attribute.attributeSize = attributeArray->attributeSize;
-        
 
         PrivateKeyInfo *privateKey = (PrivateKeyInfo *)CfMalloc(sizeof(PrivateKeyInfo), 0);
         privateKey->privateKey = (CfEncodingBlob *)CfMalloc(sizeof(CfEncodingBlob), 0);
@@ -263,7 +261,7 @@ HWTEST_F(X509CertificateGenCsrTest, X509CsrTest005, TestSize.Level0)
         CfBlob csrBlob = { 0 };
         EXPECT_EQ(HcfX509CertificateGenCsr(privateKey, csrConf, &csrBlob), CF_SUCCESS);
         EXPECT_NE(csrBlob.data, nullptr);
-        
+
         char* csrString = reinterpret_cast<char*>(csrBlob.data);
         EXPECT_TRUE(strstr(csrString, "BEGIN CERTIFICATE REQUEST") != nullptr);
         EXPECT_TRUE(strstr(csrString, "END CERTIFICATE REQUEST") != nullptr);
@@ -284,31 +282,26 @@ HWTEST_F(X509CertificateGenCsrTest, X509CsrTest006, TestSize.Level0)
 {
     HcfGenCsrConf *csrConf = (HcfGenCsrConf *)CfMalloc(sizeof(HcfGenCsrConf), 0);
     char mdname[] = "SHA256";
-    
+
     csrConf->subject = g_x509Name;
     csrConf->isPem = true;
     csrConf->mdName = reinterpret_cast<char *>(mdname);
-    
 
     HcfAttributesArray *attributeArray = (HcfAttributesArray *)CfMalloc(sizeof(HcfAttributesArray), 0);
     attributeArray->array = new HcfAttributes[3];
     attributeArray->attributeSize = 3;
 
-
     attributeArray->array[0].attributeName = const_cast<char*>("challengePassword");
     attributeArray->array[0].attributeValue = const_cast<char*>("test123456");
 
-
     attributeArray->array[1].attributeName = const_cast<char*>("unstructuredName");
     attributeArray->array[1].attributeValue = const_cast<char*>("TestUnstructuredName");
-
 
     attributeArray->array[2].attributeName = const_cast<char*>("emailAddress");
     attributeArray->array[2].attributeValue = const_cast<char*>("test@example.com");
 
     csrConf->attribute.array = attributeArray->array;
     csrConf->attribute.attributeSize = attributeArray->attributeSize;
-    
 
     PrivateKeyInfo *privateKey = (PrivateKeyInfo *)CfMalloc(sizeof(PrivateKeyInfo), 0);
     privateKey->privateKey = (CfEncodingBlob *)CfMalloc(sizeof(CfEncodingBlob), 0);
@@ -323,12 +316,10 @@ HWTEST_F(X509CertificateGenCsrTest, X509CsrTest006, TestSize.Level0)
     CfBlob csrBlob = { 0 };
     EXPECT_EQ(HcfX509CertificateGenCsr(privateKey, csrConf, &csrBlob), CF_SUCCESS);
     EXPECT_NE(csrBlob.data, nullptr);
-    
 
     char* csrString = reinterpret_cast<char*>(csrBlob.data);
     EXPECT_TRUE(strstr(csrString, "BEGIN CERTIFICATE REQUEST") != nullptr);
     EXPECT_TRUE(strstr(csrString, "END CERTIFICATE REQUEST") != nullptr);
-
 
     delete[] attributeArray->array;
     CfFree(attributeArray);
@@ -357,7 +348,6 @@ HWTEST_F(X509CertificateGenCsrTest, X509CsrTest007, TestSize.Level0)
         HcfGenCsrConf *csrConf = (HcfGenCsrConf *)CfMalloc(sizeof(HcfGenCsrConf), 0);
         csrConf->subject = g_x509Name;
         csrConf->isPem = true;
-        
         PrivateKeyInfo *privateKey = (PrivateKeyInfo *)CfMalloc(sizeof(PrivateKeyInfo), 0);
         privateKey->privateKey = (CfEncodingBlob *)CfMalloc(sizeof(CfEncodingBlob), 0);
         privateKey->privateKey->data = static_cast<uint8_t *>(malloc(testCase.privateKey.length() + 1));
@@ -417,7 +407,7 @@ HWTEST_F(X509CertificateGenCsrTest, X509CsrTest008, TestSize.Level0)
                 g_rsaPrikeyWithPass.c_str(), g_rsaPrikeyWithPass.length() + 1);
             privateKey->privateKey->len = g_rsaPrikeyWithPass.length() + 1;
         }
-        
+
         privateKey->privateKeyPassword = const_cast<char*>(testCase.password);
 
         CfBlob csrBlob = { 0 };
