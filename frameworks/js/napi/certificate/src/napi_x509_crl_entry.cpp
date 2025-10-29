@@ -445,7 +445,7 @@ napi_value NapiX509CrlEntry::GetExtensionsObject(napi_env env, napi_callback_inf
         return nullptr;
     }
     CfBlobDataFree(&blob);
-    
+
     napi_value object = BuildCertExtsObject(env, encodingBlob);
     CfEncodingBlobDataFree(encodingBlob);
     CfFree(encodingBlob);

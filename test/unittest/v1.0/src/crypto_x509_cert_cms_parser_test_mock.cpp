@@ -319,12 +319,12 @@ static CfResult CreateSignerCertsArray(HcfX509CertificateArray **signerCertsArra
         return CF_ERR_MALLOC;
     }
     (*signerCertsArray)->count = certNum;
-    
+
     CfEncodingBlob leafCertBlob = {0};
     leafCertBlob.data = reinterpret_cast<uint8_t *>(const_cast<char *>(leafCertPem));
     leafCertBlob.encodingFormat = CF_FORMAT_PEM;
     leafCertBlob.len = strlen(leafCertPem) + 1;
-    
+
     CfResult ret = HcfX509CertificateCreate(&leafCertBlob, &(*signerCertsArray)->data[0]);
     if (ret != CF_SUCCESS) {
         CfFree((*signerCertsArray)->data);
@@ -341,7 +341,7 @@ static void DestroyCertsArray(HcfX509CertificateArray **certsArray)
     if (certsArray == nullptr || *certsArray == nullptr) {
         return;
     }
-    
+
     if ((*certsArray)->data != nullptr) {
         for (uint32_t i = 0; i < (*certsArray)->count; i++) {
             if ((*certsArray)->data[i] != nullptr) {

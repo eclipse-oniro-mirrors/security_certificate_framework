@@ -80,7 +80,8 @@ bool GetTrustCerts(napi_env env, napi_value obj, HcfX509CertificateArray **trust
 bool GetSignerCerts(napi_env env, napi_value obj, HcfX509CertificateArray **signerCerts);
 bool GetContentData(napi_env env, napi_value obj, CfBlob **contentData);
 void FreeCmsParserSignedDataOptions(HcfCmsParserSignedDataOptions *options);
-CfResult CertGetCmsParserSignedDataOptionsFromValue(napi_env env, napi_value obj, HcfCmsParserSignedDataOptions **options);
+CfResult CertGetCmsParserSignedDataOptionsFromValue(napi_env env, napi_value obj,
+    HcfCmsParserSignedDataOptions **options);
 CfResult CertGetCmsParserEnvelopedDataOptionsFromValue(napi_env env, napi_value obj,
     HcfCmsParserDecryptEnvelopedDataOptions **options);
 void FreeCmsParserDecryptEnvelopedDataOptions(HcfCmsParserDecryptEnvelopedDataOptions *options);

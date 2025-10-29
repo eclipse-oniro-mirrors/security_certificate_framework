@@ -768,7 +768,7 @@ HWTEST_F(CryptoX509CertChainTestEx, HcfCreatePkcs12Test005, TestSize.Level0)
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
     EXPECT_EQ(blob.data, nullptr);
     EXPECT_EQ(blob.size, 0);
-    
+
     CfBlob pwdNull = { 0, nullptr };
     conf.pwd = &pwdNull;
     ret = HcfCreatePkcs12(p12Collection, &conf, &blob);

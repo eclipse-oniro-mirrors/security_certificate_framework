@@ -259,7 +259,7 @@ napi_value NapiCertCmsGenerator::AddSigner(napi_env env, napi_callback_info info
         FreePrivateKeyInfo(privateKey);
         return nullptr;
     }
- 
+
     HcfX509Certificate *certificate = napiX509Cert->GetX509Cert();
     CfResult ret = cmsGenerator->addSigner(cmsGenerator, &(certificate->base), privateKey, options);
     FreePrivateKeyInfo(privateKey);
@@ -681,7 +681,7 @@ static bool GetCertFromValue(napi_env env, napi_value value, HcfX509Certificate 
         LOGE("outputCert is null!");
         return false;
     }
-    
+
     bool result = false;
     napi_status status = napi_has_named_property(env, value, "cert", &result);
     if (status != napi_ok) {
@@ -744,7 +744,7 @@ static CfResult GetKeyTransInfo(napi_env env, napi_value arg, CmsRecipientInfo *
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "napi_get_named_property failed!"));
         return CF_ERR_NAPI;
     }
-    
+
     napi_valuetype valueType;
     status = napi_typeof(env, keyTransInfoObj, &valueType);
     if (status != napi_ok) {
@@ -789,31 +789,31 @@ static bool GetDigestAlgorithm(napi_env env, napi_value value, CfCmsKeyAgreeReci
         LOGE("check %{public}s property failed!", CMS_GENERATOR_DIGESTALG.c_str());
         return false;
     }
-    
+
     if (!result) {
         LOGI("%{public}s do not exist, using default SHA256!", CMS_GENERATOR_DIGESTALG.c_str());
         return true;
     }
-    
+
     napi_value digestObj = nullptr;
     status = napi_get_named_property(env, value, CMS_GENERATOR_DIGESTALG.c_str(), &digestObj);
     if (status != napi_ok || digestObj == nullptr) {
         LOGE("get property %{public}s failed!", CMS_GENERATOR_DIGESTALG.c_str());
         return false;
     }
-    
+
     napi_valuetype valueType;
     status = napi_typeof(env, digestObj, &valueType);
     if (status != napi_ok) {
         LOGE("Failed to get digest algorithm object type!");
         return false;
     }
-    
+
     if (valueType == napi_undefined) {
         LOGI("digest algorithm is undefined");
         return true;
     }
-    
+
     int32_t digestValue = 0;
     if (!CertGetInt32FromJSParams(env, digestObj, digestValue)) {
         LOGE("Failed to get digest algorithm value!");
@@ -852,7 +852,7 @@ static CfResult GetKeyAgreeInfo(napi_env env, napi_value arg, CmsRecipientInfo *
         LOGI("%{public}s do not exist!", name);
         return CF_SUCCESS;  // It's optional, so return true if not present
     }
-    
+
     napi_value keyAgreeInfoObj = nullptr;
     napi_status status = napi_get_named_property(env, arg, name, &keyAgreeInfoObj);
     if (status != napi_ok || keyAgreeInfoObj == nullptr) {
@@ -860,7 +860,7 @@ static CfResult GetKeyAgreeInfo(napi_env env, napi_value arg, CmsRecipientInfo *
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "napi_get_named_property failed!"));
         return CF_ERR_NAPI;
     }
-    
+
     napi_valuetype valueType;
     status = napi_typeof(env, keyAgreeInfoObj, &valueType);
     if (status != napi_ok) {
@@ -901,12 +901,12 @@ static void FreeCmsRecipientInfo(CmsRecipientInfo *recInfo)
     if (recInfo == nullptr) {
         return;
     }
-    
+
     if (recInfo->keyTransInfo != nullptr) {
         CfFree(recInfo->keyTransInfo);
         recInfo->keyTransInfo = nullptr;
     }
-    
+
     if (recInfo->keyAgreeInfo != nullptr) {
         CfFree(recInfo->keyAgreeInfo);
         recInfo->keyAgreeInfo = nullptr;
@@ -918,30 +918,30 @@ static void FreeAddRecInfoCtx(napi_env env, AddRecInfoCtx *context)
     if (context == nullptr) {
         return;
     }
-    
+
     if (context->recipientInfo != nullptr) {
         FreeCmsRecipientInfo(context->recipientInfo);
         CfFree(context->recipientInfo);
         context->recipientInfo = nullptr;
     }
-    
+
     if (context->cfRef != nullptr) {
         napi_delete_reference(env, context->cfRef);
         context->cfRef = nullptr;
     }
-    
+
     if (context->asyncWork != nullptr) {
         napi_delete_async_work(env, context->asyncWork);
         context->asyncWork = nullptr;
     }
-    
+
     CfFree(context);
 }
 
 static void AddRecipientInfoExecute(napi_env env, void *data)
 {
     AddRecInfoCtx *context = static_cast<AddRecInfoCtx *>(data);
-    
+
     context->errCode = context->cmsGenerator->addRecipientInfo(context->cmsGenerator, context->recipientInfo);
     if (context->errCode != CF_SUCCESS) {
         context->errMsg = "addRecipientInfo failed";
@@ -1044,13 +1044,13 @@ napi_value NapiCertCmsGenerator::AddRecipientInfo(napi_env env, napi_callback_in
     size_t argc = ARGS_SIZE_ONE;
     napi_value argv[ARGS_SIZE_ONE] = { nullptr };
     napi_value thisVar = nullptr;
-    
+
     if (napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr) != napi_ok) {
         LOGE("Failed to get cb info!");
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "Get cb info failed!"));
         return nullptr;
     }
-    
+
     if (argc != ARGS_SIZE_ONE) {
         LOGE("invalid params count!");
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "invalid params count."));
@@ -1091,14 +1091,14 @@ static void CmsGetEncryptedContentDataExecute(napi_env env, void *data)
 static void CmsGetEncryptedContentDataComplete(napi_env env, napi_status status, void *data)
 {
     CmsGetEncryptedContentCtx *ctx = static_cast<CmsGetEncryptedContentCtx *>(data);
-    
+
     if (ctx->errCode != CF_SUCCESS) {
         napi_reject_deferred(env, ctx->deferred,
             CertGenerateBusinessError(env, ctx->errCode, ctx->errMsg));
         FreeCmsGetEncryptedContentCtx(env, ctx);
         return;
     }
-    
+
     // Convert encrypted content to Uint8Array
     napi_value instance = ConvertCmsBlobToUint8ArrNapiValue(env, &ctx->outBlob);
     napi_resolve_deferred(env, ctx->deferred, instance);
@@ -1109,7 +1109,7 @@ napi_value NapiCertCmsGenerator::GetEncryptedContentData(napi_env env, napi_call
 {
     napi_value thisVar = nullptr;
     napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
-    
+
     NapiCertCmsGenerator *napiCmsGenerator = nullptr;
     napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&napiCmsGenerator));
     if (status != napi_ok || napiCmsGenerator == nullptr) {
@@ -1117,7 +1117,7 @@ napi_value NapiCertCmsGenerator::GetEncryptedContentData(napi_env env, napi_call
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "failed to unwrap napi cms generator obj."));
         return nullptr;
     }
-    
+
     CmsGetEncryptedContentCtx *ctx = static_cast<CmsGetEncryptedContentCtx *>(
         CfMalloc(sizeof(CmsGetEncryptedContentCtx), 0));
     if (ctx == nullptr) {
@@ -1242,7 +1242,7 @@ napi_value NapiCertCmsGenerator::CreateCmsGenerator(napi_env env, napi_callback_
         LOGE("Failed to create cms generator.");
         return nullptr;
     }
-   
+
     NapiCertCmsGenerator *napiCmsGenerator = new (std::nothrow) NapiCertCmsGenerator(cmsGenerator);
     if (napiCmsGenerator == nullptr) {
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to create a cmsGenerator class"));
@@ -1319,7 +1319,7 @@ static void CmsGetContentDataAsyncWorkProcess(napi_env env, void *data)
         ctx->errMsg = "Cms get content data fail.";
     }
 }
-    
+
 static void CmsGetContentDataAsyncWorkReturn(napi_env env, napi_status status, void *data)
 {
     CmsParserCtx *ctx = static_cast<CmsParserCtx *>(data);

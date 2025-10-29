@@ -1849,7 +1849,7 @@ static CfResult GetCertFromValue(napi_env env, napi_value obj, HcfX509Certificat
         LOGE("Failed to get certificate!");
         return CF_ERR_NAPI;
     }
-    
+
     *cert = napiCertObj->GetX509Cert();
     return res;
 }

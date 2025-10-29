@@ -693,12 +693,12 @@ static CfResult CreateSignerCertsArray(HcfX509CertificateArray **signerCertsArra
         return CF_ERR_MALLOC;
     }
     (*signerCertsArray)->count = certNum;
-    
+
     CfEncodingBlob leafCertBlob = {0};
     leafCertBlob.data = reinterpret_cast<uint8_t *>(const_cast<char *>(leafCertPem));
     leafCertBlob.encodingFormat = CF_FORMAT_PEM;
     leafCertBlob.len = strlen(leafCertPem) + 1;
-    
+
     CfResult ret = HcfX509CertificateCreate(&leafCertBlob, &(*signerCertsArray)->data[0]);
     if (ret != CF_SUCCESS) {
         CfFree((*signerCertsArray)->data);
@@ -715,7 +715,7 @@ static void DestroyCertsArray(HcfX509CertificateArray **certsArray)
     if (certsArray == nullptr || *certsArray == nullptr) {
         return;
     }
-    
+
     if ((*certsArray)->data != nullptr) {
         for (uint32_t i = 0; i < (*certsArray)->count; i++) {
             if ((*certsArray)->data[i] != nullptr) {
@@ -1597,7 +1597,7 @@ HWTEST_F(CryptoX509CertCmsGeneratorTest, Verify004, TestSize.Level0)
 HWTEST_F(CryptoX509CertCmsGeneratorTest, Verify005, TestSize.Level0)
 {
     HcfCmsParser *cmsParser = nullptr;
-    
+
     CfResult res = HcfCreateCmsParser(nullptr);
     EXPECT_EQ(res, CF_INVALID_PARAMS);
 
@@ -1722,7 +1722,7 @@ HWTEST_F(CryptoX509CertCmsGeneratorTest, Decrypt001, TestSize.Level0)
 
     CfBlobDataClearAndFree(&decryptedData);
     FreeCmsDecryptOptions(decryptOptions);
-    
+
     CfObjDestroy(cmsParser);
 }
 
@@ -1764,7 +1764,7 @@ HWTEST_F(CryptoX509CertCmsGeneratorTest, Decrypt003, TestSize.Level0)
         static_cast<HcfCmsParserDecryptEnvelopedDataOptions *>(
             CfMalloc(sizeof(HcfCmsParserDecryptEnvelopedDataOptions), 0));
     EXPECT_NE(decryptOptions, nullptr);
-    
+
     decryptOptions->privateKey = nullptr;
     decryptOptions->cert = nullptr;
     decryptOptions->encryptedContentData = nullptr;
@@ -1848,7 +1848,7 @@ HWTEST_F(CryptoX509CertCmsGeneratorTest, Decrypt005, TestSize.Level0)
     CfBlob decryptedData = {0, nullptr};
     res = cmsParser->decryptEnvelopedData(cmsParser, decryptOptions, &decryptedData);
     EXPECT_NE(res, CF_SUCCESS);
-    
+
     FreeCmsDecryptOptions(decryptOptions);
     CfBlobDataClearAndFree(&decryptedData);
     CfObjDestroy(cmsParser);

@@ -26,7 +26,7 @@ namespace OHOS {
     bool CfParamAddandGetFuzzTest(const uint8_t* data, size_t size)
     {
         CfParamSet *paramSet = nullptr;
-    
+
         int32_t ret = CfInitParamSet(&paramSet);
         if (ret != CF_SUCCESS) {
             return false;
@@ -39,9 +39,9 @@ namespace OHOS {
         size_t i = 0;
         params[0].tag = *reinterpret_cast<const uint32_t *>(data + offset);
         offset += sizeof(uint32_t);
-        
+
         params[i].blob.size = size - offset;
-        
+
         params[i].blob.data = const_cast<uint8_t *>(data + offset);
 
         (void)CfAddParams(paramSet, params, 1);

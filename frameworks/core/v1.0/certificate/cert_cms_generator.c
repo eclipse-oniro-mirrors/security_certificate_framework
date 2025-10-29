@@ -37,7 +37,6 @@ typedef struct {
     HcfCmsParserSpi *spiObj;
 } CertCmsParserImpl;
 
-
 typedef struct {
     CertCmsGeneratorSpiCreateFunc createFunc;
 } HcfCmsGeneratorFuncSet;
@@ -187,7 +186,6 @@ static CfResult DecryptEnvelopedData(HcfCmsParser *self, const HcfCmsParserDecry
     CertCmsParserImpl *impl = (CertCmsParserImpl *)self;
     return impl->spiObj->engineDecryptEnvelopedData(impl->spiObj, options, encryptedContentData);
 }
-
 
 static CfResult AddSigner(HcfCmsGenerator *self, const HcfCertificate *x509Cert,
                           const PrivateKeyInfo *privateKey, const HcfCmsSignerOptions *options)
