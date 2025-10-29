@@ -51,7 +51,7 @@ X500DistinguishedName CreateX500DistinguishedNameInner(const CfBlob *inStream, b
 string X500DistinguishedNameImpl::GetName()
 {
     if (this->x509Name_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x500 distinguished name obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x500 distinguished name obj is nullptr!");
         return "";
     }
     CfBlob blob = {};
@@ -68,7 +68,7 @@ string X500DistinguishedNameImpl::GetName()
 string X500DistinguishedNameImpl::GetNameByEnum(EncodingType encodingType)
 {
     if (this->x509NameUtf8_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x500 distinguished name obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x500 distinguished name obj is nullptr!");
         return "";
     }
     CfBlob blob = {};
@@ -86,7 +86,7 @@ string X500DistinguishedNameImpl::GetNameByEnum(EncodingType encodingType)
 array<string> X500DistinguishedNameImpl::GetNameByStr(string_view type)
 {
     if (this->x509Name_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x500 distinguished name obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x500 distinguished name obj is nullptr!");
         return {};
     }
     CfBlob inType = {};
@@ -109,7 +109,7 @@ EncodingBlob X500DistinguishedNameImpl::GetEncoded()
 {
     EncodingBlob encodingBlob = { {}, EncodingFormat(EncodingFormat::key_t::FORMAT_DER) };
     if (this->x509Name_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x500 distinguished name obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x500 distinguished name obj is nullptr!");
         return encodingBlob;
     }
     CfEncodingBlob blob = {};

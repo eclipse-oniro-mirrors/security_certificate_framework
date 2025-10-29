@@ -33,7 +33,7 @@ EncodingBlob X509CRLEntryImpl::GetEncodedSync()
 {
     EncodingBlob encodingBlob = { {}, EncodingFormat(EncodingFormat::key_t::FORMAT_DER) };
     if (this->x509CrlEntry_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509CrlEntry obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509CrlEntry obj is nullptr!");
         return encodingBlob;
     }
     CfEncodingBlob blob = {};
@@ -53,7 +53,7 @@ EncodingBlob X509CRLEntryImpl::GetEncodedSync()
 array<uint8_t> X509CRLEntryImpl::GetSerialNumber()
 {
     if (this->x509CrlEntry_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509CrlEntry obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509CrlEntry obj is nullptr!");
         return {};
     }
     CfBlob blob = {};
@@ -71,7 +71,7 @@ array<uint8_t> X509CRLEntryImpl::GetSerialNumber()
 DataBlob X509CRLEntryImpl::GetCertIssuer()
 {
     if (this->x509CrlEntry_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509CrlEntry obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509CrlEntry obj is nullptr!");
         return {};
     }
     CfBlob blob = {};
@@ -89,7 +89,7 @@ DataBlob X509CRLEntryImpl::GetCertIssuer()
 string X509CRLEntryImpl::GetCertIssuerEx(EncodingType encodingType)
 {
     if (this->x509CrlEntry_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509CrlEntry obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509CrlEntry obj is nullptr!");
         return "";
     }
     CfBlob blob = {};
@@ -107,7 +107,7 @@ string X509CRLEntryImpl::GetCertIssuerEx(EncodingType encodingType)
 string X509CRLEntryImpl::GetRevocationDate()
 {
     if (this->x509CrlEntry_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509CrlEntry obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509CrlEntry obj is nullptr!");
         return "";
     }
     CfBlob blob = {};
@@ -124,7 +124,7 @@ string X509CRLEntryImpl::GetRevocationDate()
 DataBlob X509CRLEntryImpl::GetExtensions()
 {
     if (this->x509CrlEntry_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509CrlEntry obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509CrlEntry obj is nullptr!");
         return {};
     }
     CfBlob blob = {};
@@ -142,7 +142,7 @@ DataBlob X509CRLEntryImpl::GetExtensions()
 bool X509CRLEntryImpl::HasExtensions()
 {
     if (this->x509CrlEntry_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509CrlEntry obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509CrlEntry obj is nullptr!");
         return false;
     }
     bool result = false;
@@ -157,7 +157,7 @@ bool X509CRLEntryImpl::HasExtensions()
 X500DistinguishedName X509CRLEntryImpl::GetCertIssuerX500DistinguishedName()
 {
     if (this->x509CrlEntry_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509CrlEntry obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509CrlEntry obj is nullptr!");
         return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>();
     }
     CfBlob blob = {};
@@ -195,7 +195,7 @@ X500DistinguishedName X509CRLEntryImpl::GetCertIssuerX500DistinguishedName()
 string X509CRLEntryImpl::ToString()
 {
     if (this->x509CrlEntry_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509CrlEntry obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509CrlEntry obj is nullptr!");
         return "";
     }
     CfBlob blob = {};
@@ -212,7 +212,7 @@ string X509CRLEntryImpl::ToString()
 array<uint8_t> X509CRLEntryImpl::HashCode()
 {
     if (this->x509CrlEntry_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509CrlEntry obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509CrlEntry obj is nullptr!");
         return {};
     }
     CfBlob blob = {};
@@ -230,7 +230,7 @@ array<uint8_t> X509CRLEntryImpl::HashCode()
 CertExtension X509CRLEntryImpl::GetExtensionsObject()
 {
     if (this->x509CrlEntry_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509CrlEntry obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509CrlEntry obj is nullptr!");
         return make_holder<CertExtensionImpl, CertExtension>();
     }
     CfBlob blob = {};

@@ -58,7 +58,7 @@ int64_t PubKeyImpl::GetKeyObj()
 cryptoFramework::DataBlob PubKeyImpl::GetEncoded()
 {
     if (this->pubKey_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "pubKey obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "pubKey obj is nullptr!");
         return {};
     }
     HcfBlob outBlob = {};

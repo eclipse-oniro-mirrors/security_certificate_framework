@@ -39,7 +39,7 @@ int64_t X509CRLImpl::GetX509CRLObj()
 bool X509CRLImpl::IsRevoked(weak::X509Cert cert)
 {
     if (this->x509Crl_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509Crl obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509Crl obj is nullptr!");
         return false;
     }
     HcfX509Certificate *x509cert = reinterpret_cast<HcfX509Certificate *>(cert->GetX509CertObj());
@@ -49,7 +49,7 @@ bool X509CRLImpl::IsRevoked(weak::X509Cert cert)
 string X509CRLImpl::GetType()
 {
     if (this->x509Crl_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509Crl obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509Crl obj is nullptr!");
         return "";
     }
     const char *type = this->x509Crl_->base.getType(&(this->x509Crl_->base));
@@ -60,7 +60,7 @@ EncodingBlob X509CRLImpl::GetEncodedSync()
 {
     EncodingBlob encodingBlob = { {}, EncodingFormat(EncodingFormat::key_t::FORMAT_DER) };
     if (this->x509Crl_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509Crl obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509Crl obj is nullptr!");
         return encodingBlob;
     }
 
@@ -81,7 +81,7 @@ EncodingBlob X509CRLImpl::GetEncodedSync()
 void X509CRLImpl::VerifySync(cryptoFramework::weak::PubKey key)
 {
     if (this->x509Crl_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509Crl obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509Crl obj is nullptr!");
         return;
     }
     HcfPubKey *hcfPubKey = reinterpret_cast<HcfPubKey *>(key->GetPubKeyObj());
@@ -95,7 +95,7 @@ void X509CRLImpl::VerifySync(cryptoFramework::weak::PubKey key)
 int32_t X509CRLImpl::GetVersion()
 {
     if (this->x509Crl_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509Crl obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509Crl obj is nullptr!");
         return -1;
     }
     return this->x509Crl_->getVersion(this->x509Crl_);
@@ -104,7 +104,7 @@ int32_t X509CRLImpl::GetVersion()
 DataBlob X509CRLImpl::GetIssuerName()
 {
     if (this->x509Crl_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509Crl obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509Crl obj is nullptr!");
         return {};
     }
     CfBlob blob = {};
@@ -122,7 +122,7 @@ DataBlob X509CRLImpl::GetIssuerName()
 string X509CRLImpl::GetIssuerNameEx(EncodingType encodingType)
 {
     if (this->x509Crl_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509Crl obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509Crl obj is nullptr!");
         return "";
     }
     CfBlob blob = {};
@@ -140,7 +140,7 @@ string X509CRLImpl::GetIssuerNameEx(EncodingType encodingType)
 string X509CRLImpl::GetLastUpdate()
 {
     if (this->x509Crl_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509Crl obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509Crl obj is nullptr!");
         return "";
     }
     CfBlob blob = {};
@@ -157,7 +157,7 @@ string X509CRLImpl::GetLastUpdate()
 string X509CRLImpl::GetNextUpdate()
 {
     if (this->x509Crl_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509Crl obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509Crl obj is nullptr!");
         return "";
     }
     CfBlob blob = {};
@@ -174,7 +174,7 @@ string X509CRLImpl::GetNextUpdate()
 X509CRLEntry X509CRLImpl::GetRevokedCert(array_view<uint8_t> serialNumber)
 {
     if (this->x509Crl_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509Crl obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509Crl obj is nullptr!");
         return make_holder<X509CRLEntryImpl, X509CRLEntry>();
     }
     CfBlob serialNumberBlob = {};
@@ -194,7 +194,7 @@ X509CRLEntry X509CRLImpl::GetRevokedCert(array_view<uint8_t> serialNumber)
 X509CRLEntry X509CRLImpl::GetRevokedCertWithCert(weak::X509Cert cert)
 {
     if (this->x509Crl_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509Crl obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509Crl obj is nullptr!");
         return make_holder<X509CRLEntryImpl, X509CRLEntry>();
     }
     HcfX509CrlEntry *crlEntry = nullptr;
@@ -210,7 +210,7 @@ X509CRLEntry X509CRLImpl::GetRevokedCertWithCert(weak::X509Cert cert)
 array<X509CRLEntry> X509CRLImpl::GetRevokedCertsSync()
 {
     if (this->x509Crl_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509Crl obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509Crl obj is nullptr!");
         return {};
     }
     CfArray entrysOut = {};
@@ -230,7 +230,7 @@ array<X509CRLEntry> X509CRLImpl::GetRevokedCertsSync()
 DataBlob X509CRLImpl::GetTBSInfo()
 {
     if (this->x509Crl_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509Crl obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509Crl obj is nullptr!");
         return {};
     }
     CfBlob blob = {};
@@ -248,7 +248,7 @@ DataBlob X509CRLImpl::GetTBSInfo()
 DataBlob X509CRLImpl::GetSignature()
 {
     if (this->x509Crl_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509Crl obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509Crl obj is nullptr!");
         return {};
     }
     CfBlob blob = {};
@@ -266,7 +266,7 @@ DataBlob X509CRLImpl::GetSignature()
 string X509CRLImpl::GetSignatureAlgName()
 {
     if (this->x509Crl_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509Crl obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509Crl obj is nullptr!");
         return "";
     }
     CfBlob blob = {};
@@ -283,7 +283,7 @@ string X509CRLImpl::GetSignatureAlgName()
 string X509CRLImpl::GetSignatureAlgOid()
 {
     if (this->x509Crl_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509Crl obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509Crl obj is nullptr!");
         return "";
     }
     CfBlob blob = {};
@@ -300,7 +300,7 @@ string X509CRLImpl::GetSignatureAlgOid()
 DataBlob X509CRLImpl::GetSignatureAlgParams()
 {
     if (this->x509Crl_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509Crl obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509Crl obj is nullptr!");
         return {};
     }
     CfBlob blob = {};
@@ -318,7 +318,7 @@ DataBlob X509CRLImpl::GetSignatureAlgParams()
 DataBlob X509CRLImpl::GetExtensions()
 {
     if (this->x509Crl_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509Crl obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509Crl obj is nullptr!");
         return {};
     }
     CfBlob blob = {};
@@ -336,7 +336,7 @@ DataBlob X509CRLImpl::GetExtensions()
 bool X509CRLImpl::Match(X509CRLMatchParameters const& param)
 {
     if (this->x509Crl_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509Crl obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509Crl obj is nullptr!");
         return false;
     }
     CfBlobArray issuer = {};
@@ -386,7 +386,7 @@ bool X509CRLImpl::Match(X509CRLMatchParameters const& param)
 X500DistinguishedName X509CRLImpl::GetIssuerX500DistinguishedName()
 {
     if (this->x509Crl_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509Crl obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509Crl obj is nullptr!");
         return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>();
     }
     CfBlob blob = {};
@@ -424,7 +424,7 @@ X500DistinguishedName X509CRLImpl::GetIssuerX500DistinguishedName()
 string X509CRLImpl::ToString()
 {
     if (this->x509Crl_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509Crl obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509Crl obj is nullptr!");
         return "";
     }
     CfBlob blob = {};
@@ -441,7 +441,7 @@ string X509CRLImpl::ToString()
 string X509CRLImpl::ToStringEx(EncodingType encodingType)
 {
     if (this->x509Crl_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509Crl obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509Crl obj is nullptr!");
         return "";
     }
     CfBlob blob = {};
@@ -459,7 +459,7 @@ string X509CRLImpl::ToStringEx(EncodingType encodingType)
 array<uint8_t> X509CRLImpl::HashCode()
 {
     if (this->x509Crl_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509Crl obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509Crl obj is nullptr!");
         return {};
     }
     CfBlob blob = {};
@@ -477,7 +477,7 @@ array<uint8_t> X509CRLImpl::HashCode()
 CertExtension X509CRLImpl::GetExtensionsObject()
 {
     if (this->x509Crl_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509Crl obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509Crl obj is nullptr!");
         return make_holder<CertExtensionImpl, CertExtension>();
     }
     CfBlob blob = {};

@@ -38,7 +38,7 @@ int64_t CertChainValidationResultImpl::GetCertChainValidationResultObj()
 X509TrustAnchor CertChainValidationResultImpl::GetTrustAnchor()
 {
     if (this->validateResult_ == nullptr || this->validateResult_->trustAnchor == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "trustAnchor is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "trustAnchor is nullptr!");
         return {};
     }
     X509TrustAnchor anchor = {
@@ -77,12 +77,12 @@ X509TrustAnchor CertChainValidationResultImpl::GetTrustAnchor()
 X509Cert CertChainValidationResultImpl::GetEntityCert()
 {
     if (this->validateResult_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "validateResult_ is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "validateResult_ is nullptr!");
         return make_holder<X509CertImpl, X509Cert>();
     }
     HcfX509Certificate *cert = this->validateResult_->entityCert;
     if (cert == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "entityCert is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "entityCert is nullptr!");
         return make_holder<X509CertImpl, X509Cert>();
     }
     return make_holder<X509CertImpl, X509Cert>(cert, false);

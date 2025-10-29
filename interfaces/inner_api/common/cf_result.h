@@ -35,6 +35,8 @@ typedef enum CfResult {
     CF_ERR_COPY = -20002,
     /* Indicates that call napi api fails. */
     CF_ERR_NAPI = -20003,
+    /* Indicates that call ani api fails. */
+    CF_ERR_ANI = -20003,
     /* Indicates internal fails. */
     CF_ERR_INTERNAL = -20004,
     /* Indicates parameter check fails. */
