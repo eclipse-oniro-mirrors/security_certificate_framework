@@ -87,6 +87,7 @@ struct CmsParserCtx {
     napi_value promise = nullptr;
     napi_async_work asyncWork = nullptr;
     napi_ref parserRef = nullptr;
+    napi_ref certParamsRef = nullptr;
 
     HcfCmsParser *cmsParser = nullptr;
     CfBlob *rawData = nullptr;
@@ -176,6 +177,10 @@ static void FreeCmsParserCtx(napi_env env, CmsParserCtx *ctx)
     if (ctx->parserRef != nullptr) {
         napi_delete_reference(env, ctx->parserRef);
         ctx->parserRef = nullptr;
+    }
+    if (ctx->certParamsRef != nullptr) {
+        napi_delete_reference(env, ctx->certParamsRef);
+        ctx->certParamsRef = nullptr;
     }
     if (ctx->rawData != nullptr) {
         CfBlobDataFree(ctx->rawData);
@@ -1552,6 +1557,7 @@ napi_value NapiCertCmsParser::SetRawData(napi_env env, napi_callback_info info)
     int32_t format = 0;
     if (!CertGetInt32FromJSParams(env, argv[PARAM1], format)) {
         LOGE("get cmsFormat failed");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_PARAMETER_CHECK, "get cmsFormat failed"));
         CfBlobFree(&ctx->rawData);
         FreeCmsParserCtx(env, ctx);
         return nullptr;
@@ -1593,25 +1599,23 @@ napi_value NapiCertCmsParser::GetContentType(napi_env env, napi_callback_info in
     return result;
 }
 
-static bool BuildVerifySignedDataOption(napi_env env, napi_value arg, CmsParserCtx *ctx)
+static CfResult BuildVerifySignedDataOption(napi_env env, napi_value arg, CmsParserCtx *ctx)
 {
     napi_valuetype type;
     napi_typeof(env, arg, &type);
     if (type != napi_object) {
         LOGE("wrong argument type. expect object type. [Type]: %{public}d", type);
-        return false;
+        return CF_ERR_NAPI;
     }
 
     ctx->options = nullptr;
-    if (!CertGetCmsParserSignedDataOptionsFromValue(env, arg, &ctx->options)) {
+    CfResult res = CertGetCmsParserSignedDataOptionsFromValue(env, arg, &ctx->options);
+    if (res != CF_SUCCESS) {
         LOGE("Cert SignedDataOptions failed!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_PARAMETER_CHECK,
-            "Cert SignedDataOptions failed!"));
-        FreeCmsParserCtx(env, ctx);
-        return false;
+        return res;
     }
 
-    return true;
+    return CF_SUCCESS;
 }
 
 napi_value NapiCertCmsParser::VerifySignedData(napi_env env, napi_callback_info info)
@@ -1641,9 +1645,24 @@ napi_value NapiCertCmsParser::VerifySignedData(napi_env env, napi_callback_info 
         return nullptr;
     }
     ctx->cmsParser = cmsParser;
-    if (!BuildVerifySignedDataOption(env, argv[PARAM0], ctx)) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_PARAMETER_CHECK, "failed to build verify signed data."));
+    CfResult res = BuildVerifySignedDataOption(env, argv[PARAM0], ctx);
+    if (res != CF_SUCCESS) {
+        napi_throw(env, CertGenerateBusinessError(env, res, "failed to build verify signed data."));
         FreeCmsParserCtx(env, ctx);
+        return nullptr;
+    }
+
+    if (napi_create_reference(env, thisVar, 1, &ctx->parserRef) != napi_ok) {
+        LOGE("create reference failed!");
+        FreeCmsParserCtx(env, ctx);
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "create reference failed!"));
+        return nullptr;
+    }
+
+    if (napi_create_reference(env, argv[PARAM0], 1, &ctx->certParamsRef) != napi_ok) {
+        LOGE("create param ref failed!");
+        FreeCmsParserCtx(env, ctx);
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "Create param ref failed"));
         return nullptr;
     }
 
@@ -1720,21 +1739,20 @@ napi_value NapiCertCmsParser::GetCerts(napi_env env, napi_callback_info info)
     return NewCmsGetCertsAsyncWork(env, ctx);
 }
 
-static bool BuildDecryptEnvelopedDataOption(napi_env env, napi_value arg, CmsParserCtx *ctx)
+static CfResult BuildDecryptEnvelopedDataOption(napi_env env, napi_value arg, CmsParserCtx *ctx)
 {
     if (arg == nullptr || ctx == nullptr) {
         LOGE("Invalid input parameters!");
-        return false;
+        return CF_ERR_PARAMETER_CHECK;
     }
     ctx->decryptEnvelopedDataOptions = nullptr;
-    if (!CertGetCmsParserEnvelopedDataOptionsFromValue(env, arg, &ctx->decryptEnvelopedDataOptions)) {
+    CfResult res = CertGetCmsParserEnvelopedDataOptionsFromValue(env, arg, &ctx->decryptEnvelopedDataOptions);
+    if (res != CF_SUCCESS) {
         LOGE("Cert EnvelopedDataOptions failed!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_PARAMETER_CHECK,
-            "Cert EnvelopedDataOptions failed!"));
         FreeCmsParserCtx(env, ctx);
-        return false;
+        return res;
     }
-    return true;
+    return CF_SUCCESS;
 }
 
 napi_value NapiCertCmsParser::DecryptEnvelopedData(napi_env env, napi_callback_info info)
@@ -1762,10 +1780,25 @@ napi_value NapiCertCmsParser::DecryptEnvelopedData(napi_env env, napi_callback_i
         return nullptr;
     }
     ctx->cmsParser = cmsParser;
-    if (!BuildDecryptEnvelopedDataOption(env, argv[PARAM0], ctx)) {
+    CfResult res = BuildDecryptEnvelopedDataOption(env, argv[PARAM0], ctx);
+    if (res != CF_SUCCESS) {
         napi_throw(env,
-            CertGenerateBusinessError(env, CF_ERR_PARAMETER_CHECK, "failed to build decrypt enveloped data."));
+            CertGenerateBusinessError(env, res, "failed to build decrypt enveloped data."));
         FreeCmsParserCtx(env, ctx);
+        return nullptr;
+    }
+
+    if (napi_create_reference(env, thisVar, 1, &ctx->parserRef) != napi_ok) {
+        LOGE("create reference failed!");
+        FreeCmsParserCtx(env, ctx);
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_PARAMETER_CHECK, "create reference failed!"));
+        return nullptr;
+    }
+
+    if (napi_create_reference(env, argv[PARAM0], 1, &ctx->certParamsRef) != napi_ok) {
+        LOGE("create param ref failed!");
+        FreeCmsParserCtx(env, ctx);
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "Create param ref failed"));
         return nullptr;
     }
     napi_create_promise(env, &ctx->deferred, &ctx->promise);
@@ -1780,6 +1813,7 @@ static napi_value NapiSetRawData(napi_env env, napi_callback_info info)
     napi_unwrap(env, thisVar, reinterpret_cast<void **>(&cmsParser));
     if (cmsParser == nullptr) {
         LOGE("cmsParser is nullptr!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "cmsParser is nullptr!"));
         return nullptr;
     }
     return cmsParser->SetRawData(env, info);
@@ -1793,6 +1827,7 @@ static napi_value NapiGetContentType(napi_env env, napi_callback_info info)
     napi_unwrap(env, thisVar, reinterpret_cast<void **>(&cmsParser));
     if (cmsParser == nullptr) {
         LOGE("cmsParser is nullptr!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "cmsParser is nullptr!"));
         return nullptr;
     }
     return cmsParser->GetContentType(env, info);
@@ -1806,6 +1841,7 @@ static napi_value NapiVerifySignedData(napi_env env, napi_callback_info info)
     napi_unwrap(env, thisVar, reinterpret_cast<void **>(&cmsParser));
     if (cmsParser == nullptr) {
         LOGE("cmsParser is nullptr!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "cmsParser is nullptr!"));
         return nullptr;
     }
     return cmsParser->VerifySignedData(env, info);
@@ -1819,6 +1855,7 @@ static napi_value NapiGetContentData(napi_env env, napi_callback_info info)
     napi_unwrap(env, thisVar, reinterpret_cast<void **>(&cmsParser));
     if (cmsParser == nullptr) {
         LOGE("cmsParser is nullptr!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "cmsParser is nullptr!"));
         return nullptr;
     }
     return cmsParser->GetContentData(env, info);
@@ -1832,6 +1869,7 @@ static napi_value NapiGetCerts(napi_env env, napi_callback_info info)
     napi_unwrap(env, thisVar, reinterpret_cast<void **>(&cmsParser));
     if (cmsParser == nullptr) {
         LOGE("cmsParser is nullptr!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "cmsParser is nullptr!"));
         return nullptr;
     }
     return cmsParser->GetCerts(env, info);
@@ -1845,6 +1883,7 @@ static napi_value NapiDecryptEnvelopedData(napi_env env, napi_callback_info info
     napi_unwrap(env, thisVar, reinterpret_cast<void **>(&cmsParser));
     if (cmsParser == nullptr) {
         LOGE("cmsParser is nullptr!");
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "cmsParser is nullptr!"));
         return nullptr;
     }
     return cmsParser->DecryptEnvelopedData(env, info);

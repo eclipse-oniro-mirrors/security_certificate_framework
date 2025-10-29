@@ -1062,6 +1062,25 @@ static CfResult CmsVerifyGetSignerCertStack(const HcfCmsParserSignedDataOptions 
     return CF_SUCCESS;
 }
 
+static int CmsCertErrorCb(const char *errStr, size_t len, void *u)
+{
+    (void)len;
+    if (errStr == NULL || u == NULL) {
+        return 0;
+    }
+    LOGE("cert check error: %{public}s", errStr);
+    CfResult result = CF_ERR_CRYPTO_OPERATION;
+    if (strstr(errStr, "certificate is not yet valid") != NULL) {
+        result = CF_ERR_CERT_NOT_YET_VALID;
+    } else if (strstr(errStr, "certificate has expired") != NULL) {
+        result = CF_ERR_CERT_HAS_EXPIRED;
+    } else if (strstr(errStr, "unable to get issuer certificate") != NULL) {
+        result = CF_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY;
+    }
+    *((CfResult *)u) = result;
+    return 1;
+}
+
 static CfResult CmsVerifyGetContentData(bool hasCmsContent, const HcfCmsParserSignedDataOptions *options,
     BIO **contentBio)
 {
@@ -1097,6 +1116,11 @@ static CfResult CmsVerifyGetContentData(bool hasCmsContent, const HcfCmsParserSi
 static CfResult BuildVerifyParams(CMS_ContentInfo *cms, const HcfCmsParserSignedDataOptions *options,
     STACK_OF(X509) **signerCerts, X509_STORE **caStore, BIO **contentBio)
 {
+    if (options->contentDataFormat != BINARY && options->contentDataFormat != TEXT) {
+        LOGE("contentDataFormat is not valid, it should be BINARY or TEXT.");
+        return CF_ERR_PARAMETER_CHECK;
+    }
+
     bool hasCmsContent = false;
     ASN1_OCTET_STRING **cmsContent = CMS_get0_content(cms);
     if (cmsContent != NULL && *cmsContent != NULL) {
@@ -1122,6 +1146,21 @@ static CfResult BuildVerifyParams(CMS_ContentInfo *cms, const HcfCmsParserSigned
     return CF_SUCCESS;
 }
 
+static CfResult CmsContentTypeCheck(HcfCmsParserSpi *self, HcfCmsContentType contentType)
+{
+    HcfCmsContentType type;
+    CfResult res = GetRawDataType(self, &type);
+    if (res != CF_SUCCESS) {
+        LOGE("GetRawDataType fail.");
+        return res;
+    }
+    if (type != contentType) {
+        LOGE("CMS content type is not SIGNED_DATA");
+        return CF_ERR_PARAMETER_CHECK;
+    }
+    return CF_SUCCESS;
+}
+
 CfResult VerifySignedDataOpenssl(HcfCmsParserSpi *self, const HcfCmsParserSignedDataOptions *options)
 {
     if (self == NULL || options == NULL) {
@@ -1137,15 +1176,11 @@ CfResult VerifySignedDataOpenssl(HcfCmsParserSpi *self, const HcfCmsParserSigned
         LOGE("cms is null.");
         return CF_ERR_SHOULD_NOT_CALL;
     }
-    HcfCmsContentType contentType;
-    CfResult res = GetRawDataType(self, &contentType);
+
+    CfResult res = CmsContentTypeCheck(self, SIGNED_DATA);
     if (res != CF_SUCCESS) {
-        LOGE("GetRawDataType fail.");
-        return res;
-    }
-    if (contentType != SIGNED_DATA) {
         LOGE("CMS content type is not SIGNED_DATA");
-        return CF_ERR_PARAMETER_CHECK;
+        return res;
     }
 
     STACK_OF(X509) *signerCerts = NULL;
@@ -1163,11 +1198,13 @@ CfResult VerifySignedDataOpenssl(HcfCmsParserSpi *self, const HcfCmsParserSigned
     int result = CMS_verify(impl->cms, signerCerts, caStore, contentBio, NULL, 0);
     if (result != CF_OPENSSL_SUCCESS) {
         LOGE("Failed to verify CMS");
+        CfResult certResult = CF_ERR_CRYPTO_OPERATION;
+        ERR_print_errors_cb(CmsCertErrorCb, &certResult);
         sk_X509_free(signerCerts);
         X509_STORE_free(caStore);
         BIO_free(contentBio);
         CfPrintOpensslError();
-        return CF_ERR_CRYPTO_OPERATION;
+        return certResult;
     }
     BIO_free(contentBio);
     sk_X509_free(signerCerts);
@@ -1392,16 +1429,12 @@ static CfResult GetCertsOpenssl(HcfCmsParserSpi *self, HcfCmsCertType cmsCertTyp
         LOGE("cms is null.");
         return CF_ERR_SHOULD_NOT_CALL;
     }
-    HcfCmsContentType contentType;
-    CfResult res = GetRawDataType(self, &contentType);
+    CfResult res = CmsContentTypeCheck(self, SIGNED_DATA);
     if (res != CF_SUCCESS) {
-        LOGE("GetRawDataType fail.");
+        LOGE("CMS content type is not SIGNED_DATA");
         return res;
     }
-    if (contentType != SIGNED_DATA) {
-        LOGE("CMS content type is not SIGNED_DATA");
-        return CF_ERR_PARAMETER_CHECK;
-    }
+
     STACK_OF(X509) *certsStack = CMS_get1_certs(impl->cms);
     if (certsStack == NULL) {
         LOGE("CMS_get1_certs returned NULL");
@@ -1541,21 +1574,20 @@ static CfResult DecryptEnvelopedCheckParams(HcfCmsParserSpi *self,
         LOGE("Invalid input parameter.");
         return CF_ERR_PARAMETER_CHECK;
     }
+    if (options->contentDataFormat != BINARY && options->contentDataFormat != TEXT) {
+        LOGE("contentDataFormat is not valid, it should be BINARY or TEXT.");
+        return CF_ERR_PARAMETER_CHECK;
+    }
     if (!CfIsClassMatch((CfObjectBase *)self, GetCmsParserClass())) {
         LOGE("Class is not match.");
         return CF_ERR_PARAMETER_CHECK;
     }
-    HcfCmsContentType contentType;
-    CfResult res = GetRawDataType(self, &contentType);
+    CfResult res = CmsContentTypeCheck(self, ENVELOPED_DATA);
     if (res != CF_SUCCESS) {
-        LOGE("GetRawDataType fail.");
+        LOGE("CMS content type is not ENVELOPED_DATA");
         return res;
     }
-    if (contentType != ENVELOPED_DATA) {
-        LOGE("CMS content type is not ENVELOPED_DATA");
-        return CF_ERR_PARAMETER_CHECK;
-    }
-    return CF_SUCCESS;
+    return res;
 }
 
 static CfResult DecryptEnvelopedDataOpenssl(HcfCmsParserSpi *self,
