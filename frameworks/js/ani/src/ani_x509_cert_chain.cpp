@@ -30,11 +30,11 @@ using namespace ANI::CertFramework;
 void FreePkcs12Data(HcfParsePKCS12Conf *conf, CfBlob *keyStore)
 {
     if (conf != nullptr) {
-        CfBlobDataClearAndFree(conf->pwd);
+        CfBlobClearAndFree(&conf->pwd);
         CF_FREE_PTR(conf);
     }
     if (keyStore != nullptr) {
-        CfBlobFree(&keyStore);
+        CfBlobClearAndFree(&keyStore);
     }
 }
 
@@ -86,7 +86,7 @@ CfResult SetKeyStore(const array_view<uint8_t> &data, CfBlob **keyStore)
     }
     tmpKeyStore->data = (uint8_t *)CfMalloc(data.size(), 0);
     if (tmpKeyStore->data == nullptr) {
-        CfBlobFree(&tmpKeyStore);
+        CfBlobClearAndFree(&tmpKeyStore);
         ANI_LOGE_THROW(CF_ERR_MALLOC, "malloc failed!");
         return CF_ERR_MALLOC;
     }
@@ -181,6 +181,31 @@ bool CreateParams(CertChainBuildParameters const& param, HcfX509CertChainBuildPa
     }
     return true;
 }
+
+void SetPbesParams(optional<PbesParams> const& in, HcfPbesParams &params)
+{
+    params.saltLen = CERT_PKCS12_DEFAULT_SALT_LEN;
+    params.iteration = CERT_PKCS12_DEFAULT_ITERATION;
+    params.alg = AES_256_CBC;
+    if (in.has_value()) {
+        params.saltLen = in.value().saltLen.has_value() ? in.value().saltLen.value() : params.saltLen;
+        params.iteration = in.value().iterations.has_value() ? in.value().iterations.value() : params.iteration;
+        params.alg = in.value().encryptionAlgorithm.has_value() ?
+            static_cast<CfPbesEncryptionAlgorithm>(in.value().encryptionAlgorithm.value().get_value()) : params.alg;
+    }
+}
+
+void SetPkcs12CreatingConfig(Pkcs12CreationConfig const& in, HcfPkcs12CreatingConfig &conf)
+{
+    StringToDataBlob(in.password, *conf.pwd);
+    SetPbesParams(in.keyEncParams, conf.keyEncParams);
+    SetPbesParams(in.certEncParams, conf.certEncParams);
+    conf.encryptCert = in.encryptCert.has_value() ? in.encryptCert.value() : true;
+    conf.macSaltLen = in.macSaltLen.has_value() ? in.macSaltLen.value() : CERT_PKCS12_DEFAULT_SALT_LEN;
+    conf.macIteration = in.macIterations.has_value() ? in.macIterations.value() : CERT_PKCS12_DEFAULT_ITERATION;
+    conf.macAlg = in.macDigestAlgorithm.has_value() ?
+        static_cast<CfPkcs12MacDigestAlgorithm>(in.macDigestAlgorithm.value().get_value()) : CF_MAC_SHA256;
+}
 } // namespace
 
 namespace ANI::CertFramework {
@@ -201,13 +226,13 @@ array<X509Cert> X509CertChainImpl::GetCertList()
 {
     if (this->x509CertChain_ == nullptr) {
         ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509CertChain_ is nullptr");
-        return array<X509Cert>(0, make_holder<X509CertImpl, X509Cert>());
+        return {};
     }
     HcfX509CertificateArray certs = { nullptr, 0 };
     CfResult ret = this->x509CertChain_->getCertList(this->x509CertChain_, &certs);
     if (ret != CF_SUCCESS) {
         ANI_LOGE_THROW(ret, "GetCertList failed");
-        return array<X509Cert>(0, make_holder<X509CertImpl, X509Cert>());
+        return {};
     }
     array<X509Cert> result(certs.count, make_holder<X509CertImpl, X509Cert>());
     for (uint32_t i = 0; i < certs.count; i++) {
@@ -239,9 +264,7 @@ CertChainValidationResult X509CertChainImpl::ValidateSync(CertChainValidationPar
         return make_holder<CertChainValidationResultImpl, CertChainValidationResult>();
     }
 
-    CertChainValidationResult result =
-        make_holder<CertChainValidationResultImpl, CertChainValidationResult>(validateResult);
-    return result;
+    return make_holder<CertChainValidationResultImpl, CertChainValidationResult>(validateResult);
 }
 
 string X509CertChainImpl::ToString()
@@ -285,7 +308,7 @@ X509CertChain CreateX509CertChainSync(EncodingBlob const& inStream)
     CfEncodingBlob encodingBlob = {};
     encodingBlob.data = inStream.data.data();
     encodingBlob.len = inStream.data.size();
-    encodingBlob.encodingFormat = static_cast<CfEncodingFormat>(static_cast<int>(inStream.encodingFormat));
+    encodingBlob.encodingFormat = static_cast<CfEncodingFormat>(inStream.encodingFormat.get_value());
     CfResult ret = HcfCertChainCreate(&encodingBlob, nullptr, &x509CertChain);
     if (ret != CF_SUCCESS) {
         ANI_LOGE_THROW(ret, "CreateX509CertChainSync failed");
@@ -349,6 +372,54 @@ CertChainBuildResult BuildX509CertChainSync(CertChainBuildParameters const& para
     return result;
 }
 
+array<uint8_t> CreatePkcs12Sync(Pkcs12Data const& data, Pkcs12CreationConfig const& config)
+{
+    if (config.password.empty()) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "config password is empty!");
+        return {};
+    }
+    HcfX509P12Collection p12Collection = {};
+    array<HcfX509Certificate *> certArray(data.otherCerts.has_value() ? data.otherCerts.value().size() : 0);
+    CfBlob prikeyBlob = {};
+    // Pkcs12Data
+    if (data.privateKey.has_value()) {
+        if (data.privateKey.value().get_tag() == OptStrUint8Arr::tag_t::STRING) {
+            p12Collection.isPem = true;
+            StringToDataBlob(data.privateKey.value().get_STRING_ref(), prikeyBlob);
+        } else { // OptStrUint8Arr::tag_t::UINT8ARRAY
+            p12Collection.isPem = false;
+            ArrayU8ToDataBlob(data.privateKey.value().get_UINT8ARRAY_ref(), prikeyBlob);
+        }
+        p12Collection.prikey = &prikeyBlob;
+    }
+    if (data.cert.has_value()) {
+        p12Collection.cert = reinterpret_cast<HcfX509Certificate *>(data.cert.value()->GetX509CertObj());
+    }
+    if (data.otherCerts.has_value()) {
+        size_t i = 0;
+        for (auto const& cert : data.otherCerts.value()) {
+            certArray[i++] = reinterpret_cast<HcfX509Certificate *>(cert->GetX509CertObj());
+        }
+        p12Collection.otherCerts = certArray.data();
+        p12Collection.otherCertsCount = certArray.size();
+    }
+    // Pkcs12CreationConfig
+    HcfPkcs12CreatingConfig conf = {};
+    CfBlob passwdBlob = {};
+    conf.pwd = &passwdBlob;
+    CfBlob blob = {};
+    SetPkcs12CreatingConfig(config, conf);
+    CfResult res = HcfCreatePkcs12(&p12Collection, &conf, &blob);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "create pkcs12 obj failed!");
+        return {};
+    }
+    array<uint8_t> out = {};
+    DataBlobToArrayU8(blob, out);
+    CfBlobDataFree(&blob);
+    return out;
+}
+
 Pkcs12Data ParsePkcs12(array_view<uint8_t> data, Pkcs12ParsingConfig const& config)
 {
     HcfX509P12Collection *p12Collection = nullptr;
@@ -399,6 +470,13 @@ Pkcs12Data ParsePkcs12(array_view<uint8_t> data, Pkcs12ParsingConfig const& conf
     return pkcs12Data;
 }
 
+Pkcs12Data ParsePkcs12ByPasswdSync(array_view<uint8_t> data, string_view password)
+{
+    Pkcs12ParsingConfig config = {};
+    config.password = password;
+    return ParsePkcs12(data, config);
+}
+
 array<X509TrustAnchor> CreateTrustAnchorsWithKeyStoreSync(array_view<uint8_t> keystore, string_view pwd)
 {
     HcfX509TrustAnchorArray* trustAnchors = nullptr;
@@ -415,14 +493,14 @@ array<X509TrustAnchor> CreateTrustAnchorsWithKeyStoreSync(array_view<uint8_t> ke
     }
     CfBlob *pwdBlob = nullptr;
     if (!StringCopyToBlob(pwd, &pwdBlob)) {
-        CfBlobFree(&keyStore);
+        CfBlobClearAndFree(&keyStore);
         ANI_LOGE_THROW(CF_ERR_MALLOC, "set pwd blob failed!");
         return {};
     }
     ret = HcfCreateTrustAnchorWithKeyStore(keyStore, pwdBlob, &trustAnchors);
     if (ret != CF_SUCCESS) {
-        CfBlobFree(&keyStore);
-        CfBlobFree(&pwdBlob);
+        CfBlobClearAndFree(&keyStore);
+        CfBlobClearAndFree(&pwdBlob);
         ANI_LOGE_THROW(ret, "create trust anchors with keystore failed!");
         return {};
     }
@@ -438,8 +516,8 @@ array<X509TrustAnchor> CreateTrustAnchorsWithKeyStoreSync(array_view<uint8_t> ke
     }
 
     FreeTrustAnchorArray(trustAnchors);
-    CfBlobFree(&keyStore);
-    CfBlobFree(&pwdBlob);
+    CfBlobClearAndFree(&keyStore);
+    CfBlobClearAndFree(&pwdBlob);
     return result;
 }
 } // namespace ANI::CertFramework
@@ -449,6 +527,8 @@ array<X509TrustAnchor> CreateTrustAnchorsWithKeyStoreSync(array_view<uint8_t> ke
 TH_EXPORT_CPP_API_CreateX509CertChainSync(ANI::CertFramework::CreateX509CertChainSync);
 TH_EXPORT_CPP_API_CreateX509CertChain(ANI::CertFramework::CreateX509CertChain);
 TH_EXPORT_CPP_API_BuildX509CertChainSync(ANI::CertFramework::BuildX509CertChainSync);
+TH_EXPORT_CPP_API_CreatePkcs12Sync(ANI::CertFramework::CreatePkcs12Sync);
 TH_EXPORT_CPP_API_ParsePkcs12(ANI::CertFramework::ParsePkcs12);
+TH_EXPORT_CPP_API_ParsePkcs12ByPasswdSync(ANI::CertFramework::ParsePkcs12ByPasswdSync);
 TH_EXPORT_CPP_API_CreateTrustAnchorsWithKeyStoreSync(ANI::CertFramework::CreateTrustAnchorsWithKeyStoreSync);
 // NOLINTEND

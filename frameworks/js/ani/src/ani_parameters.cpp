@@ -175,11 +175,12 @@ bool BuildTrustAnchor(X509TrustAnchor const& param, HcfX509TrustAnchor **anchor)
     return true;
 }
 
-bool BuildTrustAnchors(array<X509TrustAnchor> const& param, HcfX509CertChainValidateParams &validateParam)
+bool BuildTrustAnchors(array<X509TrustAnchor> const& param, HcfX509CertChainValidateParams &validateParam,
+    bool isTrustSystemCa)
 {
     uint32_t count = param.size();
     if (count == 0 || count > MAX_LEN_OF_ARRAY) {
-        return false;
+        return isTrustSystemCa;
     }
     HcfX509TrustAnchorArray *tempTrustAnchors =
         static_cast<HcfX509TrustAnchorArray *>(CfMalloc(sizeof(HcfX509TrustAnchorArray), 0));
@@ -552,7 +553,11 @@ bool BuildX509CertChainValidateParams1(CertChainValidationParameters const& para
 bool BuildX509CertChainValidateParams2(CertChainValidationParameters const& param,
     HcfX509CertChainValidateParams &validateParam)
 {
-    if (!BuildTrustAnchors(param.trustAnchors, validateParam)) {
+    validateParam.policy = param.policy.has_value() ?
+        static_cast<HcfValPolicyType>(param.policy.value().get_value()) : VALIDATION_POLICY_TYPE_X509;
+    validateParam.trustSystemCa = param.trustSystemCa.has_value() ?
+        param.trustSystemCa.value() : false;
+    if (!BuildTrustAnchors(param.trustAnchors, validateParam, validateParam.trustSystemCa)) {
         return false;
     }
     if (!BuildCertCRLs(param.certCRLs, validateParam)) {
@@ -564,10 +569,6 @@ bool BuildX509CertChainValidateParams2(CertChainValidationParameters const& para
     if (!BuildValidateKeyUsage(param.keyUsage, validateParam)) {
         return false;
     }
-    validateParam.policy = param.policy.has_value() ?
-        static_cast<HcfValPolicyType>(param.policy.value().get_value()) : VALIDATION_POLICY_TYPE_X509;
-    validateParam.trustSystemCa = param.trustSystemCa.has_value() ?
-        param.trustSystemCa.value() : false;
     return true;
 }
 

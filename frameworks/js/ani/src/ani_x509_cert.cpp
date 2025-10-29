@@ -85,7 +85,7 @@ EncodingBlob X509CertImpl::GetEncodedSync()
     array<uint8_t> data = {};
     DataBlobToArrayU8({ blob.len, blob.data }, data);
     encodingBlob.data = data;
-    encodingBlob.encodingFormat = static_cast<EncodingFormat::key_t>(blob.encodingFormat);
+    encodingBlob.encodingFormat = EncodingFormat(static_cast<EncodingFormat::key_t>(blob.encodingFormat));
     CfEncodingBlobDataFree(&blob);
     return encodingBlob;
 }

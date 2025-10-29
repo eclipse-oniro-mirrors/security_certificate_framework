@@ -14,7 +14,7 @@
  */
 
 #include "ani_cert_cms_generator.h"
-#include "ani_common.h"
+#include "ani_x509_cert.h"
 #include "x509_distinguished_name.h"
 
 namespace {
@@ -195,18 +195,6 @@ void FreeCmsSignerOptions(HcfCmsSignerOptions *options)
         CF_FREE_PTR(options);
     }
 }
-} // namespace
-
-namespace ANI::CertFramework {
-CmsGeneratorImpl::CmsGeneratorImpl() {}
-
-CmsGeneratorImpl::CmsGeneratorImpl(HcfCmsGenerator *cmsGenerator) : cmsGenerator_(cmsGenerator) {}
-
-CmsGeneratorImpl::~CmsGeneratorImpl()
-{
-    CfObjDestroy(this->cmsGenerator_);
-    this->cmsGenerator_ = nullptr;
-}
 
 void FreePrivateKeyInfo(HcfPrivateKeyInfo **privateKey)
 {
@@ -286,10 +274,24 @@ CfResult SetCmsSignerOptions(HcfCmsSignerOptions **options, CmsSignerConfig cons
         CF_FREE_PTR(*options);
         return CF_ERR_COPY;
     }
+    (*options)->padding = config.rsaSignaturePadding.has_value() ?
+        static_cast<CfCmsRsaSignaturePadding>(config.rsaSignaturePadding.value().get_value()) : PKCS1_PADDING;
     (*options)->addCert = config.addCert.has_value() ? config.addCert.value() : true;
     (*options)->addAttr = config.addAttr.has_value() ? config.addAttr.value() : true;
     (*options)->addSmimeCapAttr = config.addSmimeCapAttr.has_value() ? config.addSmimeCapAttr.value() : true;
     return CF_SUCCESS;
+}
+} // namespace
+
+namespace ANI::CertFramework {
+CmsGeneratorImpl::CmsGeneratorImpl() {}
+
+CmsGeneratorImpl::CmsGeneratorImpl(HcfCmsGenerator *cmsGenerator) : cmsGenerator_(cmsGenerator) {}
+
+CmsGeneratorImpl::~CmsGeneratorImpl()
+{
+    CfObjDestroy(this->cmsGenerator_);
+    this->cmsGenerator_ = nullptr;
 }
 
 void CmsGeneratorImpl::AddSigner(weak::X509Cert cert, ThPrivateKeyInfo const& keyInfo, CmsSignerConfig const& config)
@@ -347,6 +349,50 @@ void CmsGeneratorImpl::AddCert(weak::X509Cert cert)
     }
 }
 
+void CmsGeneratorImpl::SetRecipientEncryptionAlgorithm(CmsRecipientEncryptionAlgorithm algorithm)
+{
+    if (this->cmsGenerator_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "CmsGenerator is not initialized");
+        return;
+    }
+    CfCmsRecipientEncryptionAlgorithm algo = static_cast<CfCmsRecipientEncryptionAlgorithm>(algorithm.get_value());
+    CfResult res = this->cmsGenerator_->setRecipientEncryptionAlgorithm(this->cmsGenerator_, algo);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "set recipient encryption algorithm failed");
+        return;
+    }
+}
+
+void CmsGeneratorImpl::AddRecipientInfoSync(ThCmsRecipientInfo const& recipientInfo)
+{
+    if (this->cmsGenerator_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "CmsGenerator is not initialized");
+        return;
+    }
+    HcfCmsRecipientInfo recInfo = {};
+    KeyTransRecipientInfo keyTransInfo = {};
+    KeyAgreeRecipientInfo keyAgreeInfo = {};
+    if (recipientInfo.keyTransInfo.has_value()) {
+        CmsKeyTransRecipientInfo keyTrans = recipientInfo.keyTransInfo.value();
+        keyTransInfo.recipientCert = reinterpret_cast<HcfCertificate *>(keyTrans.cert->GetX509CertObj());
+        recInfo.keyTransInfo = &keyTransInfo;
+    }
+    if (recipientInfo.keyAgreeInfo.has_value()) {
+        CmsKeyAgreeRecipientInfo keyAgree = recipientInfo.keyAgreeInfo.value();
+        keyAgreeInfo.recipientCert =
+            reinterpret_cast<HcfCertificate *>(keyAgree.cert->GetX509CertObj());
+        keyAgreeInfo.digestAlgorithm = keyAgree.digestAlgorithm.has_value() ?
+            static_cast<CfCmsKeyAgreeRecipientDigestAlgorithm>(keyAgree.digestAlgorithm.value().get_value()) :
+            CMS_SHA256;
+        recInfo.keyAgreeInfo = &keyAgreeInfo;
+    }
+    CfResult res = this->cmsGenerator_->addRecipientInfo(this->cmsGenerator_, &recInfo);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "add recipient info failed");
+        return;
+    }
+}
+
 OptStrUint8Arr CmsGeneratorImpl::DoFinalSync(array_view<uint8_t> data, optional_view<CmsGeneratorOptions> options)
 {
     if (this->cmsGenerator_ == nullptr) {
@@ -375,15 +421,34 @@ OptStrUint8Arr CmsGeneratorImpl::DoFinalSync(array_view<uint8_t> data, optional_
         ANI_LOGE_THROW(ret, "do final failed");
         return OptStrUint8Arr::make_UINT8ARRAY(array<uint8_t>{});
     }
+    OptStrUint8Arr result = OptStrUint8Arr::make_UINT8ARRAY(array<uint8_t>{});
     if (cmsOptions.outFormat == HcfCmsFormat::CMS_PEM) {
-        CfBlobDataClearAndFree(&outBlob);
-        return OptStrUint8Arr::make_STRING(reinterpret_cast<char *>(outBlob.data), outBlob.size);
+        result = OptStrUint8Arr::make_STRING(reinterpret_cast<char *>(outBlob.data), outBlob.size);
     } else {
-        array<uint8_t> data = {};
-        DataBlobToArrayU8(outBlob, data);
-        CfBlobDataClearAndFree(&outBlob);
-        return OptStrUint8Arr::make_UINT8ARRAY(data);
+        array<uint8_t> blob = {};
+        DataBlobToArrayU8(outBlob, blob);
+        result = OptStrUint8Arr::make_UINT8ARRAY(blob);
     }
+    CfBlobDataClearAndFree(&outBlob);
+    return result;
+}
+
+array<uint8_t> CmsGeneratorImpl::GetEncryptedContentDataSync()
+{
+    if (this->cmsGenerator_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "CmsGenerator is not initialized");
+        return {};
+    }
+    CfBlob outBlob = {};
+    CfResult res = this->cmsGenerator_->getEncryptedContentData(this->cmsGenerator_, &outBlob);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "get encrypted content data failed");
+        return {};
+    }
+    array<uint8_t> data = {};
+    DataBlobToArrayU8(outBlob, data);
+    CfBlobDataClearAndFree(&outBlob);
+    return data;
 }
 
 CmsGenerator CreateCmsGenerator(CmsContentType contentType)
@@ -395,6 +460,185 @@ CmsGenerator CreateCmsGenerator(CmsContentType contentType)
         return make_holder<CmsGeneratorImpl, CmsGenerator>();
     }
     return make_holder<CmsGeneratorImpl, CmsGenerator>(cmsGenerator);
+}
+
+CmsParserImpl::CmsParserImpl() {}
+
+CmsParserImpl::CmsParserImpl(HcfCmsParser *cmsParser) : cmsParser_(cmsParser) {}
+
+CmsParserImpl::~CmsParserImpl()
+{
+    CfObjDestroy(this->cmsParser_);
+    this->cmsParser_ = nullptr;
+}
+
+void CmsParserImpl::SetRawDataSync(OptStrUint8Arr const& data, CmsFormat cmsFormat)
+{
+    if (this->cmsParser_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "cmsParser is not initialized");
+        return;
+    }
+    CfBlob blob = {};
+    if (data.get_tag() == OptStrUint8Arr::tag_t::STRING) {
+        StringToDataBlob(data.get_STRING_ref(), blob);
+    } else { // OptStrUint8Arr::tag_t::UINT8ARRAY
+        ArrayU8ToDataBlob(data.get_UINT8ARRAY_ref(), blob);
+    }
+    HcfCmsFormat fmt = static_cast<HcfCmsFormat>(cmsFormat.get_value());
+    CfResult res = this->cmsParser_->setRawData(this->cmsParser_, &blob, fmt);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "set raw data failed");
+        return;
+    }
+}
+
+CmsContentType CmsParserImpl::GetContentType()
+{
+    CmsContentType cmsType = CmsContentType(CmsContentType::key_t::SIGNED_DATA);
+    if (this->cmsParser_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "cmsParser is not initialized");
+        return cmsType;
+    }
+    HcfCmsContentType contentType;
+    CfResult res = this->cmsParser_->getContentType(this->cmsParser_, &contentType);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "get content type failed");
+        return cmsType;
+    }
+    cmsType = CmsContentType(static_cast<CmsContentType::key_t>(contentType));
+    return cmsType;
+}
+
+void CmsParserImpl::VerifySignedDataSync(CmsVerificationConfig const& config)
+{
+    if (this->cmsParser_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "cmsParser is not initialized");
+        return;
+    }
+    CfBlob contentData = {};
+    HcfCmsParserSignedDataOptions options = {};
+    HcfX509CertificateArray trustCerts = {};
+    HcfX509CertificateArray signerCerts = {};
+    array<HcfX509Certificate *> trustCertsArray(config.trustCerts.size());
+    array<HcfX509Certificate *> signerCertsArray(config.signerCerts.has_value() ?
+        config.signerCerts.value().size() : 0);
+    size_t i = 0;
+    for (auto const& cert : config.trustCerts) {
+        trustCertsArray[i++] = reinterpret_cast<HcfX509Certificate *>(cert->GetX509CertObj());
+    }
+    trustCerts.data = trustCertsArray.data();
+    trustCerts.count = trustCertsArray.size();
+    if (config.signerCerts.has_value()) {
+        i = 0;
+        for (auto const& cert : config.signerCerts.value()) {
+            signerCertsArray[i++] = reinterpret_cast<HcfX509Certificate *>(cert->GetX509CertObj());
+        }
+        signerCerts.data = signerCertsArray.data();
+        signerCerts.count = signerCertsArray.size();
+    }
+    options.trustCerts = &trustCerts;
+    options.signerCerts = &signerCerts;
+    if (config.contentData.has_value()) {
+        ArrayU8ToDataBlob(config.contentData.value(), contentData);
+        options.contentData = &contentData;
+    }
+    options.contentDataFormat = config.contentDataFormat.has_value() ?
+        static_cast<HcfCmsContentDataFormat>(config.contentDataFormat.value().get_value()) : BINARY;
+    CfResult res = this->cmsParser_->verifySignedData(this->cmsParser_, &options);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "verify signed data failed");
+        return;
+    }
+}
+
+array<uint8_t> CmsParserImpl::GetContentDataSync()
+{
+    if (this->cmsParser_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "cmsParser is not initialized");
+        return {};
+    }
+    CfBlob blob = {};
+    CfResult res = this->cmsParser_->getContentData(this->cmsParser_, &blob);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "get content data failed");
+        return {};
+    }
+    array<uint8_t> data = {};
+    DataBlobToArrayU8(blob, data);
+    CfBlobDataClearAndFree(&blob);
+    return data;
+}
+
+array<X509Cert> CmsParserImpl::GetCertsSync(CmsCertType type)
+{
+    if (this->cmsParser_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "cmsParser is not initialized");
+        return {};
+    }
+    HcfX509CertificateArray hcfCerts = {};
+    HcfCmsCertType cmsCertType = static_cast<HcfCmsCertType>(type.get_value());
+    CfResult res = this->cmsParser_->getCerts(this->cmsParser_, cmsCertType, &hcfCerts);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "get certs failed");
+        return {};
+    }
+    array<X509Cert> certs(hcfCerts.count, make_holder<X509CertImpl, X509Cert>());
+    for (size_t i = 0; i < hcfCerts.count; i++) {
+        certs[i] = make_holder<X509CertImpl, X509Cert>(hcfCerts.data[i]);
+    }
+    return certs;
+}
+
+array<uint8_t> CmsParserImpl::DecryptEnvelopedDataSync(CmsEnvelopedDecryptionConfig const& config)
+{
+    if (this->cmsParser_ == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "cmsParser is not initialized");
+        return {};
+    }
+    CfBlob blob = {};
+    CfBlob encryptedContentData = {};
+    HcfCmsParserDecryptEnvelopedDataOptions options = {};
+    HcfPrivateKeyInfo *privateKey = nullptr;
+    CfResult res = CF_SUCCESS;
+    if (config.keyInfo.has_value()) {
+        ThPrivateKeyInfo keyInfo = config.keyInfo.value();
+        res = SetPrivateKeyInfo(keyInfo, &privateKey);
+        if (res != CF_SUCCESS) {
+            ANI_LOGE_THROW(res, "set private key info failed");
+            return {};
+        }
+        options.privateKey = privateKey;
+    }
+    if (config.cert.has_value()) {
+        options.cert = reinterpret_cast<HcfX509Certificate *>(config.cert.value()->GetX509CertObj());
+    }
+    if (config.encryptedContentData.has_value()) {
+        ArrayU8ToDataBlob(config.encryptedContentData.value(), encryptedContentData);
+        options.encryptedContentData = &encryptedContentData;
+    }
+    options.contentDataFormat = config.contentDataFormat.has_value() ?
+        static_cast<HcfCmsContentDataFormat>(config.contentDataFormat.value().get_value()) : BINARY;
+    res = this->cmsParser_->decryptEnvelopedData(this->cmsParser_, &options, &blob);
+    FreePrivateKeyInfo(&privateKey);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "decrypt enveloped data failed");
+        return {};
+    }
+    array<uint8_t> data = {};
+    DataBlobToArrayU8(blob, data);
+    CfBlobDataClearAndFree(&blob);
+    return data;
+}
+
+CmsParser CreateCmsParser()
+{
+    HcfCmsParser *cmsParser = nullptr;
+    CfResult res = HcfCreateCmsParser(&cmsParser);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "create cms parser failed!");
+        return make_holder<CmsParserImpl, CmsParser>();
+    }
+    return make_holder<CmsParserImpl, CmsParser>(cmsParser);
 }
 
 OptStrUint8Arr GenerateCsr(ThPrivateKeyInfo const& keyInfo, CsrGenerationConfig const& config)
@@ -439,5 +683,6 @@ OptStrUint8Arr GenerateCsr(ThPrivateKeyInfo const& keyInfo, CsrGenerationConfig 
 // Since these macros are auto-generate, lint will cause false positive.
 // NOLINTBEGIN
 TH_EXPORT_CPP_API_CreateCmsGenerator(ANI::CertFramework::CreateCmsGenerator);
+TH_EXPORT_CPP_API_CreateCmsParser(ANI::CertFramework::CreateCmsParser);
 TH_EXPORT_CPP_API_GenerateCsr(ANI::CertFramework::GenerateCsr);
 // NOLINTEND

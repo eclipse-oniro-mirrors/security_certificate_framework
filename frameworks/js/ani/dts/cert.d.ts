@@ -266,6 +266,7 @@ declare namespace cert {
     needsOtherCerts?: boolean;
   }
   function parsePkcs12(data: Uint8Array, config: Pkcs12ParsingConfig): Pkcs12Data;
+  function parsePkcs12(data: Uint8Array, password: string): Promise<Pkcs12Data>;
   function createTrustAnchorsWithKeyStore(keystore: Uint8Array, pwd: string): Promise<Array<X509TrustAnchor>>;
   function createX500DistinguishedName(nameStr: string): Promise<X500DistinguishedName>;
   function createX500DistinguishedName(nameDer: Uint8Array): Promise<X500DistinguishedName>;
@@ -286,9 +287,11 @@ declare namespace cert {
 
   enum RevocationCheckOptions {
     REVOCATION_CHECK_OPTION_PREFER_OCSP = 0,
-    REVOCATION_CHECK_OPTION_ACCESS_NETWORK,
-    REVOCATION_CHECK_OPTION_FALLBACK_NO_PREFER,
-    REVOCATION_CHECK_OPTION_FALLBACK_LOCAL
+    REVOCATION_CHECK_OPTION_ACCESS_NETWORK = 1,
+    REVOCATION_CHECK_OPTION_FALLBACK_NO_PREFER = 2,
+    REVOCATION_CHECK_OPTION_FALLBACK_LOCAL = 3,
+    REVOCATION_CHECK_OPTION_CHECK_INTERMEDIATE_CA_ONLINE = 4,
+    REVOCATION_CHECK_OPTION_LOCAL_CRL_ONLY_CHECK_END_ENTITY_CERT = 5
   }
 
   enum ValidationPolicyType {
@@ -346,7 +349,8 @@ declare namespace cert {
   }
 
   enum CmsContentType {
-    SIGNED_DATA = 0
+    SIGNED_DATA = 0,
+    ENVELOPED_DATA = 1
   }
 
   enum CmsContentDataFormat {
@@ -364,11 +368,46 @@ declare namespace cert {
     password?: string;
   }
 
+  enum CmsRsaSignaturePadding {
+    PKCS1_PADDING = 0,
+    PKCS1_PSS_PADDING = 1
+  }
+
   interface CmsSignerConfig {
     mdName: string;
+    rsaSignaturePadding?: CmsRsaSignaturePadding;
     addCert?: boolean;
     addAttr?: boolean;
     addSmimeCapAttr?: boolean;
+  }
+
+  enum CmsKeyAgreeRecipientDigestAlgorithm {
+    SHA256 = 0,
+    SHA384 = 1,
+    SHA512 = 2
+  }
+
+  enum CmsRecipientEncryptionAlgorithm {
+    AES_128_CBC = 0,
+    AES_192_CBC = 1,
+    AES_256_CBC = 2,
+    AES_128_GCM = 3,
+    AES_192_GCM = 4,
+    AES_256_GCM = 5
+  }
+
+  interface CmsKeyTransRecipientInfo {
+    cert: X509Cert;
+  }
+
+  interface CmsKeyAgreeRecipientInfo {
+    cert: X509Cert;
+    digestAlgorithm?: CmsKeyAgreeRecipientDigestAlgorithm;
+  }
+
+  interface CmsRecipientInfo {
+    keyTransInfo?: CmsKeyTransRecipientInfo;
+    keyAgreeInfo?: CmsKeyAgreeRecipientInfo;
   }
 
   interface CmsGeneratorOptions {
@@ -380,10 +419,42 @@ declare namespace cert {
   interface CmsGenerator {
     addSigner(cert: X509Cert, keyInfo: PrivateKeyInfo, config: CmsSignerConfig): void;
     addCert(cert: X509Cert): void;
+    setRecipientEncryptionAlgorithm(algorithm: CmsRecipientEncryptionAlgorithm): void;
+    addRecipientInfo(recipientInfo: CmsRecipientInfo): Promise<void>;
     doFinal(data: Uint8Array, options?: CmsGeneratorOptions): Promise<Uint8Array | string>;
     doFinalSync(data: Uint8Array, options?: CmsGeneratorOptions): Uint8Array | string;
+    getEncryptedContentData(): Promise<Uint8Array>;
   }
   function createCmsGenerator(contentType: CmsContentType): CmsGenerator;
+
+  interface CmsVerificationConfig {
+    trustCerts: Array<X509Cert>;
+    signerCerts?: Array<X509Cert>;
+    contentData?: Uint8Array;
+    contentDataFormat?: CmsContentDataFormat;
+  }
+
+  interface CmsEnvelopedDecryptionConfig {
+    keyInfo?: PrivateKeyInfo;
+    cert?: X509Cert;
+    encryptedContentData?: Uint8Array;
+    contentDataFormat?: CmsContentDataFormat;
+  }
+
+  enum CmsCertType {
+    SIGNER_CERTS = 0,
+    ALL_CERTS = 1
+  }
+
+  interface CmsParser {
+    setRawData(data: Uint8Array | string, cmsFormat: CmsFormat): Promise<void>;
+    getContentType(): CmsContentType;
+    verifySignedData(config: CmsVerificationConfig): Promise<void>;
+    getContentData(): Promise<Uint8Array>;
+    getCerts(type: CmsCertType): Promise<Array<X509Cert>>;
+    decryptEnvelopedData(config: CmsEnvelopedDecryptionConfig): Promise<Uint8Array>;
+  }
+  function createCmsParser(): CmsParser;
 
   interface CsrAttribute {
     type: string;
@@ -397,6 +468,36 @@ declare namespace cert {
     outFormat?: EncodingBaseFormat;
   }
   function generateCsr(keyInfo: PrivateKeyInfo, config: CsrGenerationConfig): string | Uint8Array;
+
+  enum PbesEncryptionAlgorithm {
+    AES_128_CBC = 0,
+    AES_192_CBC = 1,
+    AES_256_CBC = 2
+  }
+
+  interface PbesParams {
+    saltLen?: int;
+    iterations?: int;
+    encryptionAlgorithm?: PbesEncryptionAlgorithm;
+  }
+
+  enum Pkcs12MacDigestAlgorithm {
+    SHA256 = 0,
+    SHA384 = 1,
+    SHA512 = 2
+  }
+
+  interface Pkcs12CreationConfig {
+    password: string;
+    keyEncParams?: PbesParams;
+    encryptCert?: boolean;
+    certEncParams?: PbesParams;
+    macSaltLen?: int;
+    macIterations?: int;
+    macDigestAlgorithm?: Pkcs12MacDigestAlgorithm;
+  }
+  function createPkcs12Sync(data: Pkcs12Data, config: Pkcs12CreationConfig): Uint8Array;
+  function createPkcs12(data: Pkcs12Data, config: Pkcs12CreationConfig): Promise<Uint8Array>;
 }
 
 export default cert;

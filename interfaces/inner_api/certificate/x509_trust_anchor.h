@@ -51,6 +51,9 @@ typedef struct {
     uint32_t otherCertsCount;           // otherCertsCount : count of otherCerts
 } HcfX509P12Collection;
 
+#define CERT_PKCS12_DEFAULT_SALT_LEN 16
+#define CERT_PKCS12_DEFAULT_ITERATION 2048
+
 typedef struct {
     int32_t saltLen;       // saltLen : int
     int32_t iteration;  // iteration : int

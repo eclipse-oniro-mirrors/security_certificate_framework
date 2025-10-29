@@ -304,6 +304,8 @@ struct Pkcs12ParsingConfig {
   needsOtherCerts: Optional<bool>;
 }
 function ParsePkcs12(data: @typedarray Array<u8>, config: Pkcs12ParsingConfig): Pkcs12Data;
+@gen_promise("parsePkcs12")
+function ParsePkcs12ByPasswdSync(data: @typedarray Array<u8>, password: String): Pkcs12Data;
 @gen_async("createTrustAnchorsWithKeyStore")
 @gen_promise("createTrustAnchorsWithKeyStore")
 function CreateTrustAnchorsWithKeyStoreSync(keystore: @typedarray Array<u8>, pwd: String): Array<X509TrustAnchor>;
@@ -334,9 +336,11 @@ struct X509TrustAnchor {
 
 enum RevocationCheckOptions: i32 {
   REVOCATION_CHECK_OPTION_PREFER_OCSP = 0,
-  REVOCATION_CHECK_OPTION_ACCESS_NETWORK,
-  REVOCATION_CHECK_OPTION_FALLBACK_NO_PREFER,
-  REVOCATION_CHECK_OPTION_FALLBACK_LOCAL
+  REVOCATION_CHECK_OPTION_ACCESS_NETWORK = 1,
+  REVOCATION_CHECK_OPTION_FALLBACK_NO_PREFER = 2,
+  REVOCATION_CHECK_OPTION_FALLBACK_LOCAL = 3,
+  REVOCATION_CHECK_OPTION_CHECK_INTERMEDIATE_CA_ONLINE = 4,
+  REVOCATION_CHECK_OPTION_LOCAL_CRL_ONLY_CHECK_END_ENTITY_CERT = 5
 }
 
 enum ValidationPolicyType: i32 {
@@ -395,7 +399,8 @@ interface CertChainBuildResult {
 }
 
 enum CmsContentType: i32 {
-  SIGNED_DATA = 0
+  SIGNED_DATA = 0,
+  ENVELOPED_DATA = 1
 }
 
 enum CmsContentDataFormat: i32 {
@@ -413,11 +418,46 @@ struct PrivateKeyInfo {
   password: Optional<String>;
 }
 
+enum CmsRsaSignaturePadding: i32 {
+  PKCS1_PADDING = 0,
+  PKCS1_PSS_PADDING = 1
+}
+
 struct CmsSignerConfig {
   mdName: String;
+  rsaSignaturePadding: Optional<CmsRsaSignaturePadding>;
   addCert: Optional<bool>;
   addAttr: Optional<bool>;
   addSmimeCapAttr: Optional<bool>;
+}
+
+enum CmsKeyAgreeRecipientDigestAlgorithm: i32 {
+  SHA256 = 0,
+  SHA384 = 1,
+  SHA512 = 2
+}
+
+enum CmsRecipientEncryptionAlgorithm: i32 {
+  AES_128_CBC = 0,
+  AES_192_CBC = 1,
+  AES_256_CBC = 2,
+  AES_128_GCM = 3,
+  AES_192_GCM = 4,
+  AES_256_GCM = 5
+}
+
+struct CmsKeyTransRecipientInfo {
+  cert: X509Cert;
+}
+
+struct CmsKeyAgreeRecipientInfo {
+  cert: X509Cert;
+  digestAlgorithm: Optional<CmsKeyAgreeRecipientDigestAlgorithm>;
+}
+
+struct CmsRecipientInfo {
+  keyTransInfo: Optional<CmsKeyTransRecipientInfo>;
+  keyAgreeInfo: Optional<CmsKeyAgreeRecipientInfo>;
 }
 
 struct CmsGeneratorOptions {
@@ -429,11 +469,50 @@ struct CmsGeneratorOptions {
 interface CmsGenerator {
   AddSigner(cert: X509Cert, keyInfo: PrivateKeyInfo, config: CmsSignerConfig): void;
   AddCert(cert: X509Cert): void;
+  SetRecipientEncryptionAlgorithm(algorithm: CmsRecipientEncryptionAlgorithm): void;
+  @gen_promise("addRecipientInfo")
+  AddRecipientInfoSync(recipientInfo: CmsRecipientInfo): void;
   @gen_async("doFinal")
   @gen_promise("doFinal")
   DoFinalSync(data: @typedarray Array<u8>, options: Optional<CmsGeneratorOptions>): OptStrUint8Arr;
+  @gen_promise("getEncryptedContentData")
+  GetEncryptedContentDataSync(): @typedarray Array<u8>;
 }
 function CreateCmsGenerator(contentType: CmsContentType): CmsGenerator;
+
+struct CmsVerificationConfig {
+  trustCerts: Array<X509Cert>;
+  signerCerts: Optional<Array<X509Cert>>;
+  contentData: Optional<@typedarray Array<u8>>;
+  contentDataFormat: Optional<CmsContentDataFormat>;
+}
+
+struct CmsEnvelopedDecryptionConfig {
+  keyInfo: Optional<PrivateKeyInfo>;
+  cert: Optional<X509Cert>;
+  encryptedContentData: Optional<@typedarray Array<u8>>;
+  contentDataFormat: Optional<CmsContentDataFormat>;
+}
+
+enum CmsCertType: i32 {
+  SIGNER_CERTS = 0,
+  ALL_CERTS = 1
+}
+
+interface CmsParser {
+  @gen_promise("setRawData")
+  SetRawDataSync(data: OptStrUint8Arr, cmsFormat: CmsFormat): void;
+  GetContentType(): CmsContentType;
+  @gen_promise("verifySignedData")
+  VerifySignedDataSync(config: CmsVerificationConfig): void;
+  @gen_promise("getContentData")
+  GetContentDataSync(): @typedarray Array<u8>;
+  @gen_promise("getCerts")
+  GetCertsSync(type: CmsCertType): Array<X509Cert>;
+  @gen_promise("decryptEnvelopedData")
+  DecryptEnvelopedDataSync(config: CmsEnvelopedDecryptionConfig): @typedarray Array<u8>;
+}
+function CreateCmsParser(): CmsParser;
 
 struct CsrAttribute {
   type: String;
@@ -447,3 +526,33 @@ struct CsrGenerationConfig {
   outFormat: Optional<EncodingBaseFormat>;
 }
 function GenerateCsr(keyInfo: PrivateKeyInfo, config: CsrGenerationConfig): OptStrUint8Arr;
+
+enum PbesEncryptionAlgorithm: i32 {
+  AES_128_CBC = 0,
+  AES_192_CBC = 1,
+  AES_256_CBC = 2
+}
+
+struct PbesParams {
+  saltLen: Optional<i32>;
+  iterations: Optional<i32>;
+  encryptionAlgorithm: Optional<PbesEncryptionAlgorithm>;
+}
+
+enum Pkcs12MacDigestAlgorithm: i32 {
+  SHA256 = 0,
+  SHA384 = 1,
+  SHA512 = 2
+}
+
+struct Pkcs12CreationConfig {
+  password: String;
+  keyEncParams: Optional<PbesParams>;
+  encryptCert: Optional<bool>;
+  certEncParams: Optional<PbesParams>;
+  macSaltLen: Optional<i32>;
+  macIterations: Optional<i32>;
+  macDigestAlgorithm: Optional<Pkcs12MacDigestAlgorithm>;
+}
+@gen_promise("createPkcs12")
+function CreatePkcs12Sync(data: Pkcs12Data, config: Pkcs12CreationConfig): @typedarray Array<u8>;
