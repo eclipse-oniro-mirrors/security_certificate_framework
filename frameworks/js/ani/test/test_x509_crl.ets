@@ -108,7 +108,10 @@ function testX509CrlAsync() {
   try {
     let x509CRL = await cert.createX509CRL(encodingBlob);
     console.println("createX509CRL success");
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println("createX509CRL failed, errCode: " + err.code + ", errMsg: " + err.message);
   }
 }
@@ -119,7 +122,10 @@ function testIsRevoked() {
     let x509Cert = await cert.createX509Cert(certEncodingBlob);
     let isRevoked = x509CRL.isRevoked(x509Cert);
     console.println("isRevoked: " + isRevoked);
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println("isRevoked failed, errCode: " + err.code + ", errMsg: " + err.message);
   }
 }
@@ -129,7 +135,10 @@ function testGetType() {
     let x509CRL = await cert.createX509CRL(encodingBlob);
     let type = x509CRL.getType();
     console.println("type: " + type);
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println("getType failed, errCode: " + err.code + ", errMsg: " + err.message);
   }
 }
@@ -139,7 +148,10 @@ function testGetEncoded() {
     let x509CRL = await cert.createX509CRL(encodingBlob);
     let encoded = x509CRL.getEncoded();
     console.println("encoded: " + encoded);
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println("getEncodedSync failed, errCode: " + err.code + ", errMsg: " + err.message);
   }
 }
@@ -161,7 +173,10 @@ function testVerifySync() {
     let data = x509CRL.verify(keyPair.pubKey);
     console.log('verify success, data is ' + data);
     console.println("verifySync success");
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println("verifySync failed, errCode: " + err.code + ", errMsg: " + err.message);
   }
 }
@@ -171,7 +186,10 @@ function testgetVersion() {
     let x509CRL = await cert.createX509CRL(encodingBlob);
     let version = x509CRL.getVersion();
     console.println("version: " + version);
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println("getVersion failed, errCode: " + err.code + ", errMsg: " + err.message);
   }
 }
@@ -181,7 +199,10 @@ function testGetIssuerName() {
     let x509CRL = await cert.createX509CRL(encodingBlob);
     let issuername = x509CRL.getIssuerName();
     console.println("issuername: " + issuername);
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println("getIssuerName failed, errCode: " + err.code + ", errMsg: " + err.message);
   }
 }
@@ -191,7 +212,10 @@ function testgetlastUpdate() {
     let x509CRL = await cert.createX509CRL(encodingBlob);
     let lastUpdate = x509CRL.getLastUpdate();
     console.println("lastUpdate: " + lastUpdate);
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println("getLastUpdate failed, errCode: " + err.code + ", errMsg: " + err.message);
   }
 }
@@ -201,7 +225,10 @@ function testgetnextUpdate() {
     let x509CRL = await cert.createX509CRL(encodingBlob);
     let nextUpdate = x509CRL.getNextUpdate();
     console.println("nextUpdate: " + nextUpdate);
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println("getNextUpdate failed, errCode: " + err.code + ", errMsg: " + err.message);
   }
 }
@@ -212,7 +239,10 @@ function testgetRevokedCertificates() {
     let serialNumber = BigInt(1000);
     let revokedCertificates = x509CRL.getRevokedCert(serialNumber);
     console.println("getRevokedCert : " + revokedCertificates);
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println("getRevokedCert  failed, errCode: " + err.code + ", errMsg: " + err.message);
   }
 }
@@ -265,7 +295,10 @@ let encodingBlob2: cert.EncodingBlob = {
     let x509Cert = await cert.createX509Cert(certEncodingBlob2);
     let revokedCertificates = x509CRL.getRevokedCertWithCert(x509Cert);
     console.println("getRevokedCertWithCert: " + revokedCertificates);
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println("getRevokedCertWithCert failed, errCode: " + err.code + ", errMsg: " + err.message);
   }
 }
@@ -275,7 +308,10 @@ function testgetRevokedCerts() {
     let x509CRL = await cert.createX509CRL(encodingBlob);
     let revokedCerts = x509CRL.getRevokedCerts();
     console.println("getRevokedCerts: " + revokedCerts);
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println("getRevokedCerts failed, errCode: " + err.code + ", errMsg: " + err.message);
   }
 }
@@ -285,7 +321,10 @@ function testgetSignature() {
     let x509CRL = await cert.createX509CRL(encodingBlob);
     let signature = x509CRL.getSignature();
     console.println("getSignature: " + signature);
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println("getSignature failed, errCode: " + err.code + ", errMsg: " + err.message);
   }
 }
@@ -295,7 +334,10 @@ function testgetSignatureAlgName() {
     let x509CRL = await cert.createX509CRL(encodingBlob);
     let signatureAlgorithm = x509CRL.getSignatureAlgName();
     console.println("getSignatureAlgName: " + signatureAlgorithm);
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println("getSignatureAlgName failed, errCode: " + err.code + ", errMsg: " + err.message);
   }
 }
@@ -305,7 +347,10 @@ function testgetSignatureAlgOid() {
     let x509CRL = await cert.createX509CRL(encodingBlob);
     let signatureAlgorithm = x509CRL.getSignatureAlgOid();
     console.println("getSignatureAlgOid: " + signatureAlgorithm);
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println("getSignatureAlgOid failed, errCode: " + err.code + ", errMsg: " + err.message);
   }
 }
@@ -315,7 +360,10 @@ function testgetSignatureAlgParams() {
     let x509CRL = await cert.createX509CRL(encodingBlob);
     let signatureAlgorithm = x509CRL.getSignatureAlgParams();
     console.println("getSignatureAlgParams: " + signatureAlgorithm);
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println("getSignatureAlgParams failed, errCode: " + err.code + ", errMsg: " + err.message);
   }
 }
@@ -325,7 +373,10 @@ function testgetTBSinfo() {
     let x509CRL = await cert.createX509CRL(encodingBlob);
     let tbsinfo = x509CRL.getTBSInfo();
     console.println("getTBSinfo: " + tbsinfo);
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println("getTBSinfo failed, errCode: " + err.code + ", errMsg: " + err.message);
   }
 }
@@ -335,7 +386,10 @@ function testgetExtensions() {
     let x509CRL = await cert.createX509CRL(encodingBlob);
     let extensions = x509CRL.getExtensions();
     console.println("getExtensions: " + extensions);
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)){
+      throw err;
+    }
     console.println("getExtensions failed, errCode: " + err.code + ", errMsg: " + err.message);
   }
 }
@@ -372,7 +426,10 @@ function testmatch() {
     }
     let match = x509CRL.match(param);
     console.println("match: " + match);
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println("match failed, errCode: " + err.code + ", errMsg: " + err.message);
   }
 }
@@ -382,7 +439,10 @@ function testgetissuerX500DistinguishedName() {
     let x509CRL = await cert.createX509CRL(encodingBlob);
     let issuerX500DistinguishedName = x509CRL.getIssuerX500DistinguishedName();
     console.println("getIssuerX500DistinguishedName: " + issuerX500DistinguishedName);
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println("getIssuerX500DistinguishedName failed, errCode: " + err.code + ", errMsg: " + err.message);
   }
 }
@@ -392,7 +452,10 @@ function testToString() {
     let x509CRL = await cert.createX509CRL(encodingBlob);
     let string = x509CRL.toString();
     console.println('crlToString success: ' + JSON.stringify(string));
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println("toString failed, errCode: " + err.code + ", errMsg: " + err.message);
   }
 }
@@ -402,7 +465,10 @@ function testhashcode() {
     let x509CRL = await cert.createX509CRL(encodingBlob);
     let hashCode = x509CRL.hashCode();
     console.println('crlHashCode success: ' + JSON.stringify(hashCode));
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println("hashCode failed, errCode: " + err.code + ", errMsg: " + err.message);
   }
 }
@@ -430,7 +496,10 @@ function testgetExtensionObj() {
     let x509CRL = await cert.createX509CRL(crlEncodingBlob1);
     let extensionObj = x509CRL.getExtensionsObject();
     console.println('crlGetExtensionObj success');
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println("getExtensionObj failed, errCode: " + err.code + ", errMsg: " + err.message);
   }
 }

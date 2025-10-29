@@ -84,7 +84,10 @@ function testX509CertChainAsync() {
       try {
         let certList = certChain.getCertList();
         console.println('X509CertChain getCertList success.');
-      } catch (err: BusinessError) {
+      } catch (err) {
+        if (!(err instanceof BusinessError)) {
+          throw err;
+        }
         let e: BusinessError = err as BusinessError;
         console.println('X509CertChain getCertList failed, errCode: ' + e.code + ', errMsg: ' + e.message);
       }
@@ -110,7 +113,10 @@ function validateTest() {
       try {
         let validationRes = certChain.validate(param);
         console.println('X509CertChain validate success.');
-      } catch (err: BusinessError) {
+      } catch (err) {
+        if (!(err instanceof BusinessError)) {
+          throw err;
+        }
         let e: BusinessError = err as BusinessError;
         console.println('X509CertChain validate failed, errCode: ' + e.code + ', errMsg: ' + e.message);
       }
@@ -127,7 +133,10 @@ function certChainToStringTest() {
   try {
     let str = certChain.toString();
     console.println('toString success: ' + JSON.stringify(str));
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     let e: BusinessError = err as BusinessError;
     console.println('createX509CertChain failed, errCode: ' + e.code + ', errMsg: ' + e.message);
   }
@@ -143,7 +152,10 @@ function certChainHashCodeTest() {
   try {
     let hashCode = certChain.hashCode();
     console.println('hashCode success: ' + JSON.stringify(hashCode));
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     let e: BusinessError = err as BusinessError;
     console.println('createX509CertChain failed, errCode: ' + e.code + ', errMsg: ' + e.message);
   }
@@ -157,7 +169,10 @@ try {
     if (data) {
       console.println('createTrustAnchorsWithKeyStore sucess');
     }
-    } catch (error: BusinessError) {
+    } catch (error) {
+      if (!(error instanceof BusinessError)) {
+        throw error;
+      }
       console.println('createTrustAnchorsWithKeyStore failed:' + JSON.stringify(error));
     }
 }
@@ -328,7 +343,10 @@ function doTestParsePkcs12() {
     if (p12.privateKey) {
       console.println("parsePkcs12 success.")
     }
-  } catch (error: BusinessError) {
+  } catch (error) {
+    if (!(error instanceof BusinessError)) {
+      throw error;
+    }
     console.println('parsePKCS12 failed:' + JSON.stringify(error));
   }
 }
@@ -400,7 +418,10 @@ function buildX509CertChain() {
     let certChainBuildResult = await cert.buildX509CertChain(param);
     console.println("cert issuer name: " + certChainBuildResult.validationResult.entityCert.getIssuerName().data)
     console.println("ca subject name: " + certChainBuildResult.validationResult.trustAnchor.CACert?.getSubjectName().data)
-  } catch (error: BusinessError) {
+  } catch (error) {
+    if (!(error instanceof BusinessError)) {
+      throw error;
+    }
     let e: BusinessError = error as BusinessError;
     console.println('createX509CertChain failed, errCode: ' + e.code + ', errMsg: ' + e.message);
   }

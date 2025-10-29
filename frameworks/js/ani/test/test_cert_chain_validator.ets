@@ -92,7 +92,10 @@ function testCertChainValidatorAsync() {
     };
     await validator.validate(certChainData);
     console.println('CertChainValidator success');
-  } catch (err: BusinessError) {
+  } catch (err) {
+    if (!(err instanceof BusinessError)) {
+      throw err;
+    }
     console.println(`[error] CertChainValidator: ${err.code} ${err.message}`);
   }
 }

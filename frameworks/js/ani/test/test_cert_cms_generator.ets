@@ -67,11 +67,17 @@ function createCsrTest() {
       console.println('generateCsr start');
       let csrStr = cert.generateCsr(priKeyInfo, conf)
       console.println('generateCsr success return str is' + csrStr)
-    } catch (error: BusinessError) {
+    } catch (error) {
+      if (!(error instanceof BusinessError)) {
+        throw error;
+      }
       let e: BusinessError = error as BusinessError;
       console.error('generateCsr failed, errCode: ' + e.code + ', errMsg: ' + e.message);
     }
-  } catch (error: BusinessError) {
+  } catch (error) {
+    if (!(error instanceof BusinessError)) {
+      throw error;
+    }
     let e: BusinessError = error as BusinessError;
     console.error('createX500DistinguishedName catch, errCode: ' + e.code + ', errMsg: ' + e.message);
   }
@@ -137,7 +143,10 @@ function testAddSigner() {
         }
         cmsGenerator.addSigner(x509Cert, privateKeyInfo, config);
         console.println('testAddSigner addSigner success.');
-    } catch (err: BusinessError) {
+    } catch (err) {
+      if (!(err instanceof BusinessError)) {
+        throw err;
+      }
         let e: BusinessError = err as BusinessError;
         console.println('testAddSigner failed, errCode: ' + e.code + ', errMsg: ' + e.message);
     }
@@ -157,7 +166,10 @@ function testAddCert() {
             console.println('testAddCert createCmsGenerator success.');
             cmsGenerator.addCert(x509Cert);
             console.println('testAddCert addCert success.');
-        } catch (err: BusinessError) {
+        } catch (err) {
+          if (!(err instanceof BusinessError)) {
+            throw err;
+          }
             let e: BusinessError = err as BusinessError;
             console.println('testAddCert failed, errCode: ' + e.code + ', errMsg: ' + e.message);
         }
@@ -197,7 +209,10 @@ function testDoFinalByPromise() {
           };
           let output = cmsGenerator.doFinalSync(content, optionsFinal);
           console.println('testDoFinalSync doFinalSync success, out = ' + output);
-        } catch (err: BusinessError) {
+        } catch (err) {
+          if (!(err instanceof BusinessError)) {
+            throw err;
+          }
           let e: BusinessError = err as BusinessError;
           console.println('testDoFinalSync failed, errCode: ' + e.code + ', errMsg: ' + e.message);
         }

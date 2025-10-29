@@ -22,7 +22,10 @@ function createX500DistinguishedNameStrTest() {
     let nameStr = '/CN=John Doe/OU=IT Department/O=ACME Inc./L=San Francisco/ST=California/C=US/CN=ALN C/CN=XTS';
     let data = await cert.createX500DistinguishedName(nameStr);
     console.println('createX500DistinguishedName success, name is ' + data.getName("CN").toString());
-  } catch (error: BusinessError) {
+  } catch (error) {
+    if (!(error instanceof BusinessError)) {
+      throw error;
+    }
     let e: BusinessError = error as BusinessError;
     console.error('createX500DistinguishedName failed, errCode: ' + e.code + ', errMsg: ' + e.message);
   }
@@ -33,7 +36,10 @@ function createX500DistinguishedNameDerTest() {
     let nameDer = new Uint8Array([48,41,49,11,48,9,6,3,85,4,3,12,2,67,65,49,13,48,11,6,3,85,4,10,12,4,116,101,115,116,49,11,48,9,6,3,85,4,6,19,2,67,78]);
     let data = await cert.createX500DistinguishedName(nameDer);
     console.println('createX500DistinguishedName success, name is ' + JSON.stringify(data.getName()))
-  } catch (error: BusinessError) {
+  } catch (error) {
+    if (!(error instanceof BusinessError)) {
+      throw error;
+    }
     let e: BusinessError = error as BusinessError;
     console.error('createX500DistinguishedName failed, errCode: ' + e.code + ', errMsg: ' + e.message);
   }
@@ -50,7 +56,10 @@ function getEncodedTest() {
     } else {
       console.error('getEncoded failed, encoded is null');
     }
-  } catch (error: BusinessError) {
+  } catch (error) {
+    if (!(error instanceof BusinessError)) {
+      throw error;
+    }
     let e: BusinessError = error as BusinessError;
     console.error('getEncoded failed, errCode: ' + e.code + ', errMsg: ' + e.message);
   }
