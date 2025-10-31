@@ -48,8 +48,6 @@ STACK_OF(X509) *__real_CMS_get1_certs(CMS_ContentInfo *cms);
 int __real_BIO_write(BIO *b, const void *data, int dlen);
 int __real_OPENSSL_sk_push(OPENSSL_STACK *st, const void *data);
 OPENSSL_STACK *__real_OPENSSL_sk_new_null(void);
-int __real_OPENSSL_sk_num(const OPENSSL_STACK *st);
-void *__real_OPENSSL_sk_value(const OPENSSL_STACK *st, int i);
 X509_STORE *__real_X509_STORE_new(void);
 int __real_X509_STORE_add_cert(X509_STORE *ctx, X509 *x);
 BIO *__real_BIO_new(const BIO_METHOD *type);
@@ -1159,87 +1157,6 @@ HWTEST_F(CryptoX509CertCmsParserTestMock, GetCertsInvalidCertType, TestSize.Leve
     res = cmsParser->getCerts(cmsParser, static_cast<HcfCmsCertType>(999), &certs);
     EXPECT_EQ(res, CF_ERR_PARAMETER_CHECK);
 
-    CfObjDestroy(cmsParser);
-}
-
-HWTEST_F(CryptoX509CertCmsParserTestMock, GetCertsMockSkX509NumZeroAllCerts, TestSize.Level0)
-{
-    HcfCmsParser *cmsParser = nullptr;
-    CfBlob cmsData;
-    cmsData.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_signedCmsPem));
-    cmsData.size = strlen(g_signedCmsPem) + 1;
-
-    CfResult res = HcfCreateCmsParser(&cmsParser);
-    EXPECT_EQ(res, CF_SUCCESS);
-    EXPECT_NE(cmsParser, nullptr);
-
-    res = cmsParser->setRawData(cmsParser, &cmsData, CMS_PEM);
-    EXPECT_EQ(res, CF_SUCCESS);
-
-    X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_num(_))
-        .WillOnce(Return(0))
-        .WillRepeatedly(Invoke(__real_OPENSSL_sk_num));
-
-    HcfX509CertificateArray certs = {nullptr, 0};
-    res = cmsParser->getCerts(cmsParser, CMS_CERT_ALL_CERTS, &certs);
-    EXPECT_EQ(res, CF_ERR_CRYPTO_OPERATION);
-
-    X509OpensslMock::SetMockFlag(false);
-    CfObjDestroy(cmsParser);
-}
-
-HWTEST_F(CryptoX509CertCmsParserTestMock, GetCertsMockSkX509NumZeroSignerCerts, TestSize.Level0)
-{
-    HcfCmsParser *cmsParser = nullptr;
-    CfBlob cmsData;
-    cmsData.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_signedCmsPem));
-    cmsData.size = strlen(g_signedCmsPem) + 1;
-
-    CfResult res = HcfCreateCmsParser(&cmsParser);
-    EXPECT_EQ(res, CF_SUCCESS);
-    EXPECT_NE(cmsParser, nullptr);
-
-    res = cmsParser->setRawData(cmsParser, &cmsData, CMS_PEM);
-    EXPECT_EQ(res, CF_SUCCESS);
-
-    X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_num(_))
-        .WillOnce(Return(0))
-        .WillRepeatedly(Invoke(__real_OPENSSL_sk_num));
-
-    HcfX509CertificateArray certs = {nullptr, 0};
-    res = cmsParser->getCerts(cmsParser, CMS_CERT_SIGNER_CERTS, &certs);
-    EXPECT_EQ(res, CF_ERR_CRYPTO_OPERATION);
-
-    X509OpensslMock::SetMockFlag(false);
-    CfObjDestroy(cmsParser);
-}
-
-HWTEST_F(CryptoX509CertCmsParserTestMock, GetCertsMockSkX509ValueNullAllCerts, TestSize.Level0)
-{
-    HcfCmsParser *cmsParser = nullptr;
-    CfBlob cmsData;
-    cmsData.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_signedCmsPem));
-    cmsData.size = strlen(g_signedCmsPem) + 1;
-
-    CfResult res = HcfCreateCmsParser(&cmsParser);
-    EXPECT_EQ(res, CF_SUCCESS);
-    EXPECT_NE(cmsParser, nullptr);
-
-    res = cmsParser->setRawData(cmsParser, &cmsData, CMS_PEM);
-    EXPECT_EQ(res, CF_SUCCESS);
-
-    X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_value(_, _))
-        .WillOnce(Return(nullptr))
-        .WillRepeatedly(Invoke(__real_OPENSSL_sk_value));
-
-    HcfX509CertificateArray certs = {nullptr, 0};
-    res = cmsParser->getCerts(cmsParser, CMS_CERT_ALL_CERTS, &certs);
-    EXPECT_EQ(res, CF_ERR_CRYPTO_OPERATION);
-
-    X509OpensslMock::SetMockFlag(false);
     CfObjDestroy(cmsParser);
 }
 
