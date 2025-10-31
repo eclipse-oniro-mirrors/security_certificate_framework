@@ -1749,7 +1749,6 @@ static CfResult BuildDecryptEnvelopedDataOption(napi_env env, napi_value arg, Cm
     CfResult res = CertGetCmsParserEnvelopedDataOptionsFromValue(env, arg, &ctx->decryptEnvelopedDataOptions);
     if (res != CF_SUCCESS) {
         LOGE("Cert EnvelopedDataOptions failed!");
-        FreeCmsParserCtx(env, ctx);
         return res;
     }
     return CF_SUCCESS;

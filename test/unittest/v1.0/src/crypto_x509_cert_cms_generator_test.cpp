@@ -1414,10 +1414,27 @@ static void FreeCmsOptions(HcfCmsParserSignedDataOptions *cmsOptions)
     }
 }
 
+static void FreePrivateKeyInfo(PrivateKeyInfo *privateKey)
+{
+    if (privateKey != nullptr) {
+        if (privateKey->privateKey != nullptr) {
+            (void)memset_s(privateKey->privateKey->data, privateKey->privateKey->len, 0, privateKey->privateKey->len);
+            CF_FREE_PTR(privateKey->privateKey->data);
+            CF_FREE_PTR(privateKey->privateKey);
+        }
+        if (privateKey->privateKeyPassword != nullptr) {
+            (void)memset_s(privateKey->privateKeyPassword, strlen(privateKey->privateKeyPassword), 0,
+                strlen(privateKey->privateKeyPassword));
+            CF_FREE_PTR(privateKey->privateKeyPassword);
+        }
+        CF_FREE_PTR(privateKey);
+    }
+}
+
 static void FreeCmsDecryptOptions(HcfCmsParserDecryptEnvelopedDataOptions *cmsOptions)
 {
     if (cmsOptions != nullptr) {
-        CfFree(cmsOptions->privateKey);
+        FreePrivateKeyInfo(cmsOptions->privateKey);
         CfObjDestroy(cmsOptions->cert);
         CfBlobDataClearAndFree(cmsOptions->encryptedContentData);
         CfFree(cmsOptions);
@@ -1454,6 +1471,22 @@ static CfResult BuildCmsData(HcfCmsParserSignedDataOptions **cmsOptions)
     return CF_SUCCESS;
 }
 
+static bool CopyBlobDataToPrivateKey(CfEncodingBlob *privateKeyBlob, CfEncodingBlob *privateKey)
+{
+    privateKey->data = static_cast<uint8_t *>(CfMalloc(privateKeyBlob->len, 0));
+    if (privateKey->data == nullptr) {
+        return false;
+    }
+    if (memcpy_s(privateKey->data, privateKeyBlob->len, privateKeyBlob->data, privateKeyBlob->len) != EOK) {
+        CfFree(privateKey->data);
+        privateKey->data = nullptr;
+        return false;
+    }
+    privateKey->len = privateKeyBlob->len;
+    privateKey->encodingFormat = privateKeyBlob->encodingFormat;
+    return true;
+}
+
 static CfResult BuildCmsDecryptData(CfEncodingBlob privateKeyBlob, CfBlob *encryptedContentData,
     HcfCmsParserDecryptEnvelopedDataOptions **cmsOptions)
 {
@@ -1464,7 +1497,14 @@ static CfResult BuildCmsDecryptData(CfEncodingBlob privateKeyBlob, CfBlob *encry
     PrivateKeyInfo *privateKey = static_cast<PrivateKeyInfo *>(
         CfMalloc(sizeof(PrivateKeyInfo), 0));
     EXPECT_NE(privateKey, nullptr);
-    privateKey->privateKey = &privateKeyBlob;
+
+    CfEncodingBlob *privateKeyBlobCopy = static_cast<CfEncodingBlob *>(
+        CfMalloc(sizeof(CfEncodingBlob), 0));
+    EXPECT_NE(privateKeyBlobCopy, nullptr);
+    bool ret = CopyBlobDataToPrivateKey(&privateKeyBlob, privateKeyBlobCopy);
+    EXPECT_EQ(ret, true);
+
+    privateKey->privateKey = privateKeyBlobCopy;
     privateKey->privateKeyPassword = nullptr;
 
     HcfX509Certificate *x509Cert = nullptr;
