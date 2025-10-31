@@ -297,12 +297,12 @@ CmsGeneratorImpl::~CmsGeneratorImpl()
 void CmsGeneratorImpl::AddSigner(weak::X509Cert cert, ThPrivateKeyInfo const& keyInfo, CmsSignerConfig const& config)
 {
     if (this->cmsGenerator_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "CmsGenerator is not initialized");
+        ANI_LOGE_THROW(CF_ERR_ANI, "CmsGenerator is not initialized");
         return;
     }
     HcfX509Certificate *x509Cert = reinterpret_cast<HcfX509Certificate *>(cert->GetX509CertObj());
     if (x509Cert == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509Cert is null");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509Cert is null");
         return;
     }
     HcfPrivateKeyInfo *privateKey = nullptr;
@@ -334,12 +334,12 @@ void CmsGeneratorImpl::AddSigner(weak::X509Cert cert, ThPrivateKeyInfo const& ke
 void CmsGeneratorImpl::AddCert(weak::X509Cert cert)
 {
     if (this->cmsGenerator_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "CmsGenerator is not initialized");
+        ANI_LOGE_THROW(CF_ERR_ANI, "CmsGenerator is not initialized");
         return;
     }
     HcfX509Certificate *x509Cert = reinterpret_cast<HcfX509Certificate *>(cert->GetX509CertObj());
     if (x509Cert == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509Cert is null");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509Cert is null");
         return;
     }
     CfResult ret = this->cmsGenerator_->addCert(this->cmsGenerator_, &(x509Cert->base));
@@ -352,7 +352,7 @@ void CmsGeneratorImpl::AddCert(weak::X509Cert cert)
 void CmsGeneratorImpl::SetRecipientEncryptionAlgorithm(CmsRecipientEncryptionAlgorithm algorithm)
 {
     if (this->cmsGenerator_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "CmsGenerator is not initialized");
+        ANI_LOGE_THROW(CF_ERR_ANI, "CmsGenerator is not initialized");
         return;
     }
     CfCmsRecipientEncryptionAlgorithm algo = static_cast<CfCmsRecipientEncryptionAlgorithm>(algorithm.get_value());
@@ -366,7 +366,7 @@ void CmsGeneratorImpl::SetRecipientEncryptionAlgorithm(CmsRecipientEncryptionAlg
 void CmsGeneratorImpl::AddRecipientInfoSync(ThCmsRecipientInfo const& recipientInfo)
 {
     if (this->cmsGenerator_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "CmsGenerator is not initialized");
+        ANI_LOGE_THROW(CF_ERR_ANI, "CmsGenerator is not initialized");
         return;
     }
     HcfCmsRecipientInfo recInfo = {};
@@ -396,7 +396,7 @@ void CmsGeneratorImpl::AddRecipientInfoSync(ThCmsRecipientInfo const& recipientI
 OptStrUint8Arr CmsGeneratorImpl::DoFinalSync(array_view<uint8_t> data, optional_view<CmsGeneratorOptions> options)
 {
     if (this->cmsGenerator_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "CmsGenerator is not initialized");
+        ANI_LOGE_THROW(CF_ERR_ANI, "CmsGenerator is not initialized");
         return OptStrUint8Arr::make_UINT8ARRAY(array<uint8_t>{});
     }
     HcfCmsGeneratorOptions cmsOptions = {};
@@ -436,7 +436,7 @@ OptStrUint8Arr CmsGeneratorImpl::DoFinalSync(array_view<uint8_t> data, optional_
 array<uint8_t> CmsGeneratorImpl::GetEncryptedContentDataSync()
 {
     if (this->cmsGenerator_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "CmsGenerator is not initialized");
+        ANI_LOGE_THROW(CF_ERR_ANI, "CmsGenerator is not initialized");
         return {};
     }
     CfBlob outBlob = {};
@@ -475,7 +475,7 @@ CmsParserImpl::~CmsParserImpl()
 void CmsParserImpl::SetRawDataSync(OptStrUint8Arr const& data, CmsFormat cmsFormat)
 {
     if (this->cmsParser_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "cmsParser is not initialized");
+        ANI_LOGE_THROW(CF_ERR_ANI, "cmsParser is not initialized");
         return;
     }
     CfBlob blob = {};
@@ -496,7 +496,7 @@ CmsContentType CmsParserImpl::GetContentType()
 {
     CmsContentType cmsType = CmsContentType(CmsContentType::key_t::SIGNED_DATA);
     if (this->cmsParser_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "cmsParser is not initialized");
+        ANI_LOGE_THROW(CF_ERR_ANI, "cmsParser is not initialized");
         return cmsType;
     }
     HcfCmsContentType contentType;
@@ -512,7 +512,7 @@ CmsContentType CmsParserImpl::GetContentType()
 void CmsParserImpl::VerifySignedDataSync(CmsVerificationConfig const& config)
 {
     if (this->cmsParser_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "cmsParser is not initialized");
+        ANI_LOGE_THROW(CF_ERR_ANI, "cmsParser is not initialized");
         return;
     }
     CfBlob contentData = {};
@@ -554,7 +554,7 @@ void CmsParserImpl::VerifySignedDataSync(CmsVerificationConfig const& config)
 array<uint8_t> CmsParserImpl::GetContentDataSync()
 {
     if (this->cmsParser_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "cmsParser is not initialized");
+        ANI_LOGE_THROW(CF_ERR_ANI, "cmsParser is not initialized");
         return {};
     }
     CfBlob blob = {};
@@ -572,7 +572,7 @@ array<uint8_t> CmsParserImpl::GetContentDataSync()
 array<X509Cert> CmsParserImpl::GetCertsSync(CmsCertType type)
 {
     if (this->cmsParser_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "cmsParser is not initialized");
+        ANI_LOGE_THROW(CF_ERR_ANI, "cmsParser is not initialized");
         return {};
     }
     HcfX509CertificateArray hcfCerts = {};
@@ -592,7 +592,7 @@ array<X509Cert> CmsParserImpl::GetCertsSync(CmsCertType type)
 array<uint8_t> CmsParserImpl::DecryptEnvelopedDataSync(CmsEnvelopedDecryptionConfig const& config)
 {
     if (this->cmsParser_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "cmsParser is not initialized");
+        ANI_LOGE_THROW(CF_ERR_ANI, "cmsParser is not initialized");
         return {};
     }
     CfBlob blob = {};

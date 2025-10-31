@@ -33,7 +33,7 @@ EncodingBlob CertExtensionImpl::GetEncoded()
 {
     EncodingBlob encodingBlob = { {}, EncodingFormat(EncodingFormat::key_t::FORMAT_DER) };
     if (this->object_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "object is nullptr");
+        ANI_LOGE_THROW(CF_ERR_ANI, "object is nullptr");
         return encodingBlob;
     }
 
@@ -66,7 +66,7 @@ EncodingBlob CertExtensionImpl::GetEncoded()
 DataArray CertExtensionImpl::GetOidList(ExtensionOidType valueType)
 {
     if (this->object_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "object is nullptr");
+        ANI_LOGE_THROW(CF_ERR_ANI, "object is nullptr");
         return {};
     }
 
@@ -100,7 +100,7 @@ DataArray CertExtensionImpl::GetOidList(ExtensionOidType valueType)
 DataBlob CertExtensionImpl::GetEntry(ExtensionEntryType valueType, DataBlob const& oid)
 {
     if (this->object_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "object is nullptr");
+        ANI_LOGE_THROW(CF_ERR_ANI, "object is nullptr");
         return {};
     }
     CfBlob oidBlob = {};
@@ -135,8 +135,8 @@ DataBlob CertExtensionImpl::GetEntry(ExtensionEntryType valueType, DataBlob cons
 int32_t CertExtensionImpl::CheckCA()
 {
     if (this->object_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "object is nullptr");
-        return CF_INVALID_PARAMS;
+        ANI_LOGE_THROW(CF_ERR_ANI, "object is nullptr");
+        return -1;
     }
 
     const std::vector<CfParam> param = {
@@ -147,7 +147,7 @@ int32_t CertExtensionImpl::CheckCA()
     CfResult ret = DoCommonOperation(this->object_, param, &outParamSet, errMsg);
     if (ret != CF_SUCCESS) {
         ANI_LOGE_THROW(ret, errMsg.c_str());
-        return ret;
+        return -1;
     }
 
     CfParam *resultParam = nullptr;
@@ -155,7 +155,7 @@ int32_t CertExtensionImpl::CheckCA()
     if (ret != CF_SUCCESS) {
         CfFreeParamSet(&outParamSet);
         ANI_LOGE_THROW(ret, "get result failed");
-        return ret;
+        return -1;
     }
     int32_t result = resultParam->int32Param;
     CfFreeParamSet(&outParamSet);
@@ -165,7 +165,7 @@ int32_t CertExtensionImpl::CheckCA()
 bool CertExtensionImpl::HasUnsupportedCriticalExtension()
 {
     if (this->object_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "object is nullptr");
+        ANI_LOGE_THROW(CF_ERR_ANI, "object is nullptr");
         return false;
     }
 

@@ -31,7 +31,7 @@ CertChainValidatorImpl::~CertChainValidatorImpl()
 void CertChainValidatorImpl::ValidateSync(CertChainData const& certChain)
 {
     if (this->certChainValidator_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "certChainValidator obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "certChainValidator obj is nullptr!");
         return;
     }
     CfBlob blob = {};
@@ -52,7 +52,7 @@ void CertChainValidatorImpl::ValidateSync(CertChainData const& certChain)
 string CertChainValidatorImpl::GetAlgorithm()
 {
     if (this->certChainValidator_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "certChainValidator obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "certChainValidator obj is nullptr!");
         return "";
     }
     const char *algName = this->certChainValidator_->getAlgorithm(this->certChainValidator_);

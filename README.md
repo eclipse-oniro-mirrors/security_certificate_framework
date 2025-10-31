@@ -43,7 +43,7 @@ base/security/certificate_framwork
 ./build.sh --product-name rk3568 --ccache --build-target certificate_framework
 ```
 > **说明：**
-> 
+>
 > --product-name：产品名称，例如rk3568。
 >
 > --ccache：编译时使用缓存功能。
@@ -52,22 +52,22 @@ base/security/certificate_framwork
 
 ## 约束
 
-[约束与限制](https://gitee.com/openharmony/docs/blob/master/zh-cn/application-dev/security/DeviceCertificateKit/certificate-framework-overview.md#约束与限制)
+[约束与限制](https://gitcode.com/openharmony/docs/blob/master/zh-cn/application-dev/security/DeviceCertificateKit/certificate-framework-overview.md#约束与限制)
 
 ## 说明
 
 ### 接口说明
 
-[接口文档](https://gitee.com/openharmony/docs/blob/master/zh-cn/application-dev/reference/apis-device-certificate-kit/js-apis-cert.md)
+[接口文档](https://gitcode.com/openharmony/docs/blob/master/zh-cn/application-dev/reference/apis-device-certificate-kit/js-apis-cert.md)
 
 ### 使用说明
 
-[开发指导](https://gitee.com/openharmony/docs/blob/master/zh-cn/application-dev/security/DeviceCertificateKit/certificate-framework-overview.md)
+[开发指导](https://gitcode.com/openharmony/docs/blob/master/zh-cn/application-dev/security/DeviceCertificateKit/certificate-framework-overview.md)
 
 ## 相关仓
 
-[安全子系统](https://gitee.com/openharmony/docs/blob/master/zh-cn/readme/安全子系统.md)
+[安全子系统](https://gitcode.com/openharmony/docs/blob/master/zh-cn/readme/安全子系统.md)
 
-[security\_crypto\_framework](https://gitee.com/openharmony/security_crypto_framework)
+[security\_crypto\_framework](https://gitcode.com/openharmony/security_crypto_framework)
 
-[**security\_certificate\_framework**](https://gitee.com/openharmony-sig/security_certificate_framework)
+[**security\_certificate\_framework**](https://gitcode.com/openharmony/security_certificate_framework)

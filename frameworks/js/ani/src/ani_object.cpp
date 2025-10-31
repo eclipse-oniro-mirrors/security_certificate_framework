@@ -21,7 +21,7 @@ CfResult DoCommonOperation(const CfObject *object, const std::vector<CfParam> &p
 {
     if (object == nullptr) {
         errMsg = "object is nullptr!";
-        return CF_INVALID_PARAMS;
+        return CF_ERR_ANI;
     }
     CfParamSet *inParamSet = nullptr;
     CfResult res = static_cast<CfResult>(CfInitParamSet(&inParamSet));

@@ -36,12 +36,12 @@ CertChainBuildResultImpl::~CertChainBuildResultImpl()
 X509CertChain CertChainBuildResultImpl::GetCertChain()
 {
     if (this->buildResult_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "buildResult_ is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "buildResult_ is nullptr!");
         return make_holder<X509CertChainImpl, X509CertChain>();
     }
     HcfCertChain *certChain = this->buildResult_->certChain;
     if (certChain == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "certChain is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "certChain is nullptr!");
         return make_holder<X509CertChainImpl, X509CertChain>();
     }
     return make_holder<X509CertChainImpl, X509CertChain>(certChain, false);
@@ -50,7 +50,7 @@ X509CertChain CertChainBuildResultImpl::GetCertChain()
 CertChainValidationResult CertChainBuildResultImpl::GetValidationResult()
 {
     if (this->buildResult_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "buildResult_ is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "buildResult_ is nullptr!");
         return make_holder<CertChainValidationResultImpl, CertChainValidationResult>();
     }
 

@@ -225,7 +225,7 @@ X509CertChainImpl::~X509CertChainImpl()
 array<X509Cert> X509CertChainImpl::GetCertList()
 {
     if (this->x509CertChain_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509CertChain_ is nullptr");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509CertChain_ is nullptr");
         return {};
     }
     HcfX509CertificateArray certs = { nullptr, 0 };
@@ -270,7 +270,7 @@ CertChainValidationResult X509CertChainImpl::ValidateSync(CertChainValidationPar
 string X509CertChainImpl::ToString()
 {
     if (this->x509CertChain_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509CertChain_ is nullptr");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509CertChain_ is nullptr");
         return "";
     }
     CfBlob blob = { 0, nullptr };
@@ -287,7 +287,7 @@ string X509CertChainImpl::ToString()
 array<uint8_t> X509CertChainImpl::HashCode()
 {
     if (this->x509CertChain_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509CertChain_ is nullptr");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509CertChain_ is nullptr");
         return {};
     }
     CfBlob blob = { 0, nullptr };

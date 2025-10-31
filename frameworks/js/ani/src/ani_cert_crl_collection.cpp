@@ -93,7 +93,7 @@ int64_t CertCRLCollectionImpl::GetCertCrlCollectionObj()
 array<X509Cert> CertCRLCollectionImpl::SelectCertsSync(X509CertMatchParameters const& param)
 {
     if (this->collection_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "collection obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "collection obj is nullptr!");
         return {};
     }
     HcfX509CertificateArray hcfCerts = {};
@@ -112,7 +112,7 @@ array<X509Cert> CertCRLCollectionImpl::SelectCertsSync(X509CertMatchParameters c
 array<X509CRL> CertCRLCollectionImpl::SelectCRLsSync(X509CRLMatchParameters const& param)
 {
     if (this->collection_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "collection obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "collection obj is nullptr!");
         return {};
     }
     HcfX509CrlArray hcfCrls = {};

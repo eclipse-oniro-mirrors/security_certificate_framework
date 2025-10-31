@@ -58,7 +58,7 @@ int64_t X509CertImpl::GetX509CertObj()
 void X509CertImpl::VerifySync(cryptoFramework::weak::PubKey key)
 {
     if (this->cert_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509cert obj is nullptr!");
         return;
     }
     HcfPubKey *hcfPubKey = reinterpret_cast<HcfPubKey *>(key->GetPubKeyObj());
@@ -73,7 +73,7 @@ EncodingBlob X509CertImpl::GetEncodedSync()
 {
     EncodingBlob encodingBlob = { {}, EncodingFormat(EncodingFormat::key_t::FORMAT_DER) };
     if (this->cert_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509cert obj is nullptr!");
         return encodingBlob;
     }
     CfEncodingBlob blob = {};
@@ -93,7 +93,7 @@ EncodingBlob X509CertImpl::GetEncodedSync()
 cryptoFramework::PubKey X509CertImpl::GetPublicKey()
 {
     if (this->cert_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509cert obj is nullptr!");
         return make_holder<PubKeyImpl, cryptoFramework::PubKey>();
     }
     HcfPubKey *pubKey = nullptr;
@@ -108,7 +108,7 @@ cryptoFramework::PubKey X509CertImpl::GetPublicKey()
 void X509CertImpl::CheckValidityWithDate(string_view date)
 {
     if (this->cert_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509cert obj is nullptr!");
         return;
     }
     CfResult res = this->cert_->checkValidityWithDate(this->cert_, date.c_str());
@@ -121,7 +121,7 @@ void X509CertImpl::CheckValidityWithDate(string_view date)
 int32_t X509CertImpl::GetVersion()
 {
     if (this->cert_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509cert obj is nullptr!");
         return -1;
     }
     return this->cert_->getVersion(this->cert_);
@@ -130,7 +130,7 @@ int32_t X509CertImpl::GetVersion()
 array<uint8_t> X509CertImpl::GetCertSerialNumber()
 {
     if (this->cert_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509cert obj is nullptr!");
         return {};
     }
     CfBlob blob = {};
@@ -148,7 +148,7 @@ array<uint8_t> X509CertImpl::GetCertSerialNumber()
 DataBlob X509CertImpl::GetIssuerName()
 {
     if (this->cert_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509cert obj is nullptr!");
         return {};
     }
     CfBlob blob = {};
@@ -166,7 +166,7 @@ DataBlob X509CertImpl::GetIssuerName()
 string X509CertImpl::GetIssuerNameEx(EncodingType encodingType)
 {
     if (this->cert_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509cert obj is nullptr!");
         return "";
     }
     CfBlob blob = {};
@@ -184,7 +184,7 @@ string X509CertImpl::GetIssuerNameEx(EncodingType encodingType)
 DataBlob X509CertImpl::GetSubjectName(optional_view<EncodingType> encodingType)
 {
     if (this->cert_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509cert obj is nullptr!");
         return {};
     }
     CfBlob blob = {};
@@ -208,7 +208,7 @@ DataBlob X509CertImpl::GetSubjectName(optional_view<EncodingType> encodingType)
 string X509CertImpl::GetNotBeforeTime()
 {
     if (this->cert_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509cert obj is nullptr!");
         return "";
     }
     CfBlob blob = {};
@@ -225,7 +225,7 @@ string X509CertImpl::GetNotBeforeTime()
 string X509CertImpl::GetNotAfterTime()
 {
     if (this->cert_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509cert obj is nullptr!");
         return "";
     }
     CfBlob blob = {};
@@ -242,7 +242,7 @@ string X509CertImpl::GetNotAfterTime()
 DataBlob X509CertImpl::GetSignature()
 {
     if (this->cert_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509cert obj is nullptr!");
         return {};
     }
     CfBlob blob = {};
@@ -260,7 +260,7 @@ DataBlob X509CertImpl::GetSignature()
 string X509CertImpl::GetSignatureAlgName()
 {
     if (this->cert_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509cert obj is nullptr!");
         return "";
     }
     CfBlob blob = {};
@@ -277,7 +277,7 @@ string X509CertImpl::GetSignatureAlgName()
 string X509CertImpl::GetSignatureAlgOid()
 {
     if (this->cert_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509cert obj is nullptr!");
         return "";
     }
     CfBlob blob = {};
@@ -294,7 +294,7 @@ string X509CertImpl::GetSignatureAlgOid()
 DataBlob X509CertImpl::GetSignatureAlgParams()
 {
     if (this->cert_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509cert obj is nullptr!");
         return {};
     }
     CfBlob blob = {};
@@ -312,7 +312,7 @@ DataBlob X509CertImpl::GetSignatureAlgParams()
 DataBlob X509CertImpl::GetKeyUsage()
 {
     if (this->cert_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509cert obj is nullptr!");
         return {};
     }
     CfBlob blob = {};
@@ -330,7 +330,7 @@ DataBlob X509CertImpl::GetKeyUsage()
 DataArray X509CertImpl::GetExtKeyUsage()
 {
     if (this->cert_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509cert obj is nullptr!");
         return {};
     }
     CfArray cfArr = {};
@@ -348,7 +348,7 @@ DataArray X509CertImpl::GetExtKeyUsage()
 int32_t X509CertImpl::GetBasicConstraints()
 {
     if (this->cert_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509cert obj is nullptr!");
         return -1;
     }
     return this->cert_->getBasicConstraints(this->cert_);
@@ -357,7 +357,7 @@ int32_t X509CertImpl::GetBasicConstraints()
 DataArray X509CertImpl::GetSubjectAltNames()
 {
     if (this->cert_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509cert obj is nullptr!");
         return {};
     }
     CfArray cfArr = {};
@@ -375,7 +375,7 @@ DataArray X509CertImpl::GetSubjectAltNames()
 DataArray X509CertImpl::GetIssuerAltNames()
 {
     if (this->cert_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509cert obj is nullptr!");
         return {};
     }
     CfArray cfArr = {};
@@ -419,7 +419,7 @@ DataBlob X509CertImpl::GetItem(CertItemType itemType)
 bool X509CertImpl::Match(X509CertMatchParameters const& param)
 {
     if (this->cert_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509cert obj is nullptr!");
         return false;
     }
     HcfX509CertMatchParams matchParam = {};
@@ -440,7 +440,7 @@ bool X509CertImpl::Match(X509CertMatchParameters const& param)
 DataArray X509CertImpl::GetCRLDistributionPoint()
 {
     if (this->cert_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509cert obj is nullptr!");
         return {};
     }
     CfArray cfArr = {};
@@ -458,7 +458,7 @@ DataArray X509CertImpl::GetCRLDistributionPoint()
 X500DistinguishedName X509CertImpl::GetIssuerX500DistinguishedName()
 {
     if (this->cert_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509cert obj is nullptr!");
         return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>();
     }
     CfBlob blob = {};
@@ -496,7 +496,7 @@ X500DistinguishedName X509CertImpl::GetIssuerX500DistinguishedName()
 X500DistinguishedName X509CertImpl::GetSubjectX500DistinguishedName()
 {
     if (this->cert_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509cert obj is nullptr!");
         return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>();
     }
     CfBlob blob = {};
@@ -534,7 +534,7 @@ X500DistinguishedName X509CertImpl::GetSubjectX500DistinguishedName()
 string X509CertImpl::ToString()
 {
     if (this->cert_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509cert obj is nullptr!");
         return "";
     }
     CfBlob blob = {};
@@ -551,7 +551,7 @@ string X509CertImpl::ToString()
 string X509CertImpl::ToStringEx(EncodingType encodingType)
 {
     if (this->cert_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509cert obj is nullptr!");
         return "";
     }
     CfBlob blob = {};
@@ -569,7 +569,7 @@ string X509CertImpl::ToStringEx(EncodingType encodingType)
 array<uint8_t> X509CertImpl::HashCode()
 {
     if (this->cert_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509cert obj is nullptr!");
         return {};
     }
     CfBlob blob = {};
@@ -587,7 +587,7 @@ array<uint8_t> X509CertImpl::HashCode()
 CertExtension X509CertImpl::GetExtensionsObject()
 {
     if (this->cert_ == nullptr) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "x509cert obj is nullptr!");
+        ANI_LOGE_THROW(CF_ERR_ANI, "x509cert obj is nullptr!");
         return make_holder<CertExtensionImpl, CertExtension>();
     }
     CfBlob blob = {};

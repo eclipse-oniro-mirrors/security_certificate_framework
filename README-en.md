@@ -1,7 +1,7 @@
 # Certificate Framework
 
 ## Introduction
-The certificate framework shields the implementation differences of third-party certificate algorithm libraries. It provides the capabilities of parsing and verifying certificates, certificate extensions, and certificate revocation lists (CRLs), and verifying certificate chains. You can use the APIs provided by the certificate framework to easily complete your development. 
+The certificate framework shields the implementation differences of third-party certificate algorithm libraries. It provides the capabilities of parsing and verifying certificates, certificate extensions, and certificate revocation lists (CRLs), and verifying certificate chains. You can use the APIs provided by the certificate framework to easily complete your development.
 
 **Figure 1** Certificate framework architecture
 
@@ -43,7 +43,7 @@ In the root directory of the OpenHarmony source code, run the following command 
 ./build.sh --product-name rk3568 --ccache --build-target certificate_framework
 ```
 > **NOTE**
-> 
+>
 > --**product-name** indicates the product name, for example, **rk3568**.
 >
 > --**ccache** indicates the cache function used during the compilation.
@@ -63,8 +63,8 @@ In the root directory of the OpenHarmony source code, run the following command 
 
 ## Repositories Involved
 
-[Security subsystem](https://gitee.com/openharmony/docs/blob/master/en/readme/Security.md)
+[Security subsystem](https://gitcode.com/openharmony/docs/blob/master/en/readme/Security.md)
 
-[security\_crypto\_framework](https://gitee.com/openharmony/security_crypto_framework)
+[security\_crypto\_framework](https://gitcode.com/openharmony/security_crypto_framework)
 
-[**security\_certificate\_framework**](https://gitee.com/openharmony-sig/security_certificate_framework)
+[**security\_certificate\_framework**](https://gitcode.com/openharmony/security_certificate_framework)
