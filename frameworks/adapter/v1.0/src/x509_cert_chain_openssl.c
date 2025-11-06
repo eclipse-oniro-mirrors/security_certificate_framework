@@ -60,12 +60,6 @@ typedef struct {
 } OpensslErrorToResult;
 
 typedef struct {
-    const EVP_MD *md;
-    X509 *subjectCert;
-    X509 *issuerCert;
-} OcspCertIdInfo;
-
-typedef struct {
     OCSP_REQUEST *req;
     OCSP_RESPONSE *resp;
     OcspCertIdInfo *certIdInfo;
@@ -1221,123 +1215,46 @@ static CfResult ValidateOcspOnline(STACK_OF(X509) *x509CertChain, OcspCertIdInfo
     return res;
 }
 
+static void FreeCertIdInfo(OcspCertIdInfo *certIdInfo)
+{
+    if (certIdInfo->subjectCert != NULL) {
+        X509_free(certIdInfo->subjectCert);
+    }
+    if (certIdInfo->issuerCert != NULL) {
+        X509_free(certIdInfo->issuerCert);
+    }
+}
+
 static CfResult OnlineVerifyOcsp(STACK_OF(X509) *x509CertChain, OcspCertIdInfo *certIdInfo,
     HcfX509TrustAnchor *trustAnchor, const HcfX509CertChainValidateParams *params)
 {
     CfResult res = ValidateOcspOnline(x509CertChain, certIdInfo, trustAnchor, params, 0);
     if (res != CF_SUCCESS) {
+        LOGE("ValidateOcspOnline leaf cert failed.");
         return res;
     }
+    LOGD("ValidateOcspOnline leaf cert success.");
     if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_CHECK_INTERMEDIATE_CA_ONLINE)) {
-        for (int i = 1; i < sk_X509_num(x509CertChain); i++) {
-            res = ValidateOcspOnline(x509CertChain, certIdInfo, trustAnchor, params, i);
+        for (int i = 1; i < sk_X509_num(x509CertChain) - 1; i++) {
+            OcspCertIdInfo intermediateCertIdInfo = {0};
+            res = CfGetCertIdInfo(x509CertChain, NULL, &intermediateCertIdInfo, i);
+            if (res != CF_SUCCESS) {
+                LOGE("Get cert id info from intermediate cert failed.");
+                FreeCertIdInfo(&intermediateCertIdInfo);
+                return res;
+            }
+            res = ValidateOcspOnline(x509CertChain, &intermediateCertIdInfo, trustAnchor, params, i);
             if (res == CF_SUCCESS) {
-                LOGE("ValidateOcspOnline success, index = %{public}d.", i);
+                LOGD("ValidateOcspOnline success, index = %{public}d.", i);
+                FreeCertIdInfo(&intermediateCertIdInfo);
                 continue;
             }
             LOGE("ValidateOcspOnline failed, index = %{public}d.", i);
+            FreeCertIdInfo(&intermediateCertIdInfo);
             return res;
         }
     }
     return res;
-}
-
-static const EVP_MD *GetHashDigest(const CfBlob *ocspDigest)
-{
-    if (ocspDigest == NULL || ocspDigest->data == NULL) {
-        return EVP_sha256();
-    }
-    char *mdName = (char *)ocspDigest->data;
-    if (strcmp(mdName, "SHA1") == 0) {
-        return EVP_sha1();
-    } else if (strcmp(mdName, "SHA224") == 0) {
-        return EVP_sha224();
-    } else if (strcmp(mdName, "SHA256") == 0) {
-        return EVP_sha256();
-    } else if (strcmp(mdName, "SHA384") == 0) {
-        return EVP_sha384();
-    } else if (strcmp(mdName, "SHA512") == 0) {
-        return EVP_sha512();
-    } else if (strcmp(mdName, "MD5") == 0) {
-        return EVP_md5();
-    }
-    return EVP_sha256();
-}
-
-static CfResult GetCertIssuerFromChain(STACK_OF(X509) *x509CertChain, X509 *leafCert, X509 **issuerCert)
-{
-    X509_STORE *store = NULL;
-    X509_STORE_CTX *storeCtx = NULL;
-    CfResult ret = CF_SUCCESS;
-
-    store = X509_STORE_new();
-    if (store == NULL) {
-        LOGE("Unable to create store.");
-        return CF_ERR_MALLOC;
-    }
-
-    for (int i = 1; i < sk_X509_num(x509CertChain); i++) {
-        X509 *tmpCert = sk_X509_value(x509CertChain, i);
-        if (X509_STORE_add_cert(store, tmpCert) != 1) {
-            LOGE("Add cert to store failed.");
-            X509_STORE_free(store);
-            return CF_ERR_CRYPTO_OPERATION;
-        }
-    }
-
-    storeCtx = X509_STORE_CTX_new();
-    if (storeCtx == NULL) {
-        LOGE("Unable to create storeCtx.");
-        X509_STORE_free(store);
-        return CF_ERR_MALLOC;
-    }
-
-    if (X509_STORE_CTX_init(storeCtx, store, NULL, NULL) == 0) {
-        LOGE("Unable to init STORE_CTX.");
-        ret = CF_ERR_CRYPTO_OPERATION;
-        goto end;
-    }
-
-    if (X509_STORE_CTX_get1_issuer(issuerCert, storeCtx, leafCert) == -1) {
-        LOGE("Some other error occurred when getting issuer.");
-        ret = CF_ERR_CRYPTO_OPERATION;
-        goto end;
-    }
-
-end:
-    X509_STORE_free(store);
-    X509_STORE_CTX_free(storeCtx);
-    return ret;
-}
-
-static CfResult GetCertIdInfo(STACK_OF(X509) *x509CertChain, const CfBlob *ocspDigest, OcspCertIdInfo *certIdInfo)
-{
-    X509 *issuerCert = NULL;
-    X509 *leafCert = NULL;
-    CfResult ret = CF_INVALID_PARAMS;
-
-    leafCert = sk_X509_value(x509CertChain, 0);
-    if (leafCert == NULL) {
-        LOGE("Get the leaf cert is null.");
-        return CF_INVALID_PARAMS;
-    }
-
-    ret = GetCertIssuerFromChain(x509CertChain, leafCert, &issuerCert);
-    if (ret != CF_SUCCESS) {
-        LOGE("Get cert issuer from chain failed.");
-        return ret;
-    }
-
-    if (X509_up_ref(leafCert) != 1) {
-        LOGE("Unable to up ref leaf cert.");
-        X509_free(issuerCert);
-        return CF_ERR_CRYPTO_OPERATION;
-    }
-
-    certIdInfo->md = GetHashDigest(ocspDigest);
-    certIdInfo->subjectCert = leafCert;
-    certIdInfo->issuerCert = issuerCert;
-    return CF_SUCCESS;
 }
 
 static CfResult ValidateRevocationOnLine(const HcfX509CertChainValidateParams *params, STACK_OF(X509) *x509CertChain,
@@ -1397,16 +1314,6 @@ static CfResult ValidateRevocationLocal(const HcfX509CertChainValidateParams *pa
     return CF_INVALID_PARAMS;
 }
 
-static void FreeCertIdInfo(OcspCertIdInfo *certIdInfo)
-{
-    if (certIdInfo->subjectCert != NULL) {
-        X509_free(certIdInfo->subjectCert);
-    }
-    if (certIdInfo->issuerCert != NULL) {
-        X509_free(certIdInfo->issuerCert);
-    }
-}
-
 static CfResult ValidateRevocation(
     STACK_OF(X509) *x509CertChain, HcfX509TrustAnchor *trustAnchor, const HcfX509CertChainValidateParams *params)
 {
@@ -1418,7 +1325,7 @@ static CfResult ValidateRevocation(
     if (params->revocationCheckParam && params->revocationCheckParam->options) {
         CfResult res = CF_INVALID_PARAMS;
         OcspCertIdInfo certIdInfo = {0};
-        res = GetCertIdInfo(x509CertChain, params->revocationCheckParam->ocspDigest, &certIdInfo);
+        res = CfGetCertIdInfo(x509CertChain, params->revocationCheckParam->ocspDigest, &certIdInfo, 0);
         if (res != CF_SUCCESS) {
             LOGE("Get cert id info failed.");
             return res;

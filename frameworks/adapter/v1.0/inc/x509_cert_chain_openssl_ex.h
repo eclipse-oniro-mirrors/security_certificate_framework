@@ -34,6 +34,12 @@ typedef struct {
 extern "C" {
 #endif
 
+typedef struct {
+    const EVP_MD *md;
+    X509 *subjectCert;
+    X509 *issuerCert;
+} OcspCertIdInfo;
+
 const char *GetX509CertChainClass(void);
 CfResult CfToString(HcfX509CertChainSpi *self, CfBlob *out);
 CfResult CfHashCode(HcfX509CertChainSpi *self, CfBlob *out);
@@ -47,6 +53,8 @@ CfResult AllocateAndConvertCert(X509 *cert, HcfX509P12Collection *collection, bo
 CfResult AllocateAndConvertPkey(EVP_PKEY *pkey, HcfX509P12Collection *collection, bool isGet);
 CfResult AllocateAndConvertCertStack(STACK_OF(X509) *ca, HcfX509P12Collection *collection, bool isGet);
 void FreeCertificateArray(HcfX509CertificateArray *certs);
+CfResult CfGetCertIdInfo(STACK_OF(X509) *x509CertChain, const CfBlob *ocspDigest, OcspCertIdInfo *certIdInfo,
+    int index);
 #ifdef __cplusplus
 }
 #endif

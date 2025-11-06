@@ -1137,3 +1137,99 @@ CfResult HcfCreatePkcs12Func(HcfX509P12Collection *p12Collection, HcfPkcs12Creat
     PKCS12_free(p12);
     return ret;
 }
+
+static const EVP_MD *GetHashDigest(const CfBlob *ocspDigest)
+{
+    if (ocspDigest == NULL || ocspDigest->data == NULL) {
+        return EVP_sha256();
+    }
+    char *mdName = (char *)ocspDigest->data;
+    if (strcmp(mdName, "SHA1") == 0) {
+        return EVP_sha1();
+    } else if (strcmp(mdName, "SHA224") == 0) {
+        return EVP_sha224();
+    } else if (strcmp(mdName, "SHA256") == 0) {
+        return EVP_sha256();
+    } else if (strcmp(mdName, "SHA384") == 0) {
+        return EVP_sha384();
+    } else if (strcmp(mdName, "SHA512") == 0) {
+        return EVP_sha512();
+    } else if (strcmp(mdName, "MD5") == 0) {
+        return EVP_md5();
+    }
+    return EVP_sha256();
+}
+
+static CfResult GetCertIssuerFromChain(STACK_OF(X509) *x509CertChain, X509 *leafCert, X509 **issuerCert)
+{
+    X509_STORE *store = NULL;
+    X509_STORE_CTX *storeCtx = NULL;
+    CfResult ret = CF_SUCCESS;
+
+    store = X509_STORE_new();
+    if (store == NULL) {
+        LOGE("Unable to create store.");
+        return CF_ERR_MALLOC;
+    }
+
+    for (int i = 1; i < sk_X509_num(x509CertChain); i++) {
+        X509 *tmpCert = sk_X509_value(x509CertChain, i);
+        if (X509_STORE_add_cert(store, tmpCert) != 1) {
+            LOGE("Add cert to store failed.");
+            X509_STORE_free(store);
+            return CF_ERR_CRYPTO_OPERATION;
+        }
+    }
+
+    storeCtx = X509_STORE_CTX_new();
+    if (storeCtx == NULL) {
+        LOGE("Unable to create storeCtx.");
+        X509_STORE_free(store);
+        return CF_ERR_MALLOC;
+    }
+
+    if (X509_STORE_CTX_init(storeCtx, store, NULL, NULL) == 0) {
+        LOGE("Unable to init STORE_CTX.");
+        ret = CF_ERR_CRYPTO_OPERATION;
+        goto end;
+    }
+
+    if (X509_STORE_CTX_get1_issuer(issuerCert, storeCtx, leafCert) == -1) {
+        LOGE("Some other error occurred when getting issuer.");
+        ret = CF_ERR_CRYPTO_OPERATION;
+        goto end;
+    }
+
+end:
+    X509_STORE_free(store);
+    X509_STORE_CTX_free(storeCtx);
+    return ret;
+}
+
+CfResult CfGetCertIdInfo(STACK_OF(X509) *x509CertChain, const CfBlob *ocspDigest, OcspCertIdInfo *certIdInfo,
+    int index)
+{
+    X509 *issuerCert = NULL;
+    X509 *cert = NULL;
+    CfResult ret = CF_INVALID_PARAMS;
+    cert = sk_X509_value(x509CertChain, index);
+    if (cert == NULL) {
+        LOGE("Get the cert is null.");
+        return CF_INVALID_PARAMS;
+    }
+
+    ret = GetCertIssuerFromChain(x509CertChain, cert, &issuerCert);
+    if (ret != CF_SUCCESS) {
+        LOGE("Get cert issuer from chain failed.");
+        return ret;
+    }
+    if (X509_up_ref(cert) != 1) {
+        LOGE("Unable to up ref cert.");
+        X509_free(issuerCert);
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    certIdInfo->md = GetHashDigest(ocspDigest);
+    certIdInfo->subjectCert = cert;
+    certIdInfo->issuerCert = issuerCert;
+    return CF_SUCCESS;
+}
