@@ -191,6 +191,8 @@ static napi_value CreateRevocationCheckOptions(napi_env env)
         CF_REVOCATION_CHECK_OPTION_CHECK_INTERMEDIATE_CA_ONLINE);
     CertAddUint32Property(env, revocationCheckOptions, "REVOCATION_CHECK_OPTION_LOCAL_CRL_ONLY_CHECK_END_ENTITY_CERT",
         CF_REVOCATION_CHECK_OPTION_LOCAL_CRL_ONLY_CHECK_END_ENTITY_CERT);
+    CertAddUint32Property(env, revocationCheckOptions, "REVOCATION_CHECK_OPTION_IGNORE_NETWORK_ERROR",
+        CF_REVOCATION_CHECK_OPTION_IGNORE_NETWORK_ERROR);
 
     return revocationCheckOptions;
 }

@@ -84,8 +84,8 @@ CfResult CfDeepCopyCertPolices(const CERTIFICATEPOLICIES *certPolicesIn, int32_t
 CfResult CfConvertAsn1String2BoolArray(const ASN1_BIT_STRING *string, CfBlob *boolArr);
 bool CfCompareGN2Blob(const GENERAL_NAME *gen, CfBlob *nc);
 CfResult CfGetCRLDpURI(STACK_OF(DIST_POINT) *crlDp, CfArray *outURI);
-X509_CRL *GetCrlFromCert(const HcfX509CertChainValidateParams *params, X509 *x509);
-X509_CRL *GetCrlFromCertByDp(X509 *x509);
+X509_CRL *GetCrlFromCert(const HcfX509CertChainValidateParams *params, X509 *x509, int *errReason);
+X509_CRL *GetCrlFromCertByDp(X509 *x509, int *errReason);
 CfResult ValidateDate(const STACK_OF(X509) *x509CertChain, CfBlob *date);
 CfResult ValidateCertDate(X509 *cert, CfBlob *date);
 CfResult GetIntermediateCrlFromCertByDp(X509 *x509, X509_CRL **crl);

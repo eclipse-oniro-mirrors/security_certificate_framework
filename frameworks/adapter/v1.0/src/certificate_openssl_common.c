@@ -1025,6 +1025,7 @@ static CfResult LoadIntermediateCrlDp(STACK_OF(DIST_POINT) *crldp, X509_CRL **cr
 {
     const char *urlptr = NULL;
     bool hasValidUrl = false;
+    int errReason = 0;
     for (int i = 0; i < sk_DIST_POINT_num(crldp); i++) {
         DIST_POINT *dp = sk_DIST_POINT_value(crldp, i);
         urlptr = GetDpUrl(dp);
@@ -1034,6 +1035,7 @@ static CfResult LoadIntermediateCrlDp(STACK_OF(DIST_POINT) *crldp, X509_CRL **cr
             if (*crl != NULL) {
                 return CF_SUCCESS;
             }
+            errReason = ERR_GET_REASON(ERR_peek_last_error());
         }
     }
     if (!hasValidUrl) {
@@ -1041,6 +1043,9 @@ static CfResult LoadIntermediateCrlDp(STACK_OF(DIST_POINT) *crldp, X509_CRL **cr
         return CF_SUCCESS;
     }
     LOGE("Load intermediate crl from dp failed");
+    if (errReason == BIO_R_CONNECT_TIMEOUT) {
+        return CF_ERR_CONNECT_TIMEOUT;
+    }
     return CF_ERR_CRYPTO_OPERATION;
 }
 
@@ -1061,26 +1066,29 @@ CfResult GetIntermediateCrlFromCertByDp(X509 *x509, X509_CRL **crl)
     return CF_SUCCESS;
 }
 
-
-static X509_CRL *LoadCrlDp(STACK_OF(DIST_POINT) *crldp)
+static X509_CRL *LoadCrlDp(STACK_OF(DIST_POINT) *crldp, int *errReason)
 {
     const char *urlptr = NULL;
     for (int i = 0; i < sk_DIST_POINT_num(crldp); i++) {
         DIST_POINT *dp = sk_DIST_POINT_value(crldp, i);
         urlptr = GetDpUrl(dp);
         if (urlptr != NULL) {
-            return X509_CRL_load_http(urlptr, NULL, NULL, HTTP_TIMEOUT);
+            X509_CRL *crl = X509_CRL_load_http(urlptr, NULL, NULL, HTTP_TIMEOUT);
+            if (crl == NULL) {
+                *errReason = ERR_GET_REASON(ERR_peek_last_error());
+            }
+            return crl;
         }
     }
     return NULL;
 }
 
-X509_CRL *GetCrlFromCertByDp(X509 *x509)
+X509_CRL *GetCrlFromCertByDp(X509 *x509, int *errReason)
 {
     X509_CRL *crl = NULL;
     STACK_OF(DIST_POINT) *crlStack = X509_get_ext_d2i(x509, NID_crl_distribution_points, NULL, NULL);
     if (crlStack != NULL) {
-        crl = LoadCrlDp(crlStack);
+        crl = LoadCrlDp(crlStack, errReason);
         sk_DIST_POINT_pop_free(crlStack, DIST_POINT_free);
         if (crl != NULL) {
             return crl;
@@ -1089,10 +1097,10 @@ X509_CRL *GetCrlFromCertByDp(X509 *x509)
     return NULL;
 }
 
-X509_CRL *GetCrlFromCert(const HcfX509CertChainValidateParams *params, X509 *x509)
+X509_CRL *GetCrlFromCert(const HcfX509CertChainValidateParams *params, X509 *x509, int *errReason)
 {
     X509_CRL *crl = NULL;
-    crl = GetCrlFromCertByDp(x509);
+    crl = GetCrlFromCertByDp(x509, errReason);
     if (crl != NULL) {
         return crl;
     }
@@ -1101,7 +1109,11 @@ X509_CRL *GetCrlFromCert(const HcfX509CertChainValidateParams *params, X509 *x50
         params->revocationCheckParam->crlDownloadURI->data != NULL) {
         char *url = (char *)params->revocationCheckParam->crlDownloadURI->data;
         if (CfIsUrlValid(url)) {
-            return X509_CRL_load_http(url, NULL, NULL, HTTP_TIMEOUT);
+            crl = X509_CRL_load_http(url, NULL, NULL, HTTP_TIMEOUT);
+            if (crl == NULL) {
+                *errReason = ERR_GET_REASON(ERR_peek_last_error());
+            }
+            return crl;
         }
     }
 

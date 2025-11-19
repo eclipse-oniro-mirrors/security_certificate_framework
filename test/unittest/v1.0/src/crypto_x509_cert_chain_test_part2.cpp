@@ -1188,29 +1188,6 @@ HWTEST_F(CryptoX509CertChainTestPart2, HcfCreateTrustAnchorWithKeyStoreTest001, 
     EXPECT_EQ(result, CF_ERR_CRYPTO_OPERATION);
 }
 
-static void FreeHcfX509P12Collection(HcfX509P12Collection *p12Collection)
-{
-    if (p12Collection == NULL) {
-        return;
-    }
-    if (p12Collection->cert != NULL) {
-        CfFree(p12Collection->cert);
-    }
-    if (p12Collection->prikey != NULL && p12Collection->prikey->data != NULL) {
-        CfFree(p12Collection->prikey->data);
-        CfFree(p12Collection->prikey);
-    }
-    if (p12Collection->otherCerts != NULL && p12Collection->otherCertsCount != 0) {
-        for (uint32_t i = 0; i < p12Collection->otherCertsCount; i++) {
-            if (p12Collection->otherCerts[i] != NULL) {
-                CfFree(p12Collection->otherCerts[i]);
-            }
-        }
-        CfFree(p12Collection->otherCerts);
-    }
-    CfFree(p12Collection);
-}
-
 HWTEST_F(CryptoX509CertChainTestPart2, HcfParsePKCS12Test001, TestSize.Level0)
 {
     CF_LOG_I("HcfParsePKCS12Test001");

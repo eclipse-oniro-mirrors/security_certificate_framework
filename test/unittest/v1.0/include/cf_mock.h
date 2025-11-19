@@ -26,6 +26,7 @@
 #include "x509_certificate.h"
 #include "x509_certificate_openssl.h"
 #include <openssl/cms.h>
+#include "x509_cert_chain_openssl_ex.h"
 
 using ::testing::NiceMock;
 
@@ -148,6 +149,9 @@ public:
     MOCK_METHOD(STACK_OF(X509) *, CMS_get1_certs, (CMS_ContentInfo *cms));
     MOCK_METHOD(int, BIO_write, (BIO *b, const void *data, int dlen));
     MOCK_METHOD(int, BIO_do_connect_retry, (BIO *b, int timeout, int retry));
+    MOCK_METHOD(unsigned long, ERR_peek_last_error, ());
+    MOCK_METHOD(CfResult, CfGetCertIdInfo, (STACK_OF(X509) *x509CertChain, const CfBlob *ocspDigest,
+        OcspCertIdInfo *certIdInfo, int index));
     static NiceMock<X509OpensslMock> &GetInstance(void);
     static void SetMockFlag(bool flag);
     static void SetHcfMockFlag(bool flag);
