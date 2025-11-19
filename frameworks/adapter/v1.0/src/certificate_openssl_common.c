@@ -1021,6 +1021,47 @@ static const char *GetDpUrl(DIST_POINT *dp)
     return NULL;
 }
 
+static CfResult LoadIntermediateCrlDp(STACK_OF(DIST_POINT) *crldp, X509_CRL **crl)
+{
+    const char *urlptr = NULL;
+    bool hasValidUrl = false;
+    for (int i = 0; i < sk_DIST_POINT_num(crldp); i++) {
+        DIST_POINT *dp = sk_DIST_POINT_value(crldp, i);
+        urlptr = GetDpUrl(dp);
+        if (urlptr != NULL) {
+            hasValidUrl = true;
+            *crl = X509_CRL_load_http(urlptr, NULL, NULL, HTTP_TIMEOUT);
+            if (*crl != NULL) {
+                return CF_SUCCESS;
+            }
+        }
+    }
+    if (!hasValidUrl) {
+        LOGD("no valid url found in crl distribution points.");
+        return CF_SUCCESS;
+    }
+    LOGE("Load intermediate crl from dp failed");
+    return CF_ERR_CRYPTO_OPERATION;
+}
+
+CfResult GetIntermediateCrlFromCertByDp(X509 *x509, X509_CRL **crl)
+{
+    STACK_OF(DIST_POINT) *crlStack = X509_get_ext_d2i(x509, NID_crl_distribution_points, NULL, NULL);
+    if (crlStack == NULL) {
+        return CF_SUCCESS;
+    }
+    X509_CRL *tmpCrl = NULL;
+    CfResult ret = LoadIntermediateCrlDp(crlStack, &tmpCrl);
+    sk_DIST_POINT_pop_free(crlStack, DIST_POINT_free);
+    if (ret != CF_SUCCESS) {
+        LOGE("Load intermediate crl from dp failed");
+        return ret;
+    }
+    *crl = tmpCrl;
+    return CF_SUCCESS;
+}
+
+
 static X509_CRL *LoadCrlDp(STACK_OF(DIST_POINT) *crldp)
 {
     const char *urlptr = NULL;
