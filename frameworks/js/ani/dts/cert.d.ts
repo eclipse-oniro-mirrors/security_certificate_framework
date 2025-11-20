@@ -326,6 +326,7 @@ declare namespace cert {
     date?: string;
     trustAnchors: Array<X509TrustAnchor>;
     trustSystemCa?: boolean;
+    allowDownloadIntermediateCa?: boolean;
     certCRLs?: Array<CertCRLCollection>;
     revocationCheckParam?: RevocationCheckParameter;
     policy?: ValidationPolicyType;

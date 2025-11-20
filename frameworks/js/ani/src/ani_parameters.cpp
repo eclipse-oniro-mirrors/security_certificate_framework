@@ -557,6 +557,8 @@ bool BuildX509CertChainValidateParams2(CertChainValidationParameters const& para
         static_cast<HcfValPolicyType>(param.policy.value().get_value()) : VALIDATION_POLICY_TYPE_X509;
     validateParam.trustSystemCa = param.trustSystemCa.has_value() ?
         param.trustSystemCa.value() : false;
+    validateParam.allowDownloadIntermediateCa = param.allowDownloadIntermediateCa.has_value() ?
+        param.allowDownloadIntermediateCa.value() : false;
     if (!BuildTrustAnchors(param.trustAnchors, validateParam, validateParam.trustSystemCa)) {
         return false;
     }

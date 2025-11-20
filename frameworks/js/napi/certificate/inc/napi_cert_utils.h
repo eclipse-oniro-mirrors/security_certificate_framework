@@ -61,6 +61,7 @@ bool CertCheckArgsCount(napi_env env, size_t argc, size_t expectedCount, bool is
 AsyncType GetAsyncType(napi_env env, size_t argc, size_t maxCount, napi_value arg);
 napi_value CertGetResourceName(napi_env env, const char *name);
 bool GetBoolFromNapiValue(napi_env env, napi_value arg, bool &out, const char *name);
+CfResult GetBoolFromNameValue(napi_env env, napi_value arg, bool *out, const char *name);
 bool GetIsPemFromStringNapiValue(napi_env env, napi_value arg, bool &out, const char *name);
 napi_value GenerateArrayBuffer(napi_env env, uint8_t *data, uint32_t size);
 napi_value CertNapiGetNull(napi_env env);

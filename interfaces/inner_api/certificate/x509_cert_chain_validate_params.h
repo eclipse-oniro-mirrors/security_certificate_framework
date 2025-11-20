@@ -82,6 +82,7 @@ struct HcfX509CertChainValidateParams {
     CfBlob *sslHostname;
     HcfKuArray *keyUsage;
     bool trustSystemCa;
+    bool allowDownloadIntermediateCa;
 };
 
 #endif // X509_CERT_CHAIN_VALIDATE_PARAMETERS_H

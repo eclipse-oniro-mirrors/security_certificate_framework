@@ -1129,3 +1129,21 @@ CfResult ValidateCertDate(X509 *cert, CfBlob *date)
     sk_X509_free(x509CertChain);
     return res;
 }
+
+bool CfHasCaIssuerAia(X509 *cert)
+{
+    AUTHORITY_INFO_ACCESS *infoAccess = X509_get_ext_d2i(cert, NID_info_access, NULL, NULL);
+    if (infoAccess == NULL) {
+        return false;
+    }
+    int num = sk_ACCESS_DESCRIPTION_num(infoAccess);
+    for (int i = 0; i < num; i++) {
+        ACCESS_DESCRIPTION *ad = sk_ACCESS_DESCRIPTION_value(infoAccess, i);
+        if (OBJ_obj2nid(ad->method) == NID_ad_ca_issuers) {
+            AUTHORITY_INFO_ACCESS_free(infoAccess);
+            return true;
+        }
+    }
+    AUTHORITY_INFO_ACCESS_free(infoAccess);
+    return false;
+}
