@@ -738,10 +738,14 @@ static CfResult ValidateCrlIntermediateCaOnline(const HcfX509CertChainValidatePa
             res = CF_ERR_CRYPTO_OPERATION;
             break;
         }
-        X509_CRL *crl = GetCrlFromCertByDp(x509);
+        X509_CRL *crl = NULL;
+        res = GetIntermediateCrlFromCertByDp(x509, &crl);
+        if (res != CF_SUCCESS) {
+            LOGE("Load intermediate crl from dp failed!");
+            break;
+        }
         if (crl == NULL) {
-            LOGE("Get crl from cert by dp failed!");
-            res = CF_SUCCESS;
+            LOGE("Crl url is not found in crl distribution points.");
             continue;
         }
         res = CheckCrlIsRevoked(params, crl, x509CertChain);
