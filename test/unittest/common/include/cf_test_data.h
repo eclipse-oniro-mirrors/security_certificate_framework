@@ -325,26 +325,26 @@ static char oid06[] = "2.5.29.17";
 static char oid07[] = "2.5.29.18";
 
 static const CfBlob g_allOidArray[] = {
-    { strlen(oid01), reinterpret_cast<uint8_t *>(oid01) },
-    { strlen(oid02), reinterpret_cast<uint8_t *>(oid02) },
-    { strlen(oid03), reinterpret_cast<uint8_t *>(oid03) },
-    { strlen(oid04), reinterpret_cast<uint8_t *>(oid04) },
-    { strlen(oid05), reinterpret_cast<uint8_t *>(oid05) },
-    { strlen(oid06), reinterpret_cast<uint8_t *>(oid06) },
-    { strlen(oid07), reinterpret_cast<uint8_t *>(oid07) },
+    { static_cast<uint32_t>(strlen(oid01)), reinterpret_cast<uint8_t *>(oid01) },
+    { static_cast<uint32_t>(strlen(oid02)), reinterpret_cast<uint8_t *>(oid02) },
+    { static_cast<uint32_t>(strlen(oid03)), reinterpret_cast<uint8_t *>(oid03) },
+    { static_cast<uint32_t>(strlen(oid04)), reinterpret_cast<uint8_t *>(oid04) },
+    { static_cast<uint32_t>(strlen(oid05)), reinterpret_cast<uint8_t *>(oid05) },
+    { static_cast<uint32_t>(strlen(oid06)), reinterpret_cast<uint8_t *>(oid06) },
+    { static_cast<uint32_t>(strlen(oid07)), reinterpret_cast<uint8_t *>(oid07) },
 };
 
 static const CfBlob g_critOidArray[] = {
-    { strlen(oid03), reinterpret_cast<uint8_t *>(oid03) },
+    { static_cast<uint32_t>(strlen(oid03)), reinterpret_cast<uint8_t *>(oid03) },
 };
 
 static const CfBlob g_uncritOidArray[] = {
-    { strlen(oid01), reinterpret_cast<uint8_t *>(oid01) },
-    { strlen(oid02), reinterpret_cast<uint8_t *>(oid02) },
-    { strlen(oid04), reinterpret_cast<uint8_t *>(oid04) },
-    { strlen(oid05), reinterpret_cast<uint8_t *>(oid05) },
-    { strlen(oid06), reinterpret_cast<uint8_t *>(oid06) },
-    { strlen(oid07), reinterpret_cast<uint8_t *>(oid07) },
+    { static_cast<uint32_t>(strlen(oid01)), reinterpret_cast<uint8_t *>(oid01) },
+    { static_cast<uint32_t>(strlen(oid02)), reinterpret_cast<uint8_t *>(oid02) },
+    { static_cast<uint32_t>(strlen(oid04)), reinterpret_cast<uint8_t *>(oid04) },
+    { static_cast<uint32_t>(strlen(oid05)), reinterpret_cast<uint8_t *>(oid05) },
+    { static_cast<uint32_t>(strlen(oid06)), reinterpret_cast<uint8_t *>(oid06) },
+    { static_cast<uint32_t>(strlen(oid07)), reinterpret_cast<uint8_t *>(oid07) },
 };
 
 static const CfBlobArray g_expectAllOidArray = {
