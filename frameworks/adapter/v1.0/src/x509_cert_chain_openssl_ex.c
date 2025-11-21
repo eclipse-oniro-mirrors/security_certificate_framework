@@ -1188,13 +1188,13 @@ static CfResult GetCertIssuerFromChain(STACK_OF(X509) *x509CertChain, X509 *leaf
         return CF_ERR_MALLOC;
     }
 
-    if (X509_STORE_CTX_init(storeCtx, store, NULL, NULL) == 0) {
+    if (X509_STORE_CTX_init(storeCtx, store, NULL, NULL) != CF_OPENSSL_SUCCESS) {
         LOGE("Unable to init STORE_CTX.");
         ret = CF_ERR_CRYPTO_OPERATION;
         goto end;
     }
 
-    if (X509_STORE_CTX_get1_issuer(issuerCert, storeCtx, leafCert) == -1) {
+    if (X509_STORE_CTX_get1_issuer(issuerCert, storeCtx, leafCert) != CF_OPENSSL_SUCCESS) {
         LOGE("Some other error occurred when getting issuer.");
         ret = CF_ERR_CRYPTO_OPERATION;
         goto end;
