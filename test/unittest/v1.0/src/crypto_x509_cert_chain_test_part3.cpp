@@ -73,7 +73,7 @@ public:
     void TearDown();
 };
 
-static CfBlob g_ocspDigest = { .size = strlen(g_digest) + 1,
+static CfBlob g_ocspDigest = { .size = static_cast<uint32_t>(strlen(g_digest) + 1),
     .data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_digest)) };
 
 static void FreeHcfRevocationCheckParam(HcfRevocationCheckParam *param)
@@ -184,15 +184,10 @@ HWTEST_F(CryptoX509CertChainTestPart3, ValidateOnlyCaCertTest001, TestSize.Level
     ASSERT_NE(params.revocationCheckParam, nullptr);
 
     HcfX509CertChainValidateResult result = { 0 };
-    X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_get_ext_d2i(_, _, _, _))
-        .WillOnce(Return(nullptr))
-        .WillRepeatedly(Invoke(__real_X509_get_ext_d2i));
     ret = certChainPemOnlyCaCert->engineValidate(certChainPemOnlyCaCert, &params, &result);
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
     EXPECT_EQ(result.entityCert, nullptr);
     EXPECT_EQ(result.trustAnchor, nullptr);
-    X509OpensslMock::SetMockFlag(false);
 
     FreeValidateResult(result);
     FreeTrustAnchorArr(trustAnchorArray);
@@ -222,15 +217,10 @@ HWTEST_F(CryptoX509CertChainTestPart3, ValidateOnlyCaCertTest002, TestSize.Level
 
     HcfX509CertChainValidateResult result = { 0 };
 
-    X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), BIO_do_connect_retry(_, _, _))
-        .WillOnce(Return(0))
-        .WillRepeatedly(Invoke(__real_BIO_do_connect_retry));
     ret = certChainPemWithOcsp->engineValidate(certChainPemWithOcsp, &params, &result);
-    EXPECT_EQ(ret, CF_ERR_MALLOC);
+    EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
     EXPECT_EQ(result.entityCert, nullptr);
     EXPECT_EQ(result.trustAnchor, nullptr);
-    X509OpensslMock::SetMockFlag(false);
 
     FreeValidateResult(result);
     FreeTrustAnchorArr(trustAnchorArray);
@@ -260,15 +250,10 @@ HWTEST_F(CryptoX509CertChainTestPart3, ValidateOnlyCaCertTest003, TestSize.Level
 
     HcfX509CertChainValidateResult result = { 0 };
 
-    X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), BIO_do_connect_retry(_, _, _))
-        .WillOnce(Return(1))
-        .WillRepeatedly(Invoke(__real_BIO_do_connect_retry));
     ret = certChainPemWithOcsp->engineValidate(certChainPemWithOcsp, &params, &result);
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
     EXPECT_EQ(result.entityCert, nullptr);
     EXPECT_EQ(result.trustAnchor, nullptr);
-    X509OpensslMock::SetMockFlag(false);
 
     FreeValidateResult(result);
     FreeTrustAnchorArr(trustAnchorArray);

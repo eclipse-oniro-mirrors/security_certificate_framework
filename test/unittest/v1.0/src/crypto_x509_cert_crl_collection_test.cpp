@@ -571,20 +571,19 @@ static void CreateCertAndCrl(HcfX509Certificate **cert, HcfX509Crl **crl)
     CfEncodingBlob inStreamCrl = { 0 };
     uint8_t data[MAX_DATA_LEN_OF_CERT_OR_CRL] = { 0 };
     uint32_t dataLen = 0;
-    CfResult ret;
     dataLen = GetRandomInt(1, MAX_DATA_LEN_OF_CERT_OR_CRL);
     RAND_priv_bytes(data, dataLen);
     inStreamCert.data = data;
     inStreamCert.encodingFormat = CF_FORMAT_DER;
     inStreamCert.len = dataLen;
-    ret = HcfX509CertificateCreate(&inStreamCert, cert);
+    HcfX509CertificateCreate(&inStreamCert, cert);
 
     dataLen = GetRandomInt(1, MAX_DATA_LEN_OF_CERT_OR_CRL);
     RAND_priv_bytes(data, dataLen);
     inStreamCrl.data = data;
     inStreamCrl.encodingFormat = CF_FORMAT_DER;
     inStreamCrl.len = dataLen;
-    ret = HcfX509CrlCreate(&inStreamCrl, crl);
+    HcfX509CrlCreate(&inStreamCrl, crl);
 }
 
 static CfResult CryptoX509CertCrlCollectionInvalidArrayTest()

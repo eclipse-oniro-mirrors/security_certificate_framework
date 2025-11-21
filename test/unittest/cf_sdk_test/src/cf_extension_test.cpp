@@ -283,7 +283,7 @@ HWTEST_F(CfExtensionTest, CfExtensionTest004, TestSize.Level0)
 HWTEST_F(CfExtensionTest, CfExtensionTest005, TestSize.Level0)
 {
     char oidStr[] = "2.5.29.19";
-    CfBlob oid = { strlen(oidStr), reinterpret_cast<uint8_t *>(oidStr) };
+    CfBlob oid = { static_cast<uint32_t>(strlen(oidStr)), reinterpret_cast<uint8_t *>(oidStr) };
 
     CfParam params[] = {
         { .tag = CF_TAG_GET_TYPE, .int32Param = CF_GET_TYPE_EXT_ENTRY },
@@ -302,7 +302,7 @@ HWTEST_F(CfExtensionTest, CfExtensionTest005, TestSize.Level0)
 HWTEST_F(CfExtensionTest, CfExtensionTest006, TestSize.Level0)
 {
     char oidStr[] = "2.5.29.19";
-    CfBlob oid = { strlen(oidStr), reinterpret_cast<uint8_t *>(oidStr) };
+    CfBlob oid = { static_cast<uint32_t>(strlen(oidStr)), reinterpret_cast<uint8_t *>(oidStr) };
 
     CfParam params[] = {
         { .tag = CF_TAG_GET_TYPE, .int32Param = CF_GET_TYPE_EXT_ENTRY },
@@ -321,7 +321,7 @@ HWTEST_F(CfExtensionTest, CfExtensionTest006, TestSize.Level0)
 HWTEST_F(CfExtensionTest, CfExtensionTest007, TestSize.Level0)
 {
     char oidStr[] = "2.5.29.19";
-    CfBlob oid = { strlen(oidStr), reinterpret_cast<uint8_t *>(oidStr) };
+    CfBlob oid = { static_cast<uint32_t>(strlen(oidStr)), reinterpret_cast<uint8_t *>(oidStr) };
 
     CfParam params[] = {
         { .tag = CF_TAG_GET_TYPE, .int32Param = CF_GET_TYPE_EXT_ENTRY },

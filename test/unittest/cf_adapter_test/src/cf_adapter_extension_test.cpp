@@ -458,7 +458,7 @@ HWTEST_F(CfAdapterExtensionTest, OpensslGetEntryTest001, TestSize.Level0)
     EXPECT_EQ(ret, CF_SUCCESS) << "Normal adapter create extension object test failed, recode:" << ret;
 
     char oidStr[] = "2.5.29.19";
-    CfBlob oid = { strlen(oidStr), reinterpret_cast<uint8_t *>(oidStr) };
+    CfBlob oid = { static_cast<uint32_t>(strlen(oidStr)), reinterpret_cast<uint8_t *>(oidStr) };
     CfBlob outBlob = { 0, nullptr };
     ret = CfOpensslGetEntry(obj001, CF_EXT_ENTRY_TYPE_ENTRY, &oid, &outBlob);
     EXPECT_EQ(ret, CF_SUCCESS) << "Normal adapter extension object get entry test failed, recode:" << ret;
@@ -482,7 +482,7 @@ HWTEST_F(CfAdapterExtensionTest, OpensslGetEntryTest002, TestSize.Level0)
     EXPECT_EQ(ret, CF_SUCCESS) << "Normal adapter create extension object test failed, recode:" << ret;
 
     char oidStr[] = "2.5.29.19";
-    CfBlob oid = { strlen(oidStr), reinterpret_cast<uint8_t *>(oidStr) };
+    CfBlob oid = { static_cast<uint32_t>(strlen(oidStr)), reinterpret_cast<uint8_t *>(oidStr) };
     CfBlob outBlob = { 0, nullptr };
     ret = CfOpensslGetEntry(obj002, CF_EXT_ENTRY_TYPE_ENTRY_CRITICAL, &oid, &outBlob);
     EXPECT_EQ(ret, CF_SUCCESS) << "Normal adapter extension object get entry crirical test failed, recode:" << ret;
@@ -506,7 +506,7 @@ HWTEST_F(CfAdapterExtensionTest, OpensslGetEntryTest003, TestSize.Level0)
     EXPECT_EQ(ret, CF_SUCCESS) << "Normal adapter create extension object test failed, recode:" << ret;
 
     char oidStr[] = "2.5.29.19";
-    CfBlob oid = { strlen(oidStr), reinterpret_cast<uint8_t *>(oidStr) };
+    CfBlob oid = { static_cast<uint32_t>(strlen(oidStr)), reinterpret_cast<uint8_t *>(oidStr) };
     CfBlob outBlob = { 0, nullptr };
     ret = CfOpensslGetEntry(obj003, CF_EXT_ENTRY_TYPE_ENTRY_VALUE, &oid, &outBlob);
     EXPECT_EQ(ret, CF_SUCCESS) << "Normal adapter extension object get entry value test failed, recode:" << ret;
@@ -526,7 +526,7 @@ HWTEST_F(CfAdapterExtensionTest, OpensslGetEntryTest003, TestSize.Level0)
 HWTEST_F(CfAdapterExtensionTest, OpensslGetEntryTest004, TestSize.Level0)
 {
     char oidStr[] = "2.5.29.19";
-    CfBlob oid = { strlen(oidStr), reinterpret_cast<uint8_t *>(oidStr) };
+    CfBlob oid = { static_cast<uint32_t>(strlen(oidStr)), reinterpret_cast<uint8_t *>(oidStr) };
     CfBlob outBlob = { 0, nullptr };
 
     // the object is abnormal param
@@ -548,7 +548,7 @@ HWTEST_F(CfAdapterExtensionTest, OpensslGetEntryTest005, TestSize.Level0)
     EXPECT_EQ(ret, CF_SUCCESS) << "Normal adapter create extension object test failed, recode:" << ret;
 
     char oidStr[] = "2.5.29.19";
-    CfBlob oid = { strlen(oidStr), reinterpret_cast<uint8_t *>(oidStr) };
+    CfBlob oid = { static_cast<uint32_t>(strlen(oidStr)), reinterpret_cast<uint8_t *>(oidStr) };
     CfBlob outBlob = { 0, nullptr };
 
     unsigned long correctType = obj005->type;
@@ -574,7 +574,7 @@ HWTEST_F(CfAdapterExtensionTest, OpensslGetEntryTest006, TestSize.Level0)
     EXPECT_EQ(ret, CF_SUCCESS) << "Normal adapter create extension object test failed, recode:" << ret;
 
     char oidStr[] = "2.5.29.19";
-    CfBlob oid = { strlen(oidStr), reinterpret_cast<uint8_t *>(oidStr) };
+    CfBlob oid = { static_cast<uint32_t>(strlen(oidStr)), reinterpret_cast<uint8_t *>(oidStr) };
     CfBlob outBlob = { 0, nullptr };
 
 
@@ -598,7 +598,7 @@ HWTEST_F(CfAdapterExtensionTest, OpensslGetEntryTest006, TestSize.Level0)
 HWTEST_F(CfAdapterExtensionTest, OpensslGetEntryTest007, TestSize.Level0)
 {
     char oidStr[] = "2.5.29.19";
-    CfBlob oid = { strlen(oidStr), reinterpret_cast<uint8_t *>(oidStr) };
+    CfBlob oid = { static_cast<uint32_t>(strlen(oidStr)), reinterpret_cast<uint8_t *>(oidStr) };
     CfBlob outBlob = { 0, nullptr };
 
     CfOpensslExtensionObj exts007 = { { CF_MAGIC(CF_MAGIC_TYPE_ADAPTER_RESOURCE, CF_OBJ_TYPE_EXTENSION) }, nullptr };
@@ -621,7 +621,7 @@ HWTEST_F(CfAdapterExtensionTest, OpensslGetEntryTest007, TestSize.Level0)
 HWTEST_F(CfAdapterExtensionTest, OpensslGetEntryTest008, TestSize.Level0)
 {
     char oidStr[] = "2.5.29.19";
-    CfBlob oid = { strlen(oidStr), reinterpret_cast<uint8_t *>(oidStr) };
+    CfBlob oid = { static_cast<uint32_t>(strlen(oidStr)), reinterpret_cast<uint8_t *>(oidStr) };
     CfBlob outBlob = { 0, nullptr };
 
     CfOpensslExtensionObj exts008 = { { CF_MAGIC(CF_MAGIC_TYPE_ADAPTER_RESOURCE, CF_OBJ_TYPE_EXTENSION) }, nullptr };
@@ -649,7 +649,7 @@ HWTEST_F(CfAdapterExtensionTest, OpensslGetEntryTest009, TestSize.Level0)
     EXPECT_EQ(ret, CF_SUCCESS) << "Normal adapter create extension object test failed, recode:" << ret;
 
     char oidStr[] = "2.5.29.19";
-    CfBlob oid = { strlen(oidStr), reinterpret_cast<uint8_t *>(oidStr) };
+    CfBlob oid = { static_cast<uint32_t>(strlen(oidStr)), reinterpret_cast<uint8_t *>(oidStr) };
     CfBlob outBlob = { 0, nullptr };
 
     CfExtensionEntryType errorType = static_cast<CfExtensionEntryType>(INT_MAX);
@@ -682,11 +682,13 @@ HWTEST_F(CfAdapterExtensionTest, OpensslGetEntryTest010, TestSize.Level0)
     char oidErrStr1[] = "errorFormatData";
     char oidErrStr2[] = "2.5.29.20";
     CfBlob errorOidArray[] = {
-        { strlen(oidStr), nullptr },                                        /* oid data is null */
-        { 0, reinterpret_cast<uint8_t *>(oidStr) },                             /* the size of oid data is 0 */
-        { MAX_LEN_OID + 1, reinterpret_cast<uint8_t *>(oidStr) },               /* the size of oid data is too larger */
-        { strlen(oidErrStr1), reinterpret_cast<uint8_t *>(oidErrStr1) },    /* oid data is wrong */
-        { strlen(oidErrStr2), reinterpret_cast<uint8_t *>(oidErrStr2) },    /* oid data is no include in exts */
+        { static_cast<uint32_t>(strlen(oidStr)), nullptr },         /* oid data is null */
+        { 0, reinterpret_cast<uint8_t *>(oidStr) },                 /* the size of oid data is 0 */
+        { MAX_LEN_OID + 1, reinterpret_cast<uint8_t *>(oidStr) },   /* the size of oid data is too larger */
+        { static_cast<uint32_t>(strlen(oidErrStr1)),
+            reinterpret_cast<uint8_t *>(oidErrStr1) },              /* oid data is wrong */
+        { static_cast<uint32_t>(strlen(oidErrStr2)),
+            reinterpret_cast<uint8_t *>(oidErrStr2) },              /* oid data is no include in exts */
     };
     int32_t expectRet[] = { CF_INVALID_PARAMS, CF_INVALID_PARAMS, CF_INVALID_PARAMS,
                             CF_INVALID_PARAMS, CF_NOT_EXIST };
@@ -713,7 +715,7 @@ HWTEST_F(CfAdapterExtensionTest, OpensslGetEntryTest011, TestSize.Level0)
     EXPECT_EQ(ret, CF_SUCCESS) << "Normal adapter create extension object test failed, recode:" << ret;
 
     char oidStr[] = "2.5.29.19";
-    CfBlob oid = { strlen(oidStr), reinterpret_cast<uint8_t *>(oidStr) };
+    CfBlob oid = { static_cast<uint32_t>(strlen(oidStr)), reinterpret_cast<uint8_t *>(oidStr) };
     ret = CfOpensslGetEntry(obj011, CF_EXT_ENTRY_TYPE_ENTRY_VALUE, &oid, nullptr); /* outBlob is null */
     EXPECT_EQ(ret, CF_INVALID_PARAMS) <<
         "Abnormal adapter extension object get entry test failed, recode:" << ret;
@@ -734,7 +736,7 @@ HWTEST_F(CfAdapterExtensionTest, OpensslGetEntryTest012, TestSize.Level0)
     EXPECT_EQ(ret, CF_SUCCESS) << "Normal adapter create extension object test failed, recode:" << ret;
 
     char oidStr[] = "2.5.29.19";
-    CfBlob oid = { strlen(oidStr), reinterpret_cast<uint8_t *>(oidStr) };
+    CfBlob oid = { static_cast<uint32_t>(strlen(oidStr)), reinterpret_cast<uint8_t *>(oidStr) };
     CfExtensionEntryType typeArray[] = {
         CF_EXT_ENTRY_TYPE_ENTRY,
         CF_EXT_ENTRY_TYPE_ENTRY_CRITICAL,
@@ -797,8 +799,9 @@ HWTEST_F(CfAdapterExtensionTest, OpensslCheckCATest002, TestSize.Level0)
     sk_X509_EXTENSION_zero(tmpExts002);
     exts002.exts = tmpExts002;
 
-    uint8_t data[] = "1"; // the length of keyUsage is 1 and can pass no CA check
-    ASN1_BIT_STRING bitStr = { strlen(reinterpret_cast<char *>(data)), V_ASN1_BIT_STRING, data, 0 };
+    char data[] = "1"; // the length of keyUsage is 1 and can pass no CA check
+    ASN1_BIT_STRING bitStr = { static_cast<int>(strlen(data)), V_ASN1_BIT_STRING,
+        reinterpret_cast<uint8_t *>(data), 0 };
     X509_EXTENSION *keyUsageExt = X509V3_EXT_i2d(NID_key_usage, 0, reinterpret_cast<void *>(&bitStr));
 
     (void)sk_X509_EXTENSION_push(tmpExts002, keyUsageExt);
@@ -825,8 +828,9 @@ HWTEST_F(CfAdapterExtensionTest, OpensslCheckCATest003, TestSize.Level0)
     sk_X509_EXTENSION_zero(tmpExts003);
     exts003.exts = tmpExts003;
 
-    uint8_t data[] = "test"; // the length of keyUsage is over 1 and can pass CA check
-    ASN1_BIT_STRING bitStr = { strlen(reinterpret_cast<char *>(data)), V_ASN1_BIT_STRING, data, 0 };
+    char data[] = "test"; // the length of keyUsage is over 1 and can pass CA check
+    ASN1_BIT_STRING bitStr = { static_cast<int>(strlen(data)), V_ASN1_BIT_STRING,
+        reinterpret_cast<uint8_t *>(data), 0 };
     X509_EXTENSION *keyUsageExt = X509V3_EXT_i2d(NID_key_usage, 0, reinterpret_cast<void *>(&bitStr));
     (void)sk_X509_EXTENSION_push(tmpExts003, keyUsageExt);
 
@@ -859,8 +863,9 @@ HWTEST_F(CfAdapterExtensionTest, OpensslCheckCATest004, TestSize.Level0)
     sk_X509_EXTENSION_zero(tmpExts004);
     exts004.exts = tmpExts004;
 
-    uint8_t data2[] = "test"; // the length of keyUsage is over 1 and can pass CA check
-    ASN1_BIT_STRING bitStr = { strlen(reinterpret_cast<char *>(data2)), V_ASN1_BIT_STRING, data2, 0 };
+    char data2[] = "test"; // the length of keyUsage is over 1 and can pass CA check
+    ASN1_BIT_STRING bitStr = { static_cast<int>(strlen(data2)), V_ASN1_BIT_STRING,
+        reinterpret_cast<uint8_t *>(data2), 0 };
     X509_EXTENSION *keyUsageExt = X509V3_EXT_i2d(NID_key_usage, 0, reinterpret_cast<void *>(&bitStr));
     (void)sk_X509_EXTENSION_push(tmpExts004, keyUsageExt);
 
@@ -967,8 +972,9 @@ HWTEST_F(CfAdapterExtensionTest, OpensslCheckCATest009, TestSize.Level0)
     sk_X509_EXTENSION_zero(tmpExts009);
     exts009.exts = tmpExts009;
 
-    uint8_t data[] = "test"; // the length of keyUsage is over 1 and can pass CA check, but no basic constraints
-    ASN1_BIT_STRING bitStr = { strlen(reinterpret_cast<char *>(data)), V_ASN1_BIT_STRING, data, 0 };
+    char data[] = "test"; // the length of keyUsage is over 1 and can pass CA check, but no basic constraints
+    ASN1_BIT_STRING bitStr = { static_cast<int>(strlen(data)), V_ASN1_BIT_STRING,
+        reinterpret_cast<uint8_t *>(data), 0 };
     X509_EXTENSION *keyUsageExt = X509V3_EXT_i2d(NID_key_usage, 0, reinterpret_cast<void *>(&bitStr));
 
     (void)sk_X509_EXTENSION_push(tmpExts009, keyUsageExt);
@@ -1028,7 +1034,7 @@ HWTEST_F(CfAdapterExtensionTest, OpensslGetExtensionItemTest001, TestSize.Level0
     int32_t ret = CfOpensslCreateExtension(&g_extension[1], &obj001);
     EXPECT_EQ(ret, CF_SUCCESS) << "Normal adapter create extension object test failed, recode:" << ret;
 
-    CfBlob blob = {g_extension[1].len, g_extension[1].data};
+    CfBlob blob = {static_cast<uint32_t>(g_extension[1].len), g_extension[1].data};
     CfBlob outBlob = { 0, nullptr };
     ret = CfOpensslGetExtensionItem(obj001, CF_ITEM_ENCODED, &outBlob);
     EXPECT_EQ(ret, CF_SUCCESS) << "Normal adapter extension object get extension encoded test failed, recode:" << ret;
@@ -1156,7 +1162,7 @@ HWTEST_F(CfAdapterExtensionTest, OpensslGetExtensionItemTest007, TestSize.Level0
     int32_t ret = CfOpensslCreateExtension(&g_extension[1], &obj007);
     EXPECT_EQ(ret, CF_SUCCESS) << "Normal adapter create extension object test failed, recode:" << ret;
 
-    CfBlob blob = {g_extension[1].len, g_extension[1].data};
+    CfBlob blob = {static_cast<uint32_t>(g_extension[1].len), g_extension[1].data};
 
     for (uint32_t i = 0; i < PERFORMANCE_COUNT; ++i) { /* run 1000 times */
         CfBlob outBlob = { 0, nullptr };
@@ -1207,8 +1213,9 @@ HWTEST_F(CfAdapterExtensionTest, OpensslHasUnsupportedCriticalExtensionTest002, 
     CfOpensslExtensionObj *extsObj = (CfOpensslExtensionObj *)obj002;
     X509_EXTENSIONS *exts = extsObj->exts;
 
-    uint8_t data[] = "test";
-    ASN1_BIT_STRING bitStr = { strlen(reinterpret_cast<char *>(data)), V_ASN1_BIT_STRING, data, 0 };
+    char data[] = "test";
+    ASN1_BIT_STRING bitStr = { static_cast<int>(strlen(data)), V_ASN1_BIT_STRING,
+        reinterpret_cast<uint8_t *>(data), 0 };
     X509_EXTENSION *netscapeCommentExt = X509V3_EXT_i2d(NID_netscape_comment, 1, reinterpret_cast<void *>(&bitStr));
 
     (void)sk_X509_EXTENSION_push(exts, netscapeCommentExt);
@@ -1268,7 +1275,7 @@ HWTEST_F(CfAdapterExtensionTest, OpensslHasUnsupportedCriticalExtensionTest004, 
 
     for (int index = 0; index < MAX_COUNT_OID + 1; index++) {
         string data = "test" + std::to_string(index);
-        ASN1_BIT_STRING bitStr = { data.length(), V_ASN1_BIT_STRING,
+        ASN1_BIT_STRING bitStr = { static_cast<int>(data.length()), V_ASN1_BIT_STRING,
             const_cast<unsigned char *>(reinterpret_cast<const unsigned char *>(data.c_str())), 0 };
         X509_EXTENSION *netscapeCommentExt = X509V3_EXT_i2d(NID_netscape_comment, 1, reinterpret_cast<void *>(&bitStr));
 
