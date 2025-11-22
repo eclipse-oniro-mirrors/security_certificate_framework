@@ -987,6 +987,7 @@ HWTEST_F(CryptoX509CertCmsGeneratorTestPart2, setRecipientEncryptionAlgorithm001
     res = cmsGenerator->setRecipientEncryptionAlgorithm(cmsGenerator,
         static_cast<CfCmsRecipientEncryptionAlgorithm>(6));
     EXPECT_EQ(res, CF_ERR_PARAMETER_CHECK);
+    CfObjDestroy(cmsGenerator);
 
     res = HcfCreateCmsGenerator(SIGNED_DATA, &cmsGenerator);
     EXPECT_EQ(res, CF_SUCCESS);
@@ -1027,6 +1028,9 @@ HWTEST_F(CryptoX509CertCmsGeneratorTestPart2, getEncryptedContentData001, TestSi
     cmsOptions->isDetachedContent = false;
     res = cmsGenerator->doFinal(cmsGenerator, &content, cmsOptions, &out);
     EXPECT_EQ(res, CF_SUCCESS);
+    EXPECT_NE(out.data, nullptr);
+    EXPECT_GT(out.size, 0);
+    CfBlobDataClearAndFree(&out);
     res = cmsGenerator->getEncryptedContentData(cmsGenerator, &out);
     EXPECT_EQ(res, CF_SUCCESS);
     EXPECT_NE(out.data, nullptr);
@@ -1050,6 +1054,7 @@ HWTEST_F(CryptoX509CertCmsGeneratorTestPart2, getEncryptedContentData002, TestSi
 
     res = cmsGenerator->getEncryptedContentData(cmsGenerator, &out);
     EXPECT_EQ(res, CF_ERR_CRYPTO_OPERATION);
+    CfObjDestroy(cmsGenerator);
 
     res = HcfCreateCmsGenerator(ENVELOPED_DATA, &cmsGenerator);
     EXPECT_EQ(res, CF_SUCCESS);

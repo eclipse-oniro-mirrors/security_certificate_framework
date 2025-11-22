@@ -25,6 +25,7 @@
 #include "cf_result.h"
 #include "cf_memory.h"
 #include "x509_cert_cms_generator_openssl.h"
+#include "x509_cert_chain_openssl_ex.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -706,6 +707,7 @@ HWTEST_F(CryptoX509CertCmsParserTestMock, GetCertsMockCmsGet1CertsFail, TestSize
     EXPECT_EQ(res, CF_SUCCESS);
 
     X509OpensslMock::SetMockFlag(false);
+    FreeCertificateArray(&certs);
     CfObjDestroy(cmsParser);
 }
 
@@ -986,6 +988,7 @@ HWTEST_F(CryptoX509CertCmsParserTestMock, GetCertsMockCfMallocFailAllCerts, Test
     EXPECT_EQ(res, CF_ERR_MALLOC);
     SetMockFlag(false);
 
+    FreeCertificateArray(&certs);
     CfObjDestroy(cmsParser);
 }
 
@@ -1009,6 +1012,7 @@ HWTEST_F(CryptoX509CertCmsParserTestMock, GetCertsMockCfMallocFailSignerCerts, T
     EXPECT_EQ(res, CF_ERR_MALLOC);
     SetMockFlag(false);
 
+    FreeCertificateArray(&certs);
     CfObjDestroy(cmsParser);
 }
 
@@ -1205,15 +1209,7 @@ HWTEST_F(CryptoX509CertCmsParserTestMock, GetCmsSignerCertsMockCmsGet0SignerInfo
     res = cmsParser->getCerts(cmsParser, CMS_CERT_SIGNER_CERTS, &certs);
     EXPECT_EQ(res, CF_SUCCESS);
 
-    if (certs.data != NULL) {
-        for (uint32_t i = 0; i < certs.count; i++) {
-            if (certs.data[i] != NULL) {
-                CfObjDestroy(certs.data[i]);
-            }
-        }
-        CfFree(certs.data);
-    }
-
+    FreeCertificateArray(&certs);
     CfObjDestroy(cmsParser);
 }
 }

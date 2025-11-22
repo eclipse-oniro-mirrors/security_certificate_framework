@@ -1223,7 +1223,6 @@ static CfResult GetCmsAllCerts(HcfCmsParserOpensslImpl *impl, int32_t certsNum, 
     certs->data = (HcfX509Certificate **)CfMalloc(certsNum * sizeof(HcfX509Certificate *), 0);
     if (certs->data == NULL) {
         LOGE("malloc failed");
-        sk_X509_pop_free(certsStack, X509_free);
         return CF_ERR_MALLOC;
     }
     CfResult res = CF_SUCCESS;
@@ -1233,7 +1232,6 @@ static CfResult GetCmsAllCerts(HcfCmsParserOpensslImpl *impl, int32_t certsNum, 
         X509 *cert = sk_X509_value(certsStack, i);
         if (cert == NULL) {
             LOGE("sk X509 value is null, failed!");
-            sk_X509_pop_free(certsStack, X509_free);
             CfPrintOpensslError();
             FreeCertificateArray(certs);
             return CF_ERR_CRYPTO_OPERATION;
@@ -1242,13 +1240,11 @@ static CfResult GetCmsAllCerts(HcfCmsParserOpensslImpl *impl, int32_t certsNum, 
         res = X509ToHcfX509Certificate(cert, &x509Cert);
         if (res != CF_SUCCESS) {
             LOGE("convert x509 to HcfX509Certificate failed!");
-            sk_X509_pop_free(certsStack, X509_free);
             FreeCertificateArray(certs);
             return res;
         }
         certs->data[i] = x509Cert;
     }
-    sk_X509_pop_free(certsStack, X509_free);
     return res;
 }
 
@@ -1287,14 +1283,12 @@ static CfResult GetCmsSignerCerts(HcfCmsParserOpensslImpl *impl, int32_t allCert
     if (signerInfos == NULL) {
         LOGE("CMS_get0_SignerInfos returned NULL");
         CfPrintOpensslError();
-        sk_X509_pop_free(allCertsStack, X509_free);
         return CF_ERR_CRYPTO_OPERATION;
     }
     int32_t signerCount = sk_CMS_SignerInfo_num(signerInfos);
     if (signerCount <= 0) {
         LOGE("sk CMS_SignerInfo num : 0, failed!");
         CfPrintOpensslError();
-        sk_X509_pop_free(allCertsStack, X509_free);
         return CF_ERR_CRYPTO_OPERATION;
     }
 
@@ -1302,7 +1296,6 @@ static CfResult GetCmsSignerCerts(HcfCmsParserOpensslImpl *impl, int32_t allCert
     certs->data = (HcfX509Certificate **)CfMalloc(certs->count * sizeof(HcfX509Certificate *), 0);
     if (certs->data == NULL) {
         LOGE("malloc failed");
-        sk_X509_pop_free(allCertsStack, X509_free);
         return CF_ERR_MALLOC;
     }
 
@@ -1310,7 +1303,6 @@ static CfResult GetCmsSignerCerts(HcfCmsParserOpensslImpl *impl, int32_t allCert
         certs->data[i] = NULL;
     }
 
-    CfResult res = CF_SUCCESS;
     int32_t successCount = 0;
     for (int32_t i = 0; i < signerCount; i++) {
         CMS_SignerInfo *si = sk_CMS_SignerInfo_value(signerInfos, i);
@@ -1328,11 +1320,9 @@ static CfResult GetCmsSignerCerts(HcfCmsParserOpensslImpl *impl, int32_t allCert
     if (successCount == 0) {
         LOGE("All signer certificates failed to match");
         FreeCertificateArray(certs);
-        sk_X509_pop_free(allCertsStack, X509_free);
         return CF_SUCCESS;
     }
-    sk_X509_pop_free(allCertsStack, X509_free);
-    return res;
+    return CF_SUCCESS;
 }
 
 static CfResult GetContentFromBio(CMS_ContentInfo *cms, CfBlob *out)
@@ -1450,13 +1440,15 @@ static CfResult GetCertsOpenssl(HcfCmsParserSpi *self, HcfCmsCertType cmsCertTyp
         return CF_SUCCESS;
     }
     if (cmsCertType == CMS_CERT_ALL_CERTS) {
-        return GetCmsAllCerts(impl, certsNum, certsStack, certs);
+        res = GetCmsAllCerts(impl, certsNum, certsStack, certs);
     } else if (cmsCertType == CMS_CERT_SIGNER_CERTS) {
-        return GetCmsSignerCerts(impl, certsNum, certsStack, certs);
+        res = GetCmsSignerCerts(impl, certsNum, certsStack, certs);
     } else {
         LOGE("Invalid cmsCertType.");
-        return CF_ERR_PARAMETER_CHECK;
+        res = CF_ERR_PARAMETER_CHECK;
     }
+    sk_X509_pop_free(certsStack, X509_free);
+    return res;
 }
 
 static CfResult CmsDecryptGetContentData(bool hasCmsContent, const HcfCmsParserDecryptEnvelopedDataOptions *options,

@@ -63,6 +63,8 @@ static HcfX509CertChainSpi *g_certChainPemSpi = nullptr;
 static HcfX509CertChainSpi *g_certChainDerSpi = nullptr;
 constexpr uint32_t TEST_MAX_CERT_NUM = 257; /* max certs number of a certchain */
 
+#define CERT_VERIFY_DIR "/etc/security/certificates"
+
 static const char TEST_CERT_CHAIN_PEM[] =
     "-----BEGIN CERTIFICATE-----\r\n"
     "MIIJ7DCCCNSgAwIBAgIMTkADpl62gfh/S9jrMA0GCSqGSIb3DQEBCwUAMFAxCzAJ\r\n"
@@ -248,6 +250,29 @@ static const char TEST_CERT_CHAIN_PEM_NOT_ROOT[] =
     "fpolu4usBCOmmQDo8dIm7A9+O4orkjgTHY+GzYZSR+Y0fFukAj6KYXwidlNalFMz\r\n"
     "hriSqHKvoflShx8xpfywgVcvzfTO3PYkz6fiNJBonf6q8amaEsybwMbDqKWwIX7e\r\n"
     "SPY=\r\n"
+    "-----END CERTIFICATE-----\r\n";
+
+static const char TEST_CERT_CHAIN_PEM_ROOT[] =
+    "-----BEGIN CERTIFICATE-----\r\n"
+    "MIIDXzCCAkegAwIBAgILBAAAAAABIVhTCKIwDQYJKoZIhvcNAQELBQAwTDEgMB4G\r\n"
+    "A1UECxMXR2xvYmFsU2lnbiBSb290IENBIC0gUjMxEzARBgNVBAoTCkdsb2JhbFNp\r\n"
+    "Z24xEzARBgNVBAMTCkdsb2JhbFNpZ24wHhcNMDkwMzE4MTAwMDAwWhcNMjkwMzE4\r\n"
+    "MTAwMDAwWjBMMSAwHgYDVQQLExdHbG9iYWxTaWduIFJvb3QgQ0EgLSBSMzETMBEG\r\n"
+    "A1UEChMKR2xvYmFsU2lnbjETMBEGA1UEAxMKR2xvYmFsU2lnbjCCASIwDQYJKoZI\r\n"
+    "hvcNAQEBBQADggEPADCCAQoCggEBAMwldpB5BngiFvXAg7aEyiie/QV2EcWtiHL8\r\n"
+    "RgJDx7KKnQRfJMsuS+FggkbhUqsMgUdwbN1k0ev1LKMPgj0MK66X17YUhhB5uzsT\r\n"
+    "gHeMCOFJ0mpiLx9e+pZo34knlTifBtc+ycsmWQ1z3rDI6SYOgxXG71uL0gRgykmm\r\n"
+    "KPZpO/bLyCiR5Z2KYVc3rHQU3HTgOu5yLy6c+9C7v/U9AOEGM+iCK65TpjoWc4zd\r\n"
+    "QQ4gOsC0p6Hpsk+QLjJg6VfLuQSSaGjlOCZgdbKfd/+RFO+uIEn8rUAVSNECMWEZ\r\n"
+    "XriX7613t2Saer9fwRPvm2L7DWzgVGkWqQPabumDk3F2xmmFghcCAwEAAaNCMEAw\r\n"
+    "DgYDVR0PAQH/BAQDAgEGMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFI/wS3+o\r\n"
+    "LkUkrk1Q+mOai97i3Ru8MA0GCSqGSIb3DQEBCwUAA4IBAQBLQNvAUKr+yAzv95ZU\r\n"
+    "RUm7lgAJQayzE4aGKAczymvmdLm6AC2upArT9fHxD4q/c2dKg8dEe3jgr25sbwMp\r\n"
+    "jjM5RcOO5LlXbKr8EpbsU8Yt5CRsuZRj+9xTaGdWPoO4zzUhw8lo/s7awlOqzJCK\r\n"
+    "6fBdRoyV3XpYKBovHd7NADdBj+1EbddTKJd+82cEHhXXipa0095MJ6RMG3NzdvQX\r\n"
+    "mcIfeg7jLQitChws/zyrVQ4PkX4268NXSb7hLi18YIvDQVETI53O9zJrlAGomecs\r\n"
+    "Mx86OyXShkDOOyyGeMlhLxS67ttVb9+E7gUJTb0o2HLO02JQZR7rkpeDMdmztcpH\r\n"
+    "WD9f\r\n"
     "-----END CERTIFICATE-----\r\n";
 
 static const char *GetInvalidCertChainClass(void)
@@ -1750,40 +1775,67 @@ HWTEST_F(CryptoX509CertChainTest, ValidateCoreTest006, TestSize.Level0)
 
 HWTEST_F(CryptoX509CertChainTest, ValidateCoreTest007, TestSize.Level0)
 {
-    const int testCertChainPemSize = sizeof(TEST_CERT_CHAIN_PEM) / sizeof(char);
-    const CfEncodingBlob inStreamChainDataPem = { reinterpret_cast<uint8_t *>(const_cast<char *>(TEST_CERT_CHAIN_PEM)),
-    testCertChainPemSize, CF_FORMAT_PEM };
+    const CfEncodingBlob inStreamChainDataPem = {
+        reinterpret_cast<uint8_t *>(const_cast<char *>(TEST_CERT_CHAIN_PEM)),
+        sizeof(TEST_CERT_CHAIN_PEM) / sizeof(char),
+        CF_FORMAT_PEM
+    };
     HcfX509CertChainSpi *certChainSpi = nullptr;
     CfResult ret = HcfX509CertChainByEncSpiCreate(&inStreamChainDataPem, &certChainSpi);
     ASSERT_EQ(ret, CF_SUCCESS);
 
+    const CfEncodingBlob inStreamChainDataPemRoot = {
+        reinterpret_cast<uint8_t *>(const_cast<char *>(TEST_CERT_CHAIN_PEM_ROOT)),
+        sizeof(TEST_CERT_CHAIN_PEM_ROOT) / sizeof(char),
+        CF_FORMAT_PEM
+    };
+    HcfX509TrustAnchorArray trustAnchorArray = { 0 };
+    if (access(CERT_VERIFY_DIR, F_OK) == -1) {
+        BuildAnchorArr(inStreamChainDataPemRoot, trustAnchorArray);
+    }
+
     HcfX509CertChainValidateParams pCertChainValidateParams = { 0 };
-    pCertChainValidateParams.trustAnchors = nullptr;
+    pCertChainValidateParams.trustAnchors = &trustAnchorArray;
     pCertChainValidateParams.trustSystemCa = true;
     HcfX509CertChainValidateResult result = { 0 };
     ret = certChainSpi->engineValidate(certChainSpi, &pCertChainValidateParams, &result);
     ASSERT_EQ(ret, CF_SUCCESS);
 
     FreeValidateResult(result);
+    FreeTrustAnchorArr(trustAnchorArray);
+    CfObjDestroy(certChainSpi);
 }
 
 HWTEST_F(CryptoX509CertChainTest, ValidateCoreTest008, TestSize.Level0)
 {
-    const int testCertChainPemSize = sizeof(TEST_CERT_CHAIN_PEM_NOT_ROOT) / sizeof(char);
     const CfEncodingBlob inStreamChainDataPem = {
-        reinterpret_cast<uint8_t *>(const_cast<char *>(TEST_CERT_CHAIN_PEM_NOT_ROOT)), testCertChainPemSize,
-        CF_FORMAT_PEM };
+        reinterpret_cast<uint8_t *>(const_cast<char *>(TEST_CERT_CHAIN_PEM_NOT_ROOT)),
+        sizeof(TEST_CERT_CHAIN_PEM_NOT_ROOT) / sizeof(char),
+        CF_FORMAT_PEM
+    };
     HcfX509CertChainSpi *certChainSpi = nullptr;
     CfResult ret = HcfX509CertChainByEncSpiCreate(&inStreamChainDataPem, &certChainSpi);
     ASSERT_EQ(ret, CF_SUCCESS);
 
+    const CfEncodingBlob inStreamChainDataPemRoot = {
+        reinterpret_cast<uint8_t *>(const_cast<char *>(TEST_CERT_CHAIN_PEM_ROOT)),
+        sizeof(TEST_CERT_CHAIN_PEM_ROOT) / sizeof(char),
+        CF_FORMAT_PEM
+    };
+    HcfX509TrustAnchorArray trustAnchorArray = { 0 };
+    if (access(CERT_VERIFY_DIR, F_OK) == -1) {
+        BuildAnchorArr(inStreamChainDataPemRoot, trustAnchorArray);
+    }
+
     HcfX509CertChainValidateParams pCertChainValidateParams = { 0 };
-    pCertChainValidateParams.trustAnchors = nullptr;
+    pCertChainValidateParams.trustAnchors = &trustAnchorArray;
     pCertChainValidateParams.trustSystemCa = true;
     HcfX509CertChainValidateResult result = { 0 };
     ret = certChainSpi->engineValidate(certChainSpi, &pCertChainValidateParams, &result);
     ASSERT_EQ(ret, CF_SUCCESS);
 
     FreeValidateResult(result);
+    FreeTrustAnchorArr(trustAnchorArray);
+    CfObjDestroy(certChainSpi);
 }
 } // namespace
