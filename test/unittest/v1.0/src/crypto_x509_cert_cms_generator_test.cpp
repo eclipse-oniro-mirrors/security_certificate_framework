@@ -25,6 +25,7 @@
 #include "cf_result.h"
 #include "cf_memory.h"
 #include "x509_cert_cms_generator_openssl.h"
+#include "x509_cert_chain_openssl_ex.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -1710,15 +1711,7 @@ HWTEST_F(CryptoX509CertCmsGeneratorTest, Verify007, TestSize.Level0)
 
     EXPECT_GE(certs.count, 1);
 
-    if (certs.data != nullptr) {
-        for (uint32_t i = 0; i < certs.count; i++) {
-            if (certs.data[i] != nullptr) {
-                CfObjDestroy(certs.data[i]);
-            }
-        }
-        CfFree(certs.data);
-    }
-
+    FreeCertificateArray(&certs);
     CfObjDestroy(cmsParser);
 }
 
@@ -2048,15 +2041,7 @@ HWTEST_F(CryptoX509CertCmsGeneratorTest, VerifyGetCerts001, TestSize.Level0)
     EXPECT_NE(allCerts.data, nullptr);
     EXPECT_GT(allCerts.count, 0);
 
-    if (allCerts.data != nullptr) {
-        for (uint32_t i = 0; i < allCerts.count; i++) {
-            if (allCerts.data[i] != nullptr) {
-                CfObjDestroy(allCerts.data[i]);
-            }
-        }
-        CfFree(allCerts.data);
-    }
-
+    FreeCertificateArray(&allCerts);
     FreeCmsOptions(cmsOptions);
     CfObjDestroy(cmsParser);
 }
@@ -2079,26 +2064,14 @@ HWTEST_F(CryptoX509CertCmsGeneratorTest, VerifyGetCerts002, TestSize.Level0)
     EXPECT_EQ(res, CF_SUCCESS);
     EXPECT_NE(allCerts.data, nullptr);
     EXPECT_GT(allCerts.count, 0);
-
-    if (allCerts.data != nullptr) {
-        for (uint32_t i = 0; i < allCerts.count; i++) {
-            if (allCerts.data[i] != nullptr) {
-                CfObjDestroy(allCerts.data[i]);
-            }
-        }
-        CfFree(allCerts.data);
-    }
+    FreeCertificateArray(&allCerts);
 
     HcfX509CertificateArray signerCerts = {nullptr, 0};
     res = cmsParser->getCerts(cmsParser, CMS_CERT_SIGNER_CERTS, &signerCerts);
     EXPECT_EQ(res, CF_SUCCESS);
     EXPECT_NE(signerCerts.data, nullptr);
     EXPECT_GT(signerCerts.count, 0);
-    for (uint32_t i = 0; i < signerCerts.count; i++) {
-        EXPECT_NE(signerCerts.data[i], nullptr);
-    }
-    CfObjDestroy(signerCerts.data[0]);
-    CfFree(signerCerts.data);
+    FreeCertificateArray(&signerCerts);
     CfObjDestroy(cmsParser);
 }
 

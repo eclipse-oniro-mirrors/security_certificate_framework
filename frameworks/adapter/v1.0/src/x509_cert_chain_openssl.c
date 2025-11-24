@@ -1015,22 +1015,27 @@ static CfResult GetOcspUrl(GetOcspUrlParams *params, int index)
         if (index == 0) {
             if (params->revo->ocspResponderURI == NULL || params->revo->ocspResponderURI->data == NULL) {
                 LOGE("Unable to get url.");
+                X509_email_free(ocspList);
                 return CF_ERR_CRYPTO_OPERATION;
             }
         } else {
             LOGE("Unable to get url from certificate, index = %{public}d.", index);
+            X509_email_free(ocspList);
             return CF_ERR_CRYPTO_OPERATION;
         }
     }
     char *urlValiable = (url == NULL) ? (char *)(params->revo->ocspResponderURI->data) : url;
     if (!CfIsUrlValid(urlValiable)) {
         LOGE("Invalid url.");
+        X509_email_free(ocspList);
         return CF_INVALID_PARAMS;
     }
     if (!OCSP_parse_url(urlValiable, params->host, params->port, params->path, params->ssl)) {
         LOGE("Unable to parse url.");
+        X509_email_free(ocspList);
         return CF_ERR_CRYPTO_OPERATION;
     }
+    X509_email_free(ocspList);
     return CF_SUCCESS;
 }
 
@@ -1157,31 +1162,37 @@ static CfResult PrepareOcspRequest(PrepareOcspRequestParams *params)
     res = CreateOcspConnection(host, port, ssl, params->cbio);
     if (res != CF_SUCCESS) {
         LOGE("Unable to create ocsp connection.");
-        return res;
+        goto exit;
     }
 
     *(params->req) = OCSP_REQUEST_new();
     if (*(params->req) == NULL) {
         LOGE("Unable to create req.");
-        BIO_free_all(*(params->cbio));
-        return CF_ERR_CRYPTO_OPERATION;
+        res = CF_ERR_CRYPTO_OPERATION;
+        goto exit;
     }
     res = SetRequestData(revo, *(params->req), params->certIdInfo);
     if (res != CF_SUCCESS) {
         LOGE("Unable to set request data.");
-        OCSP_REQUEST_free(*(params->req));
-        BIO_free_all(*(params->cbio));
-        return res;
+        goto exit;
     }
 
     *(params->resp) = SendReqBioCustom(*(params->cbio), host, path, *(params->req));
     if (*(params->resp) == NULL) {
         LOGE("Unable to send request.");
+        res = CF_ERR_CRYPTO_OPERATION;
+        goto exit;
+    }
+
+exit:
+    OPENSSL_free(host);
+    OPENSSL_free(port);
+    OPENSSL_free(path);
+    if (res != CF_SUCCESS) {
         OCSP_REQUEST_free(*(params->req));
         BIO_free_all(*(params->cbio));
-        return CF_ERR_CRYPTO_OPERATION;
     }
-    return CF_SUCCESS;
+    return res;
 }
 
 static CfResult ValidateOcspOnline(STACK_OF(X509) *x509CertChain, OcspCertIdInfo *certIdInfo,
@@ -1543,7 +1554,7 @@ static CfResult GetMostTrustCert(const HcfX509CertChainValidateParams *params, X
     CfResult res = CF_ERR_CRYPTO_OPERATION;
     if (X509_STORE_CTX_init(storeCtx, store, rootCert, x509CertChain) != CF_OPENSSL_SUCCESS) {
         LOGE("Failed to initialize verify context");
-        goto cleanup;
+        goto exit;
     }
 
     /* Try to get issuer certificate from store */
@@ -1552,16 +1563,16 @@ static CfResult GetMostTrustCert(const HcfX509CertChainValidateParams *params, X
         res = ValidateCertDate(*mostTrustCert, params->date);
         if (res != CF_SUCCESS) {
             LOGE("Validate date failed.");
-            goto cleanup;
+            goto exit;
         }
-        goto cleanup;
+        goto exit;
     }
 
     /* If failed to get issuer certificate, try to use root certificate as trust anchor */
     LOGW("Failed to get issuer certificate, trying root cert");
     res = TryUseRootCertAsTrust(storeCtx, rootCert, mostTrustCert);
 
-cleanup:
+exit:
     X509_STORE_CTX_free(storeCtx);
     return res;
 }
