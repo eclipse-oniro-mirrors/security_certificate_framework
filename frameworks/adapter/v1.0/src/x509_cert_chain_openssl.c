@@ -49,6 +49,7 @@
 #define TRY_CONNECT_TIMES 3
 #define OCSP_CONN_MILLISECOND 5000 // millisecond
 #define OCSP_CONN_TIMEOUT (-1)     // timeout == 0 means no timeout, < 0 means exactly one try.
+#define LOAD_OCSP_CONN_TIMEOUT 5     // 5 second timeout.
 #define HTTP_PORT "80"
 #define HTTPS_PORT "443"
 #define CERT_VERIFY_DIR "/etc/security/certificates"
@@ -167,20 +168,6 @@ static CfResult GetCertlist(HcfX509CertChainSpi *self, HcfX509CertificateArray *
     }
 
     return res;
-}
-
-static bool ContainsOption(HcfRevChkOpArray *options, HcfRevChkOption op)
-{
-    if (options == NULL || options->data == NULL) {
-        return false;
-    }
-
-    for (uint32_t i = 0; i < options->count; i++) {
-        if (options->data[i] == op) {
-            return true;
-        }
-    }
-    return false;
 }
 
 static CfResult CheckCertChainIsRevoked(const HcfX509CertChainValidateParams *params,
@@ -740,9 +727,17 @@ static CfResult ValidateCrlIntermediateCaOnline(const HcfX509CertChainValidatePa
         }
         X509_CRL *crl = NULL;
         res = GetIntermediateCrlFromCertByDp(x509, &crl);
-        if (res != CF_SUCCESS) {
-            LOGE("Load intermediate crl from dp failed!");
-            break;
+        if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_IGNORE_NETWORK_ERROR)) {
+            if (res != CF_SUCCESS && res != CF_ERR_CONNECT_TIMEOUT) {
+                LOGE("Load intermediate crl from dp failed!");
+                break;
+            }
+            LOGW("ValidateCrlIntermediateCaOnline success, index = %{public}d with ignore network error option.", i);
+        } else {
+            if (res != CF_SUCCESS) {
+                LOGE("Load intermediate crl from dp failed!");
+                break;
+            }
         }
         if (crl == NULL) {
             LOGE("Crl url is not found in crl distribution points.");
@@ -764,9 +759,13 @@ static CfResult ValidateCrlLeftCertOnline(const HcfX509CertChainValidateParams *
         LOGE("Get leaf cert failed!");
         return CF_INVALID_PARAMS;
     }
-    X509_CRL *crl = GetCrlFromCert(params, x509);
+    int errReason = 0;
+    X509_CRL *crl = GetCrlFromCert(params, x509, &errReason);
     if (crl == NULL) {
         LOGE("Get crl online is null!");
+        if (errReason == BIO_R_CONNECT_TIMEOUT) {
+            return CF_ERR_CONNECT_TIMEOUT;
+        }
         return CF_ERR_CRYPTO_OPERATION;
     }
 
@@ -781,8 +780,15 @@ static CfResult ValidateCrlLeftCertOnline(const HcfX509CertChainValidateParams *
 static CfResult ValidateCrlOnline(const HcfX509CertChainValidateParams *params, STACK_OF(X509) *x509CertChain)
 {
     CfResult res = ValidateCrlLeftCertOnline(params, x509CertChain);
-    if (res != CF_SUCCESS) {
-        return res;
+    if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_IGNORE_NETWORK_ERROR)) {
+        if (res != CF_SUCCESS && res != CF_ERR_CONNECT_TIMEOUT) {
+            return res;
+        }
+        LOGW("ValidateCrlOnline leaf cert success with ignore network error option.");
+    } else {
+        if (res != CF_SUCCESS) {
+            return res;
+        }
     }
     if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_CHECK_INTERMEDIATE_CA_ONLINE)) {
         res = ValidateCrlIntermediateCaOnline(params, x509CertChain);
@@ -977,7 +983,7 @@ static OCSP_RESPONSE *SendReqBioCustom(BIO *bio, const char *host, const char *p
     return NULL;
 }
 
-static bool ConnectToServer(BIO *bio, int tryNum)
+static bool ConnectToServer(BIO *bio, int tryNum, int *errReason)
 {
     int ret = 0;
     int num = tryNum;
@@ -987,7 +993,10 @@ static bool ConnectToServer(BIO *bio, int tryNum)
             break;
         } else if (ret <= 0) {
             LOGE("OCSP connecte service failed.");
-            CfPrintOpensslError();
+            ret = BIO_do_connect_retry(bio, LOAD_OCSP_CONN_TIMEOUT, OCSP_CONN_MILLISECOND);
+            if (ret == 1) {
+                break;
+            }
             if (BIO_should_retry(bio)) {
                 LOGI("Try to connect service again, [%{public}d]st.", num);
                 num--;
@@ -996,6 +1005,9 @@ static bool ConnectToServer(BIO *bio, int tryNum)
             }
         }
     } while (ret <= 0 && num != 0);
+    if (ret != 1) {
+        *errReason = ERR_GET_REASON(ERR_peek_last_error());
+    }
     return (ret == 1 ? true : false);
 }
 
@@ -1134,11 +1146,14 @@ static CfResult CreateOcspConnection(const char *host, const char *port, int ssl
         LOGE("Unable to create connection.");
         return CF_ERR_CRYPTO_OPERATION;
     }
-
-    if (!ConnectToServer(*cbio, TRY_CONNECT_TIMES)) {
+    int errReason = 0;
+    if (!ConnectToServer(*cbio, TRY_CONNECT_TIMES, &errReason)) {
         LOGE("Unable to connect service.");
         BIO_free_all(*cbio);
         *cbio = NULL;
+        if (errReason == BIO_R_CONNECT_TIMEOUT) {
+            return CF_ERR_CONNECT_TIMEOUT;
+        }
         return CF_ERR_CRYPTO_OPERATION;
     }
 
@@ -1180,6 +1195,7 @@ static CfResult PrepareOcspRequest(PrepareOcspRequestParams *params)
     *(params->resp) = SendReqBioCustom(*(params->cbio), host, path, *(params->req));
     if (*(params->resp) == NULL) {
         LOGE("Unable to send request.");
+        CfPrintOpensslError();
         res = CF_ERR_CRYPTO_OPERATION;
         goto exit;
     }
@@ -1240,25 +1256,30 @@ static void FreeCertIdInfo(OcspCertIdInfo *certIdInfo)
     }
 }
 
-static CfResult OnlineVerifyOcsp(STACK_OF(X509) *x509CertChain, OcspCertIdInfo *certIdInfo,
-    HcfX509TrustAnchor *trustAnchor, const HcfX509CertChainValidateParams *params)
+static CfResult VerifyIntermediateOcspOnline(STACK_OF(X509) *x509CertChain, HcfX509TrustAnchor *trustAnchor,
+    const HcfX509CertChainValidateParams *params)
 {
-    CfResult res = ValidateOcspOnline(x509CertChain, certIdInfo, trustAnchor, params, 0);
-    if (res != CF_SUCCESS) {
-        LOGE("ValidateOcspOnline leaf cert failed.");
-        return res;
-    }
-    LOGD("ValidateOcspOnline leaf cert success.");
-    if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_CHECK_INTERMEDIATE_CA_ONLINE)) {
-        for (int i = 1; i < sk_X509_num(x509CertChain) - 1; i++) {
-            OcspCertIdInfo intermediateCertIdInfo = {0};
-            res = CfGetCertIdInfo(x509CertChain, NULL, &intermediateCertIdInfo, i);
-            if (res != CF_SUCCESS) {
-                LOGE("Get cert id info from intermediate cert failed.");
+    CfResult res = CF_ERR_CRYPTO_OPERATION;
+    for (int i = 1; i < sk_X509_num(x509CertChain) - 1; i++) {
+        OcspCertIdInfo intermediateCertIdInfo = {0};
+        res = CfGetCertIdInfo(x509CertChain, NULL, &intermediateCertIdInfo, i);
+        if (res != CF_SUCCESS) {
+            LOGE("Get cert id info from intermediate cert failed.");
+            FreeCertIdInfo(&intermediateCertIdInfo);
+            return res;
+        }
+        res = ValidateOcspOnline(x509CertChain, &intermediateCertIdInfo, trustAnchor, params, i);
+        if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_IGNORE_NETWORK_ERROR)) {
+            if (res != CF_SUCCESS && res != CF_ERR_CONNECT_TIMEOUT) {
+                LOGE("ValidateOcspOnline failed ignore network error option, index = %{public}d.", i);
                 FreeCertIdInfo(&intermediateCertIdInfo);
                 return res;
             }
-            res = ValidateOcspOnline(x509CertChain, &intermediateCertIdInfo, trustAnchor, params, i);
+            LOGW("ValidateOcspOnline intermediate cert success,"
+                "index = %{public}d with ignore network error option.", i);
+            FreeCertIdInfo(&intermediateCertIdInfo);
+            continue;
+        } else {
             if (res == CF_SUCCESS) {
                 LOGD("ValidateOcspOnline success, index = %{public}d.", i);
                 FreeCertIdInfo(&intermediateCertIdInfo);
@@ -1266,6 +1287,33 @@ static CfResult OnlineVerifyOcsp(STACK_OF(X509) *x509CertChain, OcspCertIdInfo *
             }
             LOGE("ValidateOcspOnline failed, index = %{public}d.", i);
             FreeCertIdInfo(&intermediateCertIdInfo);
+            return res;
+        }
+    }
+    return res;
+}
+
+static CfResult OnlineVerifyOcsp(STACK_OF(X509) *x509CertChain, OcspCertIdInfo *certIdInfo,
+    HcfX509TrustAnchor *trustAnchor, const HcfX509CertChainValidateParams *params)
+{
+    CfResult res = ValidateOcspOnline(x509CertChain, certIdInfo, trustAnchor, params, 0);
+    if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_IGNORE_NETWORK_ERROR)) {
+        if (res != CF_SUCCESS && res != CF_ERR_CONNECT_TIMEOUT) {
+            LOGE("ValidateOcspOnline leaf cert failed with ignore network error option.");
+            return res;
+        }
+        LOGW("ValidateOcspOnline leaf cert success with ignore network error option.");
+    } else {
+        if (res != CF_SUCCESS) {
+            LOGE("ValidateOcspOnline leaf cert failed.");
+            return res;
+        }
+    }
+    LOGD("ValidateOcspOnline leaf cert success.");
+    if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_CHECK_INTERMEDIATE_CA_ONLINE)) {
+        res = VerifyIntermediateOcspOnline(x509CertChain, trustAnchor, params);
+        if (res != CF_SUCCESS) {
+            LOGE("VerifyIntermediateOcspOnline failed!");
             return res;
         }
     }
@@ -1291,6 +1339,8 @@ static CfResult ValidateRevocationOnLine(const HcfX509CertChainValidateParams *p
                 return res;
             }
             return ValidateCrlLocal(params, x509CertChain);
+        } else {
+            return IgnoreNetworkError(res, params->revocationCheckParam->options);
         }
     } else {
         if ((res = ValidateCrlOnline(params, x509CertChain)) == CF_SUCCESS) {
@@ -1307,6 +1357,8 @@ static CfResult ValidateRevocationOnLine(const HcfX509CertChainValidateParams *p
             }
             return ValidateOcspLocal((OcspLocalParam) { .req = NULL, .resp = NULL, .certIdInfo = certIdInfo },
                                                         x509CertChain, trustAnchor, params, 0);
+        } else {
+            return IgnoreNetworkError(res, params->revocationCheckParam->options);
         }
     }
     return res;

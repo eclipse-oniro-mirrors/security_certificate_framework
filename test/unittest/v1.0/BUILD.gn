@@ -213,6 +213,8 @@ ohos_unittest("cf_version1_test") {
     "-Wl,--wrap=CMS_get1_certs",
     "-Wl,--wrap=BIO_write",
     "-Wl,--wrap=BIO_do_connect_retry",
+    "-Wl,--wrap=ERR_peek_last_error",
+    "-Wl,--wrap=CfGetCertIdInfo",
   ]
 
   if (target_cpu == "arm") {

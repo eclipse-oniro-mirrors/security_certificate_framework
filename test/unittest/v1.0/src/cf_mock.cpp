@@ -133,6 +133,9 @@ ASN1_OCTET_STRING **__real_CMS_get0_content(CMS_ContentInfo *cms);
 STACK_OF(X509) *__real_CMS_get1_certs(CMS_ContentInfo *cms);
 int __real_BIO_write(BIO *b, const void *data, int dlen);
 int __real_BIO_do_connect_retry(BIO *b, int timeout, int retry);
+unsigned long __real_ERR_peek_last_error(void);
+CfResult __real_CfGetCertIdInfo(STACK_OF(X509) *x509CertChain, const CfBlob *ocspDigest,
+    OcspCertIdInfo *certIdInfo, int index);
 #ifdef __cplusplus
 }
 #endif
@@ -540,6 +543,15 @@ void X509OpensslMock::SetMockFunDefaultBehaviorPartEight(void)
     ON_CALL(*this, BIO_do_connect_retry).WillByDefault([this](BIO *b, int timeout, int retry) {
         return __real_BIO_do_connect_retry(b, timeout, retry);
     });
+
+    ON_CALL(*this, ERR_peek_last_error).WillByDefault([this]() {
+        return __real_ERR_peek_last_error();
+    });
+
+    ON_CALL(*this, CfGetCertIdInfo).WillByDefault([this](STACK_OF(X509) *x509CertChain, const CfBlob *ocspDigest,
+                                                      OcspCertIdInfo *certIdInfo, int index) {
+        return __real_CfGetCertIdInfo(x509CertChain, ocspDigest, certIdInfo, index);
+    });
 }
 
 X509OpensslMock::X509OpensslMock()
@@ -752,6 +764,27 @@ int __wrap_BIO_do_connect_retry(BIO *b, int timeout, int retry)
         return X509OpensslMock::GetInstance().BIO_do_connect_retry(b, timeout, retry);
     } else {
         return __real_BIO_do_connect_retry(b, timeout, retry);
+    }
+}
+
+unsigned long __wrap_ERR_peek_last_error(void)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock ERR_peek_last_error");
+        return X509OpensslMock::GetInstance().ERR_peek_last_error();
+    } else {
+        return __real_ERR_peek_last_error();
+    }
+}
+
+CfResult __wrap_CfGetCertIdInfo(STACK_OF(X509) *x509CertChain, const CfBlob *ocspDigest, OcspCertIdInfo *certIdInfo,
+    int index)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock CfGetCertIdInfo");
+        return X509OpensslMock::GetInstance().CfGetCertIdInfo(x509CertChain, ocspDigest, certIdInfo, index);
+    } else {
+        return __real_CfGetCertIdInfo(x509CertChain, ocspDigest, certIdInfo, index);
     }
 }
 

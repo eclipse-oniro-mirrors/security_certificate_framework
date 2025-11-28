@@ -66,5 +66,7 @@ typedef enum CfResult {
     CF_ERR_INVALID_EXTENSION = -30011,
 
     CF_ERR_SHOULD_NOT_CALL = -30012,
+
+    CF_ERR_CONNECT_TIMEOUT = -30013,
 } CfResult;
 #endif

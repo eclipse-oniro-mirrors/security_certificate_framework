@@ -1233,3 +1233,31 @@ CfResult CfGetCertIdInfo(STACK_OF(X509) *x509CertChain, const CfBlob *ocspDigest
     certIdInfo->issuerCert = issuerCert;
     return CF_SUCCESS;
 }
+
+bool ContainsOption(HcfRevChkOpArray *options, HcfRevChkOption op)
+{
+    if (options == NULL || options->data == NULL) {
+        return false;
+    }
+
+    for (uint32_t i = 0; i < options->count; i++) {
+        if (options->data[i] == op) {
+            return true;
+        }
+    }
+    return false;
+}
+
+CfResult IgnoreNetworkError(CfResult res, HcfRevChkOpArray *options)
+{
+    if (res == CF_ERR_CONNECT_TIMEOUT) {
+        if (ContainsOption(options, REVOCATION_CHECK_OPTION_IGNORE_NETWORK_ERROR)) {
+            LOGW("Online verify timeout, but ignore network error option is set!");
+            return CF_SUCCESS;
+        } else {
+            return CF_ERR_CRYPTO_OPERATION;
+        }
+    }
+    return res;
+}
+
