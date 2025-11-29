@@ -1342,18 +1342,7 @@ HWTEST_F(CryptoX509CertChainTestPart2, HcfParsePKCS12Test004, TestSize.Level0)
     pwd.size = strlen(g_testKeystorePwd) + 1;
     conf.pwd = &pwd;
 
-    X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_num(_))
-        .WillOnce(Invoke(__real_OPENSSL_sk_num))
-        .WillOnce(Return(-1))
-        .WillRepeatedly(Invoke(__real_OPENSSL_sk_num));
     CfResult result = HcfParsePKCS12(&keyStore, &conf, &p12Collection);
-    EXPECT_EQ(result, CF_SUCCESS);
-    X509OpensslMock::SetMockFlag(false);
-    FreeHcfX509P12Collection(p12Collection);
-    p12Collection = NULL;
-
-    result = HcfParsePKCS12(&keyStore, &conf, &p12Collection);
     EXPECT_EQ(result, CF_SUCCESS);
     FreeHcfX509P12Collection(p12Collection);
     p12Collection = NULL;

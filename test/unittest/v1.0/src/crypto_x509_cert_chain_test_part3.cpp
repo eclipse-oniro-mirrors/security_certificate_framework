@@ -59,12 +59,6 @@ void ResetMockFunctionPartOne(void)
         BIO_do_connect_retry(_, _, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_BIO_do_connect_retry));
     EXPECT_CALL(X509OpensslMock::GetInstance(),
         X509_get_ext_d2i(_, _, _, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_X509_get_ext_d2i));
-    EXPECT_CALL(X509OpensslMock::GetInstance(),
-        OPENSSL_sk_num(_)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_OPENSSL_sk_num));
-    EXPECT_CALL(X509OpensslMock::GetInstance(),
-        OPENSSL_sk_value(_, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_OPENSSL_sk_value));
-    EXPECT_CALL(X509OpensslMock::GetInstance(),
-        ERR_peek_last_error()).Times(AnyNumber()).WillRepeatedly(Invoke(__real_ERR_peek_last_error));
 }
 
 void ResetMockFunction(void)
@@ -419,7 +413,8 @@ HWTEST_F(CryptoX509CertChainTestPart3, ValidateIgnoreNetworkErrorTest001, TestSi
     HcfX509CertChainValidateResult result = { 0 };
 
     X509OpensslMock::SetMockFlag(true);
-    ResetMockFunction();
+    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_num(_))
+        .WillRepeatedly(Invoke(__real_OPENSSL_sk_num));
     EXPECT_CALL(X509OpensslMock::GetInstance(), BIO_do_connect_retry(_, _, _))
         .WillRepeatedly(Return(0));
     EXPECT_CALL(X509OpensslMock::GetInstance(), ERR_peek_last_error())
@@ -729,7 +724,6 @@ HWTEST_F(CryptoX509CertChainTestPart3, ValidateIgnoreNetworkErrorTest008, TestSi
 
     HcfX509CertChainValidateResult result = { 0 };
     X509OpensslMock::SetMockFlag(true);
-    ResetMockFunction();
     EXPECT_CALL(X509OpensslMock::GetInstance(), X509_CRL_load_http(_, _, _, _))
         .WillRepeatedly(Return(nullptr));
     EXPECT_CALL(X509OpensslMock::GetInstance(), ERR_peek_last_error())
@@ -767,7 +761,6 @@ HWTEST_F(CryptoX509CertChainTestPart3, ValidateIgnoreNetworkErrorTest009, TestSi
 
     HcfX509CertChainValidateResult result = { 0 };
     X509OpensslMock::SetMockFlag(true);
-    ResetMockFunction();
     EXPECT_CALL(X509OpensslMock::GetInstance(), X509_CRL_load_http(_, _, _, _))
         .WillRepeatedly(Return(nullptr));
     EXPECT_CALL(X509OpensslMock::GetInstance(), ERR_peek_last_error())
@@ -849,6 +842,7 @@ HWTEST_F(CryptoX509CertChainTestPart3, ValidateIgnoreNetworkErrorTest011, TestSi
     ret = certChainPem->engineValidate(certChainPem, &params, &result);
     EXPECT_EQ(ret, CF_SUCCESS);
     X509OpensslMock::SetMockFlag(false);
+    FreeValidateResult(result);
 
     X509_CRL *crl = X509_CRL_new();
     X509OpensslMock::SetMockFlag(true);
@@ -863,7 +857,6 @@ HWTEST_F(CryptoX509CertChainTestPart3, ValidateIgnoreNetworkErrorTest011, TestSi
     FreeTrustAnchorArr(trustAnchorArray);
     FreeHcfRevocationCheckParam(params.revocationCheckParam);
     CfObjDestroy(certChainPem);
-    X509_CRL_free(crl);
 }
 
 HWTEST_F(CryptoX509CertChainTestPart3, ValidateIgnoreNetworkErrorTest012, TestSize.Level0)
@@ -897,6 +890,7 @@ HWTEST_F(CryptoX509CertChainTestPart3, ValidateIgnoreNetworkErrorTest012, TestSi
     ret = certChainPem->engineValidate(certChainPem, &params, &result);
     EXPECT_EQ(ret, CF_SUCCESS);
     X509OpensslMock::SetMockFlag(false);
+    FreeValidateResult(result);
 
     X509_CRL *crl = X509_CRL_new();
     X509OpensslMock::SetMockFlag(true);
@@ -912,7 +906,6 @@ HWTEST_F(CryptoX509CertChainTestPart3, ValidateIgnoreNetworkErrorTest012, TestSi
     FreeTrustAnchorArr(trustAnchorArray);
     FreeHcfRevocationCheckParam(params.revocationCheckParam);
     CfObjDestroy(certChainPem);
-    X509_CRL_free(crl);
 }
 
 HWTEST_F(CryptoX509CertChainTestPart3, ContainsOptionTest001, TestSize.Level0)
