@@ -53,10 +53,12 @@ CfResult AllocateAndConvertCert(X509 *cert, HcfX509P12Collection *collection, bo
 CfResult AllocateAndConvertPkey(EVP_PKEY *pkey, HcfX509P12Collection *collection, bool isGet);
 CfResult AllocateAndConvertCertStack(STACK_OF(X509) *ca, HcfX509P12Collection *collection, bool isGet);
 void FreeCertificateArray(HcfX509CertificateArray *certs);
-CfResult CfGetCertIdInfo(STACK_OF(X509) *x509CertChain, const CfBlob *ocspDigest, OcspCertIdInfo *certIdInfo,
-    int index);
+CfResult CfGetCertIdInfo(STACK_OF(X509) *x509CertChain, const CfBlob *ocspDigest, HcfX509TrustAnchor *trustAnchor,
+    OcspCertIdInfo *certIdInfo, int index);
 bool ContainsOption(HcfRevChkOpArray *options, HcfRevChkOption op);
 CfResult IgnoreNetworkError(CfResult res, HcfRevChkOpArray *options);
+CfResult SetVerifyParams(X509_STORE *store, X509 *mostTrustCert);
+CfResult VerifyCertChain(X509 *mostTrustCert, STACK_OF(X509) *x509CertChain);
 #ifdef __cplusplus
 }
 #endif

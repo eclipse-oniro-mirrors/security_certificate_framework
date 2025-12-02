@@ -135,7 +135,7 @@ int __real_BIO_write(BIO *b, const void *data, int dlen);
 int __real_BIO_do_connect_retry(BIO *b, int timeout, int retry);
 unsigned long __real_ERR_peek_last_error(void);
 CfResult __real_CfGetCertIdInfo(STACK_OF(X509) *x509CertChain, const CfBlob *ocspDigest,
-    OcspCertIdInfo *certIdInfo, int index);
+    HcfX509TrustAnchor *trustAnchor, OcspCertIdInfo *certIdInfo, int index);
 #ifdef __cplusplus
 }
 #endif
@@ -549,8 +549,8 @@ void X509OpensslMock::SetMockFunDefaultBehaviorPartEight(void)
     });
 
     ON_CALL(*this, CfGetCertIdInfo).WillByDefault([this](STACK_OF(X509) *x509CertChain, const CfBlob *ocspDigest,
-                                                      OcspCertIdInfo *certIdInfo, int index) {
-        return __real_CfGetCertIdInfo(x509CertChain, ocspDigest, certIdInfo, index);
+            HcfX509TrustAnchor *trustAnchor, OcspCertIdInfo *certIdInfo, int index) {
+        return __real_CfGetCertIdInfo(x509CertChain, ocspDigest, trustAnchor, certIdInfo, index);
     });
 }
 
@@ -777,14 +777,15 @@ unsigned long __wrap_ERR_peek_last_error(void)
     }
 }
 
-CfResult __wrap_CfGetCertIdInfo(STACK_OF(X509) *x509CertChain, const CfBlob *ocspDigest, OcspCertIdInfo *certIdInfo,
-    int index)
+CfResult __wrap_CfGetCertIdInfo(STACK_OF(X509) *x509CertChain, const CfBlob *ocspDigest,
+    HcfX509TrustAnchor *trustAnchor, OcspCertIdInfo *certIdInfo, int index)
 {
     if (g_mockTagX509Openssl) {
         CF_LOG_I("X509OpensslMock CfGetCertIdInfo");
-        return X509OpensslMock::GetInstance().CfGetCertIdInfo(x509CertChain, ocspDigest, certIdInfo, index);
+        return X509OpensslMock::GetInstance().CfGetCertIdInfo(x509CertChain, ocspDigest, trustAnchor,
+            certIdInfo, index);
     } else {
-        return __real_CfGetCertIdInfo(x509CertChain, ocspDigest, certIdInfo, index);
+        return __real_CfGetCertIdInfo(x509CertChain, ocspDigest, trustAnchor, certIdInfo, index);
     }
 }
 

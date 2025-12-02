@@ -51,7 +51,7 @@ X509_CRL *__real_X509_CRL_load_http(const char *url, BIO *bio, BIO *rbio, int ti
 int __real_OPENSSL_sk_num(const OPENSSL_STACK *st);
 void *__real_OPENSSL_sk_value(const OPENSSL_STACK *st, int i);
 CfResult __real_CfGetCertIdInfo(STACK_OF(X509) *x509CertChain, const CfBlob *ocspDigest,
-    OcspCertIdInfo *certIdInfo, int index);
+    HcfX509TrustAnchor *trustAnchor, OcspCertIdInfo *certIdInfo, int index);
 
 void ResetMockFunctionPartOne(void)
 {
@@ -614,7 +614,7 @@ HWTEST_F(CryptoX509CertChainTestPart3, ValidateIgnoreNetworkErrorTest005, TestSi
         .WillOnce(Return(268435603))
         .WillRepeatedly(Return(268959746));
     ret = certChainPem->engineValidate(certChainPem, &params, &result);
-    EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
+    EXPECT_EQ(ret, CF_SUCCESS);
     X509OpensslMock::SetMockFlag(false);
 
     FreeValidateResult(result);
@@ -651,12 +651,12 @@ HWTEST_F(CryptoX509CertChainTestPart3, ValidateIgnoreNetworkErrorTest006, TestSi
     EXPECT_CALL(X509OpensslMock::GetInstance(), ERR_peek_last_error())
         .WillOnce(Return(268435603))
         .WillRepeatedly(Return(268959746));
-    EXPECT_CALL(X509OpensslMock::GetInstance(), CfGetCertIdInfo(_, _, _, _))
+    EXPECT_CALL(X509OpensslMock::GetInstance(), CfGetCertIdInfo(_, _, _, _, _))
         .WillOnce(Return(CF_SUCCESS))
         .WillOnce(Return(CF_ERR_CRYPTO_OPERATION))
         .WillRepeatedly(Invoke(__real_CfGetCertIdInfo));
     ret = certChainPem->engineValidate(certChainPem, &params, &result);
-    EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
+    EXPECT_EQ(ret, CF_SUCCESS);
     X509OpensslMock::SetMockFlag(false);
 
     FreeValidateResult(result);
