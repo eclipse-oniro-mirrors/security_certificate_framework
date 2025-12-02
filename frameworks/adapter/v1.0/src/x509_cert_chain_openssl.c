@@ -55,10 +55,6 @@
 #define CERT_VERIFY_DIR "/etc/security/certificates"
 
 // helper functions
-typedef struct {
-    int32_t errCode;
-    CfResult result;
-} OpensslErrorToResult;
 
 typedef struct {
     OCSP_REQUEST *req;
@@ -78,32 +74,13 @@ typedef struct {
 typedef struct {
     STACK_OF(X509) *x509CertChain;
     OcspCertIdInfo *certIdInfo;
+    HcfX509TrustAnchor *trustAnchor;
     const HcfX509CertChainValidateParams *params;
     int index;
     OCSP_REQUEST **req;
     OCSP_RESPONSE **resp;
     BIO **cbio;
 } PrepareOcspRequestParams;
-
-static const OpensslErrorToResult ERROR_TO_RESULT_MAP[] = {
-    { X509_V_OK, CF_SUCCESS },
-    { X509_V_ERR_CERT_SIGNATURE_FAILURE, CF_ERR_CERT_SIGNATURE_FAILURE },
-    { X509_V_ERR_CERT_NOT_YET_VALID, CF_ERR_CERT_NOT_YET_VALID },
-    { X509_V_ERR_CERT_HAS_EXPIRED, CF_ERR_CERT_HAS_EXPIRED },
-    { X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY, CF_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY },
-    { X509_V_ERR_KEYUSAGE_NO_CERTSIGN, CF_ERR_KEYUSAGE_NO_CERTSIGN },
-    { X509_V_ERR_KEYUSAGE_NO_DIGITAL_SIGNATURE, CF_ERR_KEYUSAGE_NO_DIGITAL_SIGNATURE },
-};
-
-static CfResult ConvertOpensslErrorMsg(int32_t errCode)
-{
-    for (uint32_t i = 0; i < sizeof(ERROR_TO_RESULT_MAP) / sizeof(OpensslErrorToResult); ++i) {
-        if (ERROR_TO_RESULT_MAP[i].errCode == errCode) {
-            return ERROR_TO_RESULT_MAP[i].result;
-        }
-    }
-    return CF_ERR_CRYPTO_OPERATION;
-}
 
 static void DestroyX509CertChain(CfObjectBase *self)
 {
@@ -215,80 +192,6 @@ static CfResult CheckCertChainIsRevoked(const HcfX509CertChainValidateParams *pa
     return CF_SUCCESS;
 }
 
-static CfResult SetVerifyParams(X509_STORE *store, X509 *mostTrustCert)
-{
-    if (X509_STORE_add_cert(store, mostTrustCert) != CF_OPENSSL_SUCCESS) {
-        LOGE("add cert to store failed!");
-        CfPrintOpensslError();
-        return CF_ERR_CRYPTO_OPERATION;
-    }
-
-    unsigned long flags = 0;
-    if (!CheckIsSelfSigned(mostTrustCert)) {
-        flags |= X509_V_FLAG_PARTIAL_CHAIN; // is not self signed
-        LOGI("SetVerifyFlag() is a partitial chain, not self signed!");
-    }
-
-    /* date has verified before. */
-    flags |= X509_V_FLAG_NO_CHECK_TIME;
-    X509_STORE_set_flags(store, flags);
-
-    return CF_SUCCESS;
-}
-
-static CfResult VerifyCertChain(X509 *mostTrustCert, STACK_OF(X509) *x509CertChain)
-{
-    if (mostTrustCert == NULL || x509CertChain == NULL) {
-        LOGE("invalid params!");
-        return CF_INVALID_PARAMS;
-    }
-
-    X509 *cert = sk_X509_value(x509CertChain, 0); // leaf cert
-    if (cert == NULL) {
-        CfPrintOpensslError();
-        return CF_ERR_CRYPTO_OPERATION;
-    }
-
-    X509_STORE_CTX *ctx = X509_STORE_CTX_new();
-    if (ctx == NULL) {
-        CfPrintOpensslError();
-        return CF_ERR_CRYPTO_OPERATION;
-    }
-
-    X509_STORE *store = X509_STORE_new();
-    if (store == NULL) {
-        LOGE("verify cert chain malloc failed!");
-        X509_STORE_CTX_free(ctx);
-        CfPrintOpensslError();
-        return CF_ERR_CRYPTO_OPERATION;
-    }
-
-    CfResult res = SetVerifyParams(store, mostTrustCert);
-    if (res == CF_SUCCESS) {
-        if (X509_STORE_CTX_init(ctx, store, cert, x509CertChain) != CF_OPENSSL_SUCCESS) {
-            LOGE("init verify ctx failed!");
-            X509_STORE_CTX_free(ctx);
-            X509_STORE_free(store);
-            CfPrintOpensslError();
-            return CF_ERR_CRYPTO_OPERATION;
-        }
-
-        if (X509_verify_cert(ctx) == CF_OPENSSL_SUCCESS) {
-            res = CF_SUCCESS;
-        } else {
-            int32_t errCode = X509_STORE_CTX_get_error(ctx);
-            const char *pChError = X509_verify_cert_error_string(errCode);
-            LOGE("Failed to verify cert, openssl openssl error code = %{public}d, error msg:%{public}s.",
-                errCode, pChError);
-            res = ConvertOpensslErrorMsg(errCode);
-        }
-    }
-
-    X509_STORE_CTX_free(ctx); // Cleanup: Free the allocated memory and release resources.
-    X509_STORE_free(store);
-    return res;
-}
-
 static EVP_PKEY *ConvertByteArrayToPubKey(const uint8_t *pubKeyBytes, size_t len)
 {
     if (pubKeyBytes == NULL) {
@@ -331,8 +234,8 @@ static CfResult CheckOthersInTrustAnchor(const HcfX509TrustAnchor *anchor, X509 
     }
 
     /* If pubkey is of self cert, the subject should be of self cert.
-     * If pubkey is of upper level cert, the subject should be of uppoer level cert (i.e. the issuer of self cert).
-     */
+    * If pubkey is of upper level cert, the subject should be of uppoer level cert (i.e. the issuer of self cert).
+    */
     if (anchor->CASubject != NULL) {
         // 2. compare subject name of root CA.
         X509NameType nameType = NAME_TYPE_SUBJECT;
@@ -416,6 +319,7 @@ static void FreeTrustAnchorData(HcfX509TrustAnchor *trustAnchor)
     }
     CfBlobFree(&trustAnchor->CAPubKey);
     CfBlobFree(&trustAnchor->CASubject);
+    CfBlobFree(&trustAnchor->nameConstraints);
     CfObjDestroy(trustAnchor->CACert);
     trustAnchor->CACert = NULL;
 }
@@ -725,22 +629,19 @@ static CfResult ValidateCrlIntermediateCaOnline(const HcfX509CertChainValidatePa
             res = CF_ERR_CRYPTO_OPERATION;
             break;
         }
-        X509_CRL *crl = NULL;
-        res = GetIntermediateCrlFromCertByDp(x509, &crl);
-        if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_IGNORE_NETWORK_ERROR)) {
-            if (res != CF_SUCCESS && res != CF_ERR_CONNECT_TIMEOUT) {
-                LOGE("Load intermediate crl from dp failed!");
-                break;
-            }
-            LOGW("ValidateCrlIntermediateCaOnline success, index = %{public}d with ignore network error option.", i);
-        } else {
-            if (res != CF_SUCCESS) {
-                LOGE("Load intermediate crl from dp failed!");
-                break;
-            }
+        int errReason = 0;
+        X509_CRL *crl = GetCrlFromCertByDp(x509, &errReason);
+        if (errReason == BIO_R_CONNECT_TIMEOUT) {
+            res = CF_ERR_CONNECT_TIMEOUT;
         }
-        if (crl == NULL) {
-            LOGE("Crl url is not found in crl distribution points.");
+        if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_IGNORE_NETWORK_ERROR)) {
+            if (crl == NULL && res == CF_ERR_CONNECT_TIMEOUT) {
+                LOGW("Validate IntermediateCaOnline success, index = %{public}d with ignore network error option.", i);
+                continue;
+            }
+        } else if (crl == NULL) {
+            LOGE("Get crl from cert by dp failed!");
+            res = CF_SUCCESS;
             continue;
         }
         res = CheckCrlIsRevoked(params, crl, x509CertChain);
@@ -920,14 +821,31 @@ static CfResult ValidateOcspVerify(OcspLocalParam localParam, STACK_OF(X509) *x5
     return res;
 }
 
+static void FreeCertIdInfo(OcspCertIdInfo *certIdInfo)
+{
+    if (certIdInfo == NULL) {
+        return;
+    }
+    if (certIdInfo->subjectCert != NULL) {
+        X509_free(certIdInfo->subjectCert);
+    }
+    if (certIdInfo->issuerCert != NULL) {
+        X509_free(certIdInfo->issuerCert);
+    }
+}
+
 static CfResult ValidateOcspLocal(OcspLocalParam localParam, STACK_OF(X509) *x509CertChain,
     HcfX509TrustAnchor *trustAnchor, const HcfX509CertChainValidateParams *params, int index)
 {
     OCSP_RESPONSE *rsp = NULL;
-    if (localParam.certIdInfo == NULL) {
-        LOGE("The input data is null!");
-        return CF_INVALID_PARAMS;
+    OcspCertIdInfo certIdInfo = {0};
+    CfResult res = CfGetCertIdInfo(x509CertChain, params->revocationCheckParam->ocspDigest, trustAnchor,
+        &certIdInfo, index);
+    if (res != CF_SUCCESS) {
+        LOGE("Get cert id info failed.");
+        return res;
     }
+    localParam.certIdInfo = &certIdInfo;
     HcfRevocationCheckParam *revo = params->revocationCheckParam;
     if (localParam.resp == NULL && index == 0 && revo->ocspResponses != NULL) {
         const unsigned char *p = revo->ocspResponses->data;
@@ -936,15 +854,18 @@ static CfResult ValidateOcspLocal(OcspLocalParam localParam, STACK_OF(X509) *x50
     }
     if (localParam.resp == NULL) {
         LOGE("The input data is null!");
+        FreeCertIdInfo(&certIdInfo);
         return CF_ERR_CRYPTO_OPERATION;
     }
-    CfResult res = ValidateOcspVerify(localParam, x509CertChain, trustAnchor, params, index);
+    res = ValidateOcspVerify(localParam, x509CertChain, trustAnchor, params, index);
     if (res != CF_SUCCESS) {
         LOGE("ValidateOcspVerify failed!");
         OCSP_RESPONSE_free(rsp);
+        FreeCertIdInfo(&certIdInfo);
         return res;
     }
     OCSP_RESPONSE_free(rsp);
+    FreeCertIdInfo(&certIdInfo);
     return res;
 }
 
@@ -1031,9 +952,9 @@ static CfResult GetOcspUrl(GetOcspUrlParams *params, int index)
                 return CF_ERR_CRYPTO_OPERATION;
             }
         } else {
-            LOGE("Unable to get url from certificate, index = %{public}d.", index);
+            LOGW("Unable to get url from certificate, index = %{public}d.", index);
             X509_email_free(ocspList);
-            return CF_ERR_CRYPTO_OPERATION;
+            return CF_ERR_EXTENSION_NOT_EXIST;
         }
     }
     char *urlValiable = (url == NULL) ? (char *)(params->revo->ocspResponderURI->data) : url;
@@ -1048,6 +969,31 @@ static CfResult GetOcspUrl(GetOcspUrlParams *params, int index)
         return CF_ERR_CRYPTO_OPERATION;
     }
     X509_email_free(ocspList);
+    return CF_SUCCESS;
+}
+
+static CfResult PrepareCertIdInfoForRequest(PrepareOcspRequestParams *params, OcspCertIdInfo **certIdInfoToUse)
+{
+    if (params->certIdInfo != NULL) {
+        *certIdInfoToUse = params->certIdInfo;
+        return CF_SUCCESS;
+    }
+
+    OcspCertIdInfo *tempCertIdInfo = (OcspCertIdInfo *)CfMalloc(sizeof(OcspCertIdInfo), 0);
+    if (tempCertIdInfo == NULL) {
+        LOGE("Failed to malloc tempCertIdInfo.");
+        return CF_ERR_MALLOC;
+    }
+
+    HcfRevocationCheckParam *revo = params->params->revocationCheckParam;
+    CfResult res = CfGetCertIdInfo(params->x509CertChain, revo->ocspDigest, params->trustAnchor, tempCertIdInfo,
+        params->index);
+    if (res != CF_SUCCESS) {
+        LOGE("Get cert id info failed.");
+        CfFree(tempCertIdInfo);
+        return res;
+    }
+    *certIdInfoToUse = tempCertIdInfo;
     return CF_SUCCESS;
 }
 
@@ -1081,6 +1027,24 @@ static CfResult SetRequestData(HcfRevocationCheckParam *revo, OCSP_REQUEST *req,
         }
     }
 
+    return CF_SUCCESS;
+}
+
+static CfResult BuildAndSendOcspRequest(PrepareOcspRequestParams *params, const char *host, const char *path,
+    OcspCertIdInfo *certIdInfoToUse)
+{
+    HcfRevocationCheckParam *revo = params->params->revocationCheckParam;
+    CfResult res = SetRequestData(revo, *(params->req), certIdInfoToUse);
+    if (res != CF_SUCCESS) {
+        LOGE("Unable to set request data.");
+        return res;
+    }
+
+    *(params->resp) = SendReqBioCustom(*(params->cbio), host, path, *(params->req));
+    if (*(params->resp) == NULL) {
+        LOGE("Unable to send request.");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
     return CF_SUCCESS;
 }
 
@@ -1174,6 +1138,7 @@ static CfResult PrepareOcspRequest(PrepareOcspRequestParams *params)
         return res;
     }
 
+    OcspCertIdInfo *certIdInfoToUse = NULL;
     res = CreateOcspConnection(host, port, ssl, params->cbio);
     if (res != CF_SUCCESS) {
         LOGE("Unable to create ocsp connection.");
@@ -1186,21 +1151,25 @@ static CfResult PrepareOcspRequest(PrepareOcspRequestParams *params)
         res = CF_ERR_CRYPTO_OPERATION;
         goto exit;
     }
-    res = SetRequestData(revo, *(params->req), params->certIdInfo);
+
+    res = PrepareCertIdInfoForRequest(params, &certIdInfoToUse);
     if (res != CF_SUCCESS) {
-        LOGE("Unable to set request data.");
+        LOGE("Prepare cert id info failed.");
         goto exit;
     }
 
-    *(params->resp) = SendReqBioCustom(*(params->cbio), host, path, *(params->req));
-    if (*(params->resp) == NULL) {
-        LOGE("Unable to send request.");
+    res = BuildAndSendOcspRequest(params, host, path, certIdInfoToUse);
+    if (res != CF_SUCCESS) {
+        LOGE("Unable to build and send ocsp request.");
         CfPrintOpensslError();
-        res = CF_ERR_CRYPTO_OPERATION;
         goto exit;
     }
 
 exit:
+    if (params->certIdInfo == NULL) {
+        FreeCertIdInfo(certIdInfoToUse);
+        CfFree(certIdInfoToUse);
+    }
     OPENSSL_free(host);
     OPENSSL_free(port);
     OPENSSL_free(path);
@@ -1220,6 +1189,7 @@ static CfResult ValidateOcspOnline(STACK_OF(X509) *x509CertChain, OcspCertIdInfo
     PrepareOcspRequestParams prepareParams = {
         .x509CertChain = x509CertChain,
         .certIdInfo = certIdInfo,
+        .trustAnchor = trustAnchor,
         .params = params,
         .index = index,
         .req = &req,
@@ -1233,7 +1203,7 @@ static CfResult ValidateOcspOnline(STACK_OF(X509) *x509CertChain, OcspCertIdInfo
 
     if (index == 0) {
         res = ValidateOcspLocal(
-            (OcspLocalParam) { .req = req, .resp = resp, .certIdInfo = certIdInfo },
+            (OcspLocalParam) { .req = req, .resp = resp, .certIdInfo = NULL },
                 x509CertChain, trustAnchor, params, index);
     } else {
         res = ValidateOcspVerify(
@@ -1246,57 +1216,67 @@ static CfResult ValidateOcspOnline(STACK_OF(X509) *x509CertChain, OcspCertIdInfo
     return res;
 }
 
-static void FreeCertIdInfo(OcspCertIdInfo *certIdInfo)
+static CfResult ValidationIntermediateCert(X509 *cert, HcfX509TrustAnchor *trustAnchor)
 {
-    if (certIdInfo->subjectCert != NULL) {
-        X509_free(certIdInfo->subjectCert);
+    if (CheckIsSelfSigned(cert)) {
+        LOGD("Self signed cert, skip validate.");
+        return CF_SUCCESS;
     }
-    if (certIdInfo->issuerCert != NULL) {
-        X509_free(certIdInfo->issuerCert);
+    X509 *trustCert = GetX509FromHcfX509Certificate((HcfCertificate *)(trustAnchor->CACert));
+    if (trustCert == NULL) {
+        LOGE("Get trust cert from trust anchor failed.");
+        return CF_ERR_CRYPTO_OPERATION;
     }
+    if (X509_cmp(trustCert, cert) == 0) {
+        LOGD("Intermediate cert is the same as the trust anchor, skip validate.");
+        return CF_SUCCESS;
+    }
+    return CF_ERR_CRYPTO_OPERATION;
 }
 
 static CfResult VerifyIntermediateOcspOnline(STACK_OF(X509) *x509CertChain, HcfX509TrustAnchor *trustAnchor,
     const HcfX509CertChainValidateParams *params)
 {
     CfResult res = CF_ERR_CRYPTO_OPERATION;
-    for (int i = 1; i < sk_X509_num(x509CertChain) - 1; i++) {
+    for (int i = 1; i < sk_X509_num(x509CertChain); i++) {
+        if (ValidationIntermediateCert(sk_X509_value(x509CertChain, i), trustAnchor) == CF_SUCCESS) {
+            LOGD("self signed cert, skip validate.");
+            return CF_SUCCESS;
+        }
         OcspCertIdInfo intermediateCertIdInfo = {0};
-        res = CfGetCertIdInfo(x509CertChain, NULL, &intermediateCertIdInfo, i);
+        res = CfGetCertIdInfo(x509CertChain, NULL, trustAnchor, &intermediateCertIdInfo, i);
         if (res != CF_SUCCESS) {
             LOGE("Get cert id info from intermediate cert failed.");
-            FreeCertIdInfo(&intermediateCertIdInfo);
             return res;
         }
         res = ValidateOcspOnline(x509CertChain, &intermediateCertIdInfo, trustAnchor, params, i);
+        FreeCertIdInfo(&intermediateCertIdInfo);
         if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_IGNORE_NETWORK_ERROR)) {
             if (res != CF_SUCCESS && res != CF_ERR_CONNECT_TIMEOUT) {
                 LOGE("ValidateOcspOnline failed ignore network error option, index = %{public}d.", i);
-                FreeCertIdInfo(&intermediateCertIdInfo);
                 return res;
             }
             LOGW("ValidateOcspOnline intermediate cert success,"
                 "index = %{public}d with ignore network error option.", i);
-            FreeCertIdInfo(&intermediateCertIdInfo);
             continue;
         } else {
-            if (res == CF_SUCCESS) {
+            if (res == CF_SUCCESS || res == CF_ERR_EXTENSION_NOT_EXIST) {
                 LOGD("ValidateOcspOnline success, index = %{public}d.", i);
-                FreeCertIdInfo(&intermediateCertIdInfo);
+                res = CF_SUCCESS;
                 continue;
             }
             LOGE("ValidateOcspOnline failed, index = %{public}d.", i);
-            FreeCertIdInfo(&intermediateCertIdInfo);
+            
             return res;
         }
     }
     return res;
 }
 
-static CfResult OnlineVerifyOcsp(STACK_OF(X509) *x509CertChain, OcspCertIdInfo *certIdInfo,
-    HcfX509TrustAnchor *trustAnchor, const HcfX509CertChainValidateParams *params)
+static CfResult OnlineVerifyOcsp(STACK_OF(X509) *x509CertChain, HcfX509TrustAnchor *trustAnchor,
+    const HcfX509CertChainValidateParams *params)
 {
-    CfResult res = ValidateOcspOnline(x509CertChain, certIdInfo, trustAnchor, params, 0);
+    CfResult res = ValidateOcspOnline(x509CertChain, NULL, trustAnchor, params, 0);
     if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_IGNORE_NETWORK_ERROR)) {
         if (res != CF_SUCCESS && res != CF_ERR_CONNECT_TIMEOUT) {
             LOGE("ValidateOcspOnline leaf cert failed with ignore network error option.");
@@ -1321,11 +1301,11 @@ static CfResult OnlineVerifyOcsp(STACK_OF(X509) *x509CertChain, OcspCertIdInfo *
 }
 
 static CfResult ValidateRevocationOnLine(const HcfX509CertChainValidateParams *params, STACK_OF(X509) *x509CertChain,
-    HcfX509TrustAnchor *trustAnchor, OcspCertIdInfo *certIdInfo)
+    HcfX509TrustAnchor *trustAnchor)
 {
     CfResult res = CF_INVALID_PARAMS;
     if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_PREFER_OCSP)) {
-        if ((res = OnlineVerifyOcsp(x509CertChain, certIdInfo, trustAnchor, params)) == CF_SUCCESS) {
+        if ((res = OnlineVerifyOcsp(x509CertChain, trustAnchor, params)) == CF_SUCCESS) {
             return res;
         }
         if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_FALLBACK_NO_PREFER)) {
@@ -1334,7 +1314,7 @@ static CfResult ValidateRevocationOnLine(const HcfX509CertChainValidateParams *p
             }
         }
         if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_FALLBACK_LOCAL)) {
-            if ((res = ValidateOcspLocal((OcspLocalParam) { .req = NULL, .resp = NULL, .certIdInfo = certIdInfo },
+            if ((res = ValidateOcspLocal((OcspLocalParam) { .req = NULL, .resp = NULL, .certIdInfo = NULL },
                                         x509CertChain, trustAnchor, params, 0)) == CF_SUCCESS) {
                 return res;
             }
@@ -1347,7 +1327,7 @@ static CfResult ValidateRevocationOnLine(const HcfX509CertChainValidateParams *p
             return res;
         }
         if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_FALLBACK_NO_PREFER)) {
-            if ((res = OnlineVerifyOcsp(x509CertChain, certIdInfo, trustAnchor, params)) == CF_SUCCESS) {
+            if ((res = OnlineVerifyOcsp(x509CertChain, trustAnchor, params)) == CF_SUCCESS) {
                 return res;
             }
         }
@@ -1355,7 +1335,7 @@ static CfResult ValidateRevocationOnLine(const HcfX509CertChainValidateParams *p
             if ((res = ValidateCrlLocal(params, x509CertChain)) == CF_SUCCESS) {
                 return res;
             }
-            return ValidateOcspLocal((OcspLocalParam) { .req = NULL, .resp = NULL, .certIdInfo = certIdInfo },
+            return ValidateOcspLocal((OcspLocalParam) { .req = NULL, .resp = NULL, .certIdInfo = NULL },
                                                         x509CertChain, trustAnchor, params, 0);
         } else {
             return IgnoreNetworkError(res, params->revocationCheckParam->options);
@@ -1365,11 +1345,11 @@ static CfResult ValidateRevocationOnLine(const HcfX509CertChainValidateParams *p
 }
 
 static CfResult ValidateRevocationLocal(const HcfX509CertChainValidateParams *params, STACK_OF(X509) *x509CertChain,
-    HcfX509TrustAnchor *trustAnchor, OcspCertIdInfo *certIdInfo)
+    HcfX509TrustAnchor *trustAnchor)
 {
     CfResult res = CF_INVALID_PARAMS;
     if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_PREFER_OCSP)) {
-        if ((res = ValidateOcspLocal((OcspLocalParam) { .req = NULL, .resp = NULL, .certIdInfo = certIdInfo },
+        if ((res = ValidateOcspLocal((OcspLocalParam) { .req = NULL, .resp = NULL, .certIdInfo = NULL },
                                     x509CertChain, trustAnchor, params, 0)) == CF_SUCCESS) {
             return res;
         }
@@ -1391,24 +1371,17 @@ static CfResult ValidateRevocation(
 
     if (params->revocationCheckParam && params->revocationCheckParam->options) {
         CfResult res = CF_INVALID_PARAMS;
-        OcspCertIdInfo certIdInfo = {0};
-        res = CfGetCertIdInfo(x509CertChain, params->revocationCheckParam->ocspDigest, &certIdInfo, 0);
-        if (res != CF_SUCCESS) {
-            LOGE("Get cert id info failed.");
-            return res;
-        }
         if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_ACCESS_NETWORK)) {
-            res = ValidateRevocationOnLine(params, x509CertChain, trustAnchor, &certIdInfo);
+            res = ValidateRevocationOnLine(params, x509CertChain, trustAnchor);
             if (res != CF_SUCCESS) {
                 LOGE("Try to validate revocation online failed.");
             }
         } else {
-            res = ValidateRevocationLocal(params, x509CertChain, trustAnchor, &certIdInfo);
+            res = ValidateRevocationLocal(params, x509CertChain, trustAnchor);
             if (res != CF_SUCCESS) {
                 LOGE("Try to validate revocation local failed.");
             }
         }
-        FreeCertIdInfo(&certIdInfo);
         return res;
     } else {
         return ValidateCrlLocal(params, x509CertChain);
