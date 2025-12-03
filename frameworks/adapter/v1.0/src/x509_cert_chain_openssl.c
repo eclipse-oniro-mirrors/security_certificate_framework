@@ -176,7 +176,7 @@ static CfResult CheckCertChainIsRevoked(const HcfX509CertChainValidateParams *pa
 
             X509_REVOKED *rev = NULL;
             int32_t res = X509_CRL_get0_by_cert(crl, &rev, cert);
-            if (res != 0) {
+            if (res == 1) {
                 LOGE("cert is revoked.");
                 return CF_ERR_CRYPTO_OPERATION;
             }
@@ -234,8 +234,8 @@ static CfResult CheckOthersInTrustAnchor(const HcfX509TrustAnchor *anchor, X509 
     }
 
     /* If pubkey is of self cert, the subject should be of self cert.
-    * If pubkey is of upper level cert, the subject should be of uppoer level cert (i.e. the issuer of self cert).
-    */
+     * If pubkey is of upper level cert, the subject should be of uppoer level cert (i.e. the issuer of self cert).
+     */
     if (anchor->CASubject != NULL) {
         // 2. compare subject name of root CA.
         X509NameType nameType = NAME_TYPE_SUBJECT;
@@ -858,14 +858,13 @@ static CfResult ValidateOcspLocal(OcspLocalParam localParam, STACK_OF(X509) *x50
         return CF_ERR_CRYPTO_OPERATION;
     }
     res = ValidateOcspVerify(localParam, x509CertChain, trustAnchor, params, index);
+    FreeCertIdInfo(&certIdInfo);
     if (res != CF_SUCCESS) {
         LOGE("ValidateOcspVerify failed!");
         OCSP_RESPONSE_free(rsp);
-        FreeCertIdInfo(&certIdInfo);
         return res;
     }
     OCSP_RESPONSE_free(rsp);
-    FreeCertIdInfo(&certIdInfo);
     return res;
 }
 
