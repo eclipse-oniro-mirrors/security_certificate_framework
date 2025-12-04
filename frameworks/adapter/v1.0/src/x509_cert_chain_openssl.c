@@ -622,6 +622,9 @@ static CfResult ValidateCrlIntermediateCaOnline(const HcfX509CertChainValidatePa
     STACK_OF(X509) *x509CertChain)
 {
     CfResult res = CF_ERR_CRYPTO_OPERATION;
+    if (sk_X509_num(x509CertChain) <= 1) {
+        res = CF_SUCCESS;
+    }
     for (int i = 1; i < sk_X509_num(x509CertChain) - 1; i++) {
         X509 *x509 = sk_X509_value(x509CertChain, i);
         if (x509 == NULL) {
@@ -631,18 +634,20 @@ static CfResult ValidateCrlIntermediateCaOnline(const HcfX509CertChainValidatePa
         }
         int errReason = 0;
         X509_CRL *crl = GetCrlFromCertByDp(x509, &errReason);
-        if (errReason == BIO_R_CONNECT_TIMEOUT) {
-            res = CF_ERR_CONNECT_TIMEOUT;
-        }
-        if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_IGNORE_NETWORK_ERROR)) {
-            if (crl == NULL && res == CF_ERR_CONNECT_TIMEOUT) {
-                LOGW("Validate IntermediateCaOnline success, index = %{public}d with ignore network error option.", i);
-                continue;
-            }
-        } else if (crl == NULL) {
+        if (crl == NULL) {
             LOGE("Get crl from cert by dp failed!");
             res = CF_SUCCESS;
             continue;
+        }
+        if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_IGNORE_NETWORK_ERROR)) {
+            if (errReason == BIO_R_CONNECT_TIMEOUT) {
+                res = CF_ERR_CONNECT_TIMEOUT;
+            }
+            if (res == CF_ERR_CONNECT_TIMEOUT) {
+                LOGW("Validate IntermediateCaOnline success, index = %{public}d with ignore network error option.", i);
+                res = CF_SUCCESS;
+                continue;
+            }
         }
         res = CheckCrlIsRevoked(params, crl, x509CertChain);
         if (res != CF_SUCCESS) {
@@ -1238,6 +1243,9 @@ static CfResult VerifyIntermediateOcspOnline(STACK_OF(X509) *x509CertChain, HcfX
     const HcfX509CertChainValidateParams *params)
 {
     CfResult res = CF_ERR_CRYPTO_OPERATION;
+    if (sk_X509_num(x509CertChain) <= 1) {
+        res = CF_SUCCESS;
+    }
     for (int i = 1; i < sk_X509_num(x509CertChain); i++) {
         if (ValidationIntermediateCert(sk_X509_value(x509CertChain, i), trustAnchor) == CF_SUCCESS) {
             LOGD("self signed cert, skip validate.");
@@ -1251,24 +1259,21 @@ static CfResult VerifyIntermediateOcspOnline(STACK_OF(X509) *x509CertChain, HcfX
         }
         res = ValidateOcspOnline(x509CertChain, &intermediateCertIdInfo, trustAnchor, params, i);
         FreeCertIdInfo(&intermediateCertIdInfo);
-        if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_IGNORE_NETWORK_ERROR)) {
-            if (res != CF_SUCCESS && res != CF_ERR_CONNECT_TIMEOUT) {
-                LOGE("ValidateOcspOnline failed ignore network error option, index = %{public}d.", i);
-                return res;
-            }
-            LOGW("ValidateOcspOnline intermediate cert success,"
-                "index = %{public}d with ignore network error option.", i);
+        if (res == CF_SUCCESS || res == CF_ERR_EXTENSION_NOT_EXIST) {
+            LOGD("ValidateOcspOnline success, index = %{public}d.", i);
+            res = CF_SUCCESS;
             continue;
-        } else {
-            if (res == CF_SUCCESS || res == CF_ERR_EXTENSION_NOT_EXIST) {
-                LOGD("ValidateOcspOnline success, index = %{public}d.", i);
+        }
+        if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_IGNORE_NETWORK_ERROR)) {
+            if (res == CF_ERR_CONNECT_TIMEOUT) {
+                LOGW("ValidateOcspOnline intermediate cert success,"
+                    "index = %{public}d with ignore network error option.", i);
                 res = CF_SUCCESS;
                 continue;
             }
-            LOGE("ValidateOcspOnline failed, index = %{public}d.", i);
-            
-            return res;
         }
+        LOGE("ValidateOcspOnline failed, index = %{public}d.", i);
+        return res;
     }
     return res;
 }
