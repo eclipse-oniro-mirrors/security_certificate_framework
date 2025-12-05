@@ -25,6 +25,33 @@
 extern "C" {
 #endif
 
+#define MAX_CERT_NUM 256 /* max certs number of a certchain */
+#define TIMET_NUM 6
+#define TIMET_YEAR_START 1900
+#define TIMET_YEAR_OFFSET 100 // start time year from 1900 + 100
+#define TRY_CONNECT_TIMES 3
+#define OCSP_CONN_MILLISECOND 5000 // millisecond
+#define OCSP_CONN_TIMEOUT (-1)     // timeout == 0 means no timeout, < 0 means exactly one try.
+#define LOAD_OCSP_CONN_TIMEOUT 5     // 5 second timeout.
+#define HTTP_PORT "80"
+#define HTTPS_PORT "443"
+#define CERT_VERIFY_DIR "/etc/security/certificates"
+
+// helper functions
+typedef struct {
+    int32_t errCode;
+    CfResult result;
+} OpensslErrorToResult;
+
+typedef enum {
+    CF_DOWNLOAD_MISSING_INTERMEDIATE_CERT = 1,
+} CfScenarioType;
+
+typedef struct {
+    CfResult errCode;
+    CfScenarioType scenario;
+} ErrorCodeConvertInfo;
+
 CfResult HcfX509CertChainByEncSpiCreate(const CfEncodingBlob *inStream, HcfX509CertChainSpi **spi);
 CfResult HcfX509CertChainByArrSpiCreate(const HcfX509CertificateArray *inCerts, HcfX509CertChainSpi **spi);
 CfResult HcfX509CertChainByParamsSpiCreate(const HcfX509CertChainBuildParameters *inParams, HcfX509CertChainSpi **spi);

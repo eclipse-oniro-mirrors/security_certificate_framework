@@ -34,6 +34,9 @@
 #define CERT_PKCS12_MININUM_PASSWORD 4
 #define X509_CERT_CHAIN_OPENSSL_CLASS "X509CertChainOpensslClass"
 
+#define LOAD_HTTP_CONN_TIMEOUT 5  // 5 second timeout
+#define MAX_RETRY_COUNT 5
+
 typedef struct {
     int nidKey;
     int keyIter;
@@ -1250,6 +1253,52 @@ end:
     return ret;
 }
 
+static CfResult GetIssuerCertFromChain(STACK_OF(X509) *x509CertChain, X509 *leafCert, X509 **issuerCert)
+{
+    X509_STORE *store = NULL;
+    X509_STORE_CTX *storeCtx = NULL;
+    CfResult ret = CF_SUCCESS;
+
+    store = X509_STORE_new();
+    if (store == NULL) {
+        LOGE("Unable to create store.");
+        return CF_ERR_MALLOC;
+    }
+
+    for (int i = 1; i < sk_X509_num(x509CertChain); i++) {
+        X509 *tmpCert = sk_X509_value(x509CertChain, i);
+        if (X509_STORE_add_cert(store, tmpCert) != 1) {
+            LOGE("Add cert to store failed.");
+            X509_STORE_free(store);
+            return CF_ERR_CRYPTO_OPERATION;
+        }
+    }
+
+    storeCtx = X509_STORE_CTX_new();
+    if (storeCtx == NULL) {
+        LOGE("Unable to create storeCtx.");
+        X509_STORE_free(store);
+        return CF_ERR_MALLOC;
+    }
+
+    if (X509_STORE_CTX_init(storeCtx, store, NULL, NULL) != CF_OPENSSL_SUCCESS) {
+        LOGE("Unable to init STORE_CTX.");
+        ret = CF_ERR_CRYPTO_OPERATION;
+        goto end;
+    }
+
+    if (X509_STORE_CTX_get1_issuer(issuerCert, storeCtx, leafCert) != CF_OPENSSL_SUCCESS) {
+        LOGE("Some other error occurred when getting issuer.");
+        ret = CF_ERR_CRYPTO_OPERATION;
+        goto end;
+    }
+
+end:
+    X509_STORE_free(store);
+    X509_STORE_CTX_free(storeCtx);
+    return ret;
+}
+
 CfResult CfGetCertIdInfo(STACK_OF(X509) *x509CertChain, const CfBlob *ocspDigest, HcfX509TrustAnchor *trustAnchor,
     OcspCertIdInfo *certIdInfo, int index)
 {
@@ -1380,3 +1429,232 @@ CfResult VerifyCertChain(X509 *mostTrustCert, STACK_OF(X509) *x509CertChain)
     X509_STORE_free(store);
     return res;
 }
+X509 *DownloadCertificateFromUrl(const char *url)
+{
+    X509 *downloadedCert = X509_load_http(url, NULL, NULL, LOAD_HTTP_CONN_TIMEOUT);
+    if (downloadedCert == NULL) {
+        LOGE("Failed to download certificate from URL: %{public}s", url);
+        CfPrintOpensslError();
+        return NULL;
+    }
+    return downloadedCert;
+}
+
+X509 *TryDownloadFromAccessDescription(ACCESS_DESCRIPTION *ad)
+{
+    if (OBJ_obj2nid(ad->method) != NID_ad_ca_issuers) {
+        return NULL;
+    }
+    if (ad->location->type != GEN_URI) {
+        return NULL;
+    }
+    ASN1_IA5STRING *uri = ad->location->d.uniformResourceIdentifier;
+    if (uri == NULL || uri->data == NULL) {
+        return NULL;
+    }
+    return DownloadCertificateFromUrl((const char *)uri->data);
+}
+
+X509 *GetDownloadedCertFromAIA(X509 *leafCert)
+{
+    AUTHORITY_INFO_ACCESS *infoAccess = X509_get_ext_d2i(leafCert, NID_info_access, NULL, NULL);
+    if (infoAccess == NULL) {
+        LOGE("X509_get_ext_d2i failed.");
+        CfPrintOpensslError();
+        return NULL;
+    }
+
+    X509 *downloadedCert = NULL;
+    int num = sk_ACCESS_DESCRIPTION_num(infoAccess);
+    for (int i = 0; i < num; i++) {
+        ACCESS_DESCRIPTION *ad = sk_ACCESS_DESCRIPTION_value(infoAccess, i);
+        downloadedCert = TryDownloadFromAccessDescription(ad);
+        if (downloadedCert != NULL) {
+            break;
+        }
+    }
+    AUTHORITY_INFO_ACCESS_free(infoAccess);
+    return downloadedCert;
+}
+
+CfResult PrepareDownloadMissCert(X509 *caCert, X509 **downloadedCert)
+{
+    *downloadedCert = GetDownloadedCertFromAIA(caCert);
+    if (*downloadedCert == NULL) {
+        LOGE("Failed to download intermediate certificate.");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    int ret = X509_check_issued(*downloadedCert, caCert);
+    if (ret != 0) {
+        LOGE("Downloaded certificate is not the issuer of the root certificate.");
+        X509_free(*downloadedCert);
+        return CF_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY;
+    }
+    return CF_SUCCESS;
+}
+
+CfResult GetIssuerCertFromAllCerts(STACK_OF(X509) *allCerts, X509 *cert, X509 **out)
+{
+    CfResult res = GetIssuerCertFromChain(allCerts, cert, out);
+    if (res != CF_SUCCESS) {
+        LOGE("Get cert issuer from chain failed.");
+        return res;
+    }
+    if (*out == NULL) {
+        LOGE("IssuerCert is NULL.");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    int ret = X509_check_issued(*out, cert);
+    if (ret != 0) {
+        LOGE("Issuer found in allCerts for downloaded certificate.");
+        return CF_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY;
+    }
+    return CF_SUCCESS;
+}
+
+static CfResult DownloadAndCheckCert(X509 *caCert, CfBlob *date, X509 **downloadedCert)
+{
+    CfResult res = PrepareDownloadMissCert(caCert, downloadedCert);
+    if (res != CF_SUCCESS) {
+        LOGE("PrepareDownloadMissCert failed.");
+        return res;
+    }
+    LOGI("downloading intermediate cert success.");
+    res = ValidateCertDate(*downloadedCert, date);
+    if (res != CF_SUCCESS) {
+        LOGE("DownloadAndCheckCert downloaded cert date is not valid.");
+        X509_free(*downloadedCert);
+        *downloadedCert = NULL;
+        return res;
+    }
+    return CF_SUCCESS;
+}
+
+CfResult ValidateDownLoadMissCert(STACK_OF(X509) *x509CertChain,
+    const HcfX509CertChainValidateParams *params, HcfX509TrustAnchor *trustAnchorResult)
+{
+    int tryCount = 0;
+    CfResult res = CF_ERR_CRYPTO_OPERATION;
+    X509 *caCert = sk_X509_value(x509CertChain, sk_X509_num(x509CertChain) - 1);
+    while (tryCount < MAX_RETRY_COUNT) {
+        X509 *downloadedCert = NULL;
+        res = DownloadAndCheckCert(caCert, params->date, &downloadedCert);
+        if (res != CF_SUCCESS) {
+            LOGE("ValidateDownLoadMissCert DownloadAndCheckCert failed.");
+            return res;
+        }
+        res = ValidateTrustCert(downloadedCert, x509CertChain, params, trustAnchorResult);
+        if (res == CF_SUCCESS) {
+            break;
+        } else {
+            LOGW("ValidateDownLoadMissCert ValidateTrust failed after downloading intermediate cert.");
+            caCert = downloadedCert;
+            tryCount++;
+            continue;
+        }
+    }
+    if (tryCount >= MAX_RETRY_COUNT) {
+        LOGE("ValidateDownLoadMissCert Exceeded maximum retry count for downloading intermediate certificates.");
+        return res;
+    }
+    LOGI("ValidateDownLoadMissCert Successfully validated after downloading intermediate certificate.");
+    return res;
+}
+
+static CfResult AddTrustAnchorCertToChainIfNeeded(X509 *caCert, HcfX509TrustAnchor *trustAnchorResult,
+    STACK_OF(X509) *allCerts, STACK_OF(X509) *x509CertChain)
+{
+    X509 *anchorCert = GetX509FromHcfX509Certificate((HcfCertificate *)trustAnchorResult->CACert);
+    X509 *certDup = X509_dup(anchorCert);
+    if (certDup == NULL) {
+        LOGE("Memory allocation failure!");
+        return CF_ERR_MALLOC;
+    }
+    if (X509_cmp(certDup, caCert) != 0) {
+        bool found = false;
+        int allCertsNum = sk_X509_num(allCerts);
+        for (int i = 0; i < allCertsNum; i++) {
+            X509 *tmp = sk_X509_value(allCerts, i);
+            if (X509_cmp(tmp, certDup) == 0) {
+                found = true;
+                break;
+            }
+        }
+        if (found) {
+            if (sk_X509_push(x509CertChain, certDup) <= 0) {
+                LOGE("Failed to add trust anchor cert to cert chain.");
+                X509_free(certDup);
+                return CF_ERR_CRYPTO_OPERATION;
+            }
+        } else {
+            X509_free(certDup);
+        }
+    }
+    return CF_SUCCESS;
+}
+
+CfResult ValidateDownLoadMissCertEx(int32_t maxlength, STACK_OF(X509) *x509CertChain,
+    const HcfX509CertChainValidateParams *params, HcfX509TrustAnchor *trustAnchorResult, STACK_OF(X509) *allCerts)
+{
+    int tryCount = 0;
+    CfResult res = CF_ERR_CRYPTO_OPERATION;
+    X509 *caCert = sk_X509_value(x509CertChain, sk_X509_num(x509CertChain) - 1);
+    while (tryCount < MAX_RETRY_COUNT) {
+        X509 *downloadedCert = NULL;
+        if (maxlength >= 0 && sk_X509_num(x509CertChain) >= maxlength) {
+            LOGE("Certificate chain length exceeds the maximum limit.");
+            return CF_ERR_PARAMETER_CHECK;
+        }
+        res = DownloadAndCheckCert(caCert, params->date, &downloadedCert);
+        if (res != CF_SUCCESS) {
+            LOGE("ValidateDownLoadMissCertEx DownloadAndCheckCert failed.");
+            return res;
+        }
+        res = ValidateTrustCert(downloadedCert, x509CertChain, params, trustAnchorResult);
+        if (res == CF_SUCCESS) {
+            res = AddTrustAnchorCertToChainIfNeeded(downloadedCert, trustAnchorResult, allCerts, x509CertChain);
+            break;
+        }
+        LOGW("ValidateDownLoadMissCertEx ValidateTrust failed after downloading intermediate cert.");
+        X509 *ca = NULL;
+        res = GetIssuerCertFromAllCerts(allCerts, downloadedCert, &ca);
+        if (res == CF_SUCCESS) {
+            res = ValidateTrustCert(ca, x509CertChain, params, trustAnchorResult);
+            if (res == CF_SUCCESS) {
+                res = AddTrustAnchorCertToChainIfNeeded(ca, trustAnchorResult, allCerts, x509CertChain);
+                break;
+            }
+            LOGW("ValidateDownLoadMissCertEx ValidateTrust failed after adding cert from allCerts.");
+            caCert = ca;
+            tryCount++;
+            continue;
+        }
+        caCert = downloadedCert;
+        tryCount++;
+        continue;
+    }
+    if (tryCount >= MAX_RETRY_COUNT) {
+        LOGE("ValidateDownLoadMissCertEx Exceeded maximum retry count for downloading intermediate certificates.");
+        return res;
+    }
+    return res;
+}
+
+void ResetCertChainOut(STACK_OF(X509) *out)
+{
+    while (sk_X509_num(out) > 0) {
+        X509_free(sk_X509_pop(out));
+    }
+}
+
+void FreeTrustAnchorData(HcfX509TrustAnchor *trustAnchor)
+{
+    if (trustAnchor == NULL) {
+        return;
+    }
+    CfBlobFree(&trustAnchor->CAPubKey);
+    CfBlobFree(&trustAnchor->CASubject);
+    CfObjDestroy(trustAnchor->CACert);
+    trustAnchor->CACert = NULL;
+}
+

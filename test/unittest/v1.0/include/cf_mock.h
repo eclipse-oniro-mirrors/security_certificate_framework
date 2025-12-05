@@ -152,6 +152,10 @@ public:
     MOCK_METHOD(unsigned long, ERR_peek_last_error, ());
     MOCK_METHOD(CfResult, CfGetCertIdInfo, (STACK_OF(X509) *x509CertChain, const CfBlob *ocspDigest,
         HcfX509TrustAnchor *trustAnchor, OcspCertIdInfo *certIdInfo, int index));
+    MOCK_METHOD(X509 *, X509_load_http, (const char *url, BIO *bio, BIO *rbio, int timeout));
+    MOCK_METHOD(int, X509_check_issued, (X509 *issuer, X509 *subject));
+    MOCK_METHOD(CfResult, ValidateCertDate, (X509 *cert, CfBlob *date));
+    MOCK_METHOD(int, X509_STORE_CTX_get1_issuer, (X509 **issuer, X509_STORE_CTX *ctx, X509 *x));
     static NiceMock<X509OpensslMock> &GetInstance(void);
     static void SetMockFlag(bool flag);
     static void SetHcfMockFlag(bool flag);

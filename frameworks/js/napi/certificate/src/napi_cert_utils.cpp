@@ -1471,6 +1471,40 @@ bool GetBoolFromNapiValue(napi_env env, napi_value arg, bool &out, const char *n
     return true;
 }
 
+CfResult GetBoolFromNameValue(napi_env env, napi_value arg, bool *out, const char *name)
+{
+    bool result = false;
+    napi_status status = napi_has_named_property(env, arg, name, &result);
+    if (status != napi_ok) {
+        LOGE("check %{public}s property failed!", name);
+        return CF_ERR_NAPI;
+    }
+    if (!result) {
+        LOGI("%{public}s do not exist!", name);
+        *out = false;
+        return CF_SUCCESS;
+    }
+    napi_value obj = nullptr;
+    status = napi_get_named_property(env, arg, name, &obj);
+    if (status != napi_ok || obj == nullptr) {
+        LOGE("get property %{public}s failed!", name);
+        return CF_ERR_NAPI;
+    }
+    napi_valuetype valueType;
+    napi_typeof(env, obj, &valueType);
+    if (valueType == napi_undefined) {
+        LOGI("%{public}s valueType is undefined.", name);
+        *out = false;
+        return CF_SUCCESS;
+    }
+    status = napi_get_value_bool(env, obj, out);
+    if (status != napi_ok) {
+        LOGE("Failed to get value bool!");
+        return CF_ERR_NAPI;
+    }
+    return CF_SUCCESS;
+}
+
 bool GetIsPemFromStringNapiValue(napi_env env, napi_value arg, bool &out, const char *name)
 {
     napi_value obj = GetProp(env, arg, name);

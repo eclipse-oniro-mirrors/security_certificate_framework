@@ -39,6 +39,7 @@ using ::testing::_;
 using ::testing::AnyNumber;
 using ::testing::Invoke;
 using ::testing::Return;
+using ::testing::DoAll;
 
 #ifdef __cplusplus
 extern "C" {
@@ -52,6 +53,18 @@ int __real_OPENSSL_sk_num(const OPENSSL_STACK *st);
 void *__real_OPENSSL_sk_value(const OPENSSL_STACK *st, int i);
 CfResult __real_CfGetCertIdInfo(STACK_OF(X509) *x509CertChain, const CfBlob *ocspDigest,
     HcfX509TrustAnchor *trustAnchor, OcspCertIdInfo *certIdInfo, int index);
+X509 *__real_X509_load_http(const char *url, BIO *bio, BIO *rbio, int timeout);
+CfResult __real_ValidateCertDate(X509 *cert, CfBlob *date);
+X509_STORE *__real_X509_STORE_new(void);
+int __real_X509_STORE_add_cert(X509_STORE *ctx, X509 *x);
+X509_STORE_CTX *__real_X509_STORE_CTX_new(void);
+int __real_X509_STORE_CTX_init(X509_STORE_CTX *ctx, X509_STORE *store, X509 *x509, STACK_OF(X509) * chain);
+int __real_X509_STORE_CTX_get1_issuer(X509 **issuer, X509_STORE_CTX *ctx, X509 *x);
+CfResult __real_GetIssuerCertFromAllCerts(STACK_OF(X509) *allCerts, X509 *cert, X509 **out);
+bool __real_CheckIsSelfSigned(const X509 *cert);
+int __real_OPENSSL_sk_push(OPENSSL_STACK *st, const void *data);
+X509 *__real_X509_dup(X509 *x509);
+int __real_X509_check_issued(X509 *issuer, X509 *subject);
 
 void ResetMockFunctionPartOne(void)
 {
@@ -59,6 +72,23 @@ void ResetMockFunctionPartOne(void)
         BIO_do_connect_retry(_, _, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_BIO_do_connect_retry));
     EXPECT_CALL(X509OpensslMock::GetInstance(),
         X509_get_ext_d2i(_, _, _, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_X509_get_ext_d2i));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        X509_STORE_new()).Times(AnyNumber()).WillRepeatedly(Invoke(__real_X509_STORE_new));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        OPENSSL_sk_num(_)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_OPENSSL_sk_num));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        OPENSSL_sk_value(_, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_OPENSSL_sk_value));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        X509_STORE_add_cert(_, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_X509_STORE_add_cert));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        X509_STORE_CTX_new()).Times(AnyNumber()).WillRepeatedly(Invoke(__real_X509_STORE_CTX_new));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        X509_STORE_CTX_init(_, _, _, _)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_X509_STORE_CTX_init));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        X509_STORE_CTX_get1_issuer(_, _, _)).Times(AnyNumber()).WillRepeatedly(
+        Invoke(__real_X509_STORE_CTX_get1_issuer));
+    EXPECT_CALL(X509OpensslMock::GetInstance(),
+        CheckIsSelfSigned(_)).Times(AnyNumber()).WillRepeatedly(Invoke(__real_CheckIsSelfSigned));
 }
 
 void ResetMockFunction(void)
@@ -78,117 +108,6 @@ public:
     void SetUp();
     void TearDown();
 };
-
-static const char g_testRootCertValid[] =
-    "-----BEGIN CERTIFICATE-----\r\n"
-    "MIIDjjCCAnagAwIBAgIQAzrx5qcRqaC7KGSxHQn65TANBgkqhkiG9w0BAQsFADBh\r\n"
-    "MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3\r\n"
-    "d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBH\r\n"
-    "MjAeFw0xMzA4MDExMjAwMDBaFw0zODAxMTUxMjAwMDBaMGExCzAJBgNVBAYTAlVT\r\n"
-    "MRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5j\r\n"
-    "b20xIDAeBgNVBAMTF0RpZ2lDZXJ0IEdsb2JhbCBSb290IEcyMIIBIjANBgkqhkiG\r\n"
-    "9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuzfNNNx7a8myaJCtSnX/RrohCgiN9RlUyfuI\r\n"
-    "2/Ou8jqJkTx65qsGGmvPrC3oXgkkRLpimn7Wo6h+4FR1IAWsULecYxpsMNzaHxmx\r\n"
-    "1x7e/dfgy5SDN67sH0NO3Xss0r0upS/kqbitOtSZpLYl6ZtrAGCSYP9PIUkY92eQ\r\n"
-    "q2EGnI/yuum06ZIya7XzV+hdG82MHauVBJVJ8zUtluNJbd134/tJS7SsVQepj5Wz\r\n"
-    "tCO7TG1F8PapspUwtP1MVYwnSlcUfIKdzXOS0xZKBgyMUNGPHgm+F6HmIcr9g+UQ\r\n"
-    "vIOlCsRnKPZzFBQ9RnbDhxSJITRNrw9FDKZJobq7nMWxM4MphQIDAQABo0IwQDAP\r\n"
-    "BgNVHRMBAf8EBTADAQH/MA4GA1UdDwEB/wQEAwIBhjAdBgNVHQ4EFgQUTiJUIBiV\r\n"
-    "5uNu5g/6+rkS7QYXjzkwDQYJKoZIhvcNAQELBQADggEBAGBnKJRvDkhj6zHd6mcY\r\n"
-    "1Yl9PMWLSn/pvtsrF9+wX3N3KjITOYFnQoQj8kVnNeyIv/iPsGEMNKSuIEyExtv4\r\n"
-    "NeF22d+mQrvHRAiGfzZ0JFrabA0UWTW98kndth/Jsw1HKj2ZL7tcu7XUIOGZX1NG\r\n"
-    "Fdtom/DzMNU+MeKNhJ7jitralj41E6Vf8PlwUHBHQRFXGU7Aj64GxJUTFy8bJZ91\r\n"
-    "8rGOmaFvE7FBcf6IKshPECBV1/MUReXgRPTqh5Uykw7+U0b6LJ3/iyK5S9kJRaTe\r\n"
-    "pLiaWN0bfVKfjllDiIGknibVb63dDcY3fe0Dkhvld1927jyNxF1WW6LZZm6zNTfl\r\n"
-    "MrY=\r\n"
-    "-----END CERTIFICATE-----\r\n";
-
-static const char g_testCaChainValid[] =
-    "-----BEGIN CERTIFICATE-----\r\n"
-    "MIIGIzCCBQugAwIBAgIQD8vHwz7g05mDl1F5X17HGzANBgkqhkiG9w0BAQsFADBg\r\n"
-    "MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3\r\n"
-    "d3cuZGlnaWNlcnQuY29tMR8wHQYDVQQDExZSYXBpZFNTTCBUTFMgUlNBIENBIEcx\r\n"
-    "MB4XDTI1MDMyNDAwMDAwMFoXDTI2MDMyMzIzNTk1OVowFzEVMBMGA1UEAwwMKi5k\r\n"
-    "b3ViYW8uY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAw6eEA/GD\r\n"
-    "ShJ0Rtlet3Lf+uYiYzzFJ6J1iJeT/JyvTwDOTKO2VgMjsFHgUcFJBG6QGZT6PXSv\r\n"
-    "vhkdzzIqqXzJwDsqqowwTwMk0YN/JUB0yr/9aFlmQakLZClu1W5og7uxp4ME+ep6\r\n"
-    "aJhoQ9MMCCn3/pvDnLoX1hG9z0pgbUsnIrM+1roLpH+D0FwC4jww7+tDr89/kjb4\r\n"
-    "/+LMqjAbe1fLtXJRuxH5O+kAQNqLL/0ECvq+4KpC/r/0UxTlRTpGZY2M3MPUEXfp\r\n"
-    "RKMmkRoRSKwDMJ5u2DK0qanvV6mu7ORPoDsC/fTAiqonjh8rClm/zpj5GN9BQKfu\r\n"
-    "UoaeWIN/XMZSzQIDAQABo4IDIDCCAxwwHwYDVR0jBBgwFoAUDNtsgkkPSmcKuBTu\r\n"
-    "esRIUojrVjgwHQYDVR0OBBYEFCseEe+vZQ8BzqzkOju1EhGQwoCYMCMGA1UdEQQc\r\n"
-    "MBqCDCouZG91YmFvLmNvbYIKZG91YmFvLmNvbTA+BgNVHSAENzA1MDMGBmeBDAEC\r\n"
-    "ATApMCcGCCsGAQUFBwIBFhtodHRwOi8vd3d3LmRpZ2ljZXJ0LmNvbS9DUFMwDgYD\r\n"
-    "VR0PAQH/BAQDAgWgMB0GA1UdJQQWMBQGCCsGAQUFBwMBBggrBgEFBQcDAjA/BgNV\r\n"
-    "HR8EODA2MDSgMqAwhi5odHRwOi8vY2RwLnJhcGlkc3NsLmNvbS9SYXBpZFNTTFRM\r\n"
-    "U1JTQUNBRzEuY3JsMHYGCCsGAQUFBwEBBGowaDAmBggrBgEFBQcwAYYaaHR0cDov\r\n"
-    "L3N0YXR1cy5yYXBpZHNzbC5jb20wPgYIKwYBBQUHMAKGMmh0dHA6Ly9jYWNlcnRz\r\n"
-    "LnJhcGlkc3NsLmNvbS9SYXBpZFNTTFRMU1JTQUNBRzEuY3J0MAwGA1UdEwEB/wQC\r\n"
-    "MAAwggF9BgorBgEEAdZ5AgQCBIIBbQSCAWkBZwB2AA5XlLzzrqk+MxssmQez95Df\r\n"
-    "m8I9cTIl3SGpJaxhxU4hAAABlcjhhZsAAAQDAEcwRQIhAKfZw1gNPE4sWKi3WL0U\r\n"
-    "vO4EGn+MD1hScKPMNHex6Ty+AiBv0yYWRuEURh/8ywDMHC+1f3xFaj9kshfv389b\r\n"
-    "e09MhAB1AGQRxGykEuyniRyiAi4AvKtPKAfUHjUnq+r+1QPJfc3wAAABlcjhhcUA\r\n"
-    "AAQDAEYwRAIgClXL9SnQFh+6HEqsT/3aBM6jK9NmzG+hrmJGowOKVFYCIEsGPJda\r\n"
-    "TtsBnc/PrhZSjOHitpzrzKhW02hHOzkrtlR/AHYASZybad4dfOz8Nt7Nh2SmuFuv\r\n"
-    "CoeAGdFVUvvp6ynd+MMAAAGVyOGF3gAABAMARzBFAiBExgNNV8q5xfdSU+yL6NAJ\r\n"
-    "l1ze5IYXTetQf04caLUhKgIhALvTCHHHdvokmFbRKQvrY50ihwDoHd4pKbzRtyQ0\r\n"
-    "H16bMA0GCSqGSIb3DQEBCwUAA4IBAQAsjyQpYDf1JiYBsO4koUcFPeAdvTp9FbRL\r\n"
-    "yC0PN34rekPHwcjqsEU7mbuUaZ4EMklHqIqkniStPcKyIDCpSwBu17iezM57fwJA\r\n"
-    "tb9XfzjxZH1vWEFHImcvMEwR0BLRmwXUnnRt3qOeetTV/UpIwH4HGfHldtRNqSnj\r\n"
-    "xDiM1c2oRjv+4Qs5CTet70NHsaQBjkUWvioCgigE+vuCPnjwVNXJkfSHjC+DWWzf\r\n"
-    "Nc+rSFEOvO8Fe4d2rvboT7vXigvTciOeQdig9ySCJQCkWxOvB1AcvZc+kw0YhrpM\r\n"
-    "xUBhDd+DaUWOgmmVS3n6k3GfOqm2EU7iCp8KyfRu2DAsnlsO/YpH\r\n"
-    "-----END CERTIFICATE----- \r\n"
-    "-----BEGIN CERTIFICATE-----\r\n"
-    "MIIEszCCA5ugAwIBAgIQCyWUIs7ZgSoVoE6ZUooO+jANBgkqhkiG9w0BAQsFADBh\r\n"
-    "MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3\r\n"
-    "d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBH\r\n"
-    "MjAeFw0xNzExMDIxMjI0MzNaFw0yNzExMDIxMjI0MzNaMGAxCzAJBgNVBAYTAlVT\r\n"
-    "MRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5j\r\n"
-    "b20xHzAdBgNVBAMTFlJhcGlkU1NMIFRMUyBSU0EgQ0EgRzEwggEiMA0GCSqGSIb3\r\n"
-    "DQEBAQUAA4IBDwAwggEKAoIBAQC/uVklRBI1FuJdUEkFCuDL/I3aJQiaZ6aibRHj\r\n"
-    "ap/ap9zy1aYNrphe7YcaNwMoPsZvXDR+hNJOo9gbgOYVTPq8gXc84I75YKOHiVA4\r\n"
-    "NrJJQZ6p2sJQyqx60HkEIjzIN+1LQLfXTlpuznToOa1hyTD0yyitFyOYwURM+/CI\r\n"
-    "8FNFMpBhw22hpeAQkOOLmsqT5QZJYeik7qlvn8gfD+XdDnk3kkuuu0eG+vuyrSGr\r\n"
-    "5uX5LRhFWlv1zFQDch/EKmd163m6z/ycx/qLa9zyvILc7cQpb+k7TLra9WE17YPS\r\n"
-    "n9ANjG+ECo9PDW3N9lwhKQCNvw1gGoguyCQu7HE7BnW8eSSFAgMBAAGjggFmMIIB\r\n"
-    "YjAdBgNVHQ4EFgQUDNtsgkkPSmcKuBTuesRIUojrVjgwHwYDVR0jBBgwFoAUTiJU\r\n"
-    "IBiV5uNu5g/6+rkS7QYXjzkwDgYDVR0PAQH/BAQDAgGGMB0GA1UdJQQWMBQGCCsG\r\n"
-    "AQUFBwMBBggrBgEFBQcDAjASBgNVHRMBAf8ECDAGAQH/AgEAMDQGCCsGAQUFBwEB\r\n"
-    "BCgwJjAkBggrBgEFBQcwAYYYaHR0cDovL29jc3AuZGlnaWNlcnQuY29tMEIGA1Ud\r\n"
-    "HwQ7MDkwN6A1oDOGMWh0dHA6Ly9jcmwzLmRpZ2ljZXJ0LmNvbS9EaWdpQ2VydEds\r\n"
-    "b2JhbFJvb3RHMi5jcmwwYwYDVR0gBFwwWjA3BglghkgBhv1sAQEwKjAoBggrBgEF\r\n"
-    "BQcCARYcaHR0cHM6Ly93d3cuZGlnaWNlcnQuY29tL0NQUzALBglghkgBhv1sAQIw\r\n"
-    "CAYGZ4EMAQIBMAgGBmeBDAECAjANBgkqhkiG9w0BAQsFAAOCAQEAGUSlOb4K3Wtm\r\n"
-    "SlbmE50UYBHXM0SKXPqHMzk6XQUpCheF/4qU8aOhajsyRQFDV1ih/uPIg7YHRtFi\r\n"
-    "CTq4G+zb43X1T77nJgSOI9pq/TqCwtukZ7u9VLL3JAq3Wdy2moKLvvC8tVmRzkAe\r\n"
-    "0xQCkRKIjbBG80MSyDX/R4uYgj6ZiNT/Zg6GI6RofgqgpDdssLc0XIRQEotxIZcK\r\n"
-    "zP3pGJ9FCbMHmMLLyuBd+uCWvVcF2ogYAawufChS/PT61D9rqzPRS5I2uqa3tmIT\r\n"
-    "44JhJgWhBnFMb7AGQkvNq9KNS9dd3GWc17H/dXa1enoxzWjE0hBdFjxPhUb0W3wi\r\n"
-    "8o34/m8Fxw==\r\n"
-    "-----END CERTIFICATE-----\r\n"
-    "-----BEGIN CERTIFICATE-----\r\n"
-    "MIIDjjCCAnagAwIBAgIQAzrx5qcRqaC7KGSxHQn65TANBgkqhkiG9w0BAQsFADBh\r\n"
-    "MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3\r\n"
-    "d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBH\r\n"
-    "MjAeFw0xMzA4MDExMjAwMDBaFw0zODAxMTUxMjAwMDBaMGExCzAJBgNVBAYTAlVT\r\n"
-    "MRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5j\r\n"
-    "b20xIDAeBgNVBAMTF0RpZ2lDZXJ0IEdsb2JhbCBSb290IEcyMIIBIjANBgkqhkiG\r\n"
-    "9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuzfNNNx7a8myaJCtSnX/RrohCgiN9RlUyfuI\r\n"
-    "2/Ou8jqJkTx65qsGGmvPrC3oXgkkRLpimn7Wo6h+4FR1IAWsULecYxpsMNzaHxmx\r\n"
-    "1x7e/dfgy5SDN67sH0NO3Xss0r0upS/kqbitOtSZpLYl6ZtrAGCSYP9PIUkY92eQ\r\n"
-    "q2EGnI/yuum06ZIya7XzV+hdG82MHauVBJVJ8zUtluNJbd134/tJS7SsVQepj5Wz\r\n"
-    "tCO7TG1F8PapspUwtP1MVYwnSlcUfIKdzXOS0xZKBgyMUNGPHgm+F6HmIcr9g+UQ\r\n"
-    "vIOlCsRnKPZzFBQ9RnbDhxSJITRNrw9FDKZJobq7nMWxM4MphQIDAQABo0IwQDAP\r\n"
-    "BgNVHRMBAf8EBTADAQH/MA4GA1UdDwEB/wQEAwIBhjAdBgNVHQ4EFgQUTiJUIBiV\r\n"
-    "5uNu5g/6+rkS7QYXjzkwDQYJKoZIhvcNAQELBQADggEBAGBnKJRvDkhj6zHd6mcY\r\n"
-    "1Yl9PMWLSn/pvtsrF9+wX3N3KjITOYFnQoQj8kVnNeyIv/iPsGEMNKSuIEyExtv4\r\n"
-    "NeF22d+mQrvHRAiGfzZ0JFrabA0UWTW98kndth/Jsw1HKj2ZL7tcu7XUIOGZX1NG\r\n"
-    "Fdtom/DzMNU+MeKNhJ7jitralj41E6Vf8PlwUHBHQRFXGU7Aj64GxJUTFy8bJZ91\r\n"
-    "8rGOmaFvE7FBcf6IKshPECBV1/MUReXgRPTqh5Uykw7+U0b6LJ3/iyK5S9kJRaTe\r\n"
-    "pLiaWN0bfVKfjllDiIGknibVb63dDcY3fe0Dkhvld1927jyNxF1WW6LZZm6zNTfl\r\n"
-    "MrY=\r\n"
-    "-----END CERTIFICATE-----\r\n";
 
 static const char g_crlDownloadURI[] =
     "http://crl3.digicert.com/DigiCertGlobalRootG2.crl";
@@ -933,5 +852,1101 @@ HWTEST_F(CryptoX509CertChainTestPart3, ContainsOptionTest001, TestSize.Level0)
 
     CfFree(options2->data);
     CfFree(options2);
+}
+
+static void BuildCertCRLCollectionsDataEx(
+    const CfEncodingBlob *certInStream, const CfEncodingBlob *certInStream2, HcfX509CertChainValidateParams *params)
+{
+    if (certInStream == nullptr || params == nullptr) {
+        return;
+    }
+    HcfCertCRLCollectionArray *certCRLCollections =
+        (HcfCertCRLCollectionArray *)CfMalloc(sizeof(HcfCertCRLCollectionArray), 0);
+    ASSERT_NE(certCRLCollections, nullptr);
+    BuildCollectionArrEx(certInStream, certInStream2, *certCRLCollections);
+
+    params->certCRLCollections = certCRLCollections;
+}
+
+static void BuildCertCRLCollectionsData(
+    const CfEncodingBlob *certInStream, const CfEncodingBlob *crlInStream, HcfX509CertChainValidateParams *params)
+{
+    if (certInStream == nullptr || params == nullptr) {
+        return;
+    }
+    HcfCertCRLCollectionArray *certCRLCollections =
+        (HcfCertCRLCollectionArray *)CfMalloc(sizeof(HcfCertCRLCollectionArray), 0);
+    ASSERT_NE(certCRLCollections, nullptr);
+    BuildCollectionArr(certInStream, crlInStream, *certCRLCollections);
+
+    params->certCRLCollections = certCRLCollections;
+}
+
+static void BuildTrustAnchorsData(const CfEncodingBlob *certInStream, HcfX509CertChainValidateParams *params)
+{
+    if (certInStream == nullptr || params == nullptr) {
+        return;
+    }
+    HcfX509TrustAnchorArray *trustAnchorArray =
+        (HcfX509TrustAnchorArray *)CfMalloc(sizeof(HcfX509TrustAnchorArray), 0);
+    ASSERT_NE(trustAnchorArray, nullptr);
+    BuildAnchorArr(*certInStream, *trustAnchorArray);
+
+    params->trustAnchors = trustAnchorArray;
+}
+
+static void FreeX509CertMatchParamsData(HcfX509CertChainValidateParams *params)
+{
+    if (params == nullptr) {
+        return;
+    }
+
+    if (params->trustAnchors != nullptr) {
+        FreeTrustAnchorArr(*(params->trustAnchors));
+        CfFree(params->trustAnchors);
+        params->trustAnchors = nullptr;
+    }
+
+    if (params->certCRLCollections != nullptr) {
+        FreeCertCrlCollectionArr(*(params->certCRLCollections));
+        CfFree(params->certCRLCollections);
+        params->certCRLCollections = nullptr;
+    }
+}
+
+static X509 *LoadX509FromCrtData(const char *data, size_t dataLen)
+{
+    BIO *bio = BIO_new_mem_buf(reinterpret_cast<const void *>(data), static_cast<int>(dataLen));
+    if (bio == nullptr) {
+        return nullptr;
+    }
+    X509 *cert = PEM_read_bio_X509(bio, nullptr, nullptr, nullptr);
+    BIO_free(bio);
+    return cert;
+}
+
+HWTEST_F(CryptoX509CertChainTestPart3, HcfAllowDownloadIntermediateCaTest001, TestSize.Level0)
+{
+    HcfX509CertChainBuildParameters inParams;
+    memset_s(&inParams, sizeof(HcfX509CertChainBuildParameters), 0, sizeof(HcfX509CertChainBuildParameters));
+    HcfX509CertChainSpi *spi = nullptr;
+
+    CfResult result;
+    inParams.maxlength = -1;
+
+    CfEncodingBlob inStream = { 0 };
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testLeafCertValid));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testLeafCertValid) + 1;
+
+    BuildCertCRLCollectionsData(&inStream, NULL, &inParams.validateParameters);
+
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testRootCertValid));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testRootCertValid) + 1;
+    BuildTrustAnchorsData(&inStream, &inParams.validateParameters);
+
+    inParams.validateParameters.allowDownloadIntermediateCa = true;
+    inParams.validateParameters.trustSystemCa = false;
+    inParams.certMatchParameters.minPathLenConstraint = -1;
+
+    X509 *downloadCert = LoadX509FromCrtData(g_testDownloadCertValid, strlen(g_testDownloadCertValid) + 1);
+    X509OpensslMock::SetMockFlag(true);
+    ResetMockFunction();
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_load_http(_, _, _, _))
+        .WillRepeatedly(Return(downloadCert));
+    result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
+    EXPECT_EQ(result, CF_SUCCESS);
+    EXPECT_NE(spi, nullptr);
+    X509OpensslMock::SetMockFlag(false);
+    CfObjDestroy(spi);
+
+    inParams.maxlength = 1;
+    result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
+    EXPECT_EQ(result, CF_INVALID_PARAMS);
+
+    inParams.maxlength = 4;
+    X509OpensslMock::SetMockFlag(true);
+    ResetMockFunction();
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_load_http(_, _, _, _))
+        .WillRepeatedly(Return(nullptr));
+    result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
+    EXPECT_EQ(result, CF_ERR_CRYPTO_OPERATION);
+    X509OpensslMock::SetMockFlag(false);
+
+    inParams.validateParameters.allowDownloadIntermediateCa = false;
+    result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
+    EXPECT_EQ(result, CF_INVALID_PARAMS);
+
+    FreeX509CertMatchParamsData(&inParams.validateParameters);
+}
+
+HWTEST_F(CryptoX509CertChainTestPart3, HcfAllowDownloadIntermediateCaTest002, TestSize.Level0)
+{
+    CfEncodingBlob inStream = { 0 };
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testLeafCertValid));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testLeafCertValid) + 1;
+    HcfX509CertChainSpi *certChainSpi = nullptr;
+    CfResult ret = HcfX509CertChainByEncSpiCreate(&inStream, &certChainSpi);
+    EXPECT_EQ(ret, CF_SUCCESS);
+
+    HcfX509CertChainValidateParams pCertChainValidateParams = { 0 };
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testRootCertValid));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testRootCertValid) + 1;
+    BuildTrustAnchorsData(&inStream, &pCertChainValidateParams);
+
+    pCertChainValidateParams.allowDownloadIntermediateCa = true;
+    pCertChainValidateParams.trustSystemCa = false;
+    HcfX509CertChainValidateResult result = { 0 };
+
+    X509 *downloadCert = LoadX509FromCrtData(g_testDownloadCertValid, strlen(g_testDownloadCertValid) + 1);
+
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_load_http(_, _, _, _))
+        .WillOnce(Return(downloadCert))
+        .WillRepeatedly(Invoke(__real_X509_load_http));
+    ret = certChainSpi->engineValidate(certChainSpi, &pCertChainValidateParams, &result);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    X509OpensslMock::SetMockFlag(false);
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_load_http(_, _, _, _))
+        .WillOnce(Return(nullptr))
+        .WillRepeatedly(Invoke(__real_X509_load_http));
+    ret = certChainSpi->engineValidate(certChainSpi, &pCertChainValidateParams, &result);
+    EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
+    X509OpensslMock::SetMockFlag(false);
+
+    pCertChainValidateParams.allowDownloadIntermediateCa = false;
+    ret = certChainSpi->engineValidate(certChainSpi, &pCertChainValidateParams, &result);
+    EXPECT_EQ(ret, CF_INVALID_PARAMS);
+
+    FreeValidateResult(result);
+    X509_free(downloadCert);
+    FreeX509CertMatchParamsData(&pCertChainValidateParams);
+    CfObjDestroy(certChainSpi);
+}
+
+HWTEST_F(CryptoX509CertChainTestPart3, HcfAllowDownloadIntermediateCaTest003, TestSize.Level0)
+{
+    HcfX509CertChainBuildParameters inParams;
+    memset_s(&inParams, sizeof(HcfX509CertChainBuildParameters), 0, sizeof(HcfX509CertChainBuildParameters));
+    HcfX509CertChainSpi *spi = nullptr;
+
+    CfResult result;
+    inParams.maxlength = -1;
+
+    CfEncodingBlob inStream = { 0 };
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testLeafCert7Level));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testLeafCert7Level) + 1;
+
+    BuildCertCRLCollectionsData(&inStream, NULL, &inParams.validateParameters);
+
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testRootCert7Level));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testRootCert7Level) + 1;
+    BuildTrustAnchorsData(&inStream, &inParams.validateParameters);
+
+    inParams.validateParameters.allowDownloadIntermediateCa = true;
+    inParams.validateParameters.trustSystemCa = false;
+    inParams.certMatchParameters.minPathLenConstraint = -1;
+
+    X509 *downloadCert6 = LoadX509FromCrtData(g_testCa6Cert7Level, strlen(g_testCa6Cert7Level) + 1);
+    X509 *downloadCert5 = LoadX509FromCrtData(g_testCa5Cert7Level, strlen(g_testCa5Cert7Level) + 1);
+    X509 *downloadCert4 = LoadX509FromCrtData(g_testCa4Cert7Level, strlen(g_testCa4Cert7Level) + 1);
+    X509 *downloadCert3 = LoadX509FromCrtData(g_testCa3Cert7Level, strlen(g_testCa3Cert7Level) + 1);
+    X509 *downloadCert2 = LoadX509FromCrtData(g_testCa2Cert7Level, strlen(g_testCa2Cert7Level) + 1);
+    X509OpensslMock::SetMockFlag(true);
+    ResetMockFunction();
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_load_http(_, _, _, _))
+        .WillOnce(Return(downloadCert6))
+        .WillOnce(Return(downloadCert5))
+        .WillOnce(Return(downloadCert4))
+        .WillOnce(Return(downloadCert3))
+        .WillOnce(Return(downloadCert2))
+        .WillRepeatedly(Invoke(__real_X509_load_http));
+    result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
+    EXPECT_EQ(result, CF_ERR_CRYPTO_OPERATION);
+    X509OpensslMock::SetMockFlag(false);
+
+    EXPECT_EQ(spi, nullptr);
+    FreeX509CertMatchParamsData(&inParams.validateParameters);
+}
+
+HWTEST_F(CryptoX509CertChainTestPart3, HcfAllowDownloadIntermediateCaTest004, TestSize.Level0)
+{
+    HcfX509CertChainBuildParameters inParams;
+    memset_s(&inParams, sizeof(HcfX509CertChainBuildParameters), 0, sizeof(HcfX509CertChainBuildParameters));
+    HcfX509CertChainSpi *spi = nullptr;
+
+    CfResult result;
+    inParams.maxlength = -1;
+
+    CfEncodingBlob inStream = { 0 };
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testLeafCert7Level));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testLeafCert7Level) + 1;
+
+    BuildCertCRLCollectionsData(&inStream, NULL, &inParams.validateParameters);
+
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testRootCert7Level));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testRootCert7Level) + 1;
+    BuildTrustAnchorsData(&inStream, &inParams.validateParameters);
+
+    inParams.validateParameters.allowDownloadIntermediateCa = true;
+    inParams.validateParameters.trustSystemCa = true;
+    inParams.certMatchParameters.minPathLenConstraint = -1;
+
+    X509 *downloadCert6 = LoadX509FromCrtData(g_testCa6Cert7Level, strlen(g_testCa6Cert7Level) + 1);
+    X509OpensslMock::SetMockFlag(true);
+    ResetMockFunction();
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_load_http(_, _, _, _))
+        .WillOnce(Return(downloadCert6))
+        .WillRepeatedly(Invoke(__real_X509_load_http));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_STORE_new())
+        .WillRepeatedly(Return(nullptr));
+    result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
+    EXPECT_EQ(result, CF_ERR_CRYPTO_OPERATION);
+    X509OpensslMock::SetMockFlag(false);
+
+    EXPECT_EQ(spi, nullptr);
+    FreeX509CertMatchParamsData(&inParams.validateParameters);
+}
+
+HWTEST_F(CryptoX509CertChainTestPart3, HcfAllowDownloadIntermediateCaTest005, TestSize.Level0)
+{
+    HcfX509CertChainBuildParameters inParams;
+    memset_s(&inParams, sizeof(HcfX509CertChainBuildParameters), 0, sizeof(HcfX509CertChainBuildParameters));
+    HcfX509CertChainSpi *spi = nullptr;
+
+    CfResult result;
+    inParams.maxlength = -1;
+
+    CfEncodingBlob inStream = { 0 };
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testLeafCert7Level));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testLeafCert7Level) + 1;
+    CfEncodingBlob inStream2 = { 0 };
+    inStream2.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testRootCert7Level));
+    inStream2.encodingFormat = CF_FORMAT_PEM;
+    inStream2.len = strlen(g_testRootCert7Level) + 1;
+
+    BuildCertCRLCollectionsDataEx(&inStream, &inStream2, &inParams.validateParameters);
+    BuildTrustAnchorsData(&inStream2, &inParams.validateParameters);
+
+    inParams.validateParameters.allowDownloadIntermediateCa = true;
+    inParams.validateParameters.trustSystemCa = true;
+    inParams.certMatchParameters.minPathLenConstraint = -1;
+
+    X509 *downloadCert6 = LoadX509FromCrtData(g_testCa6Cert7Level, strlen(g_testCa6Cert7Level) + 1);
+    X509OpensslMock::SetMockFlag(true);
+    ResetMockFunction();
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_load_http(_, _, _, _))
+        .WillOnce(Return(downloadCert6))
+        .WillRepeatedly(Invoke(__real_X509_load_http));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_STORE_add_cert(_, _))
+        .WillRepeatedly(Return(0));
+    result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
+    EXPECT_EQ(result, CF_ERR_CRYPTO_OPERATION);
+    X509OpensslMock::SetMockFlag(false);
+
+    EXPECT_EQ(spi, nullptr);
+    FreeX509CertMatchParamsData(&inParams.validateParameters);
+}
+
+HWTEST_F(CryptoX509CertChainTestPart3, HcfAllowDownloadIntermediateCaTest006, TestSize.Level0)
+{
+    HcfX509CertChainBuildParameters inParams;
+    memset_s(&inParams, sizeof(HcfX509CertChainBuildParameters), 0, sizeof(HcfX509CertChainBuildParameters));
+    HcfX509CertChainSpi *spi = nullptr;
+
+    CfResult result;
+    inParams.maxlength = -1;
+
+    CfEncodingBlob inStream = { 0 };
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testLeafCert7Level));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testLeafCert7Level) + 1;
+
+    BuildCertCRLCollectionsData(&inStream, NULL, &inParams.validateParameters);
+
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testRootCert7Level));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testRootCert7Level) + 1;
+    BuildTrustAnchorsData(&inStream, &inParams.validateParameters);
+
+    inParams.validateParameters.allowDownloadIntermediateCa = true;
+    inParams.validateParameters.trustSystemCa = true;
+    inParams.certMatchParameters.minPathLenConstraint = -1;
+
+    X509 *downloadCert6 = LoadX509FromCrtData(g_testCa6Cert7Level, strlen(g_testCa6Cert7Level) + 1);
+    X509OpensslMock::SetMockFlag(true);
+    ResetMockFunction();
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_load_http(_, _, _, _))
+        .WillOnce(Return(downloadCert6))
+        .WillRepeatedly(Invoke(__real_X509_load_http));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_STORE_CTX_new())
+        .WillRepeatedly(Return(nullptr));
+    result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
+    EXPECT_EQ(result, CF_ERR_CRYPTO_OPERATION);
+    X509OpensslMock::SetMockFlag(false);
+
+    EXPECT_EQ(spi, nullptr);
+    FreeX509CertMatchParamsData(&inParams.validateParameters);
+}
+
+HWTEST_F(CryptoX509CertChainTestPart3, HcfAllowDownloadIntermediateCaTest007, TestSize.Level0)
+{
+    HcfX509CertChainBuildParameters inParams;
+    memset_s(&inParams, sizeof(HcfX509CertChainBuildParameters), 0, sizeof(HcfX509CertChainBuildParameters));
+    HcfX509CertChainSpi *spi = nullptr;
+
+    CfResult result;
+    inParams.maxlength = -1;
+
+    CfEncodingBlob inStream = { 0 };
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testLeafCert7Level));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testLeafCert7Level) + 1;
+
+    BuildCertCRLCollectionsData(&inStream, NULL, &inParams.validateParameters);
+
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testRootCert7Level));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testRootCert7Level) + 1;
+    BuildTrustAnchorsData(&inStream, &inParams.validateParameters);
+
+    inParams.validateParameters.allowDownloadIntermediateCa = true;
+    inParams.validateParameters.trustSystemCa = true;
+    inParams.certMatchParameters.minPathLenConstraint = -1;
+
+    X509 *downloadCert6 = LoadX509FromCrtData(g_testCa6Cert7Level, strlen(g_testCa6Cert7Level) + 1);
+    X509OpensslMock::SetMockFlag(true);
+    ResetMockFunction();
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_load_http(_, _, _, _))
+        .WillOnce(Return(downloadCert6))
+        .WillRepeatedly(Invoke(__real_X509_load_http));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_STORE_CTX_init(_, _, _, _))
+        .WillRepeatedly(Return(0));
+    result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
+    EXPECT_EQ(result, CF_ERR_CRYPTO_OPERATION);
+    X509OpensslMock::SetMockFlag(false);
+
+    EXPECT_EQ(spi, nullptr);
+    FreeX509CertMatchParamsData(&inParams.validateParameters);
+}
+
+HWTEST_F(CryptoX509CertChainTestPart3, HcfAllowDownloadIntermediateCaTest008, TestSize.Level0)
+{
+    HcfX509CertChainBuildParameters inParams;
+    memset_s(&inParams, sizeof(HcfX509CertChainBuildParameters), 0, sizeof(HcfX509CertChainBuildParameters));
+    HcfX509CertChainSpi *spi = nullptr;
+
+    CfResult result;
+    inParams.maxlength = -1;
+
+    CfEncodingBlob inStream = { 0 };
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testLeafCert7Level));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testLeafCert7Level) + 1;
+
+    BuildCertCRLCollectionsData(&inStream, NULL, &inParams.validateParameters);
+
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testRootCert7Level));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testRootCert7Level) + 1;
+    BuildTrustAnchorsData(&inStream, &inParams.validateParameters);
+
+    inParams.validateParameters.allowDownloadIntermediateCa = true;
+    inParams.validateParameters.trustSystemCa = true;
+    inParams.certMatchParameters.minPathLenConstraint = -1;
+
+    X509 *downloadCert6 = LoadX509FromCrtData(g_testCa6Cert7Level, strlen(g_testCa6Cert7Level) + 1);
+    X509OpensslMock::SetMockFlag(true);
+    ResetMockFunction();
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_load_http(_, _, _, _))
+        .WillOnce(Return(downloadCert6))
+        .WillRepeatedly(Invoke(__real_X509_load_http));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_STORE_CTX_get1_issuer(_, _, _))
+        .WillRepeatedly(Return(-1));
+    result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
+    EXPECT_EQ(result, CF_ERR_CRYPTO_OPERATION);
+    X509OpensslMock::SetMockFlag(false);
+
+    EXPECT_EQ(spi, nullptr);
+    FreeX509CertMatchParamsData(&inParams.validateParameters);
+}
+
+HWTEST_F(CryptoX509CertChainTestPart3, HcfAllowDownloadIntermediateCaTest009, TestSize.Level0)
+{
+    CfEncodingBlob inStream = { 0 };
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testLeafCert7Level));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testLeafCert7Level) + 1;
+    HcfX509CertChainSpi *certChainSpi = nullptr;
+    CfResult ret = HcfX509CertChainByEncSpiCreate(&inStream, &certChainSpi);
+    EXPECT_EQ(ret, CF_SUCCESS);
+
+    HcfX509CertChainValidateParams pCertChainValidateParams = { 0 };
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testRootCert7Level));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testRootCert7Level) + 1;
+    BuildTrustAnchorsData(&inStream, &pCertChainValidateParams);
+
+    pCertChainValidateParams.allowDownloadIntermediateCa = true;
+    pCertChainValidateParams.trustSystemCa = true;
+    HcfX509CertChainValidateResult result = { 0 };
+
+    X509 *downloadCert6 = LoadX509FromCrtData(g_testCa6Cert7Level, strlen(g_testCa6Cert7Level) + 1);
+    X509 *downloadCert5 = LoadX509FromCrtData(g_testCa5Cert7Level, strlen(g_testCa5Cert7Level) + 1);
+    X509 *downloadCert4 = LoadX509FromCrtData(g_testCa4Cert7Level, strlen(g_testCa4Cert7Level) + 1);
+    X509 *downloadCert3 = LoadX509FromCrtData(g_testCa3Cert7Level, strlen(g_testCa3Cert7Level) + 1);
+    X509 *downloadCert2 = LoadX509FromCrtData(g_testCa2Cert7Level, strlen(g_testCa2Cert7Level) + 1);
+
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_load_http(_, _, _, _))
+        .WillOnce(Return(downloadCert6))
+        .WillOnce(Return(downloadCert5))
+        .WillOnce(Return(downloadCert4))
+        .WillOnce(Return(downloadCert3))
+        .WillOnce(Return(downloadCert2))
+        .WillRepeatedly(Invoke(__real_X509_load_http));
+    ret = certChainSpi->engineValidate(certChainSpi, &pCertChainValidateParams, &result);
+    EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
+    X509OpensslMock::SetMockFlag(false);
+
+    X509_free(downloadCert6);
+    X509_free(downloadCert5);
+    X509_free(downloadCert4);
+    X509_free(downloadCert3);
+    X509_free(downloadCert2);
+    FreeValidateResult(result);
+    FreeX509CertMatchParamsData(&pCertChainValidateParams);
+    CfObjDestroy(certChainSpi);
+}
+
+HWTEST_F(CryptoX509CertChainTestPart3, HcfAllowDownloadIntermediateCaTest010, TestSize.Level0)
+{
+    HcfX509CertChainBuildParameters inParams;
+    memset_s(&inParams, sizeof(HcfX509CertChainBuildParameters), 0, sizeof(HcfX509CertChainBuildParameters));
+    HcfX509CertChainSpi *spi = nullptr;
+
+    CfResult result;
+    inParams.maxlength = -1;
+
+    CfEncodingBlob inStream = { 0 };
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testLeafCertValid));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testLeafCertValid) + 1;
+
+    BuildCertCRLCollectionsData(&inStream, NULL, &inParams.validateParameters);
+
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testRootCertValid));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testRootCertValid) + 1;
+    BuildTrustAnchorsData(&inStream, &inParams.validateParameters);
+
+    inParams.validateParameters.allowDownloadIntermediateCa = true;
+    inParams.certMatchParameters.minPathLenConstraint = -1;
+
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_get_ext_d2i(_, _, _, _))
+        .WillOnce(Return(nullptr))
+        .WillRepeatedly(Invoke(__real_X509_get_ext_d2i));
+    result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
+    EXPECT_EQ(result, CF_INVALID_PARAMS);
+    X509OpensslMock::SetMockFlag(false);
+
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_get_ext_d2i(_, _, _, _))
+        .WillOnce(Invoke(__real_X509_get_ext_d2i))
+        .WillOnce(Return(nullptr))
+        .WillRepeatedly(Invoke(__real_X509_get_ext_d2i));
+    result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
+    EXPECT_EQ(result, CF_ERR_CRYPTO_OPERATION);
+    X509OpensslMock::SetMockFlag(false);
+    EXPECT_EQ(spi, nullptr);
+    FreeX509CertMatchParamsData(&inParams.validateParameters);
+}
+
+HWTEST_F(CryptoX509CertChainTestPart3, HcfAllowDownloadIntermediateCaTest011, TestSize.Level0)
+{
+    HcfX509CertChainBuildParameters inParams;
+    memset_s(&inParams, sizeof(HcfX509CertChainBuildParameters), 0, sizeof(HcfX509CertChainBuildParameters));
+    HcfX509CertChainSpi *spi = nullptr;
+
+    CfResult result;
+    inParams.maxlength = -1;
+
+    CfEncodingBlob inStream = { 0 };
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testLeafCertValid));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testLeafCertValid) + 1;
+
+    BuildCertCRLCollectionsData(&inStream, NULL, &inParams.validateParameters);
+
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testRootCertValid));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testRootCertValid) + 1;
+    BuildTrustAnchorsData(&inStream, &inParams.validateParameters);
+
+    inParams.validateParameters.allowDownloadIntermediateCa = true;
+    inParams.certMatchParameters.minPathLenConstraint = -1;
+
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_load_http(_, _, _, _))
+        .WillOnce(Return(nullptr))
+        .WillRepeatedly(Invoke(__real_X509_load_http));
+    result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
+    EXPECT_EQ(result, CF_ERR_CRYPTO_OPERATION);
+    X509OpensslMock::SetMockFlag(false);
+
+    EXPECT_EQ(spi, nullptr);
+    FreeX509CertMatchParamsData(&inParams.validateParameters);
+}
+
+HWTEST_F(CryptoX509CertChainTestPart3, HcfAllowDownloadIntermediateCaTest012, TestSize.Level0)
+{
+    HcfX509CertChainBuildParameters inParams;
+    memset_s(&inParams, sizeof(HcfX509CertChainBuildParameters), 0, sizeof(HcfX509CertChainBuildParameters));
+    HcfX509CertChainSpi *spi = nullptr;
+
+    CfResult result;
+    inParams.maxlength = -1;
+
+    CfEncodingBlob inStream = { 0 };
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testLeafCertValid));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testLeafCertValid) + 1;
+
+    BuildCertCRLCollectionsData(&inStream, NULL, &inParams.validateParameters);
+
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testRootCertValid));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testRootCertValid) + 1;
+    BuildTrustAnchorsData(&inStream, &inParams.validateParameters);
+
+    inParams.validateParameters.allowDownloadIntermediateCa = true;
+    inParams.validateParameters.trustSystemCa = true;
+    inParams.certMatchParameters.minPathLenConstraint = -1;
+
+    X509 *downloadCert = LoadX509FromCrtData(g_testLeafCertValid, strlen(g_testLeafCertValid) + 1);
+    X509OpensslMock::SetMockFlag(true);
+    ResetMockFunction();
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_load_http(_, _, _, _))
+        .WillRepeatedly(Return(downloadCert));
+    result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
+    EXPECT_EQ(result, CF_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY);
+    X509OpensslMock::SetMockFlag(false);
+
+    EXPECT_EQ(spi, nullptr);
+    CfObjDestroy(spi);
+    FreeX509CertMatchParamsData(&inParams.validateParameters);
+}
+
+HWTEST_F(CryptoX509CertChainTestPart3, HcfAllowDownloadIntermediateCaTest013, TestSize.Level0)
+{
+    HcfX509CertChainBuildParameters inParams;
+    memset_s(&inParams, sizeof(HcfX509CertChainBuildParameters), 0, sizeof(HcfX509CertChainBuildParameters));
+    HcfX509CertChainSpi *spi = nullptr;
+
+    CfResult result;
+    inParams.maxlength = -1;
+
+    CfEncodingBlob inStream = { 0 };
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testLeafCert7Level));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testLeafCert7Level) + 1;
+
+    BuildCertCRLCollectionsData(&inStream, NULL, &inParams.validateParameters);
+
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testRootCert7Level));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testRootCert7Level) + 1;
+    BuildTrustAnchorsData(&inStream, &inParams.validateParameters);
+
+    inParams.validateParameters.allowDownloadIntermediateCa = true;
+    inParams.validateParameters.trustSystemCa = true;
+    inParams.certMatchParameters.minPathLenConstraint = -1;
+
+    X509 *downloadCert = LoadX509FromCrtData(g_testDownloadCertValid, strlen(g_testDownloadCertValid) + 1);
+    X509OpensslMock::SetMockFlag(true);
+    ResetMockFunction();
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_load_http(_, _, _, _))
+        .WillOnce(Return(downloadCert))
+        .WillRepeatedly(Invoke(__real_X509_load_http));
+    result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
+    EXPECT_EQ(result, CF_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY);
+    X509OpensslMock::SetMockFlag(false);
+
+    EXPECT_EQ(spi, nullptr);
+    FreeX509CertMatchParamsData(&inParams.validateParameters);
+}
+
+HWTEST_F(CryptoX509CertChainTestPart3, HcfAllowDownloadIntermediateCaTest014, TestSize.Level0)
+{
+    HcfX509CertChainBuildParameters inParams;
+    memset_s(&inParams, sizeof(HcfX509CertChainBuildParameters), 0, sizeof(HcfX509CertChainBuildParameters));
+    HcfX509CertChainSpi *spi = nullptr;
+
+    CfResult result;
+    inParams.maxlength = -1;
+
+    CfEncodingBlob inStream = { 0 };
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testLeafCertValid));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testLeafCertValid) + 1;
+
+    BuildCertCRLCollectionsData(&inStream, NULL, &inParams.validateParameters);
+
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testDownloadCertValid));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testDownloadCertValid) + 1;
+    BuildTrustAnchorsData(&inStream, &inParams.validateParameters);
+
+    inParams.validateParameters.allowDownloadIntermediateCa = true;
+    inParams.validateParameters.trustSystemCa = false;
+    inParams.certMatchParameters.minPathLenConstraint = -1;
+
+    result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
+    EXPECT_EQ(result, CF_SUCCESS);
+    EXPECT_NE(spi, nullptr);
+    CfObjDestroy(spi);
+    
+    inParams.validateParameters.allowDownloadIntermediateCa = false;
+    inParams.validateParameters.trustSystemCa = true;
+    result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
+    EXPECT_EQ(result, CF_SUCCESS);
+    EXPECT_NE(spi, nullptr);
+
+    CfObjDestroy(spi);
+    FreeX509CertMatchParamsData(&inParams.validateParameters);
+}
+
+HWTEST_F(CryptoX509CertChainTestPart3, HcfAllowDownloadIntermediateCaTest015, TestSize.Level0)
+{
+    CfEncodingBlob inStream = { 0 };
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testLeafCertValid));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testLeafCertValid) + 1;
+    HcfX509CertChainSpi *certChainSpi = nullptr;
+    CfResult ret = HcfX509CertChainByEncSpiCreate(&inStream, &certChainSpi);
+    EXPECT_EQ(ret, CF_SUCCESS);
+
+    HcfX509CertChainValidateParams pCertChainValidateParams = { 0 };
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testDownloadCertValid));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testDownloadCertValid) + 1;
+    BuildTrustAnchorsData(&inStream, &pCertChainValidateParams);
+
+    pCertChainValidateParams.allowDownloadIntermediateCa = true;
+    pCertChainValidateParams.trustSystemCa = true;
+    HcfX509CertChainValidateResult result = { 0 };
+    ret = certChainSpi->engineValidate(certChainSpi, &pCertChainValidateParams, &result);
+    EXPECT_EQ(ret, CF_SUCCESS);
+    FreeValidateResult(result);
+
+    pCertChainValidateParams.allowDownloadIntermediateCa = false;
+    pCertChainValidateParams.trustSystemCa = false;
+    ret = certChainSpi->engineValidate(certChainSpi, &pCertChainValidateParams, &result);
+    EXPECT_EQ(ret, CF_SUCCESS);
+
+    FreeValidateResult(result);
+    FreeX509CertMatchParamsData(&pCertChainValidateParams);
+    CfObjDestroy(certChainSpi);
+}
+
+HWTEST_F(CryptoX509CertChainTestPart3, HcfAllowDownloadIntermediateCaTest016, TestSize.Level0)
+{
+    HcfX509CertChainBuildParameters inParams;
+    memset_s(&inParams, sizeof(HcfX509CertChainBuildParameters), 0, sizeof(HcfX509CertChainBuildParameters));
+    HcfX509CertChainSpi *spi = nullptr;
+
+    CfResult result;
+    inParams.maxlength = -1;
+
+    CfEncodingBlob inStream = { 0 };
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testLeafNoCaIssuer));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testLeafNoCaIssuer) + 1;
+
+    BuildCertCRLCollectionsData(&inStream, NULL, &inParams.validateParameters);
+
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testRootCertValid));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testRootCertValid) + 1;
+    BuildTrustAnchorsData(&inStream, &inParams.validateParameters);
+
+    inParams.validateParameters.allowDownloadIntermediateCa = true;
+    inParams.validateParameters.trustSystemCa = true;
+    inParams.certMatchParameters.minPathLenConstraint = -1;
+
+    result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
+    EXPECT_EQ(result, CF_ERR_CRYPTO_OPERATION);
+
+    FreeX509CertMatchParamsData(&inParams.validateParameters);
+}
+
+HWTEST_F(CryptoX509CertChainTestPart3, HcfAllowDownloadIntermediateCaTest017, TestSize.Level0)
+{
+    HcfX509CertChainBuildParameters inParams;
+    memset_s(&inParams, sizeof(HcfX509CertChainBuildParameters), 0, sizeof(HcfX509CertChainBuildParameters));
+    HcfX509CertChainSpi *spi = nullptr;
+
+    CfResult result;
+    inParams.maxlength = -1;
+
+    CfEncodingBlob inStream = { 0 };
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testLeafCertValid));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testLeafCertValid) + 1;
+
+    BuildCertCRLCollectionsData(&inStream, NULL, &inParams.validateParameters);
+
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testRootCertValid));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testRootCertValid) + 1;
+    BuildTrustAnchorsData(&inStream, &inParams.validateParameters);
+
+    inParams.validateParameters.allowDownloadIntermediateCa = true;
+    inParams.validateParameters.trustSystemCa = false;
+    inParams.certMatchParameters.minPathLenConstraint = -1;
+
+    X509 *downloadCert = LoadX509FromCrtData(g_testDownloadCertValid, strlen(g_testDownloadCertValid) + 1);
+    X509OpensslMock::SetMockFlag(true);
+    ResetMockFunction();
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_load_http(_, _, _, _))
+        .WillRepeatedly(Return(downloadCert));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), ValidateCertDate(_, _))
+        .WillOnce(Return(CF_ERR_CRYPTO_OPERATION))
+        .WillRepeatedly(Invoke(__real_ValidateCertDate));
+    result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
+    EXPECT_EQ(result, CF_ERR_CRYPTO_OPERATION);
+    X509OpensslMock::SetMockFlag(false);
+
+    FreeX509CertMatchParamsData(&inParams.validateParameters);
+}
+
+HWTEST_F(CryptoX509CertChainTestPart3, HcfAllowDownloadIntermediateCaTest018, TestSize.Level0)
+{
+    HcfX509CertChainBuildParameters inParams;
+    memset_s(&inParams, sizeof(HcfX509CertChainBuildParameters), 0, sizeof(HcfX509CertChainBuildParameters));
+    HcfX509CertChainSpi *spi = nullptr;
+
+    CfResult result;
+    inParams.maxlength = 2;
+
+    CfEncodingBlob inStream = { 0 };
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testLeafCert7Level));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testLeafCert7Level) + 1;
+
+    BuildCertCRLCollectionsData(&inStream, NULL, &inParams.validateParameters);
+
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testRootCert7Level));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testRootCert7Level) + 1;
+    BuildTrustAnchorsData(&inStream, &inParams.validateParameters);
+
+    inParams.validateParameters.allowDownloadIntermediateCa = true;
+    inParams.validateParameters.trustSystemCa = true;
+    inParams.certMatchParameters.minPathLenConstraint = -1;
+
+    X509 *downloadCert6 = LoadX509FromCrtData(g_testCa6Cert7Level, strlen(g_testCa6Cert7Level) + 1);
+
+    inParams.maxlength = 2;
+    X509OpensslMock::SetMockFlag(true);
+    ResetMockFunction();
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_load_http(_, _, _, _))
+        .WillOnce(Return(downloadCert6))
+        .WillRepeatedly(Invoke(__real_X509_load_http));
+    result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
+    EXPECT_EQ(result, CF_ERR_PARAMETER_CHECK);
+    X509OpensslMock::SetMockFlag(false);
+
+    EXPECT_EQ(spi, nullptr);
+    FreeX509CertMatchParamsData(&inParams.validateParameters);
+}
+
+HWTEST_F(CryptoX509CertChainTestPart3, HcfAllowDownloadIntermediateCaTest019, TestSize.Level0)
+{
+    HcfX509CertChainBuildParameters inParams;
+    memset_s(&inParams, sizeof(HcfX509CertChainBuildParameters), 0, sizeof(HcfX509CertChainBuildParameters));
+    HcfX509CertChainSpi *spi = nullptr;
+
+    CfResult result;
+    inParams.maxlength = -1;
+
+    CfEncodingBlob inStream = { 0 };
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testLeafCertValid));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testLeafCertValid) + 1;
+
+    BuildCertCRLCollectionsData(&inStream, NULL, &inParams.validateParameters);
+
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testRootCertValid));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testRootCertValid) + 1;
+    BuildTrustAnchorsData(&inStream, &inParams.validateParameters);
+
+    inParams.validateParameters.allowDownloadIntermediateCa = true;
+    inParams.validateParameters.trustSystemCa = true;
+    inParams.certMatchParameters.minPathLenConstraint = -1;
+
+    X509 *downloadCert = LoadX509FromCrtData(g_testDownloadCertValid, strlen(g_testDownloadCertValid) + 1);
+    X509OpensslMock::SetMockFlag(true);
+    ResetMockFunction();
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_load_http(_, _, _, _))
+        .WillRepeatedly(Return(downloadCert));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_push(_, _))
+        .WillOnce(__real_OPENSSL_sk_push)
+        .WillOnce(__real_OPENSSL_sk_push)
+        .WillOnce(__real_OPENSSL_sk_push)
+        .WillOnce(__real_OPENSSL_sk_push)
+        .WillOnce(__real_OPENSSL_sk_push)
+        .WillOnce(Return(0))
+        .WillRepeatedly(__real_OPENSSL_sk_push);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_STORE_CTX_get1_issuer(_, _, _))
+        .WillRepeatedly(Return(1));
+    result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
+    EXPECT_EQ(result, CF_ERR_CRYPTO_OPERATION);
+    X509OpensslMock::SetMockFlag(false);
+
+    FreeX509CertMatchParamsData(&inParams.validateParameters);
+    FreeTrustAnchorData(nullptr);
+}
+
+HWTEST_F(CryptoX509CertChainTestPart3, HcfAllowDownloadIntermediateCaTest020, TestSize.Level0)
+{
+    HcfX509CertChainBuildParameters inParams;
+    memset_s(&inParams, sizeof(HcfX509CertChainBuildParameters), 0, sizeof(HcfX509CertChainBuildParameters));
+    HcfX509CertChainSpi *spi = nullptr;
+
+    CfResult result;
+    inParams.maxlength = -1;
+
+    CfEncodingBlob inStream = { 0 };
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testLeafCertValid));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testLeafCertValid) + 1;
+    CfEncodingBlob inStream2 = { 0 };
+    inStream2.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testRootCertValid));
+    inStream2.encodingFormat = CF_FORMAT_PEM;
+    inStream2.len = strlen(g_testRootCertValid) + 1;
+
+    BuildCertCRLCollectionsDataEx(&inStream, &inStream2, &inParams.validateParameters);
+
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testRootCertValid));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testRootCertValid) + 1;
+    BuildTrustAnchorsData(&inStream, &inParams.validateParameters);
+
+    inParams.validateParameters.allowDownloadIntermediateCa = true;
+    inParams.validateParameters.trustSystemCa = false;
+    inParams.certMatchParameters.minPathLenConstraint = -1;
+
+    X509 *downloadCert = LoadX509FromCrtData(g_testDownloadCertValid, strlen(g_testDownloadCertValid) + 1);
+    X509OpensslMock::SetMockFlag(true);
+    ResetMockFunction();
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_load_http(_, _, _, _))
+        .WillRepeatedly(Return(downloadCert));
+    result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
+    EXPECT_EQ(result, CF_SUCCESS);
+    EXPECT_NE(spi, nullptr);
+    X509OpensslMock::SetMockFlag(false);
+    CfObjDestroy(spi);
+
+    FreeX509CertMatchParamsData(&inParams.validateParameters);
+}
+
+HWTEST_F(CryptoX509CertChainTestPart3, HcfAllowDownloadIntermediateCaTest021, TestSize.Level0)
+{
+    HcfX509CertChainBuildParameters inParams;
+    memset_s(&inParams, sizeof(HcfX509CertChainBuildParameters), 0, sizeof(HcfX509CertChainBuildParameters));
+    HcfX509CertChainSpi *spi = nullptr;
+
+    CfResult result;
+    inParams.maxlength = -1;
+
+    CfEncodingBlob inStream = { 0 };
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testLeafCertValid));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testLeafCertValid) + 1;
+    CfEncodingBlob inStream2 = { 0 };
+    inStream2.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testRootCertValid));
+    inStream2.encodingFormat = CF_FORMAT_PEM;
+    inStream2.len = strlen(g_testRootCertValid) + 1;
+
+    BuildCertCRLCollectionsDataEx(&inStream, &inStream2, &inParams.validateParameters);
+
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testRootCertValid));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testRootCertValid) + 1;
+    BuildTrustAnchorsData(&inStream, &inParams.validateParameters);
+
+    inParams.validateParameters.allowDownloadIntermediateCa = true;
+    inParams.validateParameters.trustSystemCa = false;
+    inParams.certMatchParameters.minPathLenConstraint = -1;
+
+    X509 *downloadCert = LoadX509FromCrtData(g_testDownloadCertValid, strlen(g_testDownloadCertValid) + 1);
+    X509OpensslMock::SetMockFlag(true);
+    ResetMockFunction();
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_load_http(_, _, _, _))
+        .WillRepeatedly(Return(downloadCert));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_dup(_))
+        .WillOnce(Invoke(__real_X509_dup))
+        .WillOnce(Invoke(__real_X509_dup))
+        .WillOnce(Invoke(__real_X509_dup))
+        .WillOnce(Invoke(__real_X509_dup))
+        .WillOnce(Return(nullptr))
+        .WillRepeatedly(Invoke(__real_X509_dup));
+    result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
+    EXPECT_EQ(result, CF_ERR_MALLOC);
+    X509OpensslMock::SetMockFlag(false);
+
+    FreeX509CertMatchParamsData(&inParams.validateParameters);
+}
+
+HWTEST_F(CryptoX509CertChainTestPart3, HcfAllowDownloadIntermediateCaTest022, TestSize.Level0)
+{
+    HcfX509CertChainBuildParameters inParams;
+    memset_s(&inParams, sizeof(HcfX509CertChainBuildParameters), 0, sizeof(HcfX509CertChainBuildParameters));
+    HcfX509CertChainSpi *spi = nullptr;
+
+    CfResult result;
+    inParams.maxlength = -1;
+
+    CfEncodingBlob inStream = { 0 };
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testLeafCertValid));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testLeafCertValid) + 1;
+    CfEncodingBlob inStream2 = { 0 };
+    inStream2.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testRootCertValid));
+    inStream2.encodingFormat = CF_FORMAT_PEM;
+    inStream2.len = strlen(g_testRootCertValid) + 1;
+
+    BuildCertCRLCollectionsDataEx(&inStream, &inStream2, &inParams.validateParameters);
+
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testRootCertValid));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testRootCertValid) + 1;
+    BuildTrustAnchorsData(&inStream, &inParams.validateParameters);
+
+    inParams.validateParameters.allowDownloadIntermediateCa = true;
+    inParams.validateParameters.trustSystemCa = false;
+    inParams.certMatchParameters.minPathLenConstraint = -1;
+
+    X509 *downloadCert = LoadX509FromCrtData(g_testDownloadCertValid, strlen(g_testDownloadCertValid) + 1);
+    X509OpensslMock::SetMockFlag(true);
+    ResetMockFunction();
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_load_http(_, _, _, _))
+        .WillRepeatedly(Return(downloadCert));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_push(_, _))
+        .WillOnce(Invoke(__real_OPENSSL_sk_push))
+        .WillOnce(Invoke(__real_OPENSSL_sk_push))
+        .WillOnce(Invoke(__real_OPENSSL_sk_push))
+        .WillOnce(Invoke(__real_OPENSSL_sk_push))
+        .WillOnce(Invoke(__real_OPENSSL_sk_push))
+        .WillOnce(Invoke(__real_OPENSSL_sk_push))
+        .WillOnce(Return(-1))
+        .WillRepeatedly(Invoke(__real_OPENSSL_sk_push));
+    result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
+    EXPECT_EQ(result, CF_ERR_CRYPTO_OPERATION);
+    X509OpensslMock::SetMockFlag(false);
+
+    FreeX509CertMatchParamsData(&inParams.validateParameters);
+}
+
+HWTEST_F(CryptoX509CertChainTestPart3, HcfAllowDownloadIntermediateCaTest023, TestSize.Level0)
+{
+    HcfX509CertChainBuildParameters inParams;
+    memset_s(&inParams, sizeof(HcfX509CertChainBuildParameters), 0, sizeof(HcfX509CertChainBuildParameters));
+    HcfX509CertChainSpi *spi = nullptr;
+
+    CfResult result;
+    inParams.maxlength = -1;
+
+    CfEncodingBlob inStream = { 0 };
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testLeafCert7Level));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testLeafCert7Level) + 1;
+    CfEncodingBlob inStream2 = { 0 };
+    inStream2.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testCa5Cert7Level));
+    inStream2.encodingFormat = CF_FORMAT_PEM;
+    inStream2.len = strlen(g_testCa5Cert7Level) + 1;
+
+    BuildCertCRLCollectionsDataEx(&inStream, &inStream2, &inParams.validateParameters);
+    inStream2.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testCa4Cert7Level));
+    inStream2.encodingFormat = CF_FORMAT_PEM;
+    inStream2.len = strlen(g_testCa4Cert7Level) + 1;
+
+    BuildTrustAnchorsData(&inStream2, &inParams.validateParameters);
+
+    inParams.validateParameters.allowDownloadIntermediateCa = true;
+    inParams.validateParameters.trustSystemCa = true;
+    inParams.certMatchParameters.minPathLenConstraint = -1;
+
+    X509 *downloadCert6 = LoadX509FromCrtData(g_testCa6Cert7Level, strlen(g_testCa6Cert7Level) + 1);
+    X509OpensslMock::SetMockFlag(true);
+    ResetMockFunction();
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_load_http(_, _, _, _))
+        .WillOnce(Return(downloadCert6))
+        .WillRepeatedly(Invoke(__real_X509_load_http));
+    result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
+    EXPECT_EQ(result, CF_SUCCESS);
+    EXPECT_NE(spi, nullptr);
+    X509OpensslMock::SetMockFlag(false);
+    CfObjDestroy(spi);
+
+    FreeX509CertMatchParamsData(&inParams.validateParameters);
+}
+
+HWTEST_F(CryptoX509CertChainTestPart3, HcfAllowDownloadIntermediateCaTest024, TestSize.Level0)
+{
+    HcfX509CertChainBuildParameters inParams;
+    memset_s(&inParams, sizeof(HcfX509CertChainBuildParameters), 0, sizeof(HcfX509CertChainBuildParameters));
+    HcfX509CertChainSpi *spi = nullptr;
+
+    CfResult result;
+    inParams.maxlength = -1;
+
+    CfEncodingBlob inStream = { 0 };
+    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testLeafCert7Level));
+    inStream.encodingFormat = CF_FORMAT_PEM;
+    inStream.len = strlen(g_testLeafCert7Level) + 1;
+    CfEncodingBlob inStream2 = { 0 };
+    inStream2.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testCa5Cert7Level));
+    inStream2.encodingFormat = CF_FORMAT_PEM;
+    inStream2.len = strlen(g_testCa5Cert7Level) + 1;
+
+    BuildCertCRLCollectionsDataEx(&inStream, &inStream2, &inParams.validateParameters);
+    inStream2.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testCa4Cert7Level));
+    inStream2.encodingFormat = CF_FORMAT_PEM;
+    inStream2.len = strlen(g_testCa4Cert7Level) + 1;
+
+    BuildTrustAnchorsData(&inStream2, &inParams.validateParameters);
+
+    inParams.validateParameters.allowDownloadIntermediateCa = true;
+    inParams.validateParameters.trustSystemCa = true;
+    inParams.certMatchParameters.minPathLenConstraint = -1;
+
+    X509 *downloadCert6 = LoadX509FromCrtData(g_testCa6Cert7Level, strlen(g_testCa6Cert7Level) + 1);
+    X509OpensslMock::SetMockFlag(true);
+    ResetMockFunction();
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_load_http(_, _, _, _))
+        .WillOnce(Return(downloadCert6))
+        .WillRepeatedly(Invoke(__real_X509_load_http));
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_check_issued(_, _))
+        .WillOnce(Return(-1))
+        .WillRepeatedly(Invoke(__real_X509_check_issued));
+    result = HcfX509CertChainByParamsSpiCreate(&inParams, &spi);
+    EXPECT_EQ(result, CF_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY);
+    X509OpensslMock::SetMockFlag(false);
+
+    EXPECT_EQ(spi, nullptr);
+    FreeX509CertMatchParamsData(&inParams.validateParameters);
 }
 } // namespace

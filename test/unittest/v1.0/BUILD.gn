@@ -215,6 +215,10 @@ ohos_unittest("cf_version1_test") {
     "-Wl,--wrap=BIO_do_connect_retry",
     "-Wl,--wrap=ERR_peek_last_error",
     "-Wl,--wrap=CfGetCertIdInfo",
+    "-Wl,--wrap=X509_load_http",
+    "-Wl,--wrap=X509_check_issued",
+    "-Wl,--wrap=ValidateCertDate",
+    "-Wl,--wrap=X509_STORE_CTX_get1_issuer",
   ]
 
   if (target_cpu == "arm") {

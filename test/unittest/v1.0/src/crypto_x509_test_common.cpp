@@ -30,7 +30,7 @@
 #include "certificate_openssl_class.h"
 
 #define CONSTRUCT_CERTPOLICY_DATA_SIZE 1
-
+#define COLLECTION_COUNT 2
 using namespace std;
 
 const int g_deviceTestCertSize = sizeof(g_deviceTestCert);
@@ -470,6 +470,63 @@ void BuildCollectionArr(const CfEncodingBlob *certInStream, const CfEncodingBlob
     CfFree(certArray);
     FreeCrlArrayData(crlArray);
     CfFree(crlArray);
+}
+
+void BuildCollectionArrEx(const CfEncodingBlob *certInStream, const CfEncodingBlob *certInStream2,
+    HcfCertCRLCollectionArray &certCRLCollections)
+{
+    CfResult ret = CF_SUCCESS;
+    HcfX509CertificateArray *certArray = nullptr;
+    if (certInStream != nullptr) {
+        certArray = static_cast<HcfX509CertificateArray *>(CfMalloc(sizeof(HcfX509CertificateArray), 0));
+        ASSERT_NE(certArray, nullptr);
+
+        HcfX509Certificate *x509CertObj = nullptr;
+        (void)HcfX509CertificateCreate(certInStream, &x509CertObj);
+        ASSERT_NE(x509CertObj, nullptr);
+
+        certArray->data = static_cast<HcfX509Certificate **>(CfMalloc(1 * sizeof(HcfX509Certificate *), 0));
+        ASSERT_NE(certArray->data, nullptr);
+        certArray->data[0] = x509CertObj;
+        certArray->count = 1;
+    }
+    HcfX509CertificateArray *certArray2 = nullptr;
+    if (certInStream2 != nullptr) {
+        certArray2 = static_cast<HcfX509CertificateArray *>(CfMalloc(sizeof(HcfX509CertificateArray), 0));
+        ASSERT_NE(certArray2, nullptr);
+
+        HcfX509Certificate *x509CertObj = nullptr;
+        (void)HcfX509CertificateCreate(certInStream2, &x509CertObj);
+        ASSERT_NE(x509CertObj, nullptr);
+
+        certArray2->data = static_cast<HcfX509Certificate **>(CfMalloc(1 * sizeof(HcfX509Certificate *), 0));
+        ASSERT_NE(certArray2->data, nullptr);
+        certArray2->data[0] = x509CertObj;
+        certArray2->count = 1;
+    }
+
+    HcfCertCrlCollection *x509CertCrlCollection = nullptr;
+    ret = HcfCertCrlCollectionCreate(certArray, nullptr, &x509CertCrlCollection);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ASSERT_NE(x509CertCrlCollection, nullptr);
+
+    HcfCertCrlCollection *x509CertCrlCollection2 = nullptr;
+    ret = HcfCertCrlCollectionCreate(certArray2, nullptr, &x509CertCrlCollection2);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ASSERT_NE(x509CertCrlCollection2, nullptr);
+
+    certCRLCollections.data =
+        static_cast<HcfCertCrlCollection **>(CfMalloc(COLLECTION_COUNT * sizeof(HcfCertCrlCollection *), 0));
+    ASSERT_NE(certCRLCollections.data, nullptr);
+    certCRLCollections.data[0] = x509CertCrlCollection;
+    certCRLCollections.count = 1;
+    certCRLCollections.data[1] = x509CertCrlCollection2;
+    certCRLCollections.count = COLLECTION_COUNT;
+
+    FreeCertArrayData(certArray);
+    CfFree(certArray);
+    FreeCertArrayData(certArray2);
+    CfFree(certArray2);
 }
 
 void FreeCertCrlCollectionArr(HcfCertCRLCollectionArray &certCRLCollections)

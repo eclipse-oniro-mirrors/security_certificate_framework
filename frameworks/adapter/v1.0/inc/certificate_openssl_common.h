@@ -88,6 +88,7 @@ X509_CRL *GetCrlFromCert(const HcfX509CertChainValidateParams *params, X509 *x50
 X509_CRL *GetCrlFromCertByDp(X509 *x509, int *errReason);
 CfResult ValidateDate(const STACK_OF(X509) *x509CertChain, CfBlob *date);
 CfResult ValidateCertDate(X509 *cert, CfBlob *date);
+bool CfHasCaIssuerAia(X509 *cert);
 #ifdef __cplusplus
 }
 #endif

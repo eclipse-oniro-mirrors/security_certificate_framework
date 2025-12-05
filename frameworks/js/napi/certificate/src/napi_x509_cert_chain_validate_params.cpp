@@ -529,6 +529,13 @@ bool BuildX509CertChainValidateParams(napi_env env, napi_value arg, HcfX509CertC
         LOGE("Get use system ca failed!");
         return false;
     }
+
+    if (GetBoolFromNameValue(env, arg, &(param.allowDownloadIntermediateCa),
+        CERT_CHAIN_VALIDATE_TAG_ALLOW_DOWNLOAD_INTERMEDIATE_CA.c_str()) != CF_SUCCESS) {
+        LOGE("Get allow download intermediate CA failed!");
+        return false;
+    }
+
     if (!GetX509TrustAnchorArray(env, arg, param.trustSystemCa, param.trustAnchors)) {
         LOGE("Get X509 trust anchor array failed");
         return false;

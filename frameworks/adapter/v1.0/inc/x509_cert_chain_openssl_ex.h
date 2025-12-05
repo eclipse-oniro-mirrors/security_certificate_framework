@@ -23,6 +23,7 @@
 #include "fwk_class.h"
 
 #include <openssl/x509.h>
+#include <openssl/x509v3.h>
 
 typedef struct {
     HcfX509CertChainSpi base;
@@ -59,6 +60,19 @@ bool ContainsOption(HcfRevChkOpArray *options, HcfRevChkOption op);
 CfResult IgnoreNetworkError(CfResult res, HcfRevChkOpArray *options);
 CfResult SetVerifyParams(X509_STORE *store, X509 *mostTrustCert);
 CfResult VerifyCertChain(X509 *mostTrustCert, STACK_OF(X509) *x509CertChain);
+X509 *DownloadCertificateFromUrl(const char *url);
+X509 *TryDownloadFromAccessDescription(ACCESS_DESCRIPTION *ad);
+X509 *GetDownloadedCertFromAIA(X509 *leafCert);
+CfResult PrepareDownloadMissCert(X509 *caCert, X509 **downloadedCert);
+CfResult GetIssuerCertFromAllCerts(STACK_OF(X509) *allCerts, X509 *cert, X509 **out);
+CfResult ValidateDownLoadMissCert(STACK_OF(X509) *x509CertChain,
+    const HcfX509CertChainValidateParams *params, HcfX509TrustAnchor *trustAnchorResult);
+CfResult ValidateDownLoadMissCertEx(int32_t maxlength, STACK_OF(X509) *x509CertChain,
+    const HcfX509CertChainValidateParams *params, HcfX509TrustAnchor *trustAnchorResult, STACK_OF(X509) *allCerts);
+CfResult ValidateTrustCert(X509 *caCert, STACK_OF(X509) *x509CertChain,
+    const HcfX509CertChainValidateParams *params, HcfX509TrustAnchor *trustAnchorResult);
+void ResetCertChainOut(STACK_OF(X509) *out);
+void FreeTrustAnchorData(HcfX509TrustAnchor *trustAnchor);
 #ifdef __cplusplus
 }
 #endif

@@ -526,6 +526,8 @@ void BuildAnchorArr(const CfEncodingBlob &certInStream, HcfX509TrustAnchorArray 
 void FreeTrustAnchorArr(HcfX509TrustAnchorArray &trustAnchorArray);
 void BuildCollectionArr(const CfEncodingBlob *certInStream, const CfEncodingBlob *crlInStream,
     HcfCertCRLCollectionArray &certCRLCollections);
+void BuildCollectionArrEx(const CfEncodingBlob *certInStream, const CfEncodingBlob *certInStream2,
+    HcfCertCRLCollectionArray &certCRLCollections);
 void FreeCertCrlCollectionArr(HcfCertCRLCollectionArray &certCRLCollections);
 void FreeValidateResult(HcfX509CertChainValidateResult &result);
 

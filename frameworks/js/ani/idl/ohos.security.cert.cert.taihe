@@ -375,6 +375,7 @@ struct CertChainValidationParameters {
   date: Optional<String>;
   trustAnchors: Array<X509TrustAnchor>;
   trustSystemCa: Optional<bool>;
+  allowDownloadIntermediateCa: Optional<bool>;
   certCRLs: Optional<Array<CertCRLCollection>>;
   revocationCheckParam: Optional<RevocationCheckParameter>;
   policy: Optional<ValidationPolicyType>;

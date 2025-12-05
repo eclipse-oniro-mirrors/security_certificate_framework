@@ -42,20 +42,6 @@
 #include "utils.h"
 #include "x509_cert_chain_spi.h"
 
-#define MAX_CERT_NUM 256 /* max certs number of a certchain */
-#define TIMET_NUM 6
-#define TIMET_YEAR_START 1900
-#define TIMET_YEAR_OFFSET 100 // start time year from 1900 + 100
-#define TRY_CONNECT_TIMES 3
-#define OCSP_CONN_MILLISECOND 5000 // millisecond
-#define OCSP_CONN_TIMEOUT (-1)     // timeout == 0 means no timeout, < 0 means exactly one try.
-#define LOAD_OCSP_CONN_TIMEOUT 5     // 5 second timeout.
-#define HTTP_PORT "80"
-#define HTTPS_PORT "443"
-#define CERT_VERIFY_DIR "/etc/security/certificates"
-
-// helper functions
-
 typedef struct {
     OCSP_REQUEST *req;
     OCSP_RESPONSE *resp;
@@ -310,18 +296,6 @@ static CfResult GetTrustAnchor(const HcfX509TrustAnchor *trustAnchors, X509 *roo
         *mostTrustCertOut = rootCert;
     }
     return CF_SUCCESS;
-}
-
-static void FreeTrustAnchorData(HcfX509TrustAnchor *trustAnchor)
-{
-    if (trustAnchor == NULL) {
-        return;
-    }
-    CfBlobFree(&trustAnchor->CAPubKey);
-    CfBlobFree(&trustAnchor->CASubject);
-    CfBlobFree(&trustAnchor->nameConstraints);
-    CfObjDestroy(trustAnchor->CACert);
-    trustAnchor->CACert = NULL;
 }
 
 static CfResult CopyHcfX509TrustAnchor(const HcfX509TrustAnchor *inputAnchor, HcfX509TrustAnchor *outAnchor)
@@ -1667,6 +1641,23 @@ static CfResult ValidateTrustCertDir(const HcfX509CertChainValidateParams *param
     return CF_SUCCESS;
 }
 
+CfResult ValidateTrustCert(X509 *caCert, STACK_OF(X509) *x509CertChain,
+    const HcfX509CertChainValidateParams *params, HcfX509TrustAnchor *trustAnchorResult)
+{
+    CfResult res = CF_ERR_CRYPTO_OPERATION;
+    if (sk_X509_push(x509CertChain, caCert) <= 0) {
+        LOGE("Failed to push ca cert to cert chain.");
+        X509_free(caCert);
+        CfPrintOpensslError();
+        return res;
+    }
+    res = ValidateTrustAnchor(params->trustAnchors, caCert, x509CertChain, trustAnchorResult);
+    if (res != CF_SUCCESS && params->trustSystemCa) {
+        res = ValidateTrustCertDir(params, caCert, x509CertChain, trustAnchorResult);
+    }
+    return res;
+}
+
 static CfResult ValidateOther(const HcfX509CertChainValidateParams *params, STACK_OF(X509) *x509CertChain,
     HcfX509TrustAnchor **trustAnchorResult)
 {
@@ -1692,6 +1683,11 @@ static CfResult ValidateOther(const HcfX509CertChainValidateParams *params, STAC
     }
     if ((res != CF_SUCCESS) && (params->trustSystemCa)) {
         res = ValidateTrustCertDir(params, rootCert, x509CertChain, anchorResult);
+    }
+    if ((res != CF_SUCCESS) && (params->allowDownloadIntermediateCa)) {
+        STACK_OF(X509) *x509CertChainCopy = sk_X509_dup(x509CertChain);
+        res = ValidateDownLoadMissCert(x509CertChainCopy, params, anchorResult);
+        sk_X509_free(x509CertChainCopy);
     }
     if (res != CF_SUCCESS) {
         LOGE("ValidateTrust failed!");
@@ -2059,7 +2055,8 @@ CfResult HcfX509CertChainByArrSpiCreate(const HcfX509CertificateArray *inCerts, 
     return CF_SUCCESS;
 }
 
-bool ValidatCertChainX509(STACK_OF(X509) * x509CertChain, HcfX509CertChainValidateParams params)
+bool ValidatCertChainX509(STACK_OF(X509) * x509CertChain, HcfX509CertChainValidateParams params,
+    STACK_OF(X509) *allCerts, int32_t maxlength, ErrorCodeConvertInfo *errCodeInfo)
 {
     CfResult res = ValidateDate(x509CertChain, params.date);
     if (res != CF_SUCCESS) {
@@ -2077,6 +2074,18 @@ bool ValidatCertChainX509(STACK_OF(X509) * x509CertChain, HcfX509CertChainValida
     }
     if ((res != CF_SUCCESS) && (params.trustSystemCa)) {
         res = ValidateTrustCertDir(&params, rootCert, x509CertChain, &trustAnchorResult);
+    }
+    if ((res != CF_SUCCESS) && (params.allowDownloadIntermediateCa)) {
+        errCodeInfo->scenario = CF_DOWNLOAD_MISSING_INTERMEDIATE_CERT;
+        if (CheckIsSelfSigned(rootCert) || !CfHasCaIssuerAia(rootCert) ||
+            (maxlength >= 0 && sk_X509_num(x509CertChain) >= maxlength)) {
+            errCodeInfo->errCode = res;
+            LOGE("No need to download more certs.");
+            FreeTrustAnchorData(&trustAnchorResult);
+            return false;
+        }
+        res = ValidateDownLoadMissCertEx(maxlength, x509CertChain, &params, &trustAnchorResult, allCerts);
+        errCodeInfo->errCode = res;
     }
     FreeTrustAnchorData(&trustAnchorResult);
     if (res != CF_SUCCESS) {
@@ -2112,12 +2121,13 @@ static CfResult PackCertChain(const HcfX509CertChainBuildParameters *inParams, S
 
     int allCertsLen = sk_X509_num(allCerts);
     int leafCertsLen = sk_X509_num(leafCerts);
-
+    res = CF_INVALID_PARAMS;
     for (int i = 0; i < leafCertsLen; i++) {
+        ErrorCodeConvertInfo errCodeInfo = {};
         X509 *leafCert = sk_X509_value(leafCerts, i);
         if (CheckIsSelfSigned(leafCert)) {
             sk_X509_push(out, X509_dup(leafCert));
-            if (ValidatCertChainX509(out, inParams->validateParameters)) {
+            if (ValidatCertChainX509(out, inParams->validateParameters, allCerts, inParams->maxlength, &errCodeInfo)) {
                 PopFreeCerts(allCerts, leafCerts);
                 return CF_SUCCESS;
             }
@@ -2134,18 +2144,18 @@ static CfResult PackCertChain(const HcfX509CertChainBuildParameters *inParams, S
                 ca = FindCertificateBySubject(allCerts, issuerName);
                 depth++;
             }
-            if (ValidatCertChainX509(out, inParams->validateParameters)) {
+            if (ValidatCertChainX509(out, inParams->validateParameters, allCerts, inParams->maxlength, &errCodeInfo)) {
                 PopFreeCerts(allCerts, leafCerts);
                 return CF_SUCCESS;
             }
         }
-
-        while (sk_X509_num(out) > 0) {
-            X509_free(sk_X509_pop(out));
+        if (errCodeInfo.scenario == CF_DOWNLOAD_MISSING_INTERMEDIATE_CERT) {
+            res = errCodeInfo.errCode;
         }
+        ResetCertChainOut(out);
     }
     PopFreeCerts(allCerts, leafCerts);
-    return CF_INVALID_PARAMS;
+    return res;
 }
 
 CfResult HcfX509CertChainByParamsSpiCreate(const HcfX509CertChainBuildParameters *inParams, HcfX509CertChainSpi **spi)

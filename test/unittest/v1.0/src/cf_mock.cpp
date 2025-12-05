@@ -136,6 +136,11 @@ int __real_BIO_do_connect_retry(BIO *b, int timeout, int retry);
 unsigned long __real_ERR_peek_last_error(void);
 CfResult __real_CfGetCertIdInfo(STACK_OF(X509) *x509CertChain, const CfBlob *ocspDigest,
     HcfX509TrustAnchor *trustAnchor, OcspCertIdInfo *certIdInfo, int index);
+X509 *__real_X509_load_http(const char *url, BIO *bio, BIO *rbio, int timeout);
+int __real_X509_check_issued(X509 *issuer, X509 *subject);
+CfResult __real_ValidateCertDate(X509 *cert, CfBlob *date);
+int __real_X509_STORE_CTX_get1_issuer(X509 **issuer, X509_STORE_CTX *ctx, X509 *x);
+CfResult __real_GetIssuerCertFromAllCerts(STACK_OF(X509) *allCerts, X509 *cert, X509 **out);
 #ifdef __cplusplus
 }
 #endif
@@ -552,6 +557,22 @@ void X509OpensslMock::SetMockFunDefaultBehaviorPartEight(void)
             HcfX509TrustAnchor *trustAnchor, OcspCertIdInfo *certIdInfo, int index) {
         return __real_CfGetCertIdInfo(x509CertChain, ocspDigest, trustAnchor, certIdInfo, index);
     });
+
+    ON_CALL(*this, X509_load_http).WillByDefault([this](const char *url, BIO *bio, BIO *rbio, int timeout) {
+        return __real_X509_load_http(url, bio, rbio, timeout);
+    });
+
+    ON_CALL(*this, X509_check_issued).WillByDefault([this](X509 *issuer, X509 *subject) {
+        return __real_X509_check_issued(issuer, subject);
+    });
+
+    ON_CALL(*this, ValidateCertDate).WillByDefault([this](X509 *cert, CfBlob *date) {
+        return __real_ValidateCertDate(cert, date);
+    });
+
+    ON_CALL(*this, X509_STORE_CTX_get1_issuer).WillByDefault([this](X509 **issuer, X509_STORE_CTX *ctx, X509 *x) {
+        return __real_X509_STORE_CTX_get1_issuer(issuer, ctx, x);
+    });
 }
 
 X509OpensslMock::X509OpensslMock()
@@ -786,6 +807,46 @@ CfResult __wrap_CfGetCertIdInfo(STACK_OF(X509) *x509CertChain, const CfBlob *ocs
             certIdInfo, index);
     } else {
         return __real_CfGetCertIdInfo(x509CertChain, ocspDigest, trustAnchor, certIdInfo, index);
+    }
+}
+
+X509 *__wrap_X509_load_http(const char *url, BIO *bio, BIO *rbio, int timeout)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock X509_load_http");
+        return X509OpensslMock::GetInstance().X509_load_http(url, bio, rbio, timeout);
+    } else {
+        return __real_X509_load_http(url, bio, rbio, timeout);
+    }
+}
+
+int __wrap_X509_check_issued(X509 *issuer, X509 *subject)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock X509_check_issued");
+        return X509OpensslMock::GetInstance().X509_check_issued(issuer, subject);
+    } else {
+        return __real_X509_check_issued(issuer, subject);
+    }
+}
+
+CfResult __wrap_ValidateCertDate(X509 *cert, CfBlob *date)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock ValidateCertDate");
+        return X509OpensslMock::GetInstance().ValidateCertDate(cert, date);
+    } else {
+        return __real_ValidateCertDate(cert, date);
+    }
+}
+
+int __wrap_X509_STORE_CTX_get1_issuer(X509 **issuer, X509_STORE_CTX *ctx, X509 *x)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock X509_STORE_CTX_get1_issuer");
+        return X509OpensslMock::GetInstance().X509_STORE_CTX_get1_issuer(issuer, ctx, x);
+    } else {
+        return __real_X509_STORE_CTX_get1_issuer(issuer, ctx, x);
     }
 }
 
