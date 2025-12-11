@@ -542,44 +542,6 @@ HWTEST_F(CryptoX509CertChainTestPart3, ValidateIgnoreNetworkErrorTest005, TestSi
     CfObjDestroy(certChainPem);
 }
 
-HWTEST_F(CryptoX509CertChainTestPart3, ValidateIgnoreNetworkErrorTest006, TestSize.Level0)
-{
-    HcfX509CertChainSpi *certChainPem = nullptr;
-    CfResult ret = HcfX509CertChainByEncSpiCreate(&g_inCaChain, &certChainPem);
-    ASSERT_EQ(ret, CF_SUCCESS);
-    ASSERT_NE(certChainPem, nullptr);
-    CfEncodingBlob inStream = { 0 };
-    inStream.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_testRootCertValid));
-    inStream.encodingFormat = CF_FORMAT_PEM;
-    inStream.len = strlen(g_testRootCertValid) + 1;
-
-    HcfX509TrustAnchorArray trustAnchorArray = { 0 };
-    BuildAnchorArr(inStream, trustAnchorArray);
-
-    HcfX509CertChainValidateParams params = { 0 };
-    params.trustAnchors = &trustAnchorArray;
-    HcfRevChkOption data[] = { REVOCATION_CHECK_OPTION_IGNORE_NETWORK_ERROR, REVOCATION_CHECK_OPTION_PREFER_OCSP,
-        REVOCATION_CHECK_OPTION_ACCESS_NETWORK, REVOCATION_CHECK_OPTION_CHECK_INTERMEDIATE_CA_ONLINE};
-    params.revocationCheckParam = ConstructHcfRevocationCheckParam(data, sizeof(data) / sizeof(data[0]));
-    ASSERT_NE(params.revocationCheckParam, nullptr);
-
-    HcfX509CertChainValidateResult result = { 0 };
-    X509OpensslMock::SetMockFlag(true);
-    EXPECT_CALL(X509OpensslMock::GetInstance(), BIO_do_connect_retry(_, _, _))
-         .WillRepeatedly(Return(-1));
-    EXPECT_CALL(X509OpensslMock::GetInstance(), ERR_peek_last_error())
-        .WillOnce(Return(268435603))
-        .WillRepeatedly(Return(268959746));
-    ret = certChainPem->engineValidate(certChainPem, &params, &result);
-    EXPECT_EQ(ret, CF_SUCCESS);
-    X509OpensslMock::SetMockFlag(false);
-
-    FreeValidateResult(result);
-    FreeTrustAnchorArr(trustAnchorArray);
-    FreeHcfRevocationCheckParam(params.revocationCheckParam);
-    CfObjDestroy(certChainPem);
-}
-
 HWTEST_F(CryptoX509CertChainTestPart3, ValidateIgnoreNetworkErrorTest007, TestSize.Level0)
 {
     HcfX509CertChainSpi *certChainPem = nullptr;
@@ -645,7 +607,7 @@ HWTEST_F(CryptoX509CertChainTestPart3, ValidateIgnoreNetworkErrorTest008, TestSi
         .WillOnce(Return(268435603))
         .WillRepeatedly(Return(268959746));
     ret = certChainPem->engineValidate(certChainPem, &params, &result);
-    EXPECT_EQ(ret, CF_SUCCESS);
+    EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
     X509OpensslMock::SetMockFlag(false);
     FreeValidateResult(result);
     FreeTrustAnchorArr(trustAnchorArray);

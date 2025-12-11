@@ -31,6 +31,7 @@
 #define TIME_MIN_LEN 10
 #define TIME_SEC_LEN 12
 #define HTTP_TIMEOUT 10
+#define CERT_CRL_NOT_EXIST_HTTP_URI (-1)
 
 typedef struct {
     char *oid;
@@ -1025,6 +1026,7 @@ static X509_CRL *LoadCrlDp(STACK_OF(DIST_POINT) *crldp, int *errReason)
 {
     const char *urlptr = NULL;
     for (int i = 0; i < sk_DIST_POINT_num(crldp); i++) {
+        *errReason = 0;
         DIST_POINT *dp = sk_DIST_POINT_value(crldp, i);
         urlptr = GetDpUrl(dp);
         if (urlptr != NULL) {
@@ -1034,7 +1036,9 @@ static X509_CRL *LoadCrlDp(STACK_OF(DIST_POINT) *crldp, int *errReason)
             }
             return crl;
         }
+        *errReason = CERT_CRL_NOT_EXIST_HTTP_URI; // means urlptr is empty
     }
+    *errReason = CERT_CRL_NOT_EXIST_HTTP_URI; // means not url in cert.
     return NULL;
 }
 
@@ -1048,6 +1052,8 @@ X509_CRL *GetCrlFromCertByDp(X509 *x509, int *errReason)
         if (crl != NULL) {
             return crl;
         }
+    } else {
+        *errReason = CERT_CRL_NOT_EXIST_HTTP_URI; // means not found crlStack in cert.
     }
     return NULL;
 }
