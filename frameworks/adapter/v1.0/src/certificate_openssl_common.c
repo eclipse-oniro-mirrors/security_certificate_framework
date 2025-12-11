@@ -1139,7 +1139,7 @@ bool CfHasCaIssuerAia(X509 *cert)
     int num = sk_ACCESS_DESCRIPTION_num(infoAccess);
     for (int i = 0; i < num; i++) {
         ACCESS_DESCRIPTION *ad = sk_ACCESS_DESCRIPTION_value(infoAccess, i);
-        if (OBJ_obj2nid(ad->method) == NID_ad_ca_issuers) {
+        if (ad != NULL && ad->method != NULL && OBJ_obj2nid(ad->method) == NID_ad_ca_issuers) {
             AUTHORITY_INFO_ACCESS_free(infoAccess);
             return true;
         }
