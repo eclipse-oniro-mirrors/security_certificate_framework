@@ -84,6 +84,9 @@ bool BuildExtendedKeyUsage(X509CertMatchParameters const& param, HcfX509CertMatc
         }
         hcfParam.extendedKeyUsage->count = count;
         for (uint32_t i = 0; i < hcfParam.extendedKeyUsage->count; ++i) {
+            if (param.extendedKeyUsage.value()[i].empty()) {
+                return false;
+            }
             StringToDataBlob(param.extendedKeyUsage.value()[i], hcfParam.extendedKeyUsage->data[i]);
         }
     }
@@ -104,6 +107,9 @@ bool BuildCertPolicy(X509CertMatchParameters const& param, HcfX509CertMatchParam
         }
         hcfParam.certPolicy->count = count;
         for (uint32_t i = 0; i < hcfParam.certPolicy->count; ++i) {
+            if (param.certPolicy.value()[i].empty()) {
+                return false;
+            }
             StringToDataBlob(param.certPolicy.value()[i], hcfParam.certPolicy->data[i]);
         }
     }
@@ -315,7 +321,7 @@ bool BuildRevocationCheckParam(optional<RevocationCheckParameter> const& param,
         return false;
     }
     if (param->ocspResponses.has_value()) {
-        if (param->ocspResponses.value().size() == 0) {
+        if (param->ocspResponses.value().empty()) {
             return false;
         }
         if (!ArrayU8CopyToBlob(param->ocspResponses.value(), &tempRevocationCheckParam->ocspResponses)) {
@@ -419,7 +425,7 @@ bool BuildX509CertMatchParamsV2(X509CertMatchParameters const& param, HcfX509Cer
     hcfParam.minPathLenConstraint = param.minPathLenConstraint.has_value() ?
         param.minPathLenConstraint.value() : -1;
     if (param.authorityKeyIdentifier.has_value()) {
-        if (param.authorityKeyIdentifier.value().size() == 0) {
+        if (param.authorityKeyIdentifier.value().empty()) {
             return false;
         }
         hcfParam.authorityKeyIdentifier = static_cast<CfBlob *>(CfMalloc(sizeof(CfBlob), 0));
@@ -429,7 +435,7 @@ bool BuildX509CertMatchParamsV2(X509CertMatchParameters const& param, HcfX509Cer
         ArrayU8ToDataBlob(param.authorityKeyIdentifier.value(), *hcfParam.authorityKeyIdentifier);
     }
     if (param.nameConstraints.has_value()) {
-        if (param.nameConstraints.value().size() == 0) {
+        if (param.nameConstraints.value().empty()) {
             return false;
         }
         hcfParam.nameConstraints = static_cast<CfBlob *>(CfMalloc(sizeof(CfBlob), 0));
@@ -439,7 +445,7 @@ bool BuildX509CertMatchParamsV2(X509CertMatchParameters const& param, HcfX509Cer
         ArrayU8ToDataBlob(param.nameConstraints.value(), *hcfParam.nameConstraints);
     }
     if (param.privateKeyValid.has_value()) {
-        if (param.privateKeyValid.value().size() == 0) {
+        if (param.privateKeyValid.value().empty()) {
             return false;
         }
         hcfParam.privateKeyValid = static_cast<CfBlob *>(CfMalloc(sizeof(CfBlob), 0));
@@ -449,7 +455,7 @@ bool BuildX509CertMatchParamsV2(X509CertMatchParameters const& param, HcfX509Cer
         StringToDataBlob(param.privateKeyValid.value(), *hcfParam.privateKeyValid);
     }
     if (param.subjectKeyIdentifier.has_value()) {
-        if (param.subjectKeyIdentifier.value().size() == 0) {
+        if (param.subjectKeyIdentifier.value().empty()) {
             return false;
         }
         hcfParam.subjectKeyIdentifier = static_cast<CfBlob *>(CfMalloc(sizeof(CfBlob), 0));
