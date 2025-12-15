@@ -165,7 +165,7 @@ void DataBlobToEncodingBlob(const CfBlob &blob, CfEncodingBlob &encodingBlob,
 
 bool StringCopyToBlob(const string &str, CfBlob **blob)
 {
-    if (str.size() == 0) {
+    if (str.empty()) {
         return false;
     }
     *blob = static_cast<CfBlob *>(CfMalloc(sizeof(CfBlob), 0));
@@ -184,7 +184,7 @@ bool StringCopyToBlob(const string &str, CfBlob **blob)
 
 bool ArrayU8CopyToBlob(const array<uint8_t> &arr, CfBlob **blob)
 {
-    if (arr.size() == 0) {
+    if (arr.empty()) {
         return false;
     }
     *blob = static_cast<CfBlob *>(CfMalloc(sizeof(CfBlob), 0));

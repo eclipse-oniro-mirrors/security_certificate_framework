@@ -31,6 +31,7 @@ base/security/certificate_framwork
 │   ├── common               # Common methods relied on internally
 │   ├── core                 # Certificate framework implementation
 │   └── js
+│       ├── ani              # JS interfaces encapsulated by ANI
 │       └── napi             # JS interfaces encapsulated by NAPI
 ├── interfaces               # APIs exposed externally
 └── test                     # Test cases

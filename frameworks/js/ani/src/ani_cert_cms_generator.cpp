@@ -244,7 +244,10 @@ CfResult SetPrivateKeyInfo(ThPrivateKeyInfo const& keyInfo, HcfPrivateKeyInfo **
     } else {
         ArrayU8ToDataBlob(keyInfo.key.get_UINT8ARRAY_ref(), keyBlob);
     }
-
+    if (keyBlob.size == 0 || keyBlob.data == nullptr) {
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "private key is empty");
+        return CF_INVALID_PARAMS;
+    }
     if (keyInfo.key.get_tag() == OptStrUint8Arr::tag_t::STRING) {
         (*privateKey)->privateKey->encodingFormat = CF_FORMAT_PEM;
     } else {

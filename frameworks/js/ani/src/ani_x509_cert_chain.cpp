@@ -40,21 +40,21 @@ void FreePkcs12Data(HcfParsePKCS12Conf *conf, CfBlob *keyStore)
 
 CfResult SetParsePKCS12Conf(Pkcs12ParsingConfig const& config, HcfParsePKCS12Conf **conf)
 {
+    if (config.password.empty()) {
+        return CF_INVALID_PARAMS;
+    }
     HcfParsePKCS12Conf *tmpConf = (HcfParsePKCS12Conf *)CfMalloc(sizeof(HcfParsePKCS12Conf), 0);
     if (tmpConf == nullptr) {
-        ANI_LOGE_THROW(CF_ERR_MALLOC, "malloc failed!");
         return CF_ERR_MALLOC;
     }
     CfBlob *tmpPwd = (CfBlob *)CfMalloc(sizeof(CfBlob), 0);
     if (tmpPwd == nullptr) {
         FreePkcs12Data(tmpConf, nullptr);
-        ANI_LOGE_THROW(CF_ERR_MALLOC, "malloc failed!");
         return CF_ERR_MALLOC;
     }
     tmpPwd->data = (uint8_t *)CfMalloc(config.password.size(), 0);
     if (tmpPwd->data == nullptr) {
         FreePkcs12Data(tmpConf, tmpPwd);
-        ANI_LOGE_THROW(CF_ERR_MALLOC, "malloc failed!");
         return CF_ERR_MALLOC;
     }
     (void)memcpy_s(tmpPwd->data, config.password.size(), config.password.data(), config.password.size());
@@ -74,20 +74,17 @@ CfResult SetParsePKCS12Conf(Pkcs12ParsingConfig const& config, HcfParsePKCS12Con
 
 CfResult SetKeyStore(const array_view<uint8_t> &data, CfBlob **keyStore)
 {
-    if (data.size() == 0) {
-        *keyStore = nullptr;
+    if (data.empty()) {
         return CF_INVALID_PARAMS;
     }
 
     CfBlob *tmpKeyStore = (CfBlob *)CfMalloc(sizeof(CfBlob), 0);
     if (tmpKeyStore == nullptr) {
-        ANI_LOGE_THROW(CF_ERR_MALLOC, "malloc failed!");
         return CF_ERR_MALLOC;
     }
     tmpKeyStore->data = (uint8_t *)CfMalloc(data.size(), 0);
     if (tmpKeyStore->data == nullptr) {
         CfBlobClearAndFree(&tmpKeyStore);
-        ANI_LOGE_THROW(CF_ERR_MALLOC, "malloc failed!");
         return CF_ERR_MALLOC;
     }
     (void)memcpy_s(tmpKeyStore->data, data.size(), data.data(), data.size());
@@ -99,16 +96,18 @@ CfResult SetKeyStore(const array_view<uint8_t> &data, CfBlob **keyStore)
 CfResult SetPkcs12Data(Pkcs12ParsingConfig const& config, const array_view<uint8_t> &data,
     HcfParsePKCS12Conf **conf, CfBlob **keyStore)
 {
-    if (SetParsePKCS12Conf(config, conf) != CF_SUCCESS) {
-        ANI_LOGE_THROW(CF_ERR_MALLOC, "set parse pkcs12 conf failed!");
-        return CF_ERR_MALLOC;
+    CfResult res = SetParsePKCS12Conf(config, conf);
+    if (res != CF_SUCCESS) {
+        ANI_LOGE_THROW(res, "set parse pkcs12 conf failed!");
+        return res;
     }
-    if (SetKeyStore(data, keyStore) != CF_SUCCESS) {
+    res = SetKeyStore(data, keyStore);
+    if (res != CF_SUCCESS) {
         FreePkcs12Data(*conf, *keyStore);
-        ANI_LOGE_THROW(CF_ERR_MALLOC, "set key store failed!");
-        return CF_ERR_MALLOC;
+        ANI_LOGE_THROW(res, "set key store failed!");
+        return res;
     }
-    return CF_SUCCESS;
+    return res;
 }
 
 uint32_t CountValidTrustAnchors(HcfX509TrustAnchorArray* trustAnchors)
@@ -389,6 +388,10 @@ array<uint8_t> CreatePkcs12Sync(Pkcs12Data const& data, Pkcs12CreationConfig con
         } else { // OptStrUint8Arr::tag_t::UINT8ARRAY
             p12Collection.isPem = false;
             ArrayU8ToDataBlob(data.privateKey.value().get_UINT8ARRAY_ref(), prikeyBlob);
+        }
+        if (prikeyBlob.size == 0 || prikeyBlob.data == nullptr) {
+            ANI_LOGE_THROW(CF_INVALID_PARAMS, "private key is empty!");
+            return {};
         }
         p12Collection.prikey = &prikeyBlob;
     }

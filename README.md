@@ -31,6 +31,7 @@ base/security/certificate_framwork
 │   ├── common               # 内部依赖的公共方法
 │   ├── core                 # 证书算法库框架核心实现
 │   └── js
+│       ├── ani              # 通过ani封装的JS接口代码实现
 │       └── napi             # 通过napi封装的JS接口代码实现
 ├── interfaces               # 对外接口目录
 └── test                     # 测试用例
