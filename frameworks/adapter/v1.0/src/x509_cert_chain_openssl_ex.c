@@ -1455,7 +1455,24 @@ X509 *TryDownloadFromAccessDescription(ACCESS_DESCRIPTION *ad)
     if (uri == NULL || uri->data == NULL) {
         return NULL;
     }
-    return DownloadCertificateFromUrl((const char *)uri->data);
+    int len = ASN1_STRING_length(uri);
+    if (len <= 0) {
+        LOGE("Invalid AIA URI length: %d", len);
+        return NULL;
+    }
+    char *url = (char *)CfMallocEx(len + 1);
+    if (url == NULL) {
+        LOGE("Memory allocation failure!");
+        return NULL;
+    }
+    if (memcpy_s(url, len + 1, uri->data, len) != EOK) {
+        LOGE("Failed to memcpy_s");
+        CfFree(url);
+        return NULL;
+    }
+    X509 *downloadedCert = DownloadCertificateFromUrl(url);
+    CfFree(url);
+    return downloadedCert;
 }
 
 X509 *GetDownloadedCertFromAIA(X509 *leafCert)

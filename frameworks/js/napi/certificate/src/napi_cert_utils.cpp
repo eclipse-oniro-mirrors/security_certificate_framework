@@ -1486,7 +1486,7 @@ CfResult GetBoolFromNameValue(napi_env env, napi_value arg, bool *out, const cha
     }
     napi_value obj = nullptr;
     status = napi_get_named_property(env, arg, name, &obj);
-    if (status != napi_ok || obj == nullptr) {
+    if (status != napi_ok) {
         LOGE("get property %{public}s failed!", name);
         return CF_ERR_NAPI;
     }
