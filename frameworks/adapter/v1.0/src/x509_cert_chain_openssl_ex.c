@@ -1442,6 +1442,9 @@ X509 *DownloadCertificateFromUrl(const char *url)
 
 X509 *TryDownloadFromAccessDescription(ACCESS_DESCRIPTION *ad)
 {
+    if (ad == NULL || ad->method == NULL || ad->location == NULL) {
+        return NULL;
+    }
     if (OBJ_obj2nid(ad->method) != NID_ad_ca_issuers) {
         return NULL;
     }
@@ -1654,6 +1657,7 @@ void FreeTrustAnchorData(HcfX509TrustAnchor *trustAnchor)
     }
     CfBlobFree(&trustAnchor->CAPubKey);
     CfBlobFree(&trustAnchor->CASubject);
+    CfBlobFree(&trustAnchor->nameConstraints);
     CfObjDestroy(trustAnchor->CACert);
     trustAnchor->CACert = NULL;
 }

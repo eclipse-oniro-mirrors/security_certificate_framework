@@ -1655,7 +1655,9 @@ CfResult ValidateTrustCert(X509 *caCert, STACK_OF(X509) *x509CertChain,
         CfPrintOpensslError();
         return res;
     }
-    res = ValidateTrustAnchor(params->trustAnchors, caCert, x509CertChain, trustAnchorResult);
+    if ((params->trustAnchors != NULL) && (params->trustAnchors->data != NULL) && (params->trustAnchors->count != 0)) {
+        res = ValidateTrustAnchor(params->trustAnchors, caCert, x509CertChain, trustAnchorResult);
+    }
     if (res != CF_SUCCESS && params->trustSystemCa) {
         res = ValidateTrustCertDir(params, caCert, x509CertChain, trustAnchorResult);
     }
