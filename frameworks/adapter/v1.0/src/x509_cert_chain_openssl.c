@@ -608,20 +608,24 @@ static CfResult ValidateCrlIntermediateCaOnline(const HcfX509CertChainValidatePa
         }
         int errReason = 0;
         X509_CRL *crl = GetCrlFromCertByDp(x509, &errReason);
-        if (crl == NULL) {
-            LOGE("Get crl from cert by dp failed!");
+        if (errReason == BIO_R_CONNECT_TIMEOUT) {
+            res = CF_ERR_CONNECT_TIMEOUT;
+        }
+        if (errReason == -1) {
+            LOGW("Validate IntermediateCaOnline success, index = %{public}d. Not found crlStack or url in cert.", i);
             res = CF_SUCCESS;
             continue;
         }
         if (ContainsOption(params->revocationCheckParam->options, REVOCATION_CHECK_OPTION_IGNORE_NETWORK_ERROR)) {
-            if (errReason == BIO_R_CONNECT_TIMEOUT) {
-                res = CF_ERR_CONNECT_TIMEOUT;
-            }
-            if (res == CF_ERR_CONNECT_TIMEOUT) {
-                LOGW("Validate IntermediateCaOnline success, index = %{public}d with ignore network error option.", i);
+            if (crl == NULL && res == CF_ERR_CONNECT_TIMEOUT) {
                 res = CF_SUCCESS;
+                LOGW("Validate IntermediateCaOnline success, index = %{public}d with ignore network error option.", i);
                 continue;
             }
+        } else if (crl == NULL) {
+            LOGE("Crl url exist, but get crl from cert by dp failed!");
+            res = CF_ERR_CRYPTO_OPERATION;
+            break;
         }
         res = CheckCrlIsRevoked(params, crl, x509CertChain);
         if (res != CF_SUCCESS) {
