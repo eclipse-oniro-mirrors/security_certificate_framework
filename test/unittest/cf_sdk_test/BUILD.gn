@@ -15,6 +15,7 @@ import("//build/test.gni")
 import("../test.gni")
 
 module_output_path = "certificate_framework/certificate_framework"
+framework_path = "//base/security/certificate_framework/frameworks"
 
 #######################################unittest#######################################
 ohos_unittest("cf_sdk_test") {
@@ -40,11 +41,10 @@ ohos_unittest("cf_sdk_test") {
   }
   cflags = cflags_cc
 
-  deps = []
+  deps = [ "${framework_path}/core:certificate_framework_core" ]
 
   external_deps = [
     "c_utils:utils",
-    "certificate_framework:certificate_framework_core",
     "hilog:libhilog",
     "openssl:libcrypto_shared",
   ]
