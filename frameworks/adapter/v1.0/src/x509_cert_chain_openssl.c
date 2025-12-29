@@ -646,7 +646,7 @@ static CfResult ValidateCrlLeftCertOnline(const HcfX509CertChainValidateParams *
     int errReason = 0;
     X509_CRL *crl = GetCrlFromCert(params, x509, &errReason);
     if (crl == NULL) {
-        LOGE("Get crl online is null!");
+        LOGE("Get crl online is null, errReason = %{public}d!", errReason);
         if (errReason == BIO_R_CONNECT_TIMEOUT) {
             return CF_ERR_CONNECT_TIMEOUT;
         }
@@ -2114,13 +2114,18 @@ static void PopFreeCerts(STACK_OF(X509) *allCerts, STACK_OF(X509) *leafCerts)
     sk_X509_pop_free(leafCerts, X509_free);
 }
 
+static void FreeCerts(STACK_OF(X509) *allCerts, STACK_OF(X509) *leafCerts)
+{
+    sk_X509_free(allCerts);
+    sk_X509_free(leafCerts);
+}
+
 static CfResult PackCertChain(const HcfX509CertChainBuildParameters *inParams, STACK_OF(X509) * out)
 {
     STACK_OF(X509) *allCerts = sk_X509_new_null();
     STACK_OF(X509) *leafCerts = sk_X509_new_null();
     if (allCerts == NULL || leafCerts == NULL) {
-        sk_X509_free(allCerts);
-        sk_X509_free(leafCerts);
+        FreeCerts(allCerts, leafCerts);
         return CF_ERR_CRYPTO_OPERATION;
     }
     CfResult res = GetLeafCertsFromCertStack(inParams, allCerts, leafCerts);
@@ -2133,6 +2138,7 @@ static CfResult PackCertChain(const HcfX509CertChainBuildParameters *inParams, S
     int leafCertsLen = sk_X509_num(leafCerts);
     res = CF_INVALID_PARAMS;
     for (int i = 0; i < leafCertsLen; i++) {
+        res = CF_INVALID_PARAMS;
         ErrorCodeConvertInfo errCodeInfo = {};
         X509 *leafCert = sk_X509_value(leafCerts, i);
         if (CheckIsSelfSigned(leafCert)) {
