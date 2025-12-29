@@ -16,6 +16,7 @@ import("//build/config/features.gni")
 import("//build/ohos.gni")
 import("//build/test.gni")
 module_output_path = "certificate_framework/certificate_framework"
+framework_path = "//base/security/certificate_framework/frameworks"
 
 ##############################fuzztest##########################################
 ohos_fuzztest("X509CrlFuzzTest") {
@@ -40,11 +41,10 @@ ohos_fuzztest("X509CrlFuzzTest") {
     cflags += [ "-DBINDER_IPC_32BIT" ]
   }
 
-  deps = []
+  deps = [ "${framework_path}/core:certificate_framework_core" ]
 
   external_deps = [
     "c_utils:utils",
-    "certificate_framework:certificate_framework_core",
     "crypto_framework:crypto_framework_lib",
     "hilog:libhilog",
     "openssl:libcrypto_shared",

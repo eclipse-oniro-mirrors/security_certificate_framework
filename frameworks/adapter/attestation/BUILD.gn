@@ -49,7 +49,6 @@ ohos_static_library("attestation_lib") {
 
   external_deps = [
     "c_utils:utils",
-    "crypto_framework:crypto_framework_lib",
     "hilog:libhilog",
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",

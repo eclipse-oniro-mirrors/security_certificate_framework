@@ -15,6 +15,7 @@
 import("//build/config/features.gni")
 import("//build/test.gni")
 module_output_path = "certificate_framework/certificate_framework"
+framework_path = "//base/security/certificate_framework/frameworks"
 
 ##############################fuzztest##########################################
 ohos_fuzztest("CfParamFuzzTest") {
@@ -35,11 +36,10 @@ ohos_fuzztest("CfParamFuzzTest") {
     "-fno-omit-frame-pointer",
   ]
   sources = [ "cfparam_fuzzer.cpp" ]
-  deps = []
+  deps = [ "${framework_path}/core:certificate_framework_core" ]
 
   external_deps = [
     "c_utils:utils",
-    "certificate_framework:certificate_framework_core",
   ]
 }
 
