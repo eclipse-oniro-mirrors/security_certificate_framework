@@ -73,6 +73,14 @@ const char *GetAlgorithmName(const char *oid)
     return NULL;
 }
 
+static int OpensslErrorCb(const char *str, size_t len, void *u)
+{
+    (void)len;
+    (void)u;
+    LOGE("OpensslErrorCb error: %{public}s", str);
+    return 1;
+}
+
 void CfPrintOpensslError(void)
 {
     char szErr[LOG_PRINT_MAX_LEN] = { 0 };
@@ -82,6 +90,7 @@ void CfPrintOpensslError(void)
     ERR_error_string_n(errCode, szErr, LOG_PRINT_MAX_LEN);
 
     LOGE("[Openssl]: engine fail, error code = %{public}lu, error string = %{public}s", errCode, szErr);
+    ERR_print_errors_cb(OpensslErrorCb, NULL);
 }
 
 CfResult DeepCopyDataToBlob(const unsigned char *data, uint32_t len, CfBlob *outBlob)
