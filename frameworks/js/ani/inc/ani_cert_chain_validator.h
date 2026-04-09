@@ -27,7 +27,7 @@ public:
     ~VerifyCertResultImpl();
     array<X509Cert> GetCertChain();
 private:
-    HcfX509CertificateArray result_;
+    HcfX509CertificateArray result_ = { nullptr, 0};
 };
 class CertChainValidatorImpl {
 public:

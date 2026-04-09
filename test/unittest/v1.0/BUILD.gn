@@ -51,6 +51,7 @@ ohos_unittest("cf_version1_test") {
     "src/crypto_x509_cert_validator_test_common.cpp",
     "src/crypto_x509_cert_validator_test_data.cpp",
     "src/crypto_x509_cert_validator_basic_tests.cpp",
+    "src/crypto_x509_cert_validator_basic_tests2.cpp",
     "src/crypto_x509_cert_validator_params_and_download_tests.cpp",
     "src/crypto_x509_cert_validator_mock_and_revocation_tests.cpp",
     "src/crypto_x509_cert_validator_crl_ocsp_tests.cpp",

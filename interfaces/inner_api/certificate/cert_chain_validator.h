@@ -73,7 +73,7 @@ typedef struct HcfX509CertRevokedParams {
 #define MAX_OCSP_RESPONSE_COUNT 100
 #define MAX_UNTRUSTED_CERT_COUNT 100
 #define MAX_TRUSTED_CERT_COUNT 100
-#define MAX_IGNORE_ERR_COUNT 100
+#define MAX_IGNORE_ERR_COUNT 8
 #define MAX_HOSTNAMES_COUNT 100
 #define MAX_KEYUSAGE_COUNT 9
 #define MAX_EMAIL_ADDRESS_COUNT 1
@@ -83,6 +83,16 @@ typedef struct HcfX509CertRevokedParams {
 
 #define MIN_DATE_LEN 13
 #define MAX_DATE_LEN 15
+
+// for ignoreErrs
+#define CERT_NOT_YET_VALID 19030003
+#define CERT_HAS_EXPIRED 19030004
+#define CERT_UNKNOWN_CRITICAL_EXTENSION 19030011
+#define CRL_NOT_FOUND 19030015
+#define CRL_NOT_YET_VALID 19030016
+#define CRL_HAS_EXPIRED 19030017
+#define OCSP_RESPONSE_NOT_FOUND 19030020
+#define NETWORK_TIMEOUT 19030024
 
 typedef struct HcfX509CertValidatorParams {
     HcfX509CertificateArray untrustedCerts;

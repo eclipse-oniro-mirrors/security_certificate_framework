@@ -78,6 +78,9 @@ typedef struct HcfX509CertValidatorOpenSSLParams {
     STACK_OF(X509) *untrustedCertStack;
     STACK_OF(X509) *certChain;
     time_t date;
+    int ignoreErrs[MAX_IGNORE_ERR_COUNT + 1];
+    bool ignoreOcspRespNotFound;
+    bool ignoreNetworkTimeout;
     bool crlCheck;
     bool ocspCheck;
     bool preferOcsp;
@@ -137,10 +140,8 @@ static CfResult DownloadCertFromAiaUrl(const char *url, X509 **cert)
     if (*cert != NULL) {
         LOGI("Cert download successful, URL: %{public}s", url);
         return CF_SUCCESS;
-    } else {
-        LOGW("Failed to download the cert, URL: %{public}s, errno: %{public}d", url, errno);
     }
-
+    LOGW("Failed to download the cert, URL: %{public}s, errno: %{public}d", url, errno);
     unsigned long err = ERR_peek_error();
     int reason = ERR_GET_REASON(err);
     if (reason == BIO_R_CONNECT_TIMEOUT || reason == BIO_R_TRANSFER_TIMEOUT) {
@@ -172,7 +173,7 @@ static CfResult TryDownloadFromSingleAia(ACCESS_DESCRIPTION *ad, uint32_t *remai
     if (url == NULL) {
         return CF_ERR_MALLOC;
     }
-    (void)memcpy_s(url, len + 1, uri->data, len);
+    (void)memcpy_s(url, len, uri->data, len);
     url[len] = '\0';
 
     (*remainingCount)--;
@@ -340,7 +341,7 @@ static CfResult Validate(HcfCertChainValidatorSpi *self, const CfArray *certsLis
     return res;
 }
 
-static char *GetCertSubjectName(X509 *cert, char *buf, size_t bufLen)
+static char *GetCertSubjectName(X509 *cert, char *buf, int bufLen)
 {
     if (cert == NULL) {
         return NULL;
@@ -356,13 +357,16 @@ static char *GetCertSubjectName(X509 *cert, char *buf, size_t bufLen)
     char *result = NULL;
     int ret = X509_NAME_print_ex(bio, subjectName, 0, XN_FLAG_SEP_COMMA_PLUS | ASN1_STRFLGS_UTF8_CONVERT);
     if (ret > 0) {
-        long len = BIO_get_mem_data(bio, NULL);
-        if (len > 0 && (size_t)len < bufLen) {
-            ret = BIO_read(bio, buf, len);
-            if (ret > 0) {
-                buf[ret] = '\0';
-                result = buf;
-            }
+        int len = BIO_get_mem_data(bio, NULL);
+        if (len <= 0) {
+            return NULL;
+        }
+        len = len > bufLen ? bufLen : len;
+        len--;
+        ret = BIO_read(bio, buf, len);
+        if (ret > 0) {
+            buf[ret] = '\0';
+            result = buf;
         }
     }
     BIO_free(bio);
@@ -371,23 +375,29 @@ static char *GetCertSubjectName(X509 *cert, char *buf, size_t bufLen)
 
 static void AppendCertSubjectToErrorMsg(X509 *cert, CertVerifyResultInner *result)
 {
-    if (cert == NULL || result->errorMsg == NULL) {
+    if (result->errorMsg == NULL) {
         return;
     }
 
     char subjectNameBuf[MAX_SUBJECT_NAME_LEN] = {0};
-    char *subjectName = GetCertSubjectName(cert, subjectNameBuf, sizeof(subjectNameBuf));
+    char *subjectName = GetCertSubjectName(cert, subjectNameBuf, MAX_SUBJECT_NAME_LEN);
     if (subjectName == NULL) {
         return;
     }
 
-    const char *subjectNamePrefix = " cert subject: ";
-    if (strlen(subjectName) + strlen(result->errorMsg) + strlen(subjectNamePrefix) + 1 >= sizeof(result->errorMsgBuf)) {
+    const char *prefix = " | current cert subject name: ";
+    if ((strlen(result->errorMsg) + strlen(subjectName) + strlen(prefix) + 1) > MAX_ERROR_MSG_BUF_LEN) {
         return;
     }
 
-    (void)snprintf_s(result->errorMsgBuf, sizeof(result->errorMsgBuf),
-        sizeof(result->errorMsgBuf) - 1, "%s%s%s", result->errorMsg, subjectNamePrefix, subjectName);
+    uint32_t len = 0;
+    (void)memcpy_s(result->errorMsgBuf, sizeof(result->errorMsgBuf), result->errorMsg, strlen(result->errorMsg));
+    len += strlen(result->errorMsg);
+    (void)memcpy_s(result->errorMsgBuf + len, sizeof(result->errorMsgBuf) - len, prefix, strlen(prefix));
+    len += strlen(prefix);
+    (void)memcpy_s(result->errorMsgBuf + len, sizeof(result->errorMsgBuf) - len, subjectName, strlen(subjectName));
+    len += strlen(subjectName);
+    result->errorMsgBuf[len] = '\0';
     result->errorMsg = result->errorMsgBuf;
 }
 
@@ -641,6 +651,52 @@ static void FreeOpenSSLParams(HcfX509CertValidatorOpenSSLParams *opensslParams)
     }
 }
 
+static const OpensslErrorToResult X509_VERIFY_IGNORE_ERR_MAP[] = {
+    {X509_V_ERR_CERT_NOT_YET_VALID, CERT_NOT_YET_VALID},
+    {X509_V_ERR_CERT_HAS_EXPIRED, CERT_HAS_EXPIRED},
+    {X509_V_ERR_CRL_NOT_YET_VALID, CRL_NOT_YET_VALID},
+    {X509_V_ERR_CRL_HAS_EXPIRED, CRL_HAS_EXPIRED},
+    {X509_V_ERR_UNABLE_TO_GET_CRL, CRL_NOT_FOUND},
+    {X509_V_ERR_UNHANDLED_CRITICAL_EXTENSION, CERT_UNKNOWN_CRITICAL_EXTENSION},
+};
+
+static CfResult ParseIgnoreErrs(const HcfX509CertValidatorParams *params,
+    HcfX509CertValidatorOpenSSLParams *opensslParams, CertVerifyResultInner *resultInner)
+{
+    if (params->ignoreErrs.data == NULL || params->ignoreErrs.count == 0) {
+        return CF_SUCCESS;
+    }
+    if (params->ignoreErrs.count > MAX_IGNORE_ERR_COUNT) {
+        RETURN_VERIFY_ERROR(CF_ERR_PARAMETER_CHECK, "Invalid ignoreErrs count, max count is 7.", resultInner);
+    }
+    opensslParams->ignoreOcspRespNotFound = false;
+    uint32_t pos = 0;
+    for (uint32_t i = 0; i < params->ignoreErrs.count; i++) {
+        if (params->ignoreErrs.data[i] == OCSP_RESPONSE_NOT_FOUND) {
+            opensslParams->ignoreOcspRespNotFound = true;
+            continue;
+        }
+        if (params->ignoreErrs.data[i] == NETWORK_TIMEOUT) {
+            opensslParams->ignoreNetworkTimeout = true;
+            continue;
+        }
+        uint32_t j;
+        for (j = 0; j < sizeof(X509_VERIFY_IGNORE_ERR_MAP) / sizeof(X509_VERIFY_IGNORE_ERR_MAP[0]); j++) {
+            if (params->ignoreErrs.data[i] == X509_VERIFY_IGNORE_ERR_MAP[j].result) {
+                opensslParams->ignoreErrs[pos++] = X509_VERIFY_IGNORE_ERR_MAP[j].errCode;
+                break;
+            }
+        }
+        if (j == sizeof(X509_VERIFY_IGNORE_ERR_MAP) / sizeof(X509_VERIFY_IGNORE_ERR_MAP[0])) {
+            RETURN_VERIFY_ERROR(CF_ERR_PARAMETER_CHECK, "Invalid ignoreErrs, only support CERT_NOT_YET_VALID, "\
+                "CERT_HAS_EXPIRED, CRL_NOT_YET_VALID, CRL_HAS_EXPIRED, CRL_NOT_FOUND, "\
+                "CERT_UNKNOWN_CRITICAL_EXTENSION and OCSP_RESPONSE_NOT_FOUND.", resultInner);
+        }
+    }
+    opensslParams->ignoreErrs[pos] = 0;
+    return CF_SUCCESS;
+}
+
 static bool HasRevocationFlag(const HcfX509CertRevokedParams *revo, int32_t flag);
 
 static CfResult ParseOpenSSLParams(const HcfX509Certificate *x509Cert, const HcfX509CertValidatorParams *params,
@@ -692,6 +748,13 @@ static CfResult ParseOpenSSLParams(const HcfX509Certificate *x509Cert, const Hcf
         }
     }
 
+    /* Parse ignoreErrs */
+    if (params->ignoreErrs.data != NULL && params->ignoreErrs.count != 0) {
+        ret = ParseIgnoreErrs(params, opensslParams, result);
+        if (ret != CF_SUCCESS) {
+            return ret;
+        }
+    }
     return CF_SUCCESS;
 }
 
@@ -724,11 +787,14 @@ static CfResult DownloadAndAddIntermediateCert(X509 *lastCert, STACK_OF(X509) *u
     if (res == CF_SUCCESS) {
         if (!sk_X509_push(untrustedStack, downloadedCert)) {
             X509_free(downloadedCert);
-            RETURN_VERIFY_ERROR(CF_ERR_CRYPTO_OPERATION, "Failed to add downloaded cert to stack.", result);
+            RETURN_VERIFY_ERROR(CF_ERR_CRYPTO_OPERATION, "Failed to add downloaded certificate to stack.", result);
         }
         return CF_SUCCESS;
     } else if (res == CF_ERR_MALLOC) {
-        RETURN_VERIFY_ERROR(CF_ERR_MALLOC, "Failed to malloc when downloaded cert.", result);
+        RETURN_VERIFY_ERROR(CF_ERR_MALLOC, "Failed to malloc when downloaded certificate.", result);
+    } else if (res == CF_ERR_NETWORK_TIMEOUT) {
+        RETURN_VERIFY_ERROR(CF_ERR_NETWORK_TIMEOUT, "Network timeout when downloading intermediate certificate.",
+            result);
     } else {
         RETURN_VERIFY_ERROR(res, "Failed to download intermediate certificate from AIA.", result);
     }
@@ -743,6 +809,9 @@ static CfResult SetUserId(X509_STORE_CTX *verifyCtx)
 
     CfBlob *userId = (CfBlob *)X509_STORE_CTX_get_app_data(verifyCtx);
     if (userId == NULL) {
+        return CF_SUCCESS;
+    }
+    if (userId->data == NULL || userId->size == 0) {
         return CF_SUCCESS;
     }
 
@@ -769,30 +838,64 @@ static CfResult SetUserId(X509_STORE_CTX *verifyCtx)
     return CF_SUCCESS;
 }
 
+#define USER_DATA_INDEX 2
 static int VerifyCallback(int ret, X509_STORE_CTX *verifyCtx)
 {
     CfResult cfRet = SetUserId(verifyCtx);
     if (cfRet != CF_SUCCESS) {
         return 0;
     }
+
+    if (ret == 1) {
+        return 1;
+    }
+    HcfX509CertValidatorOpenSSLParams *opensslParams =
+        (HcfX509CertValidatorOpenSSLParams *)X509_STORE_CTX_get_ex_data(verifyCtx, USER_DATA_INDEX);
+    if (opensslParams == NULL) {
+        return ret;
+    }
+    int certVerifyResult = X509_STORE_CTX_get_error(verifyCtx);
+
+    for (int i = 0; opensslParams->ignoreErrs[i] != 0; i++) {
+        if (certVerifyResult == opensslParams->ignoreErrs[i]) {
+            const char *errStr = X509_verify_cert_error_string(certVerifyResult);
+            char subjectName[MAX_SUBJECT_NAME_LEN] = {0};
+            char *subjectNamePtr = GetCertSubjectName(X509_STORE_CTX_get_current_cert(verifyCtx), subjectName,
+                MAX_SUBJECT_NAME_LEN);
+            if (subjectNamePtr == NULL) {
+                continue;
+            }
+            LOGW("The \"%{public}s(%{public}d)\" error was ignored, current cert subject name: %{public}s", errStr,
+                certVerifyResult, subjectNamePtr);
+            return 1;
+        }
+    }
     return ret;
 }
 
-static CfResult SetAppdata(X509_STORE_CTX *verifyCtx, HcfX509CertValidatorOpenSSLParams *opensslParams,
+static CfResult SetAppdata(X509_STORE_CTX *verifyCtx, const HcfX509CertValidatorOpenSSLParams *opensslParams,
     const HcfX509CertValidatorParams *params, CertVerifyResultInner *result)
 {
+    int ret;
+    if (opensslParams->ignoreErrs[0] != 0) {
+        ret = X509_STORE_CTX_set_ex_data(verifyCtx, USER_DATA_INDEX, (void *)opensslParams);
+        if (ret != 1) {
+            RETURN_VERIFY_ERROR(CF_ERR_CRYPTO_OPERATION, "Call set app data(opensslParams) failed.", result);
+        }
+    }
+
     if (!opensslParams->certDup) {
         return CF_SUCCESS;
     }
 
-    int ret = X509_STORE_CTX_set_app_data(verifyCtx, (void *)&params->userId);
+    ret = X509_STORE_CTX_set_app_data(verifyCtx, (void *)&params->userId);
     if (ret != 1) {
-        RETURN_VERIFY_ERROR(CF_ERR_CRYPTO_OPERATION, "Call set app data failed.", result);
+        RETURN_VERIFY_ERROR(CF_ERR_CRYPTO_OPERATION, "Call set app data(userId) failed.", result);
     }
 
     ret = X509_STORE_CTX_set_ex_data(verifyCtx, 1, result);
     if (ret != 1) {
-        RETURN_VERIFY_ERROR(CF_ERR_CRYPTO_OPERATION, "Call set ex data failed.", result);
+        RETURN_VERIFY_ERROR(CF_ERR_CRYPTO_OPERATION, "Call set ex data(result) failed.", result);
     }
     return CF_SUCCESS;
 }
@@ -1068,6 +1171,24 @@ static CfResult AddCertChainToStore(X509_STORE *store, STACK_OF(X509) *certChain
     return CF_SUCCESS;
 }
 
+static CfResult ProcessIgnoreError(X509 *cert, HcfX509CertValidatorOpenSSLParams *opensslParams, CfResult res)
+{
+    char subjectNameBuf[MAX_SUBJECT_NAME_LEN] = {0};
+    char *subjectName = GetCertSubjectName(cert, subjectNameBuf, MAX_SUBJECT_NAME_LEN);
+    subjectName = subjectName == NULL ? "cert not have subject name" : subjectName;
+    if (opensslParams->ignoreNetworkTimeout && res == CF_ERR_NETWORK_TIMEOUT) {
+        LOGW("Ignore network timeout error when check cert revocation online, cert: %{public}s",
+            subjectName);
+        return CF_SUCCESS;
+    }
+    if (opensslParams->ignoreOcspRespNotFound && res == CF_ERR_OCSP_RESPONSE_NOT_FOUND) {
+        LOGW("Ignore OCSP response not found error when check cert revocation, cert: %{public}s",
+            subjectName);
+        return CF_SUCCESS;
+    }
+    return res;
+}
+
 static CfResult CheckCertRevocation(CertVerifyResultInner *result, const HcfX509CertValidatorParams *params,
     HcfX509CertValidatorOpenSSLParams *opensslParams)
 {
@@ -1085,6 +1206,7 @@ static CfResult CheckCertRevocation(CertVerifyResultInner *result, const HcfX509
         opensslParams->issuer = (i + 1 < chainLen) ? sk_X509_value(result->certChain, i + 1) : NULL;
 
         CfResult res = CheckSingleCertRevocation(cert, params, opensslParams, result);
+        res = ProcessIgnoreError(cert, opensslParams, res);
         if (res != CF_SUCCESS) {
             AppendCertSubjectToErrorMsg(cert, result);
             return res;
@@ -1133,6 +1255,35 @@ static CfResult MapCrlErrorToResult(int err, X509 *cert, CertVerifyResultInner *
     }
 }
 
+static CfResult VerifyCertByCrl(X509 *cert, X509_STORE_CTX *ctx, const HcfX509CertValidatorParams *params,
+    const HcfX509CertValidatorOpenSSLParams *opensslParams, CertVerifyResultInner *result)
+{
+    if (X509_STORE_CTX_init(ctx, opensslParams->store, cert, NULL) != 1) {
+        RETURN_VERIFY_ERROR(CF_ERR_CRYPTO_OPERATION, "Failed to init X509_STORE_CTX.", result);
+    }
+
+    X509_STORE_CTX_set_flags(ctx, X509_V_FLAG_CRL_CHECK | X509_V_FLAG_PARTIAL_CHAIN);
+
+    CfResult ret = SetAppdata(ctx, opensslParams, params, result);
+    if (ret != CF_SUCCESS) {
+        return ret;
+    }
+
+    X509_STORE_CTX_set_verify_cb(ctx, VerifyCallback);
+
+    if (params->validateDate == false) {
+        X509_STORE_CTX_set_flags(ctx, X509_V_FLAG_NO_CHECK_TIME);
+    } else if (params->date != NULL) {
+        X509_STORE_CTX_set_time(ctx, 0, opensslParams->date);
+    }
+
+    if (X509_verify_cert(ctx) == 1) {
+        return CF_SUCCESS;
+    }
+    int err = X509_STORE_CTX_get_error(ctx);
+    return MapCrlErrorToResult(err, cert, result);
+}
+
 static CfResult HandleCrlNotFound(X509 *cert, X509_STORE_CTX *ctx,
     const HcfX509CertValidatorParams *params,
     const HcfX509CertValidatorOpenSSLParams *opensslParams,
@@ -1151,25 +1302,7 @@ static CfResult HandleCrlNotFound(X509 *cert, X509_STORE_CTX *ctx,
     X509_CRL_free(downloadedCrl);
 
     X509_STORE_CTX_cleanup(ctx);
-    if (X509_STORE_CTX_init(ctx, opensslParams->store, cert, NULL) != 1) {
-        RETURN_VERIFY_ERROR(CF_ERR_CRYPTO_OPERATION, "Failed to re-init X509_STORE_CTX.", result);
-    }
-
-    // Set CRL check flags on ctx
-    X509_STORE_CTX_set_flags(ctx, X509_V_FLAG_CRL_CHECK | X509_V_FLAG_PARTIAL_CHAIN);
-
-    if (params->validateDate == false) {
-        X509_STORE_CTX_set_flags(ctx, X509_V_FLAG_NO_CHECK_TIME);
-    } else if (params->date != NULL) {
-        X509_STORE_CTX_set_time(ctx, 0, opensslParams->date);
-    }
-
-    if (X509_verify_cert(ctx) == 1) {
-        return CF_SUCCESS;
-    }
-
-    int err = X509_STORE_CTX_get_error(ctx);
-    return MapCrlErrorToResult(err, cert, result);
+    return VerifyCertByCrl(cert, ctx, params, opensslParams, result);
 }
 
 static CfResult CheckSingleCertByCrl(X509 *cert, const HcfX509CertValidatorParams *params,
@@ -1181,33 +1314,20 @@ static CfResult CheckSingleCertByCrl(X509 *cert, const HcfX509CertValidatorParam
         RETURN_VERIFY_ERROR(CF_ERR_CRYPTO_OPERATION, "Failed to create X509_STORE_CTX.", result);
     }
 
-    if (X509_STORE_CTX_init(ctx, opensslParams->store, cert, NULL) != 1) {
+    CfResult ret = VerifyCertByCrl(cert, ctx, params, opensslParams, result);
+    if (ret == CF_SUCCESS) {
         X509_STORE_CTX_free(ctx);
-        RETURN_VERIFY_ERROR(CF_ERR_CRYPTO_OPERATION, "Failed to init X509_STORE_CTX.", result);
-    }
-
-    // Set CRL check flags on ctx, not on store (store may be used by OCSP)
-    X509_STORE_CTX_set_flags(ctx, X509_V_FLAG_CRL_CHECK | X509_V_FLAG_PARTIAL_CHAIN);
-
-    if (params->validateDate == false) {
-        X509_STORE_CTX_set_flags(ctx, X509_V_FLAG_NO_CHECK_TIME);
-    } else if (params->date != NULL) {
-        X509_STORE_CTX_set_time(ctx, 0, opensslParams->date);
-    }
-
-    if (X509_verify_cert(ctx) == 1) {
-        X509_STORE_CTX_free(ctx);
-        return CF_SUCCESS;
+        return ret;
     }
 
     int err = X509_STORE_CTX_get_error(ctx);
     if (err == X509_V_ERR_UNABLE_TO_GET_CRL && revo->allowDownloadCrl) {
-        CfResult res = HandleCrlNotFound(cert, ctx, params, opensslParams, result);
+        ret = HandleCrlNotFound(cert, ctx, params, opensslParams, result);
         X509_STORE_CTX_free(ctx);
-        return res;
+        return ret;
     } else {
         X509_STORE_CTX_free(ctx);
-        return MapCrlErrorToResult(err, cert, result);
+        return ret;
     }
 }
 
@@ -1650,6 +1770,9 @@ static CfResult CheckSingleCertByOcsp(X509 *cert,
     const HcfX509CertRevokedParams *revo = params->revokedParams;
     // Step 1: Check local OCSP responses
     for (uint32_t i = 0; i < revo->ocspResponses.count; i++) {
+        if (revo->ocspResponses.data[i].data == NULL || revo->ocspResponses.data[i].size == 0) {
+            continue;
+        }
         CfResult ret = VerifyOcspResponseForCert(cert, issuer,
             &revo->ocspResponses.data[i], opensslParams, result);
         // Only CF_ERR_OCSP_RESPONSE_NOT_FOUND means try next response,
@@ -1695,7 +1818,7 @@ static CfResult CheckSingleCertRevocation(X509 *cert,
             }
         } else {
             res = CheckSingleCertByCrl(cert, params, opensslParams, result);
-            if (res == CF_ERR_CRL_NOT_FOUND) {
+            if (res == CF_ERR_CRL_NOT_FOUND || res == CF_ERR_NETWORK_TIMEOUT) {
                 res = CheckSingleCertByOcsp(cert, params, opensslParams, result);
             }
         }
@@ -1755,8 +1878,8 @@ static CfResult CheckCertValidatorParams(const HcfX509CertValidatorParams *param
         }
     }
 
-    if (params->userId.data != NULL && params->userId.size > MAX_USER_ID_LEN) {
-        RETURN_VERIFY_ERROR(CF_ERR_PARAMETER_CHECK, "The userId cannot exceed 128 characters or empty.", result);
+    if (params->userId.data != NULL && (params->userId.size > MAX_USER_ID_LEN || params->userId.size == 0)) {
+        RETURN_VERIFY_ERROR(CF_ERR_PARAMETER_CHECK, "The length of optional userId must be in [1, 128].", result);
     }
 
     if (params->userId.data != NULL && params->userId.size != 0) {
@@ -1770,13 +1893,13 @@ static CfResult CheckCertValidatorParams(const HcfX509CertValidatorParams *param
 
 static CfResult FillVerifyCertResult(STACK_OF(X509) *verifiedChain, HcfVerifyCertResult *result)
 {
-    if (verifiedChain == NULL || sk_X509_num(verifiedChain) == 0) {
+    if (verifiedChain == NULL || sk_X509_num(verifiedChain) <= 0) {
         LOGE("Invalid verified chain.");
         result->errorMsg = "Invalid verified chain.";
         return CF_ERR_CRYPTO_OPERATION;
     }
 
-    uint32_t chainSize = sk_X509_num(verifiedChain);
+    uint32_t chainSize = (uint32_t)sk_X509_num(verifiedChain);
 
     result->certs.data = (HcfX509Certificate **)CfMallocEx(sizeof(HcfX509Certificate *) * chainSize);
     if (result->certs.data == NULL) {
@@ -1846,7 +1969,8 @@ static CfResult ValidateX509Cert(HcfCertChainValidatorSpi *self, HcfX509Certific
     }
 
     /* Parse all OpenSSL params including the cert to be verified */
-    HcfX509CertValidatorOpenSSLParams opensslParams = {};
+    HcfX509CertValidatorOpenSSLParams opensslParams;
+    (void)memset_s(&opensslParams, sizeof(opensslParams), 0, sizeof(opensslParams));
     res = ParseOpenSSLParams(x509Cert, params, &opensslParams, &resultInner);
     if (res != CF_SUCCESS) {
         CopyVerifyErrorMsg(&resultInner, result);

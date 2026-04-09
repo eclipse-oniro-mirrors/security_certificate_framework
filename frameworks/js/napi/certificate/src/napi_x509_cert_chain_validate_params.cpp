@@ -597,7 +597,7 @@ static CfResult GetCertArrayFromNapiValueEx(napi_env env, napi_value arg, const 
     out.count = arrayInfo.length;
     out.data = static_cast<HcfX509Certificate **>(CfMallocEx(arrayInfo.length * sizeof(HcfX509Certificate *)));
     if (out.data == nullptr) {
-        SetBuildParamError(errMsg, "'%s': allocate memory failed", paramInfo->name);
+        CfBuildErrorMsg(errMsg, "'%s': allocate memory failed", paramInfo->name);
         return CF_ERR_MALLOC;
     }
 
@@ -605,19 +605,19 @@ static CfResult GetCertArrayFromNapiValueEx(napi_env env, napi_value arg, const 
         napi_value element;
         if (napi_get_element(env, arrayInfo.obj, i, &element) != napi_ok) {
             CfFree(out.data);
-            SetBuildParamError(errMsg, "'%s': get element %u failed", paramInfo->name, i);
+            CfBuildErrorMsg(errMsg, "'%s': get element %u failed", paramInfo->name, i);
             return CF_ERR_NAPI;
         }
 
         NapiX509Certificate *napiCert = nullptr;
         if (napi_unwrap(env, element, reinterpret_cast<void **>(&napiCert)) != napi_ok) {
             CfFree(out.data);
-            SetBuildParamError(errMsg, "'%s': element %u unwrap failed", paramInfo->name, i);
+            CfBuildErrorMsg(errMsg, "'%s': element %u unwrap failed", paramInfo->name, i);
             return CF_ERR_NAPI;
         }
         if (napiCert == nullptr) {
             CfFree(out.data);
-            SetBuildParamError(errMsg, "'%s': element %u is null", paramInfo->name, i);
+            CfBuildErrorMsg(errMsg, "'%s': element %u is null", paramInfo->name, i);
             return CF_INVALID_PARAMS;
         }
         out.data[i] = napiCert->GetX509Cert();
@@ -640,7 +640,7 @@ static CfResult GetCrlArrayFromNapiValueEx(napi_env env, napi_value arg, const c
     HcfX509CrlArray out = { 0 };
     out.data = static_cast<HcfX509Crl **>(CfMallocEx(arrayInfo.length * sizeof(HcfX509Crl *)));
     if (out.data == nullptr) {
-        SetBuildParamError(errMsg, "'%s': allocate memory failed", name);
+        CfBuildErrorMsg(errMsg, "'%s': allocate memory failed", name);
         return CF_ERR_MALLOC;
     }
     out.count = arrayInfo.length;
@@ -649,19 +649,19 @@ static CfResult GetCrlArrayFromNapiValueEx(napi_env env, napi_value arg, const c
         napi_value element;
         if (napi_get_element(env, arrayInfo.obj, i, &element) != napi_ok) {
             CfFree(out.data);
-            SetBuildParamError(errMsg, "'%s': get element %u failed", name, i);
+            CfBuildErrorMsg(errMsg, "'%s': get element %u failed", name, i);
             return CF_ERR_NAPI;
         }
 
         NapiX509Crl *napiCrl = nullptr;
         if (napi_unwrap(env, element, reinterpret_cast<void **>(&napiCrl)) != napi_ok) {
             CfFree(out.data);
-            SetBuildParamError(errMsg, "'%s': element %u unwrap failed", name, i);
+            CfBuildErrorMsg(errMsg, "'%s': element %u unwrap failed", name, i);
             return CF_ERR_NAPI;
         }
         if (napiCrl == nullptr) {
             CfFree(out.data);
-            SetBuildParamError(errMsg, "'%s': element %u is null", name, i);
+            CfBuildErrorMsg(errMsg, "'%s': element %u is null", name, i);
             return CF_INVALID_PARAMS;
         }
         out.data[i] = napiCrl->GetX509Crl();
@@ -678,7 +678,7 @@ static CfResult GetRevokedParamsFieldsEx(napi_env env, napi_value obj, HcfX509Ce
     };
     CfResult ret = NapiGetInt32ArrayEx(env, obj, &revocationFlagsInfo, param->revocationFlags, errMsg);
     if (ret == CF_NOT_EXIST) {
-        SetBuildParamError(errMsg, "If revocation checking is enabled, the revocationFlags parameter must exist");
+        CfBuildErrorMsg(errMsg, "If revocation checking is enabled, the revocationFlags parameter must exist");
         return CF_INVALID_PARAMS;
     }
     if (ret != CF_SUCCESS) {
@@ -731,7 +731,7 @@ static CfResult BuildX509CertRevokedParamsEx(napi_env env, napi_value arg, HcfX5
 
     param = static_cast<HcfX509CertRevokedParams *>(CfMallocEx(sizeof(HcfX509CertRevokedParams)));
     if (param == nullptr) {
-        SetBuildParamError(errMsg, "'revokedParams': allocate memory failed");
+        CfBuildErrorMsg(errMsg, "'revokedParams': allocate memory failed");
         return CF_ERR_MALLOC;
     }
 
@@ -785,14 +785,14 @@ static CfResult GetArrayParamsEx(napi_env env, napi_value arg, HcfX509CertValida
         return ret;
     }
 
-    NapiParamInfo ignoreErrsInfo = { CERT_VALIDATOR_TAG_IGNORE_ERRS.c_str(), false, 1, MAX_IGNORE_ERR_COUNT, NULL};
+    NapiParamInfo ignoreErrsInfo = { CERT_VALIDATOR_TAG_IGNORE_ERRS.c_str(), false, 0, MAX_IGNORE_ERR_COUNT, NULL};
     ret = NapiGetInt32ArrayEx(env, arg, &ignoreErrsInfo, param.ignoreErrs, errMsg);
     if (ret != CF_SUCCESS && ret != CF_NOT_EXIST) {
         return ret;
     }
 
     NapiParamInfo hostnameElemInfo = { NULL, true, 1, MAX_HOSTNAME_LENGTH, NULL };
-    NapiParamInfo hostnamesInfo = { CERT_VALIDATOR_TAG_HOSTNAMES.c_str(), false, 1, MAX_HOSTNAMES_COUNT,
+    NapiParamInfo hostnamesInfo = { CERT_VALIDATOR_TAG_HOSTNAMES.c_str(), false, 0, MAX_HOSTNAMES_COUNT,
         &hostnameElemInfo};
     ret = NapiGetStringArrayEx(env, arg, &hostnamesInfo, param.hostnames, errMsg);
     if (ret != CF_SUCCESS && ret != CF_NOT_EXIST) {
@@ -800,21 +800,20 @@ static CfResult GetArrayParamsEx(napi_env env, napi_value arg, HcfX509CertValida
     }
 
     NapiParamInfo emailElemInfo = { NULL, true, 1, MAX_EMAIL_ADDRESS_LENGTH, NULL };
-    NapiParamInfo emailsInfo = { CERT_VALIDATOR_TAG_EMAIL_ADDRESSES.c_str(), false, 1, MAX_EMAIL_ADDRESS_COUNT,
+    NapiParamInfo emailsInfo = { CERT_VALIDATOR_TAG_EMAIL_ADDRESSES.c_str(), false, 0, MAX_EMAIL_ADDRESS_COUNT,
         &emailElemInfo};
     ret = NapiGetStringArrayEx(env, arg, &emailsInfo, param.emailAddresses, errMsg);
     if (ret != CF_SUCCESS && ret != CF_NOT_EXIST) {
         return ret;
     }
 
-    NapiParamInfo keyUsageInfo = { CERT_VALIDATOR_TAG_KEY_USAGE.c_str(), false, 1, MAX_KEYUSAGE_COUNT, NULL};
+    NapiParamInfo keyUsageInfo = { CERT_VALIDATOR_TAG_KEY_USAGE.c_str(), false, 0, MAX_KEYUSAGE_COUNT, NULL};
     ret = NapiGetInt32ArrayEx(env, arg, &keyUsageInfo, param.keyUsage, errMsg);
     if (ret != CF_SUCCESS && ret != CF_NOT_EXIST) {
         return ret;
     }
 
-    NapiParamInfo userIdInfo = { CERT_VALIDATOR_TAG_USER_ID.c_str(), false, 1, MAX_USER_ID_LEN, NULL };
-    ret = NapiGetBlobValueEx(env, arg, &userIdInfo, param.userId, errMsg);
+    ret = NapiGetBlobValueEx(env, arg, CERT_VALIDATOR_TAG_USER_ID.c_str(), param.userId, errMsg);
     if (ret != CF_SUCCESS && ret != CF_NOT_EXIST) {
         return ret;
     }
@@ -848,11 +847,11 @@ CfResult BuildX509CertValidatorParams(napi_env env, napi_value arg, HcfX509CertV
     CfResult ret = CF_SUCCESS;
     napi_valuetype type;
     if (napi_typeof(env, arg, &type) != napi_ok) {
-        SetBuildParamError(errMsg, "get argument type failed");
+        CfBuildErrorMsg(errMsg, "get argument type failed");
         return CF_ERR_NAPI;
     }
     if (type != napi_object) {
-        SetBuildParamError(errMsg, "argument type is not object");
+        CfBuildErrorMsg(errMsg, "argument type is not object");
         return CF_INVALID_PARAMS;
     }
 
@@ -898,7 +897,6 @@ void FreeX509CertValidatorParams(HcfX509CertValidatorParams &param)
     NapiFreeStringArray(param.hostnames);
     NapiFreeStringArray(param.emailAddresses);
     CfFree(param.keyUsage.data);
-    CfBlobDataFree(&param.userId);
     FreeX509CertRevokedParams(param.revokedParams);
 
     (void)memset_s(&param, sizeof(HcfX509CertValidatorParams), 0, sizeof(HcfX509CertValidatorParams));

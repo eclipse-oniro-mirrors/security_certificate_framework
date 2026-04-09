@@ -401,8 +401,8 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_008, TestSize.Level0)
     params.ignoreErrs.count = 2;
     params.ignoreErrs.data = static_cast<int32_t *>(CfMalloc(2 * sizeof(int32_t), 0));
     ASSERT_NE(params.ignoreErrs.data, nullptr);
-    params.ignoreErrs.data[0] = 10;  /* Example error code */
-    params.ignoreErrs.data[1] = 20;  /* Example error code */
+    params.ignoreErrs.data[0] = CERT_NOT_YET_VALID;
+    params.ignoreErrs.data[1] = CERT_HAS_EXPIRED;
 
     /* Setup trusted certs */
     params.trustedCerts.count = 1;
