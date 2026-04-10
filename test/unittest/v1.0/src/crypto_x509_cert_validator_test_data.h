@@ -84,6 +84,8 @@ extern const size_t OCSP_TEST_RESP_UNKNOWN_SIZE;
 
 /* Real-world test certificate */
 extern const char *REAL_WORLD_CERT;
+extern const char *REAL_WORLD_CERT_ISSUER;
+extern const char *GLOBALSIGN_ROOT_CA_R3;
 
 /* SM2 test certificates */
 extern const char *SM2_SIGN_CERT;

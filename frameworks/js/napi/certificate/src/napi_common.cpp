@@ -27,31 +27,7 @@
 
 namespace OHOS {
 namespace CertFramework {
-static constexpr size_t MAX_BUILD_PARAM_ERR_MSG_LEN = 256;
-
-void SetBuildParamError(char **errMsg, const char *format, ...)
-{
-    if (errMsg == nullptr) {
-        return;
-    }
-    CfFree(*errMsg);
-    char *buf = static_cast<char *>(CfMallocEx(MAX_BUILD_PARAM_ERR_MSG_LEN));
-    if (buf == nullptr) {
-        *errMsg = nullptr;
-        return;
-    }
-    va_list args;
-    va_start(args, format);
-    if (vsnprintf_s(buf, MAX_BUILD_PARAM_ERR_MSG_LEN, MAX_BUILD_PARAM_ERR_MSG_LEN - 1, format, args) <= 0) {
-        CF_LOG_E("vsnprintf_s failed");
-        CfFree(buf);
-        *errMsg = nullptr;
-        return;
-    }
-    va_end(args);
-    *errMsg = buf;
-}
-
+CfResult NapiGetBlobElementNoCopy(napi_env env, napi_value element, const char *name, CfBlob &value, char **errMsg);
 static bool GetCallback(napi_env env, napi_value object, napi_ref *callBack)
 {
     napi_valuetype valueType = napi_undefined;
@@ -210,7 +186,7 @@ CfResult NapiGetProperty(napi_env env, napi_value arg, const char *name, napi_va
 {
     bool hasValue = false;
     if (napi_has_named_property(env, arg, name, &hasValue) != napi_ok) {
-        SetBuildParamError(errMsg, "check property '%s' failed", name);
+        CfBuildErrorMsg(errMsg, "check property '%s' failed", name);
         return CF_ERR_NAPI;
     }
     if (!hasValue) {
@@ -220,11 +196,11 @@ CfResult NapiGetProperty(napi_env env, napi_value arg, const char *name, napi_va
     napi_value obj = nullptr;
     napi_status status = napi_get_named_property(env, arg, name, &obj);
     if (status != napi_ok) {
-        SetBuildParamError(errMsg, "get property '%s' failed!", name);
+        CfBuildErrorMsg(errMsg, "get property '%s' failed!", name);
         return CF_ERR_NAPI;
     }
     if (obj == nullptr) {
-        SetBuildParamError(errMsg, "'%s' is null!", name);
+        CfBuildErrorMsg(errMsg, "'%s' is null!", name);
         return CF_INVALID_PARAMS;
     }
     value = obj;
@@ -254,16 +230,16 @@ CfResult NapiGetBoolValueEx(napi_env env, napi_value arg, const char *name, bool
 
     napi_valuetype valueType;
     if (napi_typeof(env, obj, &valueType) != napi_ok) {
-        SetBuildParamError(errMsg, "'%s': get value type failed", name);
+        CfBuildErrorMsg(errMsg, "'%s': get value type failed", name);
         return CF_ERR_NAPI;
     }
     if (valueType != napi_boolean) {
-        SetBuildParamError(errMsg, "'%s': valueType is not boolean", name);
+        CfBuildErrorMsg(errMsg, "'%s': valueType is not boolean", name);
         return CF_INVALID_PARAMS;
     }
 
     if (napi_get_value_bool(env, obj, &value) != napi_ok) {
-        SetBuildParamError(errMsg, "'%s': get value failed", name);
+        CfBuildErrorMsg(errMsg, "'%s': get value failed", name);
         return CF_ERR_NAPI;
     }
     return CF_SUCCESS;
@@ -274,34 +250,34 @@ static CfResult NapiGetStringFromElement(napi_env env, napi_value element, const
 {
     napi_valuetype valueType;
     if (napi_typeof(env, element, &valueType) != napi_ok) {
-        SetBuildParamError(errMsg, "'%s': get value type failed", info->name);
+        CfBuildErrorMsg(errMsg, "'%s': get value type failed", info->name);
         return CF_ERR_NAPI;
     }
     if (valueType != napi_string) {
-        SetBuildParamError(errMsg, "'%s': valueType is not string", info->name);
+        CfBuildErrorMsg(errMsg, "'%s': valueType is not string", info->name);
         return CF_INVALID_PARAMS;
     }
 
     size_t strLen = 0;
     if (napi_get_value_string_utf8(env, element, NULL, 0, &strLen) != napi_ok) {
-        SetBuildParamError(errMsg, "'%s': get value length failed", info->name);
+        CfBuildErrorMsg(errMsg, "'%s': get value length failed", info->name);
         return CF_ERR_NAPI;
     }
 
     if (strLen < static_cast<size_t>(info->minLen) || strLen > static_cast<size_t>(info->maxLen)) {
-        SetBuildParamError(errMsg, "'%s': value len is invalid, should be in [%d, %d]", info->name, info->minLen,
+        CfBuildErrorMsg(errMsg, "'%s': value len is invalid, should be in [%d, %d]", info->name, info->minLen,
             info->maxLen);
         return CF_ERR_PARAMETER_CHECK;
     }
 
     char *str = static_cast<char *>(CfMallocEx(strLen + 1));
     if (str == nullptr) {
-        SetBuildParamError(errMsg, "'%s': allocate memory failed", info->name);
+        CfBuildErrorMsg(errMsg, "'%s': allocate memory failed", info->name);
         return CF_ERR_MALLOC;
     }
     if (napi_get_value_string_utf8(env, element, str, strLen + 1, &strLen) != napi_ok) {
         CfFree(str);
-        SetBuildParamError(errMsg, "'%s': get value failed", info->name);
+        CfBuildErrorMsg(errMsg, "'%s': get value failed", info->name);
         return CF_ERR_NAPI;
     }
     value = str;
@@ -319,53 +295,15 @@ CfResult NapiGetStringValueEx(napi_env env, napi_value arg, const NapiParamInfo 
     return NapiGetStringFromElement(env, obj, info, value, errMsg);
 }
 
-CfResult NapiGetBlobValueEx(napi_env env, napi_value arg, const NapiParamInfo *info, CfBlob &value, char **errMsg)
+CfResult NapiGetBlobValueEx(napi_env env, napi_value arg, const char *name, CfBlob &value, char **errMsg)
 {
     napi_value obj = nullptr;
-    CfResult ret = NapiGetProperty(env, arg, info->name, obj, errMsg);
-    if (ret == CF_NOT_EXIST || ret != CF_SUCCESS) {
+    CfResult ret = NapiGetProperty(env, arg, name, obj, errMsg);
+    if (ret != CF_SUCCESS) {
         return ret;
     }
 
-    bool isTypedArray = false;
-    if (napi_is_typedarray(env, obj, &isTypedArray) != napi_ok) {
-        SetBuildParamError(errMsg, "'%s': check type failed", info->name);
-        return CF_ERR_NAPI;
-    }
-    if (!isTypedArray) {
-        SetBuildParamError(errMsg, "'%s': valueType is not typedarray", info->name);
-        return CF_INVALID_PARAMS;
-    }
-
-    napi_typedarray_type arrayType;
-    size_t length = 0;
-    void *rawData = nullptr;
-    napi_value arrayBuffer = nullptr;
-    size_t offset = 0;
-
-    napi_status status = napi_get_typedarray_info(env, obj, &arrayType, &length, &rawData, &arrayBuffer, &offset);
-    if (status != napi_ok) {
-        SetBuildParamError(errMsg, "'%s': get typedarray info failed", info->name);
-        return CF_ERR_NAPI;
-    }
-    if (arrayType != napi_uint8_array || rawData == nullptr) {
-        SetBuildParamError(errMsg, "'%s': is not uint8 array", info->name);
-        return CF_INVALID_PARAMS;
-    }
-    if (length < static_cast<size_t>(info->minLen) || length > static_cast<size_t>(info->maxLen)) {
-        SetBuildParamError(errMsg, "'%s': length is invalid, should be in [%d, %d]",
-            info->name, info->minLen, info->maxLen);
-        return CF_ERR_PARAMETER_CHECK;
-    }
-
-    value.data = static_cast<uint8_t *>(CfMallocEx(length));
-    if (value.data == nullptr) {
-        SetBuildParamError(errMsg, "'%s': allocate memory failed", info->name);
-        return CF_ERR_MALLOC;
-    }
-    (void)memcpy_s(value.data, length, rawData, length);
-    value.size = length;
-    return CF_SUCCESS;
+    return NapiGetBlobElementNoCopy(env, obj, name, value, errMsg);
 }
 
 CfResult NapiGetArrayBaseInfoEx(napi_env env, napi_value arg, const NapiParamInfo *info, NapiArrayBaseInfo *out,
@@ -380,16 +318,16 @@ CfResult NapiGetArrayBaseInfoEx(napi_env env, napi_value arg, const NapiParamInf
 
     bool isArray = false;
     if (napi_is_array(env, arrayObj, &isArray) != napi_ok) {
-        SetBuildParamError(errMsg, "'%s': check type failed", info->name);
+        CfBuildErrorMsg(errMsg, "'%s': check type failed", info->name);
         return CF_ERR_NAPI;
     }
     if (!isArray) {
-        SetBuildParamError(errMsg, "'%s': valueType is not array", info->name);
+        CfBuildErrorMsg(errMsg, "'%s': valueType is not array", info->name);
         return CF_INVALID_PARAMS;
     }
 
     if (napi_get_array_length(env, arrayObj, &length) != napi_ok) {
-        SetBuildParamError(errMsg, "'%s': get length failed", info->name);
+        CfBuildErrorMsg(errMsg, "'%s': get length failed", info->name);
         return CF_ERR_NAPI;
     }
 
@@ -398,7 +336,7 @@ CfResult NapiGetArrayBaseInfoEx(napi_env env, napi_value arg, const NapiParamInf
     }
 
     if (length < static_cast<uint32_t>(info->minLen) || length > static_cast<uint32_t>(info->maxLen)) {
-        SetBuildParamError(errMsg, "'%s': length %u is invalid, should be in [%d, %d]",
+        CfBuildErrorMsg(errMsg, "'%s': length %u is invalid, should be in [%d, %d]",
             info->name, length, info->minLen, info->maxLen);
         return CF_ERR_PARAMETER_CHECK;
     }
@@ -419,7 +357,7 @@ CfResult NapiGetStringArrayEx(napi_env env, napi_value arg, const NapiParamInfo 
 
     value.data = static_cast<char **>(CfMallocEx(arrayInfo.length * sizeof(char *)));
     if (value.data == nullptr) {
-        SetBuildParamError(errMsg, "'%s': allocate memory failed", info->name);
+        CfBuildErrorMsg(errMsg, "'%s': allocate memory failed", info->name);
         return CF_ERR_MALLOC;
     }
 
@@ -427,7 +365,7 @@ CfResult NapiGetStringArrayEx(napi_env env, napi_value arg, const NapiParamInfo 
         napi_value element;
         if (napi_get_element(env, arrayInfo.obj, i, &element) != napi_ok) {
             NapiFreeStringArray(value);
-            SetBuildParamError(errMsg, "'%s': get element %u failed", info->name, i);
+            CfBuildErrorMsg(errMsg, "'%s': get element %u failed", info->name, i);
             return CF_ERR_NAPI;
         }
 
@@ -443,16 +381,15 @@ CfResult NapiGetStringArrayEx(napi_env env, napi_value arg, const NapiParamInfo 
     return CF_SUCCESS;
 }
 
-static CfResult NapiGetBlobElementNoCopy(napi_env env, napi_value element, const NapiParamInfo *info,
-    CfBlob &value, char **errMsg)
+CfResult NapiGetBlobElementNoCopy(napi_env env, napi_value element, const char *name, CfBlob &value, char **errMsg)
 {
     bool isTypedArray = false;
     if (napi_is_typedarray(env, element, &isTypedArray) != napi_ok) {
-        SetBuildParamError(errMsg, "'%s': check element type failed!", info->name);
+        CfBuildErrorMsg(errMsg, "'%s': check element type failed!", name);
         return CF_ERR_NAPI;
     }
     if (!isTypedArray) {
-        SetBuildParamError(errMsg, "'%s': element valueType is not typedarray!", info->name);
+        CfBuildErrorMsg(errMsg, "'%s': valueType is not typedarray!", name);
         return CF_INVALID_PARAMS;
     }
 
@@ -464,11 +401,11 @@ static CfResult NapiGetBlobElementNoCopy(napi_env env, napi_value element, const
 
     napi_status status = napi_get_typedarray_info(env, element, &arrayType, &length, &rawData, &arrayBuffer, &offset);
     if (status != napi_ok) {
-        SetBuildParamError(errMsg, "'%s': get typedarray info failed!", info->name);
+        CfBuildErrorMsg(errMsg, "'%s': get typedarray info failed!", name);
         return CF_ERR_NAPI;
     }
-    if (arrayType != napi_uint8_array || rawData == nullptr) {
-        SetBuildParamError(errMsg, "'%s': element is not uint8 array or is nullptr!", info->name);
+    if (arrayType != napi_uint8_array) {
+        CfBuildErrorMsg(errMsg, "'%s': element is not uint8 array!", name);
         return CF_INVALID_PARAMS;
     }
 
@@ -488,7 +425,7 @@ CfResult NapiGetBlobArrayNoCopy(napi_env env, napi_value arg, const NapiParamInf
 
     value.data = static_cast<CfBlob *>(CfMallocEx(arrayInfo.length * sizeof(CfBlob)));
     if (value.data == nullptr) {
-        SetBuildParamError(errMsg, "'%s': allocate memory failed", info->name);
+        CfBuildErrorMsg(errMsg, "'%s': allocate memory failed", info->name);
         return CF_ERR_MALLOC;
     }
 
@@ -497,11 +434,11 @@ CfResult NapiGetBlobArrayNoCopy(napi_env env, napi_value arg, const NapiParamInf
         if (napi_get_element(env, arrayInfo.obj, i, &element) != napi_ok) {
             CfFree(value.data);
             value.data = nullptr;
-            SetBuildParamError(errMsg, "'%s': get element %u failed", info->name, i);
+            CfBuildErrorMsg(errMsg, "'%s': get element %u failed", info->name, i);
             return CF_ERR_NAPI;
         }
 
-        ret = NapiGetBlobElementNoCopy(env, element, info, value.data[i], errMsg);
+        ret = NapiGetBlobElementNoCopy(env, element, info->name, value.data[i], errMsg);
         if (ret != CF_SUCCESS) {
             CfFree(value.data);
             value.data = nullptr;
@@ -524,7 +461,7 @@ CfResult NapiGetInt32ArrayEx(napi_env env, napi_value arg, const NapiParamInfo *
 
     value.data = static_cast<int *>(CfMallocEx(arrayInfo.length * sizeof(int32_t)));
     if (value.data == nullptr) {
-        SetBuildParamError(errMsg, "'%s': allocate memory failed", info->name);
+        CfBuildErrorMsg(errMsg, "'%s': allocate memory failed", info->name);
         return CF_ERR_MALLOC;
     }
 
@@ -534,7 +471,7 @@ CfResult NapiGetInt32ArrayEx(napi_env env, napi_value arg, const NapiParamInfo *
             CfFree(value.data);
             value.data = nullptr;
             value.count = 0;
-            SetBuildParamError(errMsg, "'%s': get element %u failed", info->name, i);
+            CfBuildErrorMsg(errMsg, "'%s': get element %u failed", info->name, i);
             return CF_ERR_NAPI;
         }
 
@@ -543,14 +480,14 @@ CfResult NapiGetInt32ArrayEx(napi_env env, napi_value arg, const NapiParamInfo *
             CfFree(value.data);
             value.data = nullptr;
             value.count = 0;
-            SetBuildParamError(errMsg, "'%s': element %u get type failed", info->name, i);
+            CfBuildErrorMsg(errMsg, "'%s': element %u get type failed", info->name, i);
             return CF_ERR_NAPI;
         }
         if (valueType != napi_number) {
             CfFree(value.data);
             value.data = nullptr;
             value.count = 0;
-            SetBuildParamError(errMsg, "'%s': element %u is not number", info->name, i);
+            CfBuildErrorMsg(errMsg, "'%s': element %u is not number", info->name, i);
             return CF_INVALID_PARAMS;
         }
 
@@ -559,7 +496,7 @@ CfResult NapiGetInt32ArrayEx(napi_env env, napi_value arg, const NapiParamInfo *
             CfFree(value.data);
             value.data = nullptr;
             value.count = 0;
-            SetBuildParamError(errMsg, "'%s': element %u get value failed", info->name, i);
+            CfBuildErrorMsg(errMsg, "'%s': element %u get value failed", info->name, i);
             return CF_ERR_NAPI;
         }
         value.data[i] = numValue;
@@ -579,12 +516,12 @@ CfResult NapiGetInt32Ex(napi_env env, napi_value arg, const char *name, int32_t 
     napi_valuetype valueType = napi_undefined;
     napi_typeof(env, element, &valueType);
     if (valueType != napi_number) {
-        SetBuildParamError(errMsg, "'%s': valueType is not number", name);
+        CfBuildErrorMsg(errMsg, "'%s': valueType is not number", name);
         return CF_INVALID_PARAMS;
     }
 
     if (napi_get_value_int32(env, element, &value) != napi_ok) {
-        SetBuildParamError(errMsg, "'%s': get value failed", name);
+        CfBuildErrorMsg(errMsg, "'%s': get value failed", name);
         return CF_ERR_NAPI;
     }
     return CF_SUCCESS;

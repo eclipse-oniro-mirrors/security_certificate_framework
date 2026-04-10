@@ -17,6 +17,7 @@
 #define NAPI_COMMON_H
 
 #include "cf_blob.h"
+#include "cf_err_msg.h"
 #include "cf_result.h"
 #include "cf_type.h"
 #include "cert_chain_validator.h"
@@ -58,7 +59,7 @@ typedef struct NapiParamInfo {
 CfResult NapiGetProperty(napi_env env, napi_value arg, const char *name, napi_value &value, char **errMsg);
 CfResult NapiGetBoolValueEx(napi_env env, napi_value arg, const char *name, bool &value, char **errMsg);
 CfResult NapiGetStringValueEx(napi_env env, napi_value arg, const NapiParamInfo *info, char *&value, char **errMsg);
-CfResult NapiGetBlobValueEx(napi_env env, napi_value arg, const NapiParamInfo *info, CfBlob &value, char **errMsg);
+CfResult NapiGetBlobValueEx(napi_env env, napi_value arg, const char *name, CfBlob &value, char **errMsg);
 
 typedef struct {
     napi_value obj;
@@ -75,7 +76,6 @@ CfResult NapiGetInt32ArrayEx(napi_env env, napi_value arg, const NapiParamInfo *
     char **errMsg);
 CfResult NapiGetInt32Ex(napi_env env, napi_value arg, const char *name, int32_t &value, char **errMsg);
 void NapiFreeStringArray(HcfStringArray &array);
-void SetBuildParamError(char **errMsg, const char *format, ...);
 
 inline napi_value NapiGetNull(napi_env env)
 {

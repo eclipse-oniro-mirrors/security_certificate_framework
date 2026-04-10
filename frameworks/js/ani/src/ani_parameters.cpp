@@ -687,30 +687,12 @@ void FreeCertChainValidateResult(HcfX509CertChainValidateResult *result)
     if (result == nullptr) {
         return;
     }
-    CfObjDestroy(result->entityCert);
+CfObjDestroy(result->entityCert);
     FreeX509TrustAnchor(result->trustAnchor);
 }
 
-bool CheckArrayCount(uint32_t count, uint32_t maxCount, const char *&errMsg)
-{
-    if (count > maxCount) {
-        errMsg = "array count exceeds limit";
-        return false;
-    }
-    return true;
-}
-
-bool CheckStringLength(uint32_t len, uint32_t maxLen, const char *&errMsg)
-{
-    if (len > maxLen) {
-        errMsg = "string length exceeds limit";
-        return false;
-    }
-    return true;
-}
-
-CfResult BuildCertArrayInner(const char *name, optional<array<X509Cert>> const& certs,
-    HcfX509CertificateArray &hcfCerts, uint32_t maxCount, const char *&errMsg)
+CfResult BuildCertArrayInner(const AniParamInfo *info, optional<array<X509Cert>> const& certs,
+    HcfX509CertificateArray &hcfCerts, char *&errMsg)
 {
     if (!certs.has_value()) {
         return CF_SUCCESS;
@@ -719,13 +701,13 @@ CfResult BuildCertArrayInner(const char *name, optional<array<X509Cert>> const& 
     if (count == 0) {
         return CF_SUCCESS;
     }
-    if (count > maxCount) {
-        errMsg = "array count exceeds limit";
+    if (count < info->min || count > info->max) {
+        CfBuildErrorMsg(&errMsg, "%s count %u not in [%u, %u]", info->name, count, info->min, info->max);
         return CF_ERR_PARAMETER_CHECK;
     }
     hcfCerts.data = static_cast<HcfX509Certificate **>(CfMalloc(sizeof(HcfX509Certificate *) * count, 0));
     if (hcfCerts.data == nullptr) {
-        errMsg = "malloc failed";
+        CfBuildErrorMsg(&errMsg, "%s malloc %zu bytes failed", info->name, sizeof(HcfX509Certificate *) * count);
         return CF_ERR_MALLOC;
     }
     hcfCerts.count = count;
@@ -735,183 +717,197 @@ CfResult BuildCertArrayInner(const char *name, optional<array<X509Cert>> const& 
     return CF_SUCCESS;
 }
 
-bool BuildStringArrayInner(optional<array<string>> const& strs, HcfStringArray &hcfStrs,
-    uint32_t maxCount, uint32_t maxLen, const char *&errMsg)
+CfResult BuildStringArrayInner(const AniParamInfo *info, optional<array<string>> const& strs,
+    HcfStringArray &hcfStrs, char *&errMsg)
 {
     if (!strs.has_value()) {
-        return true;
+        return CF_SUCCESS;
     }
     uint32_t count = strs.value().size();
     if (count == 0) {
-        return true;
+        return CF_SUCCESS;
     }
-    if (!CheckArrayCount(count, maxCount, errMsg)) {
-        return false;
+    if (count < info->min || count > info->max) {
+        CfBuildErrorMsg(&errMsg, "%s count %u not in [%u, %u]", info->name, count, info->min, info->max);
+        return CF_ERR_PARAMETER_CHECK;
     }
     hcfStrs.data = static_cast<char **>(CfMalloc(sizeof(char *) * count, 0));
     if (hcfStrs.data == nullptr) {
-        errMsg = "malloc failed";
-        return false;
+        CfBuildErrorMsg(&errMsg, "%s malloc %zu bytes failed", info->name, sizeof(char *) * count);
+        return CF_ERR_MALLOC;
     }
     hcfStrs.count = count;
+    uint32_t strMin = info->next ? info->next->min : 1;
+    uint32_t strMax = info->next ? info->next->max : UINT32_MAX;
     for (uint32_t i = 0; i < count; ++i) {
-        if (!CheckStringLength(strs.value()[i].size(), maxLen, errMsg)) {
-            return false;
+        uint32_t strLen = strs.value()[i].size();
+        if (strLen == 0 || strLen < strMin || strLen > strMax) {
+            CfBuildErrorMsg(&errMsg, "%s[%u] length %u not in [%u, %u]", info->name, i, strLen, strMin, strMax);
+            return CF_ERR_PARAMETER_CHECK;
         }
         hcfStrs.data[i] = strdup(strs.value()[i].c_str());
         if (hcfStrs.data[i] == nullptr) {
-            errMsg = "strdup failed";
-            return false;
+            CfBuildErrorMsg(&errMsg, "%s[%u] strdup %u bytes failed", info->name, i, strLen + 1);
+            return CF_ERR_MALLOC;
         }
     }
-    return true;
+    return CF_SUCCESS;
 }
 
-bool BuildInt32ArrayInner(optional<array<KeyUsageType>> const& vals, HcfInt32Array &hcfArr,
-    uint32_t maxCount, const char *&errMsg)
+CfResult BuildInt32ArrayInner(const AniParamInfo *info, optional<array<KeyUsageType>> const& vals,
+    HcfInt32Array &hcfArr, char *&errMsg)
 {
     if (!vals.has_value()) {
-        return true;
+        return CF_SUCCESS;
     }
     uint32_t count = vals.value().size();
     if (count == 0) {
-        return true;
+        return CF_SUCCESS;
     }
-    if (!CheckArrayCount(count, maxCount, errMsg)) {
-        return false;
+    if (count < info->min || count > info->max) {
+        CfBuildErrorMsg(&errMsg, "%s count %u not in [%u, %u]", info->name, count, info->min, info->max);
+        return CF_ERR_PARAMETER_CHECK;
     }
     hcfArr.data = static_cast<int32_t *>(CfMalloc(sizeof(int32_t) * count, 0));
     if (hcfArr.data == nullptr) {
-        errMsg = "malloc failed";
-        return false;
+        CfBuildErrorMsg(&errMsg, "%s malloc %zu bytes failed", info->name, sizeof(int32_t) * count);
+        return CF_ERR_MALLOC;
     }
     hcfArr.count = count;
     for (uint32_t i = 0; i < count; ++i) {
         hcfArr.data[i] = vals.value()[i].get_value();
     }
-    return true;
+    return CF_SUCCESS;
 }
 
-bool BuildResultArrayInner(optional<array<CertResult>> const& vals, HcfInt32Array &hcfArr,
-    uint32_t maxCount, const char *&errMsg)
+CfResult BuildResultArrayInner(const AniParamInfo *info, optional<array<CertResult>> const& vals,
+    HcfInt32Array &hcfArr, char *&errMsg)
 {
     if (!vals.has_value()) {
-        return true;
+        return CF_SUCCESS;
     }
     uint32_t count = vals.value().size();
     if (count == 0) {
-        return true;
+        return CF_SUCCESS;
     }
-    if (!CheckArrayCount(count, maxCount, errMsg)) {
-        return false;
+    if (count < info->min || count > info->max) {
+        CfBuildErrorMsg(&errMsg, "%s count %u not in [%u, %u]", info->name, count, info->min, info->max);
+        return CF_ERR_PARAMETER_CHECK;
     }
     hcfArr.data = static_cast<int32_t *>(CfMalloc(sizeof(int32_t) * count, 0));
     if (hcfArr.data == nullptr) {
-        errMsg = "malloc failed";
-        return false;
+        CfBuildErrorMsg(&errMsg, "%s malloc %zu bytes failed", info->name, sizeof(int32_t) * count);
+        return CF_ERR_MALLOC;
     }
     hcfArr.count = count;
     for (uint32_t i = 0; i < count; ++i) {
         hcfArr.data[i] = vals.value()[i].get_value();
     }
-    return true;
+    return CF_SUCCESS;
 }
 
-bool BuildRevocationFlagsInner(array<CertRevocationFlag> const& flags, HcfInt32Array &hcfArr,
-    const char *&errMsg)
+CfResult BuildRevocationFlagsInner(array<CertRevocationFlag> const& flags, HcfInt32Array &hcfArr, char *&errMsg)
 {
     uint32_t count = flags.size();
     if (count == 0 || count > MAX_REVOCATION_FLAG_COUNT) {
-        errMsg = "revocationFlags count invalid";
-        return false;
+        CfBuildErrorMsg(&errMsg, "revocationFlags count %u not in [1, %u]", count, MAX_REVOCATION_FLAG_COUNT);
+        return CF_ERR_PARAMETER_CHECK;
     }
     hcfArr.data = static_cast<int32_t *>(CfMalloc(sizeof(int32_t) * count, 0));
     if (hcfArr.data == nullptr) {
-        errMsg = "malloc failed";
-        return false;
+        CfBuildErrorMsg(&errMsg, "revocationFlags malloc %zu bytes failed", sizeof(int32_t) * count);
+        return CF_ERR_MALLOC;
     }
     hcfArr.count = count;
     for (uint32_t i = 0; i < count; ++i) {
         hcfArr.data[i] = flags[i].get_value();
     }
-    return true;
+    return CF_SUCCESS;
 }
 
-bool BuildCrlArrayInner(optional<array<X509CRL>> const& crls, HcfX509CrlArray &hcfCrls, const char *&errMsg)
+CfResult BuildCrlArrayInner(const AniParamInfo *info, optional<array<X509CRL>> const& crls,
+    HcfX509CrlArray &hcfCrls, char *&errMsg)
 {
     if (!crls.has_value()) {
-        return true;
+        return CF_SUCCESS;
     }
     uint32_t count = crls.value().size();
     if (count == 0) {
-        return true;
+        return CF_SUCCESS;
     }
-    if (!CheckArrayCount(count, MAX_CRL_COUNT, errMsg)) {
-        return false;
+    if (count < info->min || count > info->max) {
+        CfBuildErrorMsg(&errMsg, "%s count %u not in [%u, %u]", info->name, count, info->min, info->max);
+        return CF_ERR_PARAMETER_CHECK;
     }
     hcfCrls.data = static_cast<HcfX509Crl **>(CfMalloc(sizeof(HcfX509Crl *) * count, 0));
     if (hcfCrls.data == nullptr) {
-        errMsg = "malloc failed";
-        return false;
+        CfBuildErrorMsg(&errMsg, "%s malloc %zu bytes failed", info->name, sizeof(HcfX509Crl *) * count);
+        return CF_ERR_MALLOC;
     }
     hcfCrls.count = count;
     for (uint32_t i = 0; i < count; ++i) {
         hcfCrls.data[i] = reinterpret_cast<HcfX509Crl *>(crls.value()[i]->GetX509CRLObj());
     }
-    return true;
+    return CF_SUCCESS;
 }
 
-bool BuildOcspResponsesInner(optional<array<array<uint8_t>>> const& responses, CfBlobArray &hcfArr,
-    const char *&errMsg)
+CfResult BuildOcspResponsesInner(const AniParamInfo *info, optional<array<array<uint8_t>>> const& responses,
+    CfBlobArray &hcfArr, char *&errMsg)
 {
     if (!responses.has_value()) {
-        return true;
+        return CF_SUCCESS;
     }
     uint32_t count = responses.value().size();
     if (count == 0) {
-        return true;
+        return CF_SUCCESS;
     }
-    if (!CheckArrayCount(count, MAX_OCSP_RESPONSE_COUNT, errMsg)) {
-        return false;
+    if (count < info->min || count > info->max) {
+        CfBuildErrorMsg(&errMsg, "%s count %u not in [%u, %u]", info->name, count, info->min, info->max);
+        return CF_ERR_PARAMETER_CHECK;
     }
     hcfArr.data = static_cast<CfBlob *>(CfMalloc(sizeof(CfBlob) * count, 0));
     if (hcfArr.data == nullptr) {
-        errMsg = "malloc failed";
-        return false;
+        CfBuildErrorMsg(&errMsg, "%s malloc %zu bytes failed", info->name, sizeof(CfBlob) * count);
+        return CF_ERR_MALLOC;
     }
     hcfArr.count = count;
     for (uint32_t i = 0; i < count; ++i) {
         ArrayU8ToDataBlob(responses.value()[i], hcfArr.data[i]);
     }
-    return true;
+    return CF_SUCCESS;
 }
 
-bool BuildRevokedParamsInner(optional<X509CertRevokedParams> const& params, HcfX509CertRevokedParams *&hcfParams,
-    const char *&errMsg)
+CfResult BuildRevokedParamsInner(optional<X509CertRevokedParams> const& params, HcfX509CertRevokedParams *&hcfParams,
+    char *&errMsg)
 {
     if (!params.has_value()) {
-        return true;
+        return CF_SUCCESS;
     }
     hcfParams = static_cast<HcfX509CertRevokedParams *>(CfMalloc(sizeof(HcfX509CertRevokedParams), 0));
     if (hcfParams == nullptr) {
-        errMsg = "malloc failed";
-        return false;
+        CfBuildErrorMsg(&errMsg, "revokedParams malloc %zu bytes failed", sizeof(HcfX509CertRevokedParams));
+        return CF_ERR_MALLOC;
     }
-    if (!BuildRevocationFlagsInner(params->revocationFlags, hcfParams->revocationFlags, errMsg)) {
-        return false;
+    CfResult ret = BuildRevocationFlagsInner(params->revocationFlags, hcfParams->revocationFlags, errMsg);
+    if (ret != CF_SUCCESS) {
+        return ret;
     }
-    if (!BuildCrlArrayInner(params->crls, hcfParams->crls, errMsg)) {
-        return false;
+    AniParamInfo crlInfo = {"crls", 0, MAX_CRL_COUNT, nullptr};
+    ret = BuildCrlArrayInner(&crlInfo, params->crls, hcfParams->crls, errMsg);
+    if (ret != CF_SUCCESS) {
+        return ret;
     }
     hcfParams->allowDownloadCrl = params->allowDownloadCrl.has_value() ? params->allowDownloadCrl.value() : false;
     hcfParams->allowOcspCheckOnline = params->allowOcspCheckOnline.has_value() ?
         params->allowOcspCheckOnline.value() : false;
-    if (!BuildOcspResponsesInner(params->ocspResponses, hcfParams->ocspResponses, errMsg)) {
-        return false;
+    AniParamInfo ocspInfo = {"ocspResponses", 0, MAX_OCSP_RESPONSE_COUNT, nullptr};
+    ret = BuildOcspResponsesInner(&ocspInfo, params->ocspResponses, hcfParams->ocspResponses, errMsg);
+    if (ret != CF_SUCCESS) {
+        return ret;
     }
     hcfParams->ocspDigest = params->ocspDigest.has_value() ? params->ocspDigest.value().get_value() :
         OCSP_DIGEST_SHA256;
-    return true;
+    return CF_SUCCESS;
 }
 
 void FreeCertArray(HcfX509CertificateArray &hcfCerts)
@@ -968,41 +964,39 @@ void FreeRevokedParams(HcfX509CertRevokedParams *&hcfParams)
     CF_FREE_PTR(hcfParams);
 }
 
-CfResult BuildResultStringInner(optional<string> const& strs, char *&res, uint32_t minLen, uint32_t maxLen,
-    const char *&errMsg)
+CfResult BuildStringInner(optional<string> const& strs, char *&res, uint32_t minLen, uint32_t maxLen,
+    char *&errMsg)
 {
     if (!strs.has_value()) {
         return CF_SUCCESS;
     }
     uint32_t count = strs.value().size();
     if (count == 0) {
-        errMsg = "date is empty string";
+        CfBuildErrorMsg(&errMsg, "date is empty string");
         return CF_ERR_PARAMETER_CHECK;
     }
-
-    if (count > maxLen || count < minLen) {
-        errMsg = "date length invalid";
+    if (count < minLen || count > maxLen) {
+        CfBuildErrorMsg(&errMsg, "date length %u not in [%u, %u]", count, minLen, maxLen);
         return CF_ERR_PARAMETER_CHECK;
     }
-
     res = strdup(strs.value().c_str());
     if (res == nullptr) {
-        errMsg = "strdup date string failed";
+        CfBuildErrorMsg(&errMsg, "date strdup %u bytes failed", count + 1);
         return CF_ERR_MALLOC;
     }
     return CF_SUCCESS;
 }
 
 CfResult BuildX509CertValidatorParams(X509CertValidatorParams const& param,
-    HcfX509CertValidatorParams &hcfParam, const char *&errMsg)
+    HcfX509CertValidatorParams &hcfParam, char *&errMsg)
 {
-    CfResult ret = BuildCertArrayInner("untrustedCerts", param.untrustedCerts, hcfParam.untrustedCerts,
-        MAX_UNTRUSTED_CERT_COUNT, errMsg);
+    AniParamInfo untrustedCertsInfo = {"untrustedCerts", 0, MAX_UNTRUSTED_CERT_COUNT, nullptr};
+    CfResult ret = BuildCertArrayInner(&untrustedCertsInfo, param.untrustedCerts, hcfParam.untrustedCerts, errMsg);
     if (ret != CF_SUCCESS) {
         return ret;
     }
-    ret = BuildCertArrayInner("trustedCerts", param.trustedCerts, hcfParam.trustedCerts,
-        MAX_TRUSTED_CERT_COUNT, errMsg);
+    AniParamInfo trustedCertsInfo = {"trustedCerts", 0, MAX_TRUSTED_CERT_COUNT, nullptr};
+    ret = BuildCertArrayInner(&trustedCertsInfo, param.trustedCerts, hcfParam.trustedCerts, errMsg);
     if (ret != CF_SUCCESS) {
         return ret;
     }
@@ -1011,35 +1005,36 @@ CfResult BuildX509CertValidatorParams(X509CertValidatorParams const& param,
     hcfParam.allowDownloadIntermediateCa = param.allowDownloadIntermediateCa.has_value() ?
         param.allowDownloadIntermediateCa.value() : false;
     hcfParam.validateDate = param.validateDate.has_value() ? param.validateDate.value() : true;
-    ret = BuildResultStringInner(param.date, hcfParam.date, MIN_DATE_LEN, MAX_DATE_LEN, errMsg);
+    ret = BuildStringInner(param.date, hcfParam.date, MIN_DATE_LEN, MAX_DATE_LEN, errMsg);
     if (ret != CF_SUCCESS) {
         return ret;
     }
-    if (!BuildResultArrayInner(param.ignoreErrs, hcfParam.ignoreErrs, MAX_IGNORE_ERR_COUNT, errMsg)) {
-        return CF_ERR_PARAMETER_CHECK;
+    AniParamInfo ignoreErrsInfo = {"ignoreErrs", 0, MAX_IGNORE_ERR_COUNT, nullptr};
+    ret = BuildResultArrayInner(&ignoreErrsInfo, param.ignoreErrs, hcfParam.ignoreErrs, errMsg);
+    if (ret != CF_SUCCESS) {
+        return ret;
     }
-    if (!BuildStringArrayInner(param.hostnames, hcfParam.hostnames, MAX_HOSTNAMES_COUNT, MAX_HOSTNAME_LENGTH, errMsg)) {
-        return CF_ERR_PARAMETER_CHECK;
+    AniParamInfo hostnameElemInfo = {"hostnameElem", 1, MAX_HOSTNAME_LENGTH, nullptr};
+    AniParamInfo hostnamesInfo = {"hostnames", 0, MAX_HOSTNAMES_COUNT, &hostnameElemInfo};
+    ret = BuildStringArrayInner(&hostnamesInfo, param.hostnames, hcfParam.hostnames, errMsg);
+    if (ret != CF_SUCCESS) {
+        return ret;
     }
-    if (!BuildStringArrayInner(param.emailAddresses, hcfParam.emailAddresses, MAX_EMAIL_ADDRESS_COUNT,
-        MAX_EMAIL_ADDRESS_LENGTH, errMsg)) {
-        return CF_ERR_PARAMETER_CHECK;
+    AniParamInfo emailElemInfo = {"emailAddressesElem", 1, MAX_EMAIL_ADDRESS_LENGTH, nullptr};
+    AniParamInfo emailsInfo = {"emailAddresses", 0, MAX_EMAIL_ADDRESS_COUNT, &emailElemInfo};
+    ret = BuildStringArrayInner(&emailsInfo, param.emailAddresses, hcfParam.emailAddresses, errMsg);
+    if (ret != CF_SUCCESS) {
+        return ret;
     }
-    if (!BuildInt32ArrayInner(param.keyUsage, hcfParam.keyUsage, MAX_KEYUSAGE_COUNT, errMsg)) {
-        return CF_ERR_PARAMETER_CHECK;
+    AniParamInfo keyUsageInfo = {"keyUsage", 0, MAX_KEYUSAGE_COUNT, nullptr};
+    ret = BuildInt32ArrayInner(&keyUsageInfo, param.keyUsage, hcfParam.keyUsage, errMsg);
+    if (ret != CF_SUCCESS) {
+        return ret;
     }
     if (param.userId.has_value()) {
-        uint32_t userIdLen = param.userId.value().size();
-        if (userIdLen > MAX_USER_ID_LEN) {
-            errMsg = "userId length exceeds limit";
-            return CF_ERR_PARAMETER_CHECK;
-        }
         ArrayU8ToDataBlob(param.userId.value(), hcfParam.userId);
     }
-    if (!BuildRevokedParamsInner(param.revokedParams, hcfParam.revokedParams, errMsg)) {
-        return CF_ERR_PARAMETER_CHECK;
-    }
-    return CF_SUCCESS;
+    return BuildRevokedParamsInner(param.revokedParams, hcfParam.revokedParams, errMsg);
 }
 
 void FreeX509CertValidatorParams(HcfX509CertValidatorParams &hcfParam)

@@ -28,6 +28,7 @@
 #include "cf_blob.h"
 #include "cf_result.h"
 #include "cf_memory.h"
+#include "cf_err_msg.h"
 #include "cf_object_base.h"
 
 #include "x509_certificate.h"
@@ -43,6 +44,13 @@ using HcfPrivateKeyInfo = ::PrivateKeyInfo;
 using ThPrivateKeyInfo = ohos::security::cert::cert::PrivateKeyInfo;
 using HcfCmsRecipientInfo = ::CmsRecipientInfo;
 using ThCmsRecipientInfo = ohos::security::cert::cert::CmsRecipientInfo;
+
+typedef struct AniParamInfo {
+    const char *name;
+    uint32_t min;
+    uint32_t max;
+    struct AniParamInfo *next;
+} AniParamInfo;
 
 #define ANI_LOGE_THROW(code, msg) \
     do { \

@@ -100,7 +100,7 @@ static CfResult GetDataByEntryOpenssl(int32_t count, CfArray *outArr, X509_NAME_
         LOGE("CfMalloc error");
         return CF_ERR_MALLOC;
     }
-    outArr->count = count;
+    outArr->count = (uint32_t)count;
     for (int i = 0; i < count; ++i) {
         ASN1_STRING *str = X509_NAME_ENTRY_get_data(neArr[i]);
         unsigned char *p = ASN1_STRING_data(str);
@@ -128,7 +128,7 @@ static CfResult GetDataByEntryOpensslUtf8(int32_t count, CfEncodinigType encodin
         LOGE("CfMalloc error");
         return CF_ERR_MALLOC;
     }
-    outArr->count = count;
+    outArr->count = (uint32_t)count;
     for (int i = 0; i < count; ++i) {
         ASN1_STRING *str = X509_NAME_ENTRY_get_data(neArr[i]);
         unsigned char *p = NULL;

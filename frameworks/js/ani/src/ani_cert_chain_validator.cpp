@@ -85,11 +85,12 @@ VerifyCertResult CertChainValidatorImpl::ValidateCertSync(weak::X509Cert cert, X
         return make_holder<VerifyCertResultImpl, VerifyCertResult>();
     }
     HcfX509CertValidatorParams hcfParams = {};
-    const char *errMsg = nullptr;
+    char *errMsg = nullptr;
     CfResult res = BuildX509CertValidatorParams(params, hcfParams, errMsg);
     if (res != CF_SUCCESS) {
         FreeX509CertValidatorParams(hcfParams);
         ANI_LOGE_THROW(res, errMsg != nullptr ? errMsg : "build validator params failed");
+        CF_FREE_PTR(errMsg);
         return make_holder<VerifyCertResultImpl, VerifyCertResult>();
     }
     HcfVerifyCertResult result = {};

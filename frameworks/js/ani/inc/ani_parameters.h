@@ -34,7 +34,7 @@ void FreeTrustAnchorArray(HcfX509TrustAnchorArray *&trustAnchors);
 void FreeCertChainValidateResult(HcfX509CertChainValidateResult *result);
 
 CfResult BuildX509CertValidatorParams(X509CertValidatorParams const& param,
-    HcfX509CertValidatorParams &hcfParam, const char *&errMsg);
+    HcfX509CertValidatorParams &hcfParam, char *&errMsg);
 void FreeX509CertValidatorParams(HcfX509CertValidatorParams &hcfParam);
 void FreeVerifyCertResult(HcfVerifyCertResult &result);
 } // namespace ANI::CertFramework
