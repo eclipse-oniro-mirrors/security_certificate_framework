@@ -28,7 +28,6 @@ struct CjX509CertMatchParams {
     CfBlob *serialNumber;
     CfBlob *subject;
     CfBlob *publicKey;
-    CfEncodingBlob *privateKey;
     CfBlob *publicKeyAlgID;
     SubjectAlternaiveNameData *subjectAlternativeNames;
     uint32_t subjectAlternativeNameCnt;

@@ -187,7 +187,7 @@ CfResult FfiCertCjX509CertificateMatch(const CjX509Certificate self, const CjX50
         certPtr = &matchParams->x509Cert->base;
     }
 
-    const auto params = HcfX509CertMatchParams{
+    const auto params = HcfX509CertMatchParams {
         certPtr,
         matchParams->validDate,
         matchParams->issuer,
@@ -195,7 +195,7 @@ CfResult FfiCertCjX509CertificateMatch(const CjX509Certificate self, const CjX50
         matchParams->serialNumber,
         matchParams->subject,
         matchParams->publicKey,
-        matchParams->privateKey,
+        nullptr, // privateKey is not supported
         matchParams->publicKeyAlgID,
         subjectAlternativeNamesPtr,
         matchParams->matchAllSubjectAltNames,
