@@ -55,7 +55,7 @@ CfResult FfiCertCjCertCrlCollectionSelectCerts(const CjCertCrlCollection self,
         certPtr = &matchParams->x509Cert->base;
     }
 
-    const auto params = HcfX509CertMatchParams{
+    const auto params = HcfX509CertMatchParams {
         certPtr,
         matchParams->validDate,
         matchParams->issuer,
@@ -63,7 +63,7 @@ CfResult FfiCertCjCertCrlCollectionSelectCerts(const CjCertCrlCollection self,
         matchParams->serialNumber,
         matchParams->subject,
         matchParams->publicKey,
-        matchParams->privateKey,
+        nullptr, // privateKey is not supported
         matchParams->publicKeyAlgID,
         subjectAlternativeNamesPtr,
         matchParams->matchAllSubjectAltNames,
