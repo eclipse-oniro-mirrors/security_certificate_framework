@@ -8579,8 +8579,7 @@ async function validateCert(): Promise<void> {
     let params: cert.X509CertValidatorParams = {
       trustedCerts: [rootCaCert],
       untrustedCerts: [intermediateCaCert],
-      validateDate: true,
-      hostnames: ['test.example.com']
+      validateDate: false,
     };
 
     // 创建验证器并验证证书
@@ -12897,7 +12896,7 @@ async function getName() {
 
 getName(type: string): Array\<string>
 
-按类型获取可分辨名的字符串。
+按指定类型获取相对可分辨名称的字符串。
 
 **原子化服务API：** 从API version 12开始，该接口支持在原子化服务中使用。
 
@@ -12907,13 +12906,13 @@ getName(type: string): Array\<string>
 
 | 参数名       | 类型   | 必填 | 说明           |
 | ------------ | ------ | ---- | -------------- |
-| type | string | 是 | 指定类型的名称。|
+| type | string | 是 | 指定类型的名称。如"CN"、"OU"等。 |
 
 **返回值**：
 
 | 类型    | 说明                                              |
 | ------- | ------------------------------------------------- |
-| Array\<string> | 可分辨名的字符串数组。|
+| Array\<string> | 相对可分辨名称的字符串数组。|
 
 **错误码：**
 
@@ -12954,7 +12953,7 @@ async function getName() {
 
 getName(encodingType: EncodingType): string
 
-根据指定的编码类型获取可分辨名的字符串。
+根据指定编码格式获取可分辨名称的字符串。
 
 **原子化服务API：** 从API version 20开始，该接口支持在原子化服务中使用。
 
@@ -12964,13 +12963,13 @@ getName(encodingType: EncodingType): string
 
 | 参数名       | 类型          | 必填 | 说明           |
 | ------------ | ------------- | ---- | -------------- |
-| encodingType | [EncodingType](#encodingtype12) | 是 | 表示编码类型。|
+| encodingType | [EncodingType](#encodingtype12) | 是 | 表示编码格式。|
 
 **返回值**：
 
 | 类型    | 说明                                              |
 | ------- | ------------------------------------------------- |
-| string | 表示可分辨名的字符串，使用逗号分隔相对可分辨名称。|
+| string | 表示可分辨名称的字符串，使用逗号分隔相对可分辨名称。|
 
 **错误码：**
 
@@ -12996,6 +12995,68 @@ async function getName() {
       .then((data) => {
         console.info('createX500DistinguishedName result: success.');
         console.info('createX500DistinguishedName getName: ' + data.getName(cert.EncodingType.ENCODING_UTF8));
+      })
+      .catch((err: BusinessError) => {
+        console.error(`createX500DistinguishedName failed, errCode: ${err.code}, errMsg: ${err.message}`);
+      })
+  } catch (error) {
+    let e: BusinessError = error as BusinessError;
+    console.error(`createX500DistinguishedName failed, errCode: ${e.code}, errMsg: ${e.message}`);
+  }
+}
+```
+
+### getName
+
+getName(type: string, encodingType: EncodingType): Array\<string>
+
+根据指定类型和编码格式获取相对可分辨名称的字符串数组。
+
+**起始版本**：26.0.0
+
+**模型约束**：此接口仅可在Stage模型下使用。
+
+**原子化服务API：** 从API版本26.0.0开始，该接口支持在原子化服务中使用。
+
+**系统能力：** SystemCapability.Security.Cert
+
+**参数**：
+
+| 参数名       | 类型   | 必填 | 说明           |
+| ------------ | ------ | ---- | -------------- |
+| type | string | 是 | 指定类型的名称。如"CN"、"OU"等。 |
+| encodingType | [EncodingType](#encodingtype12) | 是 | 表示编码格式。|
+
+**返回值**：
+
+| 类型    | 说明                                              |
+| ------- | ------------------------------------------------- |
+| Array\<string> | 相对可分辨名称的字符串数组。|
+
+**错误码：**
+
+以下错误码的详细介绍请参见[证书错误码](errorcode-cert.md)。
+
+| 错误码ID | 错误信息      |
+| -------- | ------------- |
+| 19020001 | memory malloc failed. |
+| 19020002 | runtime error. Possible causes: <br>1. Memory copy failed;<br>2. A null pointer occurs inside the system;<br>3. Failed to convert parameters between ArkTS and C. |
+| 19020003 | parameter check failed. Possible causes: <br>1. The value of encodingType is invalid. |
+| 19030001 | crypto operation error. |
+
+**示例：**
+
+```ts
+import { cert } from '@kit.DeviceCertificateKit';
+import { BusinessError } from '@kit.BasicServicesKit';
+
+let nameStr = '/CN=Example CA/OU=test cert/O=test/L=XA/ST=SX/C=CN/CN=RSA CA/CN=测试';
+async function getName() {
+  try {
+    cert.createX500DistinguishedName(nameStr)
+      .then((data) => {
+        console.info('createX500DistinguishedName result: success.');
+        console.info('createX500DistinguishedName getName: ' + data.getName("CN", cert.EncodingType.ENCODING_UTF8));
       })
       .catch((err: BusinessError) => {
         console.error(`createX500DistinguishedName failed, errCode: ${err.code}, errMsg: ${err.message}`);
