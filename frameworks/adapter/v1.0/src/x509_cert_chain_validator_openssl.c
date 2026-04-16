@@ -991,7 +991,7 @@ static CfResult AdjustCertChain(HcfX509CertValidatorOpenSSLParams *opensslParams
 static CfResult BuildAndVerifyCertChain(HcfX509CertValidatorOpenSSLParams *opensslParams,
     const HcfX509CertValidatorParams *params, CertVerifyResultInner *result)
 {
-    uint32_t remainingCount = MAX_TOTAL_DOWNLOAD_CERT_COUNT;
+    uint32_t remainingCount = MAX_TOTAL_DOWNLOAD_CERT_COUNT + 1;
     CfResult ret = CF_SUCCESS;
     while (remainingCount > 0) {
         ret = ExecuteSingleVerification(opensslParams, params, result);
@@ -1009,6 +1009,11 @@ static CfResult BuildAndVerifyCertChain(HcfX509CertValidatorOpenSSLParams *opens
         }
 
         if (!params->allowDownloadIntermediateCa) {
+            return ret;
+        }
+
+        if (remainingCount == 1) {
+            LOGW("The download certificate limit of 5 times has been reached");
             return ret;
         }
 
