@@ -115,13 +115,13 @@ struct HcfX509Certificate {
     CfResult (*getExtensionsObject)(HcfX509Certificate *self, CfBlob *out);
 
     /** Get subject distinguished name utf8 type from certificate. */
-    CfResult (*getSubjectNameEx)(HcfX509Certificate *self, CfEncodinigType encodingType, CfBlob *out);
+    CfResult (*getSubjectNameEx)(HcfX509Certificate *self, CfEncodingType encodingType, CfBlob *out);
 
     /** Get issuer distinguished name utf8 type from certificate. */
-    CfResult (*getIssuerNameEx)(HcfX509Certificate *self, CfEncodinigType encodingType, CfBlob *out);
+    CfResult (*getIssuerNameEx)(HcfX509Certificate *self, CfEncodingType encodingType, CfBlob *out);
 
     /** Get the string utf8 type of ceritificate. */
-    CfResult (*toStringEx)(HcfX509Certificate *self, CfEncodinigType encodingType, CfBlob *out);
+    CfResult (*toStringEx)(HcfX509Certificate *self, CfEncodingType encodingType, CfBlob *out);
 };
 
 typedef struct HcfX509CertificateArray HcfX509CertificateArray;

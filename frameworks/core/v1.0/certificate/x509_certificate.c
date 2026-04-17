@@ -188,7 +188,7 @@ static CfResult GetIssuerNameDer(HcfX509Certificate *self, CfBlob *out)
         ((HcfX509CertificateImpl *)self)->spiObj, out);
 }
 
-static CfResult GetIssuerNameEx(HcfX509Certificate *self, CfEncodinigType encodingType, CfBlob *out)
+static CfResult GetIssuerNameEx(HcfX509Certificate *self, CfEncodingType encodingType, CfBlob *out)
 {
     if ((self == NULL) || (out == NULL)) {
         LOGE("Invalid input parameter!");
@@ -234,7 +234,7 @@ static CfResult GetSubjectNameDer(HcfX509Certificate *self, CfBlob *out)
         ((HcfX509CertificateImpl *)self)->spiObj, out);
 }
 
-static CfResult GetSubjectNameEx(HcfX509Certificate *self, CfEncodinigType encodingType, CfBlob *out)
+static CfResult GetSubjectNameEx(HcfX509Certificate *self, CfEncodingType encodingType, CfBlob *out)
 {
     if ((self == NULL) || (out == NULL) || encodingType != CF_ENCODING_UTF8) {
         LOGE("Invalid input parameter.");
@@ -444,7 +444,7 @@ static CfResult ToString(HcfX509Certificate *self, CfBlob *out)
         ((HcfX509CertificateImpl *)self)->spiObj, out);
 }
 
-static CfResult ToStringEx(HcfX509Certificate *self, CfEncodinigType encodingType, CfBlob *out)
+static CfResult ToStringEx(HcfX509Certificate *self, CfEncodingType encodingType, CfBlob *out)
 {
     if (self == NULL || out == NULL) {
         LOGE("Invalid input parameter.");

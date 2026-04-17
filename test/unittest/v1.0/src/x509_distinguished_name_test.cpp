@@ -538,7 +538,7 @@ HWTEST_F(X509DistinguishedNameTest, getNameUtf8Test001, TestSize.Level0)
     EXPECT_EQ(ret, CF_SUCCESS);
     CfArrayDataClearAndFree(&outArr);
 
-    ret = x509Name->getNameUtf8(x509Name, &inPara, static_cast<CfEncodinigType>(1), &outArr);
+    ret = x509Name->getNameUtf8(x509Name, &inPara, static_cast<CfEncodingType>(1), &outArr);
     EXPECT_EQ(ret, CF_ERR_PARAMETER_CHECK);
 
     CfBlobDataClearAndFree(&outData);
@@ -603,7 +603,7 @@ HWTEST_F(X509DistinguishedNameTest, getNameUtf8Test004, TestSize.Level0)
     ret = g_x509NameSpi->engineGetNameUtf8(g_x509NameSpi, &inPara, CF_ENCODING_UTF8, NULL);
     EXPECT_EQ(ret, CF_ERR_PARAMETER_CHECK);
 
-    CfEncodinigType invalidType = static_cast<CfEncodinigType>(-1);
+    CfEncodingType invalidType = static_cast<CfEncodingType>(-1);
     ret = g_x509NameSpi->engineGetNameUtf8(g_x509NameSpi, &inPara, invalidType, &outArr);
     EXPECT_EQ(ret, CF_ERR_PARAMETER_CHECK);
 

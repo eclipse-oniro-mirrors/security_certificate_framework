@@ -103,7 +103,7 @@ static CfResult GetName(HcfX509DistinguishedName *self, CfBlob *type, CfBlob *ou
         ((HcfX509DistinguishedNameImpl *)self)->spiObj, type, out, outArr);
 }
 
-static CfResult GetNameEx(HcfX509DistinguishedName *self, CfEncodinigType encodingType, CfBlob *out)
+static CfResult GetNameEx(HcfX509DistinguishedName *self, CfEncodingType encodingType, CfBlob *out)
 {
     if ((self == NULL) || (out == NULL)) {
         LOGE("Invalid input parameter.");
@@ -121,7 +121,7 @@ static CfResult GetNameEx(HcfX509DistinguishedName *self, CfEncodinigType encodi
         ((HcfX509DistinguishedNameImpl *)self)->spiObj, encodingType, out);
 }
 
-static CfResult GetNameUtf8(HcfX509DistinguishedName *self, CfBlob *type, CfEncodinigType encodingType, CfArray *outArr)
+static CfResult GetNameUtf8(HcfX509DistinguishedName *self, CfBlob *type, CfEncodingType encodingType, CfArray *outArr)
 {
     if (self == NULL) {
         LOGE("Invalid input parameter.");

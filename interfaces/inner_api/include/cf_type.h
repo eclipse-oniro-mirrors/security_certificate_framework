@@ -169,7 +169,7 @@ typedef enum {
 
 typedef enum {
     CF_ENCODING_UTF8 = 0,
-} CfEncodinigType;
+} CfEncodingType;
 
 typedef enum {
     PEM = 0,

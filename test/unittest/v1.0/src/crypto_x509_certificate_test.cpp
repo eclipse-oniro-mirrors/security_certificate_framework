@@ -1813,7 +1813,7 @@ HWTEST_F(CryptoX509CertificateTest, getSubjectNameUtf8003, TestSize.Level0)
     EXPECT_NE(ret, CF_SUCCESS);
     EXPECT_EQ(out.data, nullptr);
 
-    CfEncodinigType encodingType = static_cast<CfEncodinigType>(1);
+    CfEncodingType encodingType = static_cast<CfEncodingType>(1);
     ret = x509Cert->getSubjectNameEx(nullptr, encodingType, &out);
     EXPECT_NE(ret, CF_SUCCESS);
     EXPECT_EQ(out.data, nullptr);
@@ -1882,7 +1882,7 @@ HWTEST_F(CryptoX509CertificateTest, getSubjectNameUtf8006, TestSize.Level0)
     EXPECT_NE(ret, CF_SUCCESS);
     EXPECT_EQ(out.data, nullptr);
 
-    CfEncodinigType encodingType = static_cast<CfEncodinigType>(1);
+    CfEncodingType encodingType = static_cast<CfEncodingType>(1);
     ret = spiObj->engineGetSubjectNameEx(nullptr, encodingType, &out);
     EXPECT_NE(ret, CF_SUCCESS);
     EXPECT_EQ(out.data, nullptr);

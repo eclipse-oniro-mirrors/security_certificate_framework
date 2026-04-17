@@ -91,10 +91,10 @@ struct HcfX509Crl {
     CfResult (*getExtensionsObject)(HcfX509Crl *self, CfBlob *out);
 
     /** Get the issuer name utf8 type from CRL. Issuer means the entity that signs and publishes the CRL. */
-    CfResult (*getIssuerNameEx)(HcfX509Crl *self, CfEncodinigType encodingType, CfBlob *out);
+    CfResult (*getIssuerNameEx)(HcfX509Crl *self, CfEncodingType encodingType, CfBlob *out);
 
     /** Get the string utf8 type of crl. */
-    CfResult (*toStringEx)(HcfX509Crl *self, CfEncodinigType encodingType, CfBlob *out);
+    CfResult (*toStringEx)(HcfX509Crl *self, CfEncodingType encodingType, CfBlob *out);
 };
 
 typedef struct HcfX509CrlArray HcfX509CrlArray;

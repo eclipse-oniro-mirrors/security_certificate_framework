@@ -668,7 +668,7 @@ HWTEST_F(CryptoX509CrlTestPart2, X509CRLUtf8Test002, TestSize.Level0)
     EXPECT_EQ(ret, CF_ERR_INTERNAL);
     EXPECT_EQ(out.data, nullptr);
 
-    CfEncodinigType encodingType = static_cast<CfEncodinigType>(1);
+    CfEncodingType encodingType = static_cast<CfEncodingType>(1);
     ret = x509Crl->getIssuerNameEx(nullptr, encodingType, &out);
     EXPECT_EQ(ret, CF_ERR_INTERNAL);
     EXPECT_EQ(out.data, nullptr);
@@ -764,7 +764,7 @@ HWTEST_F(CryptoX509CrlTestPart2, X509CRLEntryUtf8Test002, TestSize.Level0)
     ret = crlEntry->getCertIssuerEx(crlEntry, CF_ENCODING_UTF8, nullptr);
     EXPECT_EQ(ret, CF_ERR_INTERNAL);
 
-    CfEncodinigType encodingType = static_cast<CfEncodinigType>(1);
+    CfEncodingType encodingType = static_cast<CfEncodingType>(1);
     ret = crlEntry->getCertIssuerEx(crlEntry, encodingType, &out);
     EXPECT_EQ(ret, CF_ERR_PARAMETER_CHECK);
     EXPECT_EQ(out.data, nullptr);

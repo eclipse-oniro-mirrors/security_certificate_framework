@@ -143,8 +143,7 @@ static bool GetPrivateKey(napi_env env, napi_value arg, CfEncodingBlob *&out)
     bool isString = (valueType == napi_string);
     bool isTypedArray = false;
     if (!isString) {
-        status = napi_is_typedarray(env, data, &isTypedArray);
-        if (status != napi_ok) {
+        if (napi_is_typedarray(env, data, &isTypedArray) != napi_ok) {
             LOGE("Failed to check whether private key is TypedArray!");
             return false;
         }
@@ -168,13 +167,13 @@ static bool GetPrivateKey(napi_env env, napi_value arg, CfEncodingBlob *&out)
     }
     if (blob == nullptr) {
         LOGE("get private key blob failed!");
-        CfFree(out);
-        out = nullptr;
+        CF_FREE_PTR(out);
         return false;
     }
     out->encodingFormat = (valueType == napi_string) ? CF_FORMAT_PEM : CF_FORMAT_DER;
     out->data = blob->data;
     out->len = blob->size;
+    CF_FREE_PTR(blob);
     return true;
 }
 

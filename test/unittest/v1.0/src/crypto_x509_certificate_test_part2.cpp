@@ -1074,7 +1074,7 @@ HWTEST_F(CryptoX509CertificateTestPart2, getX509CertUtf8Test003, TestSize.Level0
     EXPECT_EQ(ret, CF_ERR_INTERNAL);
     EXPECT_EQ(out.data, nullptr);
 
-    CfEncodinigType encodingType = static_cast<CfEncodinigType>(1);
+    CfEncodingType encodingType = static_cast<CfEncodingType>(1);
     ret = x509Cert->getIssuerNameEx(nullptr, encodingType, &out);
     EXPECT_EQ(ret, CF_ERR_INTERNAL);
     EXPECT_EQ(out.data, nullptr);

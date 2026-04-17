@@ -72,7 +72,7 @@ string X500DistinguishedNameImpl::GetNameByEnum(EncodingType encodingType)
         return "";
     }
     CfBlob blob = {};
-    CfEncodinigType type = static_cast<CfEncodinigType>(encodingType.get_value());
+    CfEncodingType type = static_cast<CfEncodingType>(encodingType.get_value());
     CfResult res = this->x509NameUtf8_->getNameEx(this->x509NameUtf8_, type, &blob);
     if (res != CF_SUCCESS) {
         ANI_LOGE_THROW(res, "get name failed.");
@@ -113,7 +113,7 @@ array<string> X500DistinguishedNameImpl::GetNameByStrUtf8(string_view type, Enco
     }
     CfBlob inType = {};
     StringToDataBlob(type, inType);
-    CfEncodinigType encodeType = static_cast<CfEncodinigType>(encodingType.get_value());
+    CfEncodingType encodeType = static_cast<CfEncodingType>(encodingType.get_value());
     CfArray outArr = { nullptr, CF_FORMAT_DER, 0 };
     CfResult res = this->x509NameUtf8_->getNameUtf8(this->x509NameUtf8_, &inType, encodeType, &outArr);
     if (res != CF_SUCCESS) {

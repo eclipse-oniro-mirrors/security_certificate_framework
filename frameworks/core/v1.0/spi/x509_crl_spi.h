@@ -75,9 +75,9 @@ struct HcfX509CrlSpi {
 
     CfResult (*engineGetExtensionsObject)(HcfX509CrlSpi *self, CfBlob *out);
 
-    CfResult (*engineGetIssuerNameEx)(HcfX509CrlSpi *self, CfEncodinigType encodingType, CfBlob *out);
+    CfResult (*engineGetIssuerNameEx)(HcfX509CrlSpi *self, CfEncodingType encodingType, CfBlob *out);
 
-    CfResult (*engineToStringEx)(HcfX509CrlSpi *self, CfEncodinigType encodingType, CfBlob *out);
+    CfResult (*engineToStringEx)(HcfX509CrlSpi *self, CfEncodingType encodingType, CfBlob *out);
 };
 
 #endif // CF_X509_CRL_SPI_H

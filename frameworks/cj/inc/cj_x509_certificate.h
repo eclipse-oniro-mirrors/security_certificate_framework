@@ -59,7 +59,7 @@ FFI_DECLARE_HcfX509Certificate(GetCRLDistributionPointsURI, CfResult, CfArray *o
 FFI_DECLARE_HcfX509Certificate(ToString, CfResult, CfBlob *out);
 FFI_DECLARE_HcfX509Certificate(HashCode, CfResult, CfBlob *out);
 FFI_DECLARE_HcfX509Certificate(GetExtensionsObject, CfResult, CfBlob *out);
-FFI_DECLARE_HcfX509Certificate(GetSubjectNameEx, CfResult, const CfEncodinigType encodingType, CfBlob *out);
+FFI_DECLARE_HcfX509Certificate(GetSubjectNameEx, CfResult, const CfEncodingType encodingType, CfBlob *out);
 FFI_DECLARE_HcfX509Certificate(GetItem, CfResult, const int32_t itemType, CfBlob *out);
 }
 

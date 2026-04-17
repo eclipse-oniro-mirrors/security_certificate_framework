@@ -140,7 +140,7 @@ static CfResult GetCertIssuer(HcfX509CrlEntry *self, CfBlob *encodedOut)
     return CF_SUCCESS;
 }
 
-static CfResult GetCertIssuerEx(HcfX509CrlEntry *self, CfEncodinigType encodingType, CfBlob *encodedOut)
+static CfResult GetCertIssuerEx(HcfX509CrlEntry *self, CfEncodingType encodingType, CfBlob *encodedOut)
 {
     if ((self == NULL) || (encodedOut == NULL)) {
         LOGE("Invalid params for calling GetCertIssuerEx!");

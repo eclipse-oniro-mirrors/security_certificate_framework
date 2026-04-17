@@ -176,7 +176,7 @@ static CfResult GetIssuerNameDer(HcfX509Crl *self, CfBlob *out)
         ((HcfX509CrlImpl *)self)->spiObj, out);
 }
 
-static CfResult GetIssuerNameEx(HcfX509Crl *self, CfEncodinigType encodingType, CfBlob *out)
+static CfResult GetIssuerNameEx(HcfX509Crl *self, CfEncodingType encodingType, CfBlob *out)
 {
     if ((self == NULL) || (out == NULL)) {
         LOGE("Invalid input parameter.");
@@ -362,7 +362,7 @@ static CfResult ToString(HcfX509Crl *self, CfBlob *out)
         ((HcfX509CrlImpl *)self)->spiObj, out);
 }
 
-static CfResult ToStringEx(HcfX509Crl *self, CfEncodinigType encodingType, CfBlob *out)
+static CfResult ToStringEx(HcfX509Crl *self, CfEncodingType encodingType, CfBlob *out)
 {
     if ((self == NULL) || (out == NULL)) {
         LOGE("Invalid input parameter.");

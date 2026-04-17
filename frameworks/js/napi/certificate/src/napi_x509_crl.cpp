@@ -457,7 +457,7 @@ napi_value NapiX509Crl::GetIssuerDN(napi_env env, napi_callback_info info)
     return returnBlob;
 }
 
-napi_value NapiX509Crl::GetIssuerDNEx(napi_env env, napi_callback_info info, CfEncodinigType encodingType)
+napi_value NapiX509Crl::GetIssuerDNEx(napi_env env, napi_callback_info info, CfEncodingType encodingType)
 {
     HcfX509Crl *x509Crl = GetX509Crl();
     CfBlob blob = { 0, nullptr };
@@ -762,7 +762,7 @@ napi_value NapiX509Crl::ToString(napi_env env, napi_callback_info info)
     return returnBlob;
 }
 
-napi_value NapiX509Crl::ToStringEx(napi_env env, napi_callback_info info, CfEncodinigType encodingType)
+napi_value NapiX509Crl::ToStringEx(napi_env env, napi_callback_info info, CfEncodingType encodingType)
 {
     HcfX509Crl *x509Crl = GetX509Crl();
     CfBlob blob = { 0, nullptr };
@@ -1168,7 +1168,7 @@ static napi_value NapiGetIssuerDN(napi_env env, napi_callback_info info)
             LOGE("wrong argument type!");
             return nullptr;
         }
-        CfEncodinigType encodingType;
+        CfEncodingType encodingType;
         if (napi_get_value_uint32(env, argv[PARAM0], reinterpret_cast<uint32_t *>(&encodingType)) != napi_ok) {
             napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "napi_get_value_uint32 failed!"));
             LOGE("napi_get_value_uint32 failed!");
@@ -1335,7 +1335,7 @@ static napi_value NapiToString(napi_env env, napi_callback_info info)
             LOGE("wrong argument type!");
             return nullptr;
         }
-        CfEncodinigType encodingType;
+        CfEncodingType encodingType;
         if (napi_get_value_uint32(env, argv[PARAM0], reinterpret_cast<uint32_t *>(&encodingType)) != napi_ok) {
             napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "napi_get_value_uint32 failed!"));
             LOGE("napi_get_value_uint32 failed!");
