@@ -231,7 +231,7 @@ CfResult FfiCertCjX509CertificateGetExtensionsObject(const CjX509Certificate sel
     return self.cert->getExtensionsObject(self.cert, out);
 }
 
-CfResult FfiCertCjX509CertificateGetSubjectNameEx(const CjX509Certificate self, const CfEncodinigType encodingType,
+CfResult FfiCertCjX509CertificateGetSubjectNameEx(const CjX509Certificate self, const CfEncodingType encodingType,
                                                   CfBlob *out)
 {
     return self.cert->getSubjectNameEx(self.cert, encodingType, out);

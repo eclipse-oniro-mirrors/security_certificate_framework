@@ -170,7 +170,7 @@ string X509CertImpl::GetIssuerNameEx(EncodingType encodingType)
         return "";
     }
     CfBlob blob = {};
-    CfEncodinigType type = static_cast<CfEncodinigType>(encodingType.get_value());
+    CfEncodingType type = static_cast<CfEncodingType>(encodingType.get_value());
     CfResult res = this->cert_->getIssuerNameEx(this->cert_, type, &blob);
     if (res != CF_SUCCESS) {
         ANI_LOGE_THROW(res, "get issuer name failed!");
@@ -190,7 +190,7 @@ DataBlob X509CertImpl::GetSubjectName(optional_view<EncodingType> encodingType)
     CfBlob blob = {};
     CfResult res = CF_INVALID_PARAMS;
     if (encodingType.has_value()) {
-        CfEncodinigType type = static_cast<CfEncodinigType>(encodingType.value().get_value());
+        CfEncodingType type = static_cast<CfEncodingType>(encodingType.value().get_value());
         res = this->cert_->getSubjectNameEx(this->cert_, type, &blob);
     } else {
         res = this->cert_->getSubjectName(this->cert_, &blob);
@@ -551,7 +551,7 @@ string X509CertImpl::ToStringEx(EncodingType encodingType)
         return "";
     }
     CfBlob blob = {};
-    CfEncodinigType type = static_cast<CfEncodinigType>(encodingType.get_value());
+    CfEncodingType type = static_cast<CfEncodingType>(encodingType.get_value());
     CfResult res = this->cert_->toStringEx(this->cert_, type, &blob);
     if (res != CF_SUCCESS) {
         ANI_LOGE_THROW(res, "to string failed!");

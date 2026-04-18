@@ -30,7 +30,23 @@ declare namespace cert {
     ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY = 19030005,
     ERR_KEYUSAGE_NO_CERTSIGN = 19030006,
     ERR_KEYUSAGE_NO_DIGITAL_SIGNATURE = 19030007,
-    ERR_MAYBE_WRONG_PASSWORD = 19030008
+    ERR_MAYBE_WRONG_PASSWORD = 19030008,
+    ERR_CERT_UNTRUSTED = 19030009,
+    ERR_CERT_HAS_REVOKED = 19030010,
+    ERR_UNKNOWN_CRITICAL_EXTENSION = 19030011,
+    ERR_CERT_HOSTNAME_MISMATCH = 19030012,
+    ERR_CERT_EMAIL_ADDRESS_MISMATCH = 19030013,
+    ERR_CERT_KEYUSAGE_MISMATCH = 19030014,
+    ERR_CRL_NOT_FOUND = 19030015,
+    ERR_CRL_NOT_YET_VALID = 19030016,
+    ERR_CRL_HAS_EXPIRED = 19030017,
+    ERR_CRL_SIGNATURE_FAILURE = 19030018,
+    ERR_CRL_ISSUER_NOT_FOUND = 19030019,
+    ERR_OCSP_RESPONSE_NOT_FOUND = 19030020,
+    ERR_OCSP_RESPONSE_INVALID = 19030021,
+    ERR_OCSP_SIGNATURE_FAILURE = 19030022,
+    ERR_OCSP_CERT_STATUS_UNKNOWN = 19030023,
+    ERR_NETWORK_TIMEOUT = 19030024,
   }
 
   interface DataBlob {
@@ -179,7 +195,7 @@ declare namespace cert {
     CERT_REVOCATION_PREFER_OCSP = 0,
     CERT_REVOCATION_CRL_CHECK = 1,
     CERT_REVOCATION_OCSP_CHECK = 2,
-    CERT_REVOCATION_CHECK_ALL_CERT = 3
+    CERT_REVOCATION_CHECK_ALL_CERT = 3,
   }
 
   enum OcspDigest {
@@ -187,7 +203,7 @@ declare namespace cert {
     SHA224 = 1,
     SHA256 = 2,
     SHA384 = 3,
-    SHA512 = 4
+    SHA512 = 4,
   }
 
   interface X509CertRevokedParams {
@@ -261,8 +277,8 @@ declare namespace cert {
     subject?: Uint8Array;
     subjectKeyIdentifier?: Uint8Array;
     publicKey?: DataBlob;
-    privateKey?: string | Uint8Array;
     publicKeyAlgID?: string;
+    privateKey?: string | Uint8Array;
   }
 
   interface X509CRLMatchParameters {
@@ -399,7 +415,7 @@ declare namespace cert {
 
   enum CmsContentType {
     SIGNED_DATA = 0,
-    ENVELOPED_DATA = 1
+    ENVELOPED_DATA = 1,
   }
 
   enum CmsContentDataFormat {
@@ -433,7 +449,7 @@ declare namespace cert {
   enum CmsKeyAgreeRecipientDigestAlgorithm {
     SHA256 = 0,
     SHA384 = 1,
-    SHA512 = 2
+    SHA512 = 2,
   }
 
   enum CmsRecipientEncryptionAlgorithm {
@@ -442,7 +458,7 @@ declare namespace cert {
     AES_256_CBC = 2,
     AES_128_GCM = 3,
     AES_192_GCM = 4,
-    AES_256_GCM = 5
+    AES_256_GCM = 5,
   }
 
   interface CmsKeyTransRecipientInfo {
@@ -492,7 +508,7 @@ declare namespace cert {
 
   enum CmsCertType {
     SIGNER_CERTS = 0,
-    ALL_CERTS = 1
+    ALL_CERTS = 1,
   }
 
   interface CmsParser {
@@ -521,7 +537,7 @@ declare namespace cert {
   enum PbesEncryptionAlgorithm {
     AES_128_CBC = 0,
     AES_192_CBC = 1,
-    AES_256_CBC = 2
+    AES_256_CBC = 2,
   }
 
   interface PbesParams {
@@ -533,7 +549,7 @@ declare namespace cert {
   enum Pkcs12MacDigestAlgorithm {
     SHA256 = 0,
     SHA384 = 1,
-    SHA512 = 2
+    SHA512 = 2,
   }
 
   interface Pkcs12CreationConfig {

@@ -93,7 +93,7 @@ string X509CRLEntryImpl::GetCertIssuerEx(EncodingType encodingType)
         return "";
     }
     CfBlob blob = {};
-    CfEncodinigType type = static_cast<CfEncodinigType>(encodingType.get_value());
+    CfEncodingType type = static_cast<CfEncodingType>(encodingType.get_value());
     CfResult res = this->x509CrlEntry_->getCertIssuerEx(this->x509CrlEntry_, type, &blob);
     if (res != CF_SUCCESS) {
         ANI_LOGE_THROW(res, "get cert issuer failed!");

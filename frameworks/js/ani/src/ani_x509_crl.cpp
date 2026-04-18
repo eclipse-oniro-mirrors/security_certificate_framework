@@ -126,7 +126,7 @@ string X509CRLImpl::GetIssuerNameEx(EncodingType encodingType)
         return "";
     }
     CfBlob blob = {};
-    CfEncodinigType type = static_cast<CfEncodinigType>(encodingType.get_value());
+    CfEncodingType type = static_cast<CfEncodingType>(encodingType.get_value());
     CfResult res = this->x509Crl_->getIssuerNameEx(this->x509Crl_, type, &blob);
     if (res != CF_SUCCESS) {
         ANI_LOGE_THROW(res, "get issuer name failed!");
@@ -443,7 +443,7 @@ string X509CRLImpl::ToStringEx(EncodingType encodingType)
         return "";
     }
     CfBlob blob = {};
-    CfEncodinigType type = static_cast<CfEncodinigType>(encodingType.get_value());
+    CfEncodingType type = static_cast<CfEncodingType>(encodingType.get_value());
     CfResult res = this->x509Crl_->toStringEx(this->x509Crl_, type, &blob);
     if (res != CF_SUCCESS) {
         ANI_LOGE_THROW(res, "to string failed!");

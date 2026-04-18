@@ -287,7 +287,7 @@ static CfResult GetIssuerNameDer(HcfX509CrlSpi *self, CfBlob *out)
     return CF_SUCCESS;
 }
 
-static CfResult GetIssuerNameEx(HcfX509CrlSpi *self, CfEncodinigType encodingType, CfBlob *out)
+static CfResult GetIssuerNameEx(HcfX509CrlSpi *self, CfEncodingType encodingType, CfBlob *out)
 {
     if ((self == NULL) || (out == NULL)) {
         LOGE("Invalid params for calling GetIssuerNameEx!");
@@ -882,7 +882,7 @@ static CfResult ToString(HcfX509CrlSpi *self, CfBlob *out)
     return CF_ERR_CRYPTO_OPERATION;
 }
 
-static CfResult ToStringEx(HcfX509CrlSpi *self, CfEncodinigType encodingType, CfBlob *out)
+static CfResult ToStringEx(HcfX509CrlSpi *self, CfEncodingType encodingType, CfBlob *out)
 {
     if ((self == NULL) || (out == NULL)) {
         LOGE("The input data is null!");

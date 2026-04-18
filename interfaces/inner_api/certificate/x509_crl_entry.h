@@ -39,7 +39,7 @@ struct HcfX509CrlEntry {
     CfResult (*getCertIssuer)(HcfX509CrlEntry *self, CfBlob *encodedOut);
 
     /** Gets the issuer utf8 of the x509 certificate described by this entry. */
-    CfResult (*getCertIssuerEx)(HcfX509CrlEntry *self, CfEncodinigType encodingType, CfBlob *encodedOut);
+    CfResult (*getCertIssuerEx)(HcfX509CrlEntry *self, CfEncodingType encodingType, CfBlob *encodedOut);
 
     /** Gets the issuer der format of the x509 certificate described by this entry. */
     CfResult (*getCertIssuerDer)(HcfX509CrlEntry *self, CfBlob *encodedOut);

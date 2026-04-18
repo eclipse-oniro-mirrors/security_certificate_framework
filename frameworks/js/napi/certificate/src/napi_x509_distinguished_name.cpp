@@ -198,7 +198,7 @@ napi_value NapiX509DistinguishedName::GetName(napi_env env, napi_callback_info i
     return nullptr;
 }
 
-napi_value NapiX509DistinguishedName::GetNameEx(napi_env env, napi_callback_info info, CfEncodinigType encodingType)
+napi_value NapiX509DistinguishedName::GetNameEx(napi_env env, napi_callback_info info, CfEncodingType encodingType)
 {
     HcfX509DistinguishedName *x509Name = GetX509DistinguishedNameUtf8();
     CfBlob blob = { 0, nullptr };
@@ -215,7 +215,7 @@ napi_value NapiX509DistinguishedName::GetNameEx(napi_env env, napi_callback_info
     return result;
 }
 
-napi_value NapiX509DistinguishedName::GetNameUtf8(napi_env env, napi_callback_info info, CfEncodinigType encodingType)
+napi_value NapiX509DistinguishedName::GetNameUtf8(napi_env env, napi_callback_info info, CfEncodingType encodingType)
 {
     size_t argc = ARGS_SIZE_TWO;
     napi_value argv[ARGS_SIZE_TWO] = { nullptr };
@@ -281,7 +281,7 @@ static napi_value NapiGetName(napi_env env, napi_callback_info info)
     if (argc == ARGS_SIZE_ONE) {
         napi_typeof(env, argv[PARAM0], &valueType0);
         if (valueType0 == napi_number) {
-            CfEncodinigType encodingType;
+            CfEncodingType encodingType;
             if (napi_get_value_uint32(env, argv[PARAM0], reinterpret_cast<uint32_t *>(&encodingType)) != napi_ok) {
                 napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "napi_get_value_uint32 failed!"));
                 LOGE("napi_get_value_uint32 failed!");
@@ -300,7 +300,7 @@ static napi_value NapiGetName(napi_env env, napi_callback_info info)
             LOGE("wrong argument type!");
             return nullptr;
         }
-        CfEncodinigType encodingType;
+        CfEncodingType encodingType;
         if (napi_get_value_uint32(env, argv[PARAM1], reinterpret_cast<uint32_t *>(&encodingType)) != napi_ok) {
             napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "napi_get_value_uint32 failed!"));
             LOGE("napi_get_value_uint32 failed!");

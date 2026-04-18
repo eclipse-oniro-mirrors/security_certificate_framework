@@ -267,7 +267,7 @@ napi_value NapiX509CrlEntry::GetCertificateIssuer(napi_env env, napi_callback_in
     return returnValue;
 }
 
-napi_value NapiX509CrlEntry::GetCertificateIssuerEx(napi_env env, napi_callback_info info, CfEncodinigType encodingType)
+napi_value NapiX509CrlEntry::GetCertificateIssuerEx(napi_env env, napi_callback_info info, CfEncodingType encodingType)
 {
     HcfX509CrlEntry *x509CrlEntry = GetX509CrlEntry();
     CfBlob blob = { 0, nullptr };
@@ -561,7 +561,7 @@ static napi_value NapiGetCertificateIssuer(napi_env env, napi_callback_info info
             LOGE("wrong argument type!");
             return nullptr;
         }
-        CfEncodinigType encodingType;
+        CfEncodingType encodingType;
         if (napi_get_value_uint32(env, argv[PARAM0], reinterpret_cast<uint32_t *>(&encodingType)) != napi_ok) {
             napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "napi_get_value_uint32 failed!"));
             LOGE("napi_get_value_uint32 failed!");

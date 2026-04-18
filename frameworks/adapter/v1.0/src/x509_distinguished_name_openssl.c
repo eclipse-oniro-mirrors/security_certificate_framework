@@ -120,7 +120,7 @@ static CfResult GetDataByEntryOpenssl(int32_t count, CfArray *outArr, X509_NAME_
     return CF_SUCCESS;
 }
 
-static CfResult GetDataByEntryOpensslUtf8(int32_t count, CfEncodinigType encodingType, CfArray *outArr,
+static CfResult GetDataByEntryOpensslUtf8(int32_t count, CfEncodingType encodingType, CfArray *outArr,
     X509_NAME_ENTRY **neArr)
 {
     outArr->data = (CfBlob *)CfMalloc(count * sizeof(CfBlob), 0);
@@ -198,7 +198,7 @@ static CfResult GetNameTypeByOpenssl(HcfX509DistinguishedNameOpensslImpl *realNa
 }
 
 static CfResult GetNameTypeByOpensslUtf8(HcfX509DistinguishedNameOpensslImpl *realName, CfBlob *type,
-    CfEncodinigType encodingType, CfArray *outArr)
+    CfEncodingType encodingType, CfArray *outArr)
 {
     if (realName == NULL || type == NULL || outArr == NULL || encodingType != CF_ENCODING_UTF8) {
         LOGE("The input data is null or encoding type is not UTF8!");
@@ -269,7 +269,7 @@ static CfResult GetNameOpenssl(HcfX509DistinguishedNameSpi *self, CfBlob *type, 
     return GetNameTypeByOpenssl(realName, type, outArr);
 }
 
-static CfResult GetNameExOpenssl(HcfX509DistinguishedNameSpi *self, CfEncodinigType encodingType, CfBlob *out)
+static CfResult GetNameExOpenssl(HcfX509DistinguishedNameSpi *self, CfEncodingType encodingType, CfBlob *out)
 {
     if ((self == NULL) || (out == NULL)) {
         LOGE("The input data is null!");
@@ -307,7 +307,7 @@ static CfResult GetNameExOpenssl(HcfX509DistinguishedNameSpi *self, CfEncodinigT
     return CF_SUCCESS;
 }
 
-static CfResult GetNameOpensslUtf8(HcfX509DistinguishedNameSpi *self, CfBlob *type, CfEncodinigType encodingType,
+static CfResult GetNameOpensslUtf8(HcfX509DistinguishedNameSpi *self, CfBlob *type, CfEncodingType encodingType,
     CfArray *outArr)
 {
     if (self == NULL) {

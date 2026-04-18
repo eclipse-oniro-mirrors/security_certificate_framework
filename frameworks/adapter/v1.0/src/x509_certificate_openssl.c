@@ -779,7 +779,7 @@ static CfResult GetIssuerDNX509OpensslDer(HcfX509CertificateSpi *self, CfBlob *o
     return CF_SUCCESS;
 }
 
-static CfResult GetIssuerDNX509OpensslEx(HcfX509CertificateSpi *self, CfEncodinigType encodingType, CfBlob *out)
+static CfResult GetIssuerDNX509OpensslEx(HcfX509CertificateSpi *self, CfEncodingType encodingType, CfBlob *out)
 {
     if ((self == NULL) || (out == NULL)) {
         LOGE("[Get issuerDN utf8 openssl] The input data is null!");
@@ -899,7 +899,7 @@ static CfResult GetSubjectDNX509OpensslDer(HcfX509CertificateSpi *self, CfBlob *
     return CF_SUCCESS;
 }
 
-static CfResult GetSubjectDNX509OpensslEx(HcfX509CertificateSpi *self, CfEncodinigType encodingType, CfBlob *out)
+static CfResult GetSubjectDNX509OpensslEx(HcfX509CertificateSpi *self, CfEncodingType encodingType, CfBlob *out)
 {
     if ((self == NULL) || (out == NULL) || (encodingType != CF_ENCODING_UTF8)) {
         LOGE("[Get utf8 subjectDN openssl]The input data is null or encodingType is not utf8!");
@@ -1398,7 +1398,7 @@ static CfResult ToStringX509Openssl(HcfX509CertificateSpi *self, CfBlob *out)
     return CF_ERR_CRYPTO_OPERATION;
 }
 
-static CfResult ToStringX509OpensslEx(HcfX509CertificateSpi *self, CfEncodinigType encodingType, CfBlob *out)
+static CfResult ToStringX509OpensslEx(HcfX509CertificateSpi *self, CfEncodingType encodingType, CfBlob *out)
 {
     if ((self == NULL) || (out == NULL)) {
         LOGE("The input data is null!");
