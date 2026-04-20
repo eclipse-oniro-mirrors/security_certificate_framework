@@ -916,6 +916,7 @@ static CfResult ExecuteSingleVerification(HcfX509CertValidatorOpenSSLParams *ope
 
     CfResult ret = SetAppdata(verifyCtx, opensslParams, params, result);
     if (ret != CF_SUCCESS) {
+        X509_STORE_CTX_free(verifyCtx);
         return ret;
     }
 
