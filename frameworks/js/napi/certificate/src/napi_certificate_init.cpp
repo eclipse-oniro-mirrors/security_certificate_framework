@@ -73,8 +73,7 @@ static napi_value CreateCertResultCode(napi_env env)
     CertAddUint32Property(env, resultCode, "ERR_MAYBE_WRONG_PASSWORD", JS_ERR_CERT_INVALID_PRIVATE_KEY);
     CertAddUint32Property(env, resultCode, "ERR_CERT_UNTRUSTED", JS_ERR_CERT_UNTRUSTED);
     CertAddUint32Property(env, resultCode, "ERR_CERT_HAS_REVOKED", JS_ERR_CERT_REVOKED);
-    CertAddUint32Property(env, resultCode, "ERR_CERT_UNKNOWN_CRITICAL_EXTENSION",
-        JS_ERR_CERT_UNKNOWN_CRITICAL_EXTENSION);
+    CertAddUint32Property(env, resultCode, "ERR_UNKNOWN_CRITICAL_EXTENSION", JS_ERR_CERT_UNKNOWN_CRITICAL_EXTENSION);
     CertAddUint32Property(env, resultCode, "ERR_CERT_HOSTNAME_MISMATCH", JS_ERR_CERT_HOST_NAME_MISMATCH);
     CertAddUint32Property(env, resultCode, "ERR_CERT_EMAIL_ADDRESS_MISMATCH", JS_ERR_CERT_EMAIL_MISMATCH);
     CertAddUint32Property(env, resultCode, "ERR_CERT_KEYUSAGE_MISMATCH", JS_ERR_CERT_KEY_USAGE_MISMATCH);

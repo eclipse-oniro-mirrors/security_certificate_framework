@@ -313,7 +313,7 @@ static ValidateX509CertCtx *CreateValidateX509CertContext(napi_env env, napi_val
     napi_unwrap(env, certArg, reinterpret_cast<void **>(&napiCert));
     if (napiCert == nullptr) {
         LOGE("napi cert object is nullptr!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_PARAMETER_CHECK, "Invalid certificate parameter"));
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Invalid X509Cert parameter"));
         CfFree(context);
         return nullptr;
     }
@@ -464,7 +464,7 @@ static napi_value NapiValidate(napi_env env, napi_callback_info info)
         }
         /* Invalid second parameter type */
         LOGE("Invalid second parameter type, expected function or object");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Invalid parameter type"));
+        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "The second parameter type is incorrect"));
         return nullptr;
     }
 
