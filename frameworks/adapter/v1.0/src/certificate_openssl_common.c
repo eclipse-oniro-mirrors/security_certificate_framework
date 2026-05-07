@@ -88,6 +88,11 @@ void CfPrintOpensslError(void)
     unsigned long errCode;
 
     errCode = ERR_get_error();
+    if (errCode == 0) {
+        LOGW("Openssl error is empty");
+        return;
+    }
+
     ERR_error_string_n(errCode, szErr, LOG_PRINT_MAX_LEN);
 
     LOGE("[Openssl]: engine fail, error code = %{public}lu, error string = %{public}s", errCode, szErr);

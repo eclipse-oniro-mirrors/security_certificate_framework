@@ -1174,18 +1174,29 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_028, TestSize.Level0)
 
     params.revokedParams = static_cast<HcfX509CertRevokedParams *>(CfMalloc(sizeof(HcfX509CertRevokedParams), 0));
     ASSERT_NE(params.revokedParams, nullptr);
-    params.revokedParams->revocationFlags.count = 3;
+    params.revokedParams->revocationFlags.count = 2;
     params.revokedParams->revocationFlags.data = static_cast<int32_t *>(CfMalloc(3 * sizeof(int32_t), 0));
     ASSERT_NE(params.revokedParams->revocationFlags.data, nullptr);
     params.revokedParams->revocationFlags.data[0] = CERT_REVOCATION_PREFER_OCSP;
-    params.revokedParams->revocationFlags.data[2] = CERT_REVOCATION_OCSP_CHECK;
+    params.revokedParams->revocationFlags.data[1] = CERT_REVOCATION_OCSP_CHECK;
 
     HcfVerifyCertResult result = {};
     CfResult res = g_validator->validateX509Cert(g_validator, cert, &params, &result);
-
-    /* End-entity cert should NOT have keyCertSign, so this should return mismatch */
     EXPECT_EQ(res, CF_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY);
     printf("result errorMsg = %s\n", result.errorMsg);
+
+    params.revokedParams->revocationFlags.data[0] = CERT_REVOCATION_CRL_CHECK;
+    params.revokedParams->revocationFlags.data[1] = CERT_REVOCATION_OCSP_CHECK;
+    res = g_validator->validateX509Cert(g_validator, cert, &params, &result);
+    EXPECT_EQ(res, CF_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY);
+    printf("result errorMsg = %s\n", result.errorMsg);
+
+    params.revokedParams->revocationFlags.data[0] = CERT_REVOCATION_CRL_CHECK;
+    params.revokedParams->revocationFlags.count = 1;
+    res = g_validator->validateX509Cert(g_validator, cert, &params, &result);
+    EXPECT_EQ(res, CF_ERR_UNABLE_TO_GET_CRL_ISSUER);
+    printf("result errorMsg = %s\n", result.errorMsg);
+
     CfObjDestroy(cert);
     FreeValidatorParams(params);
 }

@@ -1204,7 +1204,7 @@ static CfResult CheckCertRevocation(CertVerifyResultInner *result, const HcfX509
     for (int i = 0; i < checkCount; i++) {
         X509 *cert = sk_X509_value(result->certChain, i);
 
-        if (X509_self_signed(cert, 0)) {
+        if (X509_self_signed(cert, 0) > 0) {
             continue;
         }
 
@@ -1314,6 +1314,13 @@ static CfResult HandleCrlNotFound(X509 *cert, X509_STORE_CTX *ctx,
 static CfResult CheckSingleCertByCrl(X509 *cert, const HcfX509CertValidatorParams *params,
     const HcfX509CertValidatorOpenSSLParams *opensslParams, CertVerifyResultInner *result)
 {
+    if (opensslParams->issuer == NULL) {
+        RETURN_VERIFY_ERROR(CF_ERR_UNABLE_TO_GET_CRL_ISSUER,
+            "Failed to find crl issuer. Note: If partial certificate chain verification is enabled, CRL checking for" \
+            "the revocation status of all certificates is not supported.",
+            result);
+    }
+
     HcfX509CertRevokedParams *revo = params->revokedParams;
     X509_STORE_CTX *ctx = X509_STORE_CTX_new();
     if (ctx == NULL) {
@@ -1824,7 +1831,8 @@ static CfResult CheckSingleCertRevocation(X509 *cert,
             }
         } else {
             res = CheckSingleCertByCrl(cert, params, opensslParams, result);
-            if (res == CF_ERR_CRL_NOT_FOUND || res == CF_ERR_NETWORK_TIMEOUT) {
+            if (res == CF_ERR_UNABLE_TO_GET_CRL_ISSUER || res == CF_ERR_CRL_NOT_FOUND ||
+                res == CF_ERR_NETWORK_TIMEOUT) {
                 res = CheckSingleCertByOcsp(cert, params, opensslParams, result);
             }
         }
