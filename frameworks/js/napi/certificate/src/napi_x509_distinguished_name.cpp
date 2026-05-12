@@ -65,6 +65,7 @@ static void FreeCryptoFwkCtx(napi_env env, CfCtx *context)
 
     if (context->asyncWork != nullptr) {
         napi_delete_async_work(env, context->asyncWork);
+        context->asyncWork = nullptr;
     }
 
     if (context->cfRef != nullptr) {

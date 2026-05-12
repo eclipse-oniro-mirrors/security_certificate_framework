@@ -83,10 +83,12 @@ static void FreeCryptoFwkCtx(napi_env env, CfCtx *context)
 
     if (context->asyncWork != nullptr) {
         napi_delete_async_work(env, context->asyncWork);
+        context->asyncWork = nullptr;
     }
 
     if (context->callback != nullptr) {
         napi_delete_reference(env, context->callback);
+        context->callback = nullptr;
     }
 
     if (context->cfRef != nullptr) {
@@ -112,6 +114,7 @@ static void FreeValidateX509CertCtx(napi_env env, ValidateX509CertCtx *context)
 
     if (context->asyncWork != nullptr) {
         napi_delete_async_work(env, context->asyncWork);
+        context->asyncWork = nullptr;
     }
 
     if (context->cfRef != nullptr) {

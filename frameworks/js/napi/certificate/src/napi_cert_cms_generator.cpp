@@ -127,6 +127,7 @@ static void FreeCmsDoFinalCtx(napi_env env, CmsDoFinalCtx *ctx)
     }
     if (ctx->asyncWork != nullptr) {
         napi_delete_async_work(env, ctx->asyncWork);
+        ctx->asyncWork = nullptr;
     }
     if (ctx->generatorRef != nullptr) {
         napi_delete_reference(env, ctx->generatorRef);
@@ -154,6 +155,7 @@ static void FreeCmsGetEncryptedContentCtx(napi_env env, CmsGetEncryptedContentCt
     }
     if (ctx->asyncWork != nullptr) {
         napi_delete_async_work(env, ctx->asyncWork);
+        ctx->asyncWork = nullptr;
     }
     if (ctx->generatorRef != nullptr) {
         napi_delete_reference(env, ctx->generatorRef);
@@ -173,6 +175,7 @@ static void FreeCmsParserCtx(napi_env env, CmsParserCtx *ctx)
     }
     if (ctx->asyncWork != nullptr) {
         napi_delete_async_work(env, ctx->asyncWork);
+        ctx->asyncWork = nullptr;
     }
     if (ctx->parserRef != nullptr) {
         napi_delete_reference(env, ctx->parserRef);
@@ -184,6 +187,7 @@ static void FreeCmsParserCtx(napi_env env, CmsParserCtx *ctx)
     }
     if (ctx->rawData != nullptr) {
         CfBlobDataFree(ctx->rawData);
+        ctx->rawData = nullptr;
     }
     if (ctx->options != nullptr) {
         FreeCmsParserSignedDataOptions(ctx->options);
@@ -191,6 +195,7 @@ static void FreeCmsParserCtx(napi_env env, CmsParserCtx *ctx)
     }
     if (ctx->decryptEnvelopedDataOptions != nullptr) {
         FreeCmsParserDecryptEnvelopedDataOptions(ctx->decryptEnvelopedDataOptions);
+        ctx->decryptEnvelopedDataOptions = nullptr;
     }
     CfFree(ctx);
 }
