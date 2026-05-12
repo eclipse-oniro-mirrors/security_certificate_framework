@@ -65,10 +65,12 @@ static void FreeCryptoFwkCtx(napi_env env, CfCertCRLColCtx *&context)
 
     if (context->asyncWork != nullptr) {
         napi_delete_async_work(env, context->asyncWork);
+        context->asyncWork = nullptr;
     }
 
     if (context->callback != nullptr) {
         napi_delete_reference(env, context->callback);
+        context->callback = nullptr;
     }
 
     if (context->cfCertCRLCollectionRef != nullptr) {
@@ -90,6 +92,7 @@ static void FreeCryptoFwkCtx(napi_env env, CfCertCRLColCtx *&context)
     }
     if (context->crlMatchParam != nullptr) {
         FreeX509CrlMatchParams(context->crlMatchParam);
+        context->crlMatchParam = nullptr;
     }
     CF_FREE_PTR(context->retCerts.data);
     context->retCerts.count = 0;
