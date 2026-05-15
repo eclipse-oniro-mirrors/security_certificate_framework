@@ -244,6 +244,7 @@ CfResult FfiCertCreateTrustAnchorWithKeyStore(const CfBlob *keyStore, const CfBl
     returnObj->data = static_cast<CjX509TrustAnchor **>(malloc(sizeof(CjX509TrustAnchor *) * anchorArray->count));
     if (returnObj->data == nullptr) {
         free(anchorArray->data);
+        free(anchorArray);
         return CF_ERR_MALLOC;
     }
     for (uint32_t i = 0; i < anchorArray->count; ++i) {
@@ -253,6 +254,7 @@ CfResult FfiCertCreateTrustAnchorWithKeyStore(const CfBlob *keyStore, const CfBl
                 free(returnObj->data[j]);
             }
             free(anchorArray->data);
+            free(anchorArray);
             return CF_ERR_MALLOC;
         }
         anchor->CAPubKey = anchorArray->data[i]->CAPubKey;
@@ -262,6 +264,7 @@ CfResult FfiCertCreateTrustAnchorWithKeyStore(const CfBlob *keyStore, const CfBl
         returnObj->data[i] = anchor;
     }
     free(anchorArray->data);
+    free(anchorArray);
     return CF_SUCCESS;
 }
 
