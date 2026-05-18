@@ -215,7 +215,7 @@ declare namespace cert {
     ocspDigest?: OcspDigest;
   }
 
-  interface X509CertValidatorParams {
+  interface CertValidationParams {
     untrustedCerts?: Array<X509Cert>;
     trustedCerts?: Array<X509Cert>;
     trustSystemCa?: boolean;
@@ -231,14 +231,14 @@ declare namespace cert {
     revokedParams?: X509CertRevokedParams;
   }
 
-  interface VerifyCertResult {
+  interface CertValidationResult {
     readonly certChain: Array<X509Cert>;
   }
 
   interface CertChainValidator {
     validate(certChain: CertChainData, callback: AsyncCallback<void>): void;
     validate(certChain: CertChainData): Promise<void>;
-    validate(cert: X509Cert, params: X509CertValidatorParams): Promise<VerifyCertResult>;
+    validateCert(cert: X509Cert, params: CertValidationParams): Promise<CertValidationResult>;
     readonly algorithm: string;
   }
   function createCertChainValidator(algorithm: string): CertChainValidator;

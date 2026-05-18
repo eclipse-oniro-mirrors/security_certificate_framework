@@ -114,7 +114,7 @@ CfResult BuildVerifyCertResultJS(napi_env env, HcfVerifyCertResult *result,
         return CF_ERR_NAPI;
     }
     napi_status status = napi_set_named_property(env, returnValue,
-        VERIFY_CERT_RESULT_TAG_CERTCHAIN.c_str(), certChainArray);
+        CERT_VALIDATION_RESULT_TAG_CERTCHAIN.c_str(), certChainArray);
     if (status != napi_ok) {
         LOGE("set named property failed");
         return CF_ERR_NAPI;

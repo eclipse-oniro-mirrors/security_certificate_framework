@@ -225,8 +225,8 @@ interface CertChainValidator {
   @gen_async("validate")
   @gen_promise("validate")
   ValidateSync(certChain: CertChainData): void;
-  @gen_promise("validate")
-  ValidateCertSync(cert: X509Cert, params: X509CertValidatorParams): VerifyCertResult;
+  @gen_promise("validateCert")
+  ValidateCertSync(cert: X509Cert, params: CertValidationParams): CertValidationResult;
   @get("algorithm") GetAlgorithm(): String;
 }
 function CreateCertChainValidator(algorithm: String): CertChainValidator;
@@ -255,7 +255,7 @@ struct X509CertRevokedParams {
   ocspDigest: Optional<OcspDigest>;
 }
 
-struct X509CertValidatorParams {
+struct CertValidationParams {
   untrustedCerts: Optional<Array<X509Cert>>;
   trustedCerts: Optional<Array<X509Cert>>;
   trustSystemCa: Optional<bool>;
@@ -271,7 +271,7 @@ struct X509CertValidatorParams {
   revokedParams: Optional<X509CertRevokedParams>;
 }
 
-interface VerifyCertResult {
+interface CertValidationResult {
   @get("certChain") GetCertChain(): Array<X509Cert>;
 }
 
