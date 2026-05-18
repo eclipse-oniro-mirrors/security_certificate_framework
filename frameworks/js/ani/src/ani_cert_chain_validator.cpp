@@ -73,16 +73,16 @@ void CertChainValidatorImpl::ValidateSync(CertChainData const& certChain)
     }
 }
 
-VerifyCertResult CertChainValidatorImpl::ValidateCertSync(weak::X509Cert cert, X509CertValidatorParams const& params)
+CertValidationResult CertChainValidatorImpl::ValidateCertSync(weak::X509Cert cert, CertValidationParams const& params)
 {
     if (this->certChainValidator_ == nullptr) {
         ANI_LOGE_THROW(CF_ERR_ANI, "certChainValidator obj is nullptr!");
-        return make_holder<VerifyCertResultImpl, VerifyCertResult>();
+        return make_holder<VerifyCertResultImpl, CertValidationResult>();
     }
     HcfX509Certificate *x509Cert = reinterpret_cast<HcfX509Certificate *>(cert->GetX509CertObj());
     if (x509Cert == nullptr) {
         ANI_LOGE_THROW(CF_ERR_PARAMETER_CHECK, "cert is nullptr!");
-        return make_holder<VerifyCertResultImpl, VerifyCertResult>();
+        return make_holder<VerifyCertResultImpl, CertValidationResult>();
     }
     HcfX509CertValidatorParams hcfParams = {};
     char *errMsg = nullptr;
@@ -91,7 +91,7 @@ VerifyCertResult CertChainValidatorImpl::ValidateCertSync(weak::X509Cert cert, X
         FreeX509CertValidatorParams(hcfParams);
         ANI_LOGE_THROW(res, errMsg != nullptr ? errMsg : "build validator params failed");
         CF_FREE_PTR(errMsg);
-        return make_holder<VerifyCertResultImpl, VerifyCertResult>();
+        return make_holder<VerifyCertResultImpl, CertValidationResult>();
     }
     HcfVerifyCertResult result = {};
     res = this->certChainValidator_->validateX509Cert(
@@ -100,9 +100,9 @@ VerifyCertResult CertChainValidatorImpl::ValidateCertSync(weak::X509Cert cert, X
     if (res != CF_SUCCESS) {
         FreeVerifyCertResult(result);
         ANI_LOGE_THROW(res, result.errorMsg != nullptr ? result.errorMsg : "validate cert failed");
-        return make_holder<VerifyCertResultImpl, VerifyCertResult>();
+        return make_holder<VerifyCertResultImpl, CertValidationResult>();
     }
-    return make_holder<VerifyCertResultImpl, VerifyCertResult>(result.certs);
+    return make_holder<VerifyCertResultImpl, CertValidationResult>(result.certs);
 }
 
 string CertChainValidatorImpl::GetAlgorithm()

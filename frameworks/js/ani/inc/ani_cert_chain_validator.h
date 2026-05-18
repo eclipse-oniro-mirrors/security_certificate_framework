@@ -36,7 +36,7 @@ public:
     ~CertChainValidatorImpl();
 
     void ValidateSync(CertChainData const& certChain);
-    VerifyCertResult ValidateCertSync(weak::X509Cert cert, X509CertValidatorParams const& params);
+    CertValidationResult ValidateCertSync(weak::X509Cert cert, CertValidationParams const& params);
     string GetAlgorithm();
 
 private:
