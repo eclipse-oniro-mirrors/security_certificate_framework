@@ -243,6 +243,13 @@ CfResult FfiCertCreateTrustAnchorWithKeyStore(const CfBlob *keyStore, const CfBl
     returnObj->count = anchorArray->count;
     returnObj->data = static_cast<CjX509TrustAnchor **>(malloc(sizeof(CjX509TrustAnchor *) * anchorArray->count));
     if (returnObj->data == nullptr) {
+        for (uint32_t i = 0; i < anchorArray->count; ++i) {
+            CfObjDestroy(anchorArray->data[i]->CACert);
+            CfBlobFree(&anchorArray->data[i]->CAPubKey);
+            CfBlobFree(&anchorArray->data[i]->CASubject);
+            CfBlobFree(&anchorArray->data[i]->nameConstraints);
+            free(anchorArray->data[i]);
+        }
         free(anchorArray->data);
         free(anchorArray);
         return CF_ERR_MALLOC;
@@ -251,7 +258,18 @@ CfResult FfiCertCreateTrustAnchorWithKeyStore(const CfBlob *keyStore, const CfBl
         const auto anchor = static_cast<CjX509TrustAnchor *>(malloc(sizeof(CjX509TrustAnchor)));
         if (anchor == nullptr) {
             for (uint32_t j = 0; j < i; j++) {
+                CfObjDestroy(returnObj->data[j]->CACert);
+                CfBlobFree(&returnObj->data[j]->CAPubKey);
+                CfBlobFree(&returnObj->data[j]->CASubject);
+                CfBlobFree(&returnObj->data[j]->nameConstraints);
                 free(returnObj->data[j]);
+            }
+            for (uint32_t k = i; k < anchorArray->count; ++k) {
+                CfObjDestroy(anchorArray->data[k]->CACert);
+                CfBlobFree(&anchorArray->data[k]->CAPubKey);
+                CfBlobFree(&anchorArray->data[k]->CASubject);
+                CfBlobFree(&anchorArray->data[k]->nameConstraints);
+                free(anchorArray->data[k]);
             }
             free(anchorArray->data);
             free(anchorArray);
@@ -262,6 +280,7 @@ CfResult FfiCertCreateTrustAnchorWithKeyStore(const CfBlob *keyStore, const CfBl
         anchor->CASubject = anchorArray->data[i]->CASubject;
         anchor->nameConstraints = anchorArray->data[i]->nameConstraints;
         returnObj->data[i] = anchor;
+        free(anchorArray->data[i]);
     }
     free(anchorArray->data);
     free(anchorArray);
