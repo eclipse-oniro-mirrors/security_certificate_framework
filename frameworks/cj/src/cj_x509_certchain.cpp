@@ -33,6 +33,30 @@ void updateValidateParameters(const CjX509CertChainValidateParams &validParams,
 
 SubAltNameArray *parseSubAltName(const CjX509CertMatchParams &matchParams, SubAltNameArray &subjectAlternativeNames);
 
+static void FreeHcfTrustAnchorWithMembers(HcfX509TrustAnchor *anchor)
+{
+    if (anchor == nullptr) {
+        return;
+    }
+    CfObjDestroy(anchor->CACert);
+    CfBlobFree(&anchor->CAPubKey);
+    CfBlobFree(&anchor->CASubject);
+    CfBlobFree(&anchor->nameConstraints);
+    free(anchor);
+}
+
+static void FreeCjTrustAnchorWithMembers(CjX509TrustAnchor *anchor)
+{
+    if (anchor == nullptr) {
+        return;
+    }
+    CfObjDestroy(anchor->CACert);
+    CfBlobFree(&anchor->CAPubKey);
+    CfBlobFree(&anchor->CASubject);
+    CfBlobFree(&anchor->nameConstraints);
+    free(anchor);
+}
+
 int32_t FfiCertCjX509CertChainNewInstanceBlob(const CfEncodingBlob *blob, CjX509CertChain *returnObj)
 {
     auto chain = static_cast<HcfCertChain *>(malloc(sizeof(HcfCertChain)));
@@ -243,16 +267,24 @@ CfResult FfiCertCreateTrustAnchorWithKeyStore(const CfBlob *keyStore, const CfBl
     returnObj->count = anchorArray->count;
     returnObj->data = static_cast<CjX509TrustAnchor **>(malloc(sizeof(CjX509TrustAnchor *) * anchorArray->count));
     if (returnObj->data == nullptr) {
+        for (uint32_t i = 0; i < anchorArray->count; ++i) {
+            FreeHcfTrustAnchorWithMembers(anchorArray->data[i]);
+        }
         free(anchorArray->data);
+        free(anchorArray);
         return CF_ERR_MALLOC;
     }
     for (uint32_t i = 0; i < anchorArray->count; ++i) {
         const auto anchor = static_cast<CjX509TrustAnchor *>(malloc(sizeof(CjX509TrustAnchor)));
         if (anchor == nullptr) {
             for (uint32_t j = 0; j < i; j++) {
-                free(returnObj->data[j]);
+                FreeCjTrustAnchorWithMembers(returnObj->data[j]);
+            }
+            for (uint32_t k = i; k < anchorArray->count; ++k) {
+                FreeHcfTrustAnchorWithMembers(anchorArray->data[k]);
             }
             free(anchorArray->data);
+            free(anchorArray);
             return CF_ERR_MALLOC;
         }
         anchor->CAPubKey = anchorArray->data[i]->CAPubKey;
@@ -260,8 +292,10 @@ CfResult FfiCertCreateTrustAnchorWithKeyStore(const CfBlob *keyStore, const CfBl
         anchor->CASubject = anchorArray->data[i]->CASubject;
         anchor->nameConstraints = anchorArray->data[i]->nameConstraints;
         returnObj->data[i] = anchor;
+        free(anchorArray->data[i]);
     }
     free(anchorArray->data);
+    free(anchorArray);
     return CF_SUCCESS;
 }
 
