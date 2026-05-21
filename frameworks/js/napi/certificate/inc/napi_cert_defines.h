@@ -156,7 +156,7 @@ const std::string CERT_CHAIN_VALIDATE_TAG_SSLHOSTNAME = "sslHostname";
 const std::string CERT_CHAIN_VALIDATE_TAG_KEYUSAGE = "keyUsage";
 const std::string CERT_CHAIN_VALIDATE_TAG_TRUST_SYSTEM_CA = "trustSystemCa";
 const std::string CERT_CHAIN_VALIDATE_TAG_ALLOW_DOWNLOAD_INTERMEDIATE_CA = "allowDownloadIntermediateCa";
-// X509CertValidatorParams
+// CertValidationParams
 const std::string CERT_VALIDATOR_TAG_TRUSTED_CERTS = "trustedCerts";
 const std::string CERT_VALIDATOR_TAG_UNTRUSTED_CERTS = "untrustedCerts";
 const std::string CERT_VALIDATOR_TAG_PARTIAL_CHAIN = "partialChain";
@@ -177,8 +177,8 @@ const std::string CERT_REVOKED_TAG_OCSP_DIGEST = "ocspDigest";
 // CertChainValidateResult
 const std::string CERT_CHAIN_VALIDATE_RESULT_TAG_TRUSTANCHOR = "trustAnchor";
 const std::string CERT_CHAIN_VALIDATE_RESULT_TAG_X509CERT = "entityCert";
-// VerifyCertResult
-const std::string VERIFY_CERT_RESULT_TAG_CERTCHAIN = "certChain";
+// CertValidationResult
+const std::string CERT_VALIDATION_RESULT_TAG_CERTCHAIN = "certChain";
 
 const std::string CERT_CHAIN_BUILD_RESULT_TAG_CERTCHAIN = "certChain";
 const std::string CERT_CHAIN_BUILD_RESULT_TAG_VALIDATERESULT = "validationResult";
