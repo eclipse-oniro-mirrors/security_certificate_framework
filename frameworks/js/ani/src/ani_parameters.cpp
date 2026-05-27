@@ -987,7 +987,7 @@ CfResult BuildStringInner(optional<string> const& strs, char *&res, uint32_t min
     return CF_SUCCESS;
 }
 
-CfResult BuildX509CertValidatorParams(X509CertValidatorParams const& param,
+CfResult BuildX509CertValidatorParams(CertValidationParams const& param,
     HcfX509CertValidatorParams &hcfParam, char *&errMsg)
 {
     AniParamInfo untrustedCertsInfo = {"untrustedCerts", 0, MAX_UNTRUSTED_CERT_COUNT, nullptr};

@@ -432,44 +432,34 @@ napi_value NapiCertChainValidator::Validate(napi_env env, napi_callback_info inf
 static napi_value NapiValidate(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
-    size_t argc = 0;
-    napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr);
+    napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
     NapiCertChainValidator *certChainValidator = nullptr;
     napi_unwrap(env, thisVar, reinterpret_cast<void **>(&certChainValidator));
     if (certChainValidator == nullptr) {
         LOGE("certChainValidator is nullptr!");
         return nullptr;
     }
-
-    /* Need at least 1 parameter for validate */
-    if (argc < ARGS_SIZE_ONE) {
-        LOGE("Invalid parameter count, expected at least 1");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Invalid parameter count"));
-        return nullptr;
-    }
-
-    /* Get the second parameter if exists to determine which function to call */
-    napi_value argv[ARGS_SIZE_TWO] = { nullptr };
-    if (argc >= ARGS_SIZE_TWO) {
-        napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr);
-        napi_valuetype valueType = napi_undefined;
-        napi_typeof(env, argv[PARAM1], &valueType);
-        /* If the second parameter is a function, it's the old callback interface */
-        if (valueType == napi_function) {
-            return certChainValidator->Validate(env, info);
-        }
-        /* If the second parameter is an object, it's the new params interface */
-        if (valueType == napi_object) {
-            return certChainValidator->ValidateX509Cert(env, info);
-        }
-        /* Invalid second parameter type */
-        LOGE("Invalid second parameter type, expected function or object");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "The second parameter type is incorrect"));
-        return nullptr;
-    }
-
-    /* Default: old validate(certChainData) signature */
     return certChainValidator->Validate(env, info);
+}
+
+static napi_value NapiValidateCert(napi_env env, napi_callback_info info)
+{
+    napi_value thisVar = nullptr;
+    napi_get_cb_info(env, info, NULL, nullptr, &thisVar, nullptr);
+    NapiCertChainValidator *certChainValidator = nullptr;
+
+    napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&certChainValidator));
+    if (status != napi_ok) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "unwrap certChainValidator failed"));
+        LOGE("unwrap certChainValidator failed");
+        return nullptr;
+    }
+    if (certChainValidator == nullptr) {
+        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "certChainValidator is nullptr"));
+        LOGE("certChainValidator is nullptr");
+        return nullptr;
+    }
+    return certChainValidator->ValidateX509Cert(env, info);
 }
 
 static napi_value CertChainValidatorConstructor(napi_env env, napi_callback_info info)
@@ -551,6 +541,7 @@ void NapiCertChainValidator::DefineCertChainValidatorJSClass(napi_env env, napi_
 
     napi_property_descriptor validatorDesc[] = {
         DECLARE_NAPI_FUNCTION("validate", NapiValidate),
+        DECLARE_NAPI_FUNCTION("validateCert", NapiValidateCert),
     };
     napi_value constructor = nullptr;
     napi_define_class(env, "CertChainValidator", NAPI_AUTO_LENGTH, CertChainValidatorConstructor, nullptr,
