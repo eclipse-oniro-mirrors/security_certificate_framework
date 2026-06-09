@@ -26,7 +26,8 @@
           "hilog",
           "napi",
           "openssl",
-          "runtime_core"
+          "runtime_core",
+          "taihe_ffi_gen"
         ],
         "third_party": [
         ]
