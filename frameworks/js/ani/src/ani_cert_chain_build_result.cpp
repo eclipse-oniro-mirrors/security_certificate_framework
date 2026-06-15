@@ -29,6 +29,7 @@ CertChainBuildResultImpl::~CertChainBuildResultImpl()
     if (this->buildResult_ != nullptr) {
         FreeCertChainValidateResult(&this->buildResult_->validateResult);
         CfObjDestroy(this->buildResult_->certChain);
+        this->buildResult_->certChain = nullptr;
         CF_FREE_PTR(this->buildResult_);
     }
 }

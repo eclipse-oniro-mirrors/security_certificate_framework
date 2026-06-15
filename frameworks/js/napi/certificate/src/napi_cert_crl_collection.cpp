@@ -162,6 +162,7 @@ NapiCertCRLCollection::NapiCertCRLCollection(HcfCertCrlCollection *collection)
 NapiCertCRLCollection::~NapiCertCRLCollection()
 {
     CfObjDestroy(this->certCrlCollection_);
+    this->certCrlCollection_ = nullptr;
 }
 
 napi_value NapiCertCRLCollection::SelectCRLsRet(napi_env env, const HcfX509CrlArray *crls)
@@ -231,6 +232,7 @@ static void SelectCertsComplete(napi_env env, napi_status status, void *data)
     ReturnResult(env, context, instance);
     for (uint32_t i = 0; i < context->retCerts.count; ++i) {
         CfObjDestroy(context->retCerts.data[i]);
+        context->retCerts.data[i] = nullptr;
     }
     FreeCryptoFwkCtx(env, context);
 }
@@ -373,6 +375,7 @@ static void SelectCRLComplete(napi_env env, napi_status status, void *data)
     napi_value instance = certCrlCol->SelectCRLsRet(env, &context->retCrls);
     for (uint32_t i = 0; i < context->retCrls.count; ++i) {
         CfObjDestroy(context->retCrls.data[i]);
+        context->retCrls.data[i] = nullptr;
     }
     ReturnResult(env, context, instance);
     FreeCryptoFwkCtx(env, context);
@@ -507,6 +510,7 @@ static napi_value NapiCreateCertCRLCollection(napi_env env, napi_callback_info i
         LOGE("Failed to create napi certcrlcolletion class");
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc napiObject failed."));
         CfObjDestroy(collection);
+        collection = nullptr;
         return nullptr;
     }
 

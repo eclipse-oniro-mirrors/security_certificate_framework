@@ -1931,6 +1931,7 @@ static CfResult FillVerifyCertResult(STACK_OF(X509) *verifiedChain, HcfVerifyCer
             LOGE("Failed to convert x509 certificate to hcf certificate.");
             for (uint32_t j = 0; j < result->certs.count; j++) {
                 CfObjDestroy(result->certs.data[j]);
+                result->certs.data[j] = NULL;
             }
             CfFree(result->certs.data);
             result->certs.data = NULL;

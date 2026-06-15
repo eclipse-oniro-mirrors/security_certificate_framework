@@ -208,6 +208,7 @@ NapiCertCmsGenerator::NapiCertCmsGenerator(HcfCmsGenerator *certCmsGenerator)
 NapiCertCmsGenerator::~NapiCertCmsGenerator()
 {
     CfObjDestroy(this->cmsGenerator_);
+    this->cmsGenerator_ = nullptr;
 }
 
 NapiCertCmsParser::NapiCertCmsParser(HcfCmsParser *cmsParser)
@@ -218,6 +219,7 @@ NapiCertCmsParser::NapiCertCmsParser(HcfCmsParser *cmsParser)
 NapiCertCmsParser::~NapiCertCmsParser()
 {
     CfObjDestroy(this->cmsParser_);
+    this->cmsParser_ = nullptr;
 }
 
 napi_value NapiCertCmsGenerator::AddSigner(napi_env env, napi_callback_info info)
@@ -1253,6 +1255,7 @@ napi_value NapiCertCmsGenerator::CreateCmsGenerator(napi_env env, napi_callback_
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to create a cmsGenerator class"));
         LOGE("Failed to create a cmsGenerator class");
         CfObjDestroy(cmsGenerator);
+        cmsGenerator = nullptr;
         return nullptr;
     }
 
@@ -1931,6 +1934,7 @@ napi_value NapiCertCmsParser::CreateCertCmsParser(napi_env env, napi_callback_in
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to create a cmsParser class"));
         LOGE("Failed to create a cmsParser class");
         CfObjDestroy(cmsParser);
+        cmsParser = nullptr;
         return nullptr;
     }
 

@@ -75,6 +75,7 @@ static void DestroyX509Crl(CfObjectBase *self)
     }
     HcfX509CrlImpl *impl = (HcfX509CrlImpl *)self;
     CfObjDestroy(impl->spiObj);
+    impl->spiObj = NULL;
     CfFree(impl);
 }
 

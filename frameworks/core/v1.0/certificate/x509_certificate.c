@@ -73,6 +73,7 @@ static void DestroyX509Certificate(CfObjectBase *self)
     }
     HcfX509CertificateImpl *impl = (HcfX509CertificateImpl *)self;
     CfObjDestroy(impl->spiObj);
+    impl->spiObj = NULL;
     CfFree(impl);
 }
 
@@ -545,6 +546,7 @@ CfResult HcfX509CertificateCreate(const CfEncodingBlob *inStream, HcfX509Certifi
     if (x509CertImpl == NULL) {
         LOGE("Failed to allocate x509CertImpl memory!");
         CfObjDestroy(spiObj);
+        spiObj = NULL;
         return CF_ERR_MALLOC;
     }
     HcfX509CertificateImplPack(x509CertImpl, spiObj);

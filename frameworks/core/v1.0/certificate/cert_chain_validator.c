@@ -78,6 +78,7 @@ static void DestroyCertChainValidator(CfObjectBase *self)
     }
     CertChainValidatorImpl *validatorImpl = (CertChainValidatorImpl *)self;
     CfObjDestroy(validatorImpl->spiObj);
+    validatorImpl->spiObj = NULL;
     CfFree(validatorImpl->algorithm);
     validatorImpl->algorithm = NULL;
     CfFree(validatorImpl);
@@ -206,6 +207,7 @@ CfResult HcfCertChainValidatorCreate(const char *algorithm, HcfCertChainValidato
     if (returnValidator == NULL) {
         LOGE("Failed to allocate returnValidator memory!");
         CfObjDestroy(spiObj);
+        spiObj = NULL;
         return CF_ERR_MALLOC;
     }
     returnValidator->base.validate = Validate;
@@ -221,6 +223,7 @@ CfResult HcfCertChainValidatorCreate(const char *algorithm, HcfCertChainValidato
         CfFree(returnValidator);
         returnValidator = NULL;
         CfObjDestroy(spiObj);
+        spiObj = NULL;
         return CF_ERR_MALLOC;
     }
     (void)memcpy_s(returnValidator->algorithm, algoNameLen, algorithm, algoNameLen);

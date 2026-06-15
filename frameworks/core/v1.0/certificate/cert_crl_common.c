@@ -76,6 +76,7 @@ void FreeCertArrayData(HcfX509CertificateArray *certs)
     }
     for (uint32_t i = 0; i < certs->count; ++i) {
         CfObjDestroy(certs->data[i]);
+        certs->data[i] = NULL;
     }
     CF_FREE_PTR(certs->data);
     certs->count = 0;
@@ -88,6 +89,7 @@ void FreeCrlArrayData(HcfX509CrlArray *crls)
     }
     for (uint32_t i = 0; i < crls->count; ++i) {
         CfObjDestroy(crls->data[i]);
+        crls->data[i] = NULL;
     }
     CF_FREE_PTR(crls->data);
     crls->count = 0;

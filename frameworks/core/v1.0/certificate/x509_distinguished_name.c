@@ -72,6 +72,7 @@ static void DestroyX509DistinguishedName(CfObjectBase *self)
     }
     HcfX509DistinguishedNameImpl *impl = (HcfX509DistinguishedNameImpl *)self;
     CfObjDestroy(impl->spiObj);
+    impl->spiObj = NULL;
     CfFree(impl);
 }
 
@@ -155,6 +156,7 @@ CfResult HcfX509DistinguishedNameCreate(const CfBlob *inStream, bool bString, Hc
     if (x509NameImpl == NULL) {
         LOGE("Failed to allocate x509DistinguishedNameImpl memory!");
         CfObjDestroy(spiObj);
+        spiObj = NULL;
         return CF_ERR_MALLOC;
     }
     x509NameImpl->base.base.getClass = GetX509DistinguishedNameClass;

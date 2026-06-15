@@ -207,6 +207,7 @@ void FreeCertificateArray(HcfX509CertificateArray *certs)
     }
     for (uint32_t i = 0; i < certs->count; ++i) {
         CfObjDestroy(certs->data[i]);
+        certs->data[i] = NULL;
     }
     CF_FREE_PTR(certs->data);
     certs->count = 0;

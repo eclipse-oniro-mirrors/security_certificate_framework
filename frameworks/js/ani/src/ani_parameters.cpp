@@ -676,6 +676,7 @@ void FreeX509CertChainValidateParams(HcfX509CertChainValidateParams &hcfParam)
         CF_FREE_PTR(hcfParam.certCRLCollections);
     }
     FreeHcfRevocationCheckParam(hcfParam.revocationCheckParam);
+    hcfParam.revocationCheckParam = nullptr;
     if (hcfParam.keyUsage != nullptr) {
         CF_FREE_PTR(hcfParam.keyUsage->data);
         CF_FREE_PTR(hcfParam.keyUsage);
@@ -687,7 +688,8 @@ void FreeCertChainValidateResult(HcfX509CertChainValidateResult *result)
     if (result == nullptr) {
         return;
     }
-CfObjDestroy(result->entityCert);
+    CfObjDestroy(result->entityCert);
+    result->entityCert = nullptr;
     FreeX509TrustAnchor(result->trustAnchor);
 }
 
@@ -1054,6 +1056,7 @@ void FreeVerifyCertResult(HcfVerifyCertResult &result)
     if (result.certs.data != nullptr) {
         for (uint32_t i = 0; i < result.certs.count; ++i) {
             CfObjDestroy(result.certs.data[i]);
+            result.certs.data[i] = nullptr;
         }
         CF_FREE_PTR(result.certs.data);
         result.certs.count = 0;

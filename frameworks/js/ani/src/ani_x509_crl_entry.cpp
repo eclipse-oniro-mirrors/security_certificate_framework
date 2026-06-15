@@ -179,6 +179,7 @@ X500DistinguishedName X509CRLEntryImpl::GetCertIssuerX500DistinguishedName()
     if (res != CF_SUCCESS) {
         ANI_LOGE_THROW(res, "get cert issuer failed!");
         CfObjDestroy(x509NameUtf8);
+        x509NameUtf8 = nullptr;
         return make_holder<X500DistinguishedNameImpl, X500DistinguishedName>();
     }
     HcfX509DistinguishedName *x509Name = nullptr;

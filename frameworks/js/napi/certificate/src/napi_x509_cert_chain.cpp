@@ -98,6 +98,7 @@ NapiX509CertChain::NapiX509CertChain(HcfCertChain *certChain)
 NapiX509CertChain::~NapiX509CertChain()
 {
     CfObjDestroy(this->certChain_);
+    this->certChain_ = nullptr;
 }
 
 NapiX509CertChainBulidResult::NapiX509CertChainBulidResult(HcfX509CertChainBuildResult *buildResult)
@@ -108,6 +109,7 @@ NapiX509CertChainBulidResult::NapiX509CertChainBulidResult(HcfX509CertChainBuild
 NapiX509CertChainBulidResult::~NapiX509CertChainBulidResult()
 {
     CfObjDestroy(this->buildResult_);
+    this->buildResult_ = nullptr;
 }
 
 static CfCtx *BuildCertChainContext()
@@ -296,6 +298,7 @@ static void BuildX509CertChainComplete(napi_env env, napi_status status, void *d
         context->async->errMsg = "Failed to create napi cert chain class";
         LOGE("Failed to create napi cert chain class");
         CfObjDestroy(context->buildResult->certChain);
+        context->buildResult->certChain = nullptr;
         context->certChain = nullptr;
     }
     ReturnJSResult(env, context->async, instance);
@@ -475,6 +478,7 @@ static napi_value CreateX509CertChainByArray(napi_env env, napi_value param)
     if (instance == nullptr) {
         LOGE("BuildCreateInstance failed!");
         CfObjDestroy(certChain);
+        certChain = nullptr;
         CF_FREE_PTR(certs.data);
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "build create instance failed!"));
         return nullptr;
