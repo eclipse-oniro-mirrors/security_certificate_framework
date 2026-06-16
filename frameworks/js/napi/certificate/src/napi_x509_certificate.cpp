@@ -329,6 +329,7 @@ napi_value NapiX509Certificate::GetPublicKey(napi_env env, napi_callback_info in
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to create a pubkey class"));
         LOGE("create for x509 cert's public key obj failed");
         CfObjDestroy(returnPubKey);
+        returnPubKey = nullptr;
         return nullptr;
     }
     napi_value instance = pubKeyClass->ConvertToJsPubKey(env);
@@ -937,6 +938,7 @@ napi_value NapiX509Certificate::GetIssuerX500DistinguishedName(napi_env env, nap
         LOGE("getIssuerName failed!");
         napi_throw(env, CertGenerateBusinessError(env, ret, "get issuer name failed"));
         CfObjDestroy(x509NameUtf8);
+        x509NameUtf8 = nullptr;
         return nullptr;
     }
     HcfX509DistinguishedName *x509Name = nullptr;
@@ -975,6 +977,7 @@ napi_value NapiX509Certificate::GetSubjectX500DistinguishedName(napi_env env, na
         LOGE("getSubjectName failed!");
         napi_throw(env, CertGenerateBusinessError(env, ret, "get subject name failed"));
         CfObjDestroy(x509NameUtf8);
+        x509NameUtf8 = nullptr;
         return nullptr;
     }
     HcfX509DistinguishedName *x509Name = nullptr;
@@ -1490,6 +1493,7 @@ void NapiX509Certificate::CreateX509CertComplete(napi_env env, napi_status statu
         context->errMsg = "Failed to create x509Cert class";
         LOGE("Failed to create x509Cert class");
         CfObjDestroy(context->cert);
+        context->cert = nullptr;
         if (context->object != nullptr) {
             context->object->destroy(&(context->object));
         }

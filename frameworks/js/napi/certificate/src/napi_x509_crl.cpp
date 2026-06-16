@@ -170,6 +170,7 @@ NapiX509Crl::NapiX509Crl(HcfX509Crl *x509Crl)
 NapiX509Crl::~NapiX509Crl()
 {
     CfObjDestroy(this->x509Crl_);
+    this->x509Crl_ = nullptr;
 }
 
 static void GetEncodedExecute(napi_env env, void *data)
@@ -262,6 +263,7 @@ static napi_value GenerateCrlEntryArray(napi_env env, CfArray *array, std::strin
             napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to create a x509CrlEntry class"));
             LOGE("Failed to create a x509CrlEntry class");
             CfObjDestroy(entry);
+            entry = nullptr;
             return nullptr; /* the C++ objects wrapped will be automatically released by scope manager. */
         }
         napi_status status = napi_wrap(
@@ -572,6 +574,7 @@ static bool WrapX509CrlEntryInstance(napi_env env, napi_value instance, HcfX509C
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to create a x509CrlEntry class"));
         LOGE("Failed to create a x509CrlEntry class");
         CfObjDestroy(crlEntry);
+        crlEntry = nullptr;
         return false;
     }
     napi_status status = napi_wrap(
@@ -663,6 +666,7 @@ napi_value NapiX509Crl::GetRevokedCertificateWithCert(
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to create a x509CrlEntry class"));
         LOGE("Failed to create a x509CrlEntry class");
         CfObjDestroy(crlEntry);
+        crlEntry = nullptr;
         return nullptr;
     }
     napi_status status = napi_wrap(
@@ -900,6 +904,7 @@ napi_value NapiX509Crl::GetIssuerX500DistinguishedName(napi_env env, napi_callba
     if (ret != CF_SUCCESS) {
         LOGE("getIssuerName failed!");
         CfObjDestroy(x509NameUtf8);
+        x509NameUtf8 = nullptr;
         napi_throw(env, CertGenerateBusinessError(env, ret, "get issuer name failed"));
         return nullptr;
     }
@@ -1490,6 +1495,7 @@ void NapiX509Crl::CreateX509CrlComplete(napi_env env, napi_status status, void *
         context->errMsg = "Failed to create a x509Crl class";
         LOGE("Failed to create a x509Crl class");
         CfObjDestroy(context->crl);
+        context->crl = nullptr;
         ReturnResult(env, context, nullptr);
         FreeCryptoFwkCtx(env, context);
         return;

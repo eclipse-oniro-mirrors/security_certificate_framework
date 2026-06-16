@@ -89,6 +89,7 @@ static void DestroyCertChain(CfObjectBase *self)
     }
     CertChainImpl *impl = (CertChainImpl *)self;
     CfObjDestroy(impl->spiObj);
+    impl->spiObj = NULL;
     CfFree(impl);
 }
 
@@ -178,6 +179,7 @@ CfResult HcfCertChainCreate(
     if (impl == NULL) {
         LOGE("Failed to allocate return memory!");
         CfObjDestroy(spiObj);
+        spiObj = NULL;
         return CF_ERR_MALLOC;
     }
     impl->base.base.destroy = DestroyCertChain;
@@ -217,6 +219,7 @@ CfResult HcfCertChainBuildResultCreate(
     if (impl == NULL) {
         LOGE("Failed to allocate CertChainBuildResultImpl return memory!");
         CfObjDestroy(spiObj);
+        spiObj = NULL;
         return CF_ERR_MALLOC;
     }
 
@@ -224,6 +227,7 @@ CfResult HcfCertChainBuildResultCreate(
     if (implCertChain == NULL) {
         LOGE("Failed to allocate CertChainImpl return memory!");
         CfObjDestroy(spiObj);
+        spiObj = NULL;
         CfFree(impl);
         impl = NULL;
         return CF_ERR_MALLOC;

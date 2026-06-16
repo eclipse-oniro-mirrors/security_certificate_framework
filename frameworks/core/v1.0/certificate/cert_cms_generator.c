@@ -84,6 +84,7 @@ static void DestroyCertCmsParser(CfObjectBase *self)
     }
     CertCmsParserImpl *cmsParserImpl = (CertCmsParserImpl *)self;
     CfObjDestroy(cmsParserImpl->spiObj);
+    cmsParserImpl->spiObj = NULL;
     CfFree(cmsParserImpl);
 }
 
@@ -99,6 +100,7 @@ static void DestroyCertCmsGenerator(CfObjectBase *self)
     }
     CertCmsGeneratorImpl *cmsImpl = (CertCmsGeneratorImpl *)self;
     CfObjDestroy(cmsImpl->spiObj);
+    cmsImpl->spiObj = NULL;
     CfFree(cmsImpl);
 }
 
@@ -292,6 +294,7 @@ CfResult HcfCreateCmsGenerator(HcfCmsContentType type, HcfCmsGenerator **cmsGene
     if (returnCmsGenerator == NULL) {
         LOGE("Failed to allocate returnCmsGenerator memory!");
         CfObjDestroy(spiObj);
+        spiObj = NULL;
         return CF_ERR_MALLOC;
     }
 
@@ -324,6 +327,7 @@ CfResult HcfCreateCmsParser(HcfCmsParser **cmsParser)
     if (returnCmsParser == NULL) {
         LOGE("Failed to allocate cms parser memory!");
         CfObjDestroy(spiObj);
+        spiObj = NULL;
         return CF_ERR_MALLOC;
     }
     returnCmsParser->base.setRawData = SetRawData;

@@ -73,6 +73,7 @@ NapiCertChainValidator::NapiCertChainValidator(HcfCertChainValidator *certChainV
 NapiCertChainValidator::~NapiCertChainValidator()
 {
     CfObjDestroy(this->certChainValidator_);
+    this->certChainValidator_ = nullptr;
 }
 
 static void FreeCryptoFwkCtx(napi_env env, CfCtx *context)
@@ -479,6 +480,7 @@ static bool WrapCertChainValidatorInstance(napi_env env, napi_value instance, Hc
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to create a ccv class"));
         LOGE("Failed to create a ccv class");
         CfObjDestroy(certChainValidator);
+        certChainValidator = nullptr;
         return false;
     }
     napi_status status = napi_wrap(

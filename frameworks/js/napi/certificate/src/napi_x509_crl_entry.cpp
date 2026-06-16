@@ -138,6 +138,7 @@ NapiX509CrlEntry::NapiX509CrlEntry(HcfX509CrlEntry *x509CrlEntry)
 NapiX509CrlEntry::~NapiX509CrlEntry()
 {
     CfObjDestroy(this->x509CrlEntry_);
+    this->x509CrlEntry_ = nullptr;
 }
 
 static void GetEncodedExecute(napi_env env, void *data)
@@ -484,6 +485,7 @@ napi_value NapiX509CrlEntry::GetCertIssuerX500DistinguishedName(napi_env env, na
     if (result != CF_SUCCESS) {
         LOGE("getIssuerDN failed!");
         CfObjDestroy(x509NameUtf8);
+        x509NameUtf8 = nullptr;
         napi_throw(env, CertGenerateBusinessError(env, result, "get issuer name failed"));
         return nullptr;
     }

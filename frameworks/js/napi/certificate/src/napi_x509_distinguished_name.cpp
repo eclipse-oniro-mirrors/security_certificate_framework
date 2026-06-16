@@ -54,7 +54,9 @@ NapiX509DistinguishedName::~NapiX509DistinguishedName()
         this->x509NameUtf8_ = nullptr;
     }
     CfObjDestroy(this->x509Name_);
+    this->x509Name_ = nullptr;
     CfObjDestroy(this->x509NameUtf8_);
+    this->x509NameUtf8_ = nullptr;
 }
 
 static void FreeCryptoFwkCtx(napi_env env, CfCtx *context)
@@ -116,6 +118,7 @@ void NapiX509DistinguishedName::CreateDistinguishedNameComplete(napi_env env, na
         LOGE("Failed to create x509DistinguisehdName class");
         ReturnPromiseResult(env, context, nullptr);
         CfObjDestroy(context->x509Name);
+        context->x509Name = nullptr;
         FreeCryptoFwkCtx(env, context);
         return;
     }
@@ -404,7 +407,9 @@ napi_value ConstructX509DistinguishedName(HcfX509DistinguishedName *x509Name,
             x509NameUtf8 = nullptr;
         }
         CfObjDestroy(x509Name);
+        x509Name = nullptr;
         CfObjDestroy(x509NameUtf8);
+        x509NameUtf8 = nullptr;
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "NapiX509DistinguishedName new failed"));
         return nullptr;
     }
