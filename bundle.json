@@ -25,6 +25,7 @@
           "crypto_framework",
           "hilog",
           "napi",
+          "node",
           "openssl",
           "runtime_core",
           "taihe_ffi_gen"
