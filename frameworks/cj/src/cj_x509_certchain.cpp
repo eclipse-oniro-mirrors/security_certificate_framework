@@ -34,6 +34,7 @@ void updateValidateParameters(const CjX509CertChainValidateParams &validParams,
 SubAltNameArray *parseSubAltName(const CjX509CertMatchParams &matchParams, SubAltNameArray &subjectAlternativeNames);
 
 constexpr uint32_t MAX_LEN_OF_ARRAY = 1024;
+
 static void FreeHcfTrustAnchorWithMembers(HcfX509TrustAnchor *anchor)
 {
     if (anchor == nullptr) {
