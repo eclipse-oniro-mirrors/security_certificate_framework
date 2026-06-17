@@ -318,7 +318,7 @@ CfResult parseAnchor(CjX509TrustAnchor *trustAnchors, uint32_t trustAnchorCnt, H
 {
     if (trustAnchorCnt == 0 || trustAnchorCnt > MAX_LEN_OF_ARRAY) {
  	    return CF_INVALID_PARAMS;
- 	}
+    }
 
     ret = HcfX509TrustAnchorArray{
         .data = static_cast<HcfX509TrustAnchor **>(malloc(sizeof(HcfX509TrustAnchor *) * (trustAnchorCnt))),
