@@ -155,7 +155,7 @@ static void DeleteCertChainContext(napi_env env, CfCtx *&context, bool freeCertF
     FreeX509CertChainValidateParams(context->params);
     FreeX509CertChainValidateResult(context->result, freeCertFlag);
 
-    CfBlobFree(&(context->keyStore));
+    CfBlobClearAndFree(&(context->keyStore));
     CfBlobDataClearAndFree(context->pwd);
     CfFree(context->pwd);
     context->pwd = nullptr;
@@ -438,7 +438,7 @@ napi_value NapiX509CertChain::ToString(napi_env env, napi_callback_info info)
 
     napi_value returnBlob = nullptr;
     napi_create_string_utf8(env, reinterpret_cast<char *>(blob.data), blob.size, &returnBlob);
-    CfBlobDataFree(&blob);
+    CfBlobDataClearAndFree(&blob);
     return returnBlob;
 }
 
@@ -798,8 +798,10 @@ static void FreeP12CollectionCommon(HcfX509P12Collection *collection)
         return;
     }
     if (collection->prikey != nullptr) {
+        (void)memset_s(collection->prikey->data, collection->prikey->size, 0, collection->prikey->size);
         CfFree(collection->prikey->data);
         collection->prikey->data = nullptr;
+        collection->prikey->size = 0;
         CfFree(collection->prikey);
         collection->prikey = nullptr;
     }
@@ -867,6 +869,7 @@ static napi_value ConvertBlobToStringNapiValue(napi_env env, CfBlob *blob)
     (void)memcpy_s(returnString, len, blob->data, len);
     napi_value instance = nullptr;
     napi_create_string_utf8(env, returnString, len, &instance);
+    (void)memset_s(returnString, len, 0, len);
     CfFree(returnString);
     returnString = nullptr;
     return instance;
@@ -933,14 +936,14 @@ static napi_value ParsePKCS12WithKeyStore(napi_env env, size_t argc, napi_value 
     }
     HcfParsePKCS12Conf *conf = static_cast<HcfParsePKCS12Conf *>(CfMalloc(sizeof(HcfParsePKCS12Conf), 0));
     if (conf == nullptr) {
-        CfBlobFree(&keyStore);
+        CfBlobClearAndFree(&keyStore);
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to malloc conf"));
         LOGE("Failed to malloc conf!");
         return nullptr;
     };
 
     if (!GetP12ConfFromValue(env, param1, conf)) {
-        CfBlobFree(&keyStore);
+        CfBlobClearAndFree(&keyStore);
         FreeHcfParsePKCS12Conf(conf);
         conf = nullptr;
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Failed to get conf"));
@@ -951,7 +954,7 @@ static napi_value ParsePKCS12WithKeyStore(napi_env env, size_t argc, napi_value 
     HcfX509P12Collection *p12Collection = nullptr;
     CfResult ret = HcfParsePKCS12(keyStore, conf, &p12Collection);
     if (ret != CF_SUCCESS) {
-        CfBlobFree(&keyStore);
+        CfBlobClearAndFree(&keyStore);
         FreeHcfParsePKCS12Conf(conf);
         conf = nullptr;
         napi_throw(env, CertGenerateBusinessError(env, ret, "Failed to parse pkcs12"));
@@ -961,7 +964,7 @@ static napi_value ParsePKCS12WithKeyStore(napi_env env, size_t argc, napi_value 
 
     napi_value instance = BuildCreateInstanceByP12Collection(env, p12Collection);
     if (instance == nullptr) {
-        CfBlobFree(&keyStore);
+        CfBlobClearAndFree(&keyStore);
         FreeHcfParsePKCS12Conf(conf);
         conf = nullptr;
         FreeP12Collection(p12Collection);
@@ -970,10 +973,10 @@ static napi_value ParsePKCS12WithKeyStore(napi_env env, size_t argc, napi_value 
         LOGE("Failed to build instance!");
         return nullptr;
     }
-    CfBlobFree(&keyStore);
+    CfBlobClearAndFree(&keyStore);
     FreeHcfParsePKCS12Conf(conf);
     conf = nullptr;
-    CfBlobFree(&p12Collection->prikey);
+    CfBlobClearAndFree(&p12Collection->prikey);
     CfFree(p12Collection);
     p12Collection = nullptr;
     return instance;
@@ -993,7 +996,7 @@ static void FreeParsePkcs12CtxCommon(napi_env env, ParsePkcs12Ctx *ctx)
         ctx->cfRef = nullptr;
     }
     if (ctx->keyStore != nullptr) {
-        CfBlobFree(&ctx->keyStore);
+        CfBlobClearAndFree(&ctx->keyStore);
         ctx->keyStore = nullptr;
     }
     if (ctx->conf != nullptr) {
@@ -1110,7 +1113,7 @@ static napi_value NapiParsePKCS12Async(napi_env env, napi_value thisVar, napi_va
     }
     HcfParsePKCS12Conf *conf = static_cast<HcfParsePKCS12Conf *>(CfMalloc(sizeof(HcfParsePKCS12Conf), 0));
     if (conf == nullptr) {
-        CfBlobFree(&keyStore);
+        CfBlobClearAndFree(&keyStore);
         keyStore = nullptr;
         LOGE("Failed to malloc conf!");
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to malloc conf."));
@@ -1118,7 +1121,7 @@ static napi_value NapiParsePKCS12Async(napi_env env, napi_value thisVar, napi_va
     };
     conf->pwd = CertGetBlobFromStringJSParams(env, param2);
     if (conf->pwd == nullptr) {
-        CfBlobFree(&keyStore);
+        CfBlobClearAndFree(&keyStore);
         keyStore = nullptr;
         FreeHcfParsePKCS12Conf(conf);
         conf = nullptr;
@@ -1134,7 +1137,7 @@ static napi_value NapiParsePKCS12Async(napi_env env, napi_value thisVar, napi_va
 
     ParsePkcs12Ctx *context = static_cast<ParsePkcs12Ctx *>(CfMalloc(sizeof(ParsePkcs12Ctx), 0));
     if (context == nullptr) {
-        CfBlobFree(&keyStore);
+        CfBlobClearAndFree(&keyStore);
         keyStore = nullptr;
         FreeHcfParsePKCS12Conf(conf);
         conf = nullptr;

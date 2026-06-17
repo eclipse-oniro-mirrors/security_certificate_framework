@@ -200,7 +200,7 @@ void FreePrivateKeyInfo(HcfPrivateKeyInfo **privateKey)
 {
     if (*privateKey != nullptr) {
         if ((*privateKey)->privateKey != nullptr) {
-            CfEncodingBlobDataFree((*privateKey)->privateKey);
+            CfEncodingBlobDataClearAndFree((*privateKey)->privateKey);
             (*privateKey)->privateKey = nullptr;
         }
         if ((*privateKey)->privateKeyPassword != nullptr) {

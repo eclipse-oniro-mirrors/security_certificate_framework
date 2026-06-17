@@ -350,7 +350,7 @@ void FreeHcfX509P12Collection(HcfX509P12Collection *p12Collection)
         p12Collection->cert = NULL;
     }
     if (p12Collection->prikey != NULL && p12Collection->prikey->data != NULL) {
-        CfBlobFree(&p12Collection->prikey);
+        CfBlobClearAndFree(&p12Collection->prikey);
     }
     if (p12Collection->otherCerts != NULL && p12Collection->otherCertsCount != 0) {
         for (uint32_t i = 0; i < p12Collection->otherCertsCount; i++) {
@@ -399,7 +399,7 @@ CfResult AllocateAndConvertPkey(EVP_PKEY *pkey, HcfX509P12Collection *collection
         if (!PEM_write_bio_PrivateKey(memBio, pkey, NULL, NULL, 0, 0, NULL)) {
             LOGE("PEM write bio PrivateKey failed");
             CfPrintOpensslError();
-            CfBlobFree(&collection->prikey);
+            CfBlobClearAndFree(&collection->prikey);
             BIO_free_all(memBio);
             return CF_ERR_CRYPTO_OPERATION;
         }
@@ -407,7 +407,7 @@ CfResult AllocateAndConvertPkey(EVP_PKEY *pkey, HcfX509P12Collection *collection
         if (!i2d_PKCS8PrivateKey_bio(memBio, pkey, NULL, NULL, 0, NULL, NULL)) {
             LOGE("PrivateKey i2d failed");
             CfPrintOpensslError();
-            CfBlobFree(&collection->prikey);
+            CfBlobClearAndFree(&collection->prikey);
             BIO_free_all(memBio);
             return CF_ERR_CRYPTO_OPERATION;
         }
@@ -415,7 +415,7 @@ CfResult AllocateAndConvertPkey(EVP_PKEY *pkey, HcfX509P12Collection *collection
     BUF_MEM *buf = NULL;
     if (BIO_get_mem_ptr(memBio, &buf) < 0 || buf == NULL) {
         LOGE("Failed to get mem ptr!");
-        CfBlobFree(&collection->prikey);
+        CfBlobClearAndFree(&collection->prikey);
         BIO_free_all(memBio);
         return CF_ERR_MALLOC;
     }
@@ -423,7 +423,7 @@ CfResult AllocateAndConvertPkey(EVP_PKEY *pkey, HcfX509P12Collection *collection
     collection->prikey->data = (uint8_t *)CfMalloc(collection->prikey->size, 0);
     if (collection->prikey->data == NULL) {
         LOGE("Failed to malloc pri key data!");
-        CfBlobFree(&collection->prikey);
+        CfBlobClearAndFree(&collection->prikey);
         BIO_free_all(memBio);
         return CF_ERR_MALLOC;
     }

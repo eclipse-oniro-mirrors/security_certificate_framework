@@ -343,9 +343,9 @@ static void FreeHcfRevocationCheckParam(HcfRevocationCheckParam *param)
         CfFree(param->ocspRequestExtension);
         param->ocspRequestExtension = nullptr;
     }
-    CfBlobFree(&param->ocspResponderURI);
-    CfBlobFree(&param->ocspResponses);
-    CfBlobFree(&param->crlDownloadURI);
+    CfBlobClearAndFree(&param->ocspResponderURI);
+    CfBlobClearAndFree(&param->ocspResponses);
+    CfBlobClearAndFree(&param->crlDownloadURI);
     if (param->options != nullptr) {
         if (param->options->data != nullptr) {
             CfFree(param->options->data);

@@ -142,9 +142,9 @@ void FreeX509CrlMatchParams(HcfX509CrlMatchParams *&matchParams)
         CF_FREE_PTR(matchParams->issuer);
     }
     matchParams->x509Cert = nullptr;
-    CfBlobFree(&matchParams->updateDateTime);
-    CfBlobFree(&matchParams->maxCRL);
-    CfBlobFree(&matchParams->minCRL);
+    CfBlobClearAndFree(&matchParams->updateDateTime);
+    CfBlobClearAndFree(&matchParams->maxCRL);
+    CfBlobClearAndFree(&matchParams->minCRL);
 
     CF_FREE_PTR(matchParams);
 }
