@@ -317,7 +317,7 @@ HcfCertCRLCollectionArray *parseCRLCollections(HcfCertCrlCollection **certCRLCol
 CfResult parseAnchor(CjX509TrustAnchor *trustAnchors, uint32_t trustAnchorCnt, HcfX509TrustAnchorArray &ret)
 {
     if (trustAnchorCnt == 0 || trustAnchorCnt > MAX_LEN_OF_ARRAY) {
- 	        return CF_INVALID_PARAMS;
+        return CF_INVALID_PARAMS;
     }
 
     ret = HcfX509TrustAnchorArray{
