@@ -62,4 +62,6 @@ ohos_shared_library("certificate_framework_core") {
     "-Wall",
     "-Werror",
   ]
+
+  version_script = "adapter.map"
 }
