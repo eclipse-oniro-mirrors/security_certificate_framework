@@ -33,6 +33,8 @@ void updateValidateParameters(const CjX509CertChainValidateParams &validParams,
 
 SubAltNameArray *parseSubAltName(const CjX509CertMatchParams &matchParams, SubAltNameArray &subjectAlternativeNames);
 
+constexpr uint32_t MAX_LEN_OF_ARRAY = 1024;
+
 static void FreeHcfTrustAnchorWithMembers(HcfX509TrustAnchor *anchor)
 {
     if (anchor == nullptr) {
@@ -314,6 +316,10 @@ HcfCertCRLCollectionArray *parseCRLCollections(HcfCertCrlCollection **certCRLCol
 
 CfResult parseAnchor(CjX509TrustAnchor *trustAnchors, uint32_t trustAnchorCnt, HcfX509TrustAnchorArray &ret)
 {
+    if (trustAnchorCnt == 0 || trustAnchorCnt > MAX_LEN_OF_ARRAY) {
+        return CF_INVALID_PARAMS;
+    }
+
     ret = HcfX509TrustAnchorArray{
         .data = static_cast<HcfX509TrustAnchor **>(malloc(sizeof(HcfX509TrustAnchor *) * (trustAnchorCnt))),
         .count = trustAnchorCnt,
