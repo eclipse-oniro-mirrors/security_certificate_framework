@@ -68,5 +68,6 @@ ohos_shared_library("cert") {
     "crypto_framework:crypto_framework_lib",
     "hilog:libhilog",
     "napi:ace_napi",
+    "node:node_header_notice",
   ]
 }
