@@ -608,6 +608,7 @@ CertExtension X509CertImpl::GetExtensionsObject()
 
 X509Cert CreateX509CertSync(EncodingBlob const& inStream)
 {
+    HistogramScopeGuard guard(API_CREATE_X509_CERT);
     CfBlob blob = {};
     ArrayU8ToDataBlob(inStream.data, blob);
     CfEncodingBlob encodingBlob = {};
@@ -616,6 +617,7 @@ X509Cert CreateX509CertSync(EncodingBlob const& inStream)
     HcfX509Certificate *cert = nullptr;
     CfResult res = HcfX509CertificateCreate(&encodingBlob, &cert);
     if (res != CF_SUCCESS) {
+        guard.SetErrorCode(res);
         ANI_LOGE_THROW(res, "create x509cert obj failed!");
         return make_holder<X509CertImpl, X509Cert>();
     }

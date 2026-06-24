@@ -394,6 +394,10 @@ static CfResult DeepCopyCertIssuer(HcfX509CRLEntryOpensslImpl *returnCRLEntry, C
 
 static CfResult DeepCopyCertIssuerUtf8(HcfX509CRLEntryOpensslImpl *returnCRLEntry, CfBlob *certIssuerUtf8)
 {
+    if (certIssuerUtf8 == NULL) {
+        LOGE("certIssuerUtf8 is NULL!");
+        return CF_INVALID_PARAMS;
+    }
     returnCRLEntry->certIssuerUtf8 = (CfBlob *)CfMalloc(sizeof(CfBlob), 0);
     if (returnCRLEntry->certIssuerUtf8 == NULL) {
         LOGE("Failed to malloc certIssuerUtf8!");

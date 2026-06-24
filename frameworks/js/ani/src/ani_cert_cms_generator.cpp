@@ -456,9 +456,11 @@ array<uint8_t> CmsGeneratorImpl::GetEncryptedContentDataSync()
 
 CmsGenerator CreateCmsGenerator(CmsContentType contentType)
 {
+    HistogramScopeGuard guard(API_CREATE_CMS_GENERATOR);
     HcfCmsGenerator *cmsGenerator = nullptr;
     CfResult ret = HcfCreateCmsGenerator(static_cast<HcfCmsContentType>(contentType.get_value()), &cmsGenerator);
     if (ret != CF_SUCCESS) {
+        guard.SetErrorCode(ret);
         ANI_LOGE_THROW(ret, "create cms generator failed");
         return make_holder<CmsGeneratorImpl, CmsGenerator>();
     }
@@ -514,7 +516,9 @@ CmsContentType CmsParserImpl::GetContentType()
 
 void CmsParserImpl::VerifySignedDataSync(CmsVerificationConfig const& config)
 {
+    HistogramScopeGuard guard(API_CERT_CMS_PARSER_VERIFY_SIGNED_DATA);
     if (this->cmsParser_ == nullptr) {
+        guard.SetErrorCode(CF_ERR_ANI);
         ANI_LOGE_THROW(CF_ERR_ANI, "cmsParser is not initialized");
         return;
     }
@@ -549,6 +553,7 @@ void CmsParserImpl::VerifySignedDataSync(CmsVerificationConfig const& config)
         static_cast<HcfCmsContentDataFormat>(config.contentDataFormat.value().get_value()) : BINARY;
     CfResult res = this->cmsParser_->verifySignedData(this->cmsParser_, &options);
     if (res != CF_SUCCESS) {
+        guard.SetErrorCode(res);
         ANI_LOGE_THROW(res, "verify signed data failed");
         return;
     }
@@ -594,7 +599,9 @@ array<X509Cert> CmsParserImpl::GetCertsSync(CmsCertType type)
 
 array<uint8_t> CmsParserImpl::DecryptEnvelopedDataSync(CmsEnvelopedDecryptionConfig const& config)
 {
+    HistogramScopeGuard guard(API_CERT_CMS_PARSER_DECRYPT_ENVELOPED_DATA);
     if (this->cmsParser_ == nullptr) {
+        guard.SetErrorCode(CF_ERR_ANI);
         ANI_LOGE_THROW(CF_ERR_ANI, "cmsParser is not initialized");
         return {};
     }
@@ -607,6 +614,7 @@ array<uint8_t> CmsParserImpl::DecryptEnvelopedDataSync(CmsEnvelopedDecryptionCon
         ThPrivateKeyInfo keyInfo = config.keyInfo.value();
         res = SetPrivateKeyInfo(keyInfo, &privateKey);
         if (res != CF_SUCCESS) {
+            guard.SetErrorCode(res);
             ANI_LOGE_THROW(res, "set private key info failed");
             return {};
         }
@@ -624,6 +632,7 @@ array<uint8_t> CmsParserImpl::DecryptEnvelopedDataSync(CmsEnvelopedDecryptionCon
     res = this->cmsParser_->decryptEnvelopedData(this->cmsParser_, &options, &blob);
     FreePrivateKeyInfo(&privateKey);
     if (res != CF_SUCCESS) {
+        guard.SetErrorCode(res);
         ANI_LOGE_THROW(res, "decrypt enveloped data failed");
         return {};
     }
@@ -635,9 +644,11 @@ array<uint8_t> CmsParserImpl::DecryptEnvelopedDataSync(CmsEnvelopedDecryptionCon
 
 CmsParser CreateCmsParser()
 {
+    HistogramScopeGuard guard(API_CREATE_CMS_PARSER);
     HcfCmsParser *cmsParser = nullptr;
     CfResult res = HcfCreateCmsParser(&cmsParser);
     if (res != CF_SUCCESS) {
+        guard.SetErrorCode(res);
         ANI_LOGE_THROW(res, "create cms parser failed!");
         return make_holder<CmsParserImpl, CmsParser>();
     }
@@ -646,22 +657,26 @@ CmsParser CreateCmsParser()
 
 OptStrUint8Arr GenerateCsr(ThPrivateKeyInfo const& keyInfo, CsrGenerationConfig const& config)
 {
+    HistogramScopeGuard guard(API_GENERATE_CSR);
     HcfPrivateKeyInfo *privateKey = nullptr;
     CfResult ret = SetPrivateKeyInfo(keyInfo, &privateKey);
     if (ret != CF_SUCCESS) {
         FreePrivateKeyInfo(&privateKey);
+        guard.SetErrorCode(ret);
         ANI_LOGE_THROW(ret, "set private key info failed");
         return OptStrUint8Arr::make_UINT8ARRAY(array<uint8_t>{});
     }
     HcfGenCsrConf *csrConfig = nullptr;
     if (!SetConfig(&csrConfig, config)) {
         FreePrivateKeyInfo(&privateKey);
+        guard.SetErrorCode(CF_INVALID_PARAMS);
         ANI_LOGE_THROW(CF_INVALID_PARAMS, "set csr config failed");
         return OptStrUint8Arr::make_UINT8ARRAY(array<uint8_t>{});
     }
     CfBlob csrBlob = {};
     ret = HcfX509CertificateGenCsr(privateKey, csrConfig, &csrBlob);
     if (ret != CF_SUCCESS) {
+        guard.SetErrorCode(ret);
         ANI_LOGE_THROW(ret, "GenerateCsr failed");
         FreePrivateKeyInfo(&privateKey);
         FreeGenCsrConf(csrConfig);

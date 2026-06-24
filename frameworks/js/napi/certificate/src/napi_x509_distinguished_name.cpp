@@ -39,7 +39,7 @@ struct CfCtx {
     bool paraIsString = true;
     HcfX509DistinguishedName *x509Name = nullptr;
     NapiX509DistinguishedName *nameClass = nullptr;
-    int32_t errCode = 0;
+    CfResult errCode = CF_SUCCESS;
     const char *errMsg = nullptr;
 };
 
@@ -94,10 +94,12 @@ static void ReturnPromiseResult(napi_env env, CfCtx *context, napi_value result)
 
 void NapiX509DistinguishedName::CreateDistinguishedNameExecute(napi_env env, void *data)
 {
+    HistogramScopeGuard guard(API_CREATE_X500_DISTINGUISHED_NAME);
     CfCtx *context = static_cast<CfCtx *>(data);
     context->errCode = HcfX509DistinguishedNameCreate(context->inPara, context->paraIsString, &context->x509Name);
     if (context->errCode != CF_SUCCESS) {
         context->errMsg = "create x509DistinguishedName failed";
+        guard.SetErrorCode(context->errCode);
     }
 }
 
@@ -132,8 +134,7 @@ void NapiX509DistinguishedName::CreateDistinguishedNameComplete(napi_env env, na
         },
         nullptr, nullptr);
     if (status != napi_ok) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "failed to wrap obj!"));
-        LOGE("failed to wrap obj!");
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "failed to wrap obj!");
         delete x509NameClass;
         return;
     }
@@ -147,8 +148,7 @@ napi_value NapiX509DistinguishedName::GetEncoded(napi_env env, napi_callback_inf
     CfEncodingBlob blob = {nullptr, 0, CF_FORMAT_DER};
     CfResult ret = x509Name->getEncode(x509Name, &blob);
     if (ret != CF_SUCCESS) {
-        LOGE("Distinguished Name get encoded failed");
-        napi_throw(env, CertGenerateBusinessError(env, ret, "Distinguished Name get encoded failed"));
+        NAPI_LOG_THROW(env, ret, "Distinguished Name get encoded failed");
         return nullptr;
     }
     napi_value result = ConvertEncodingBlobToNapiValue(env, &blob);
@@ -172,8 +172,7 @@ napi_value NapiX509DistinguishedName::GetName(napi_env env, napi_callback_info i
         CfBlob blob = { 0, nullptr };
         CfResult ret = x509Name->getName(x509Name, NULL, &blob, NULL);
         if (ret != CF_SUCCESS) {
-            LOGE("Distinguished Name get name failed");
-            napi_throw(env, CertGenerateBusinessError(env, ret, "Distinguished Name get name failed"));
+            NAPI_LOG_THROW(env, ret, "Distinguished Name get name failed");
             return nullptr;
         }
 
@@ -187,9 +186,8 @@ napi_value NapiX509DistinguishedName::GetName(napi_env env, napi_callback_info i
             CfArray outArr = { nullptr, CF_FORMAT_DER, 0 };
             CfResult ret = x509Name->getName(x509Name, inPara, NULL, &outArr);
             if (ret != CF_SUCCESS) {
-                LOGE("Distinguished Name get name failed");
                 CfBlobFree(&inPara);
-                napi_throw(env, CertGenerateBusinessError(env, ret, "Distinguished Name get name failed"));
+                NAPI_LOG_THROW(env, ret, "Distinguished Name get name failed");
                 return nullptr;
             }
 
@@ -208,8 +206,7 @@ napi_value NapiX509DistinguishedName::GetNameEx(napi_env env, napi_callback_info
     CfBlob blob = { 0, nullptr };
     CfResult ret = x509Name->getNameEx(x509Name, encodingType, &blob);
     if (ret != CF_SUCCESS) {
-        LOGE("Distinguished Name get utf8 name failed");
-        napi_throw(env, CertGenerateBusinessError(env, ret, "Distinguished Name get utf8 name failed"));
+        NAPI_LOG_THROW(env, ret, "Distinguished Name get utf8 name failed");
         return nullptr;
     }
 
@@ -225,8 +222,7 @@ napi_value NapiX509DistinguishedName::GetNameUtf8(napi_env env, napi_callback_in
     napi_value argv[ARGS_SIZE_TWO] = { nullptr };
     napi_value thisVar = nullptr;
     if (napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr) != napi_ok) {
-        LOGE("Failed to get cb info!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "Get cb info failed!"));
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "Get cb info failed!");
         return nullptr;
     }
     HcfX509DistinguishedName *x509Name = GetX509DistinguishedNameUtf8();
@@ -235,9 +231,8 @@ napi_value NapiX509DistinguishedName::GetNameUtf8(napi_env env, napi_callback_in
         CfArray outArr = { nullptr, CF_FORMAT_DER, 0 };
         CfResult ret = x509Name->getNameUtf8(x509Name, inPara, encodingType, &outArr);
         if (ret != CF_SUCCESS) {
-            LOGE("Distinguished Name get name utf8 failed.");
             CfBlobFree(&inPara);
-            napi_throw(env, CertGenerateBusinessError(env, ret, "Distinguished Name get name utf8 failed"));
+            NAPI_LOG_THROW(env, ret, "Distinguished Name get name utf8 failed");
             return nullptr;
         }
 
@@ -269,16 +264,14 @@ static napi_value NapiGetName(napi_env env, napi_callback_info info)
     napi_value argv[ARGS_SIZE_TWO] = { nullptr };
     napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr);
     if (argc != 0 && argc != ARGS_SIZE_ONE && argc != ARGS_SIZE_TWO) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "wrong argument num!"));
-        LOGE("wrong argument num!");
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "wrong argument num!");
         return nullptr;
     }
 
     NapiX509DistinguishedName *x509Name = nullptr;
     napi_unwrap(env, thisVar, reinterpret_cast<void **>(&x509Name));
     if (x509Name == nullptr) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "x509Cert is nullptr!"));
-        LOGE("x509Name is nullptr!");
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "x509Cert is nullptr!");
         return nullptr;
     }
     napi_valuetype valueType0;
@@ -287,8 +280,7 @@ static napi_value NapiGetName(napi_env env, napi_callback_info info)
         if (valueType0 == napi_number) {
             CfEncodingType encodingType;
             if (napi_get_value_uint32(env, argv[PARAM0], reinterpret_cast<uint32_t *>(&encodingType)) != napi_ok) {
-                napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "napi_get_value_uint32 failed!"));
-                LOGE("napi_get_value_uint32 failed!");
+                NAPI_LOG_THROW(env, CF_ERR_NAPI, "napi_get_value_uint32 failed!");
                 return nullptr;
             }
             return x509Name->GetNameEx(env, info, encodingType);
@@ -300,14 +292,12 @@ static napi_value NapiGetName(napi_env env, napi_callback_info info)
         napi_typeof(env, argv[PARAM0], &valueType0);
         napi_typeof(env, argv[PARAM1], &valueType1);
         if (valueType0 != napi_string || valueType1 != napi_number) {
-            napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "wrong argument type!"));
-            LOGE("wrong argument type!");
+            NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "wrong argument type!");
             return nullptr;
         }
         CfEncodingType encodingType;
         if (napi_get_value_uint32(env, argv[PARAM1], reinterpret_cast<uint32_t *>(&encodingType)) != napi_ok) {
-            napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "napi_get_value_uint32 failed!"));
-            LOGE("napi_get_value_uint32 failed!");
+            NAPI_LOG_THROW(env, CF_ERR_NAPI, "napi_get_value_uint32 failed!");
             return nullptr;
         }
         return x509Name->GetNameUtf8(env, info, encodingType);
@@ -324,12 +314,14 @@ static napi_value X509DistinguishedNameConstructor(napi_env env, napi_callback_i
 
 napi_value NapiX509DistinguishedName::NapiCreateX509DistinguishedName(napi_env env, napi_callback_info info)
 {
+    HistogramScopeGuard guard(API_CREATE_X500_DISTINGUISHED_NAME);
     size_t argc = ARGS_SIZE_ONE;
     napi_value argv[ARGS_SIZE_ONE] = { nullptr };
     napi_value thisVar = nullptr;
     napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr);
     if (!CertCheckArgsCount(env, argc, ARGS_SIZE_ONE, false)) {
         LOGE("CertCheckArgsCount error");
+        guard.SetErrorCode(CF_INVALID_PARAMS);
         napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "CertCheckArgsCount failed"));
         return nullptr;
     }
@@ -337,6 +329,7 @@ napi_value NapiX509DistinguishedName::NapiCreateX509DistinguishedName(napi_env e
     CfCtx *context = static_cast<CfCtx *>(CfMalloc(sizeof(CfCtx), 0));
     if (context == nullptr) {
         LOGE("malloc context failed!");
+        guard.SetErrorCode(CF_ERR_MALLOC);
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "CfMalloc failed"));
         return nullptr;
     }
@@ -354,12 +347,13 @@ napi_value NapiX509DistinguishedName::NapiCreateX509DistinguishedName(napi_env e
     }
 
     if (napi_create_reference(env, thisVar, 1, &context->cfRef) != napi_ok) {
-        LOGE("create reference failed!");
         FreeCryptoFwkCtx(env, context);
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Create reference failed"));
+        guard.SetErrorCode(CF_INVALID_PARAMS);
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "Create reference failed");
         return nullptr;
     }
 
+    guard.DisableScopeGuard();
     napi_create_async_work(env, nullptr, CertGetResourceName(env, "createX500DistinguishedName"),
         CreateDistinguishedNameExecute,
         CreateDistinguishedNameComplete,
@@ -422,8 +416,7 @@ napi_value ConstructX509DistinguishedName(HcfX509DistinguishedName *x509Name,
             return;
         }, nullptr, nullptr);
     if (status != napi_ok) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "failed to wrap obj!"));
-        LOGE("failed to wrap obj!");
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "failed to wrap obj!");
         delete x509NameClass;
         return nullptr;
     }

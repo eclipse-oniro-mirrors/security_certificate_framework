@@ -38,10 +38,12 @@ ohos_unittest("cf_version1_test") {
     "../../../frameworks/core/life/inc",
     "../../../frameworks/core/cert/inc",
     "../../../frameworks/core/param/inc",
+    "../../../frameworks/api_metrics/js/include",
   ]
 
   sources = [
     "src/attestation_cert_test.cpp",
+    "src/cf_api_metrics_test.cpp",
     "src/cf_mock.cpp",
     "src/crypto_x509_cert_chain_test.cpp",
     "src/crypto_x509_cert_chain_test_ex.cpp",
@@ -115,6 +117,7 @@ ohos_unittest("cf_version1_test") {
     "../../../frameworks/common/v1.0/src/cf_blob.c",
     "../../../frameworks/common/v1.0/src/cf_object_base.c",
     "../../../frameworks/common/v1.0/src/utils.c",
+    "../../../frameworks/api_metrics/js/src/js_api_metrics.cpp",
     "src/memory_mock.c",
   ]
   cflags = [ "-DHILOG_ENABLE" ]

@@ -43,7 +43,7 @@ struct CfCtx {
     NapiCertChainValidator *ccvClass = nullptr;
     HcfCertChainData *certChainData = nullptr;
 
-    int32_t errCode = 0;
+    CfResult errCode = CF_SUCCESS;
     const char *errMsg = nullptr;
 };
 
@@ -58,7 +58,7 @@ struct ValidateX509CertCtx {
     HcfX509Certificate *cert = nullptr;
     HcfX509CertValidatorParams params = {};
 
-    int32_t errCode = 0;
+    CfResult errCode = CF_SUCCESS;
     const char *errMsg = nullptr;
     HcfVerifyCertResult result = {};
     CfObject **certObj = nullptr;
@@ -208,12 +208,14 @@ static void ReturnResult(napi_env env, CfCtx *context, napi_value result)
 
 static void ValidateExecute(napi_env env, void *data)
 {
+    HistogramScopeGuard guard(API_CERT_CHAIN_VALIDATOR_VALIDATE);
     CfCtx *context = static_cast<CfCtx *>(data);
     HcfCertChainValidator *validator = context->ccvClass->GetCertChainValidator();
     context->errCode = validator->validate(validator, context->certChainData);
     if (context->errCode != CF_SUCCESS) {
         LOGE("validate cert chain failed!");
         context->errMsg = "validate cert chain failed";
+        guard.SetErrorCode(context->errCode);
     }
 }
 
@@ -234,8 +236,31 @@ static void FreeCreatedCertObjects(CfObject **certObj, uint32_t count)
     CfFree(certObj);
 }
 
+static CfResult BuildCertObjArray(ValidateX509CertCtx *context)
+{
+    if (context->result.certs.data == nullptr || context->result.certs.count == 0) {
+        return CF_ERR_INTERNAL;
+    }
+    context->certObjCount = context->result.certs.count;
+    context->certObj = static_cast<CfObject **>(CfMallocEx(context->certObjCount * sizeof(CfObject *)));
+    if (context->certObj == nullptr) {
+        return CF_ERR_MALLOC;
+    }
+    for (uint32_t i = 0; i < context->certObjCount; i++) {
+        CfResult ret = GetCertObject(context->result.certs.data[i], &context->certObj[i]);
+        if (ret != CF_SUCCESS) {
+            FreeCreatedCertObjects(context->certObj, i);
+            context->certObj = nullptr;
+            context->certObjCount = 0;
+            return ret;
+        }
+    }
+    return CF_SUCCESS;
+}
+
 static void ValidateX509CertExecute(napi_env env, void *data)
 {
+    HistogramScopeGuard guard(API_CERT_CHAIN_VALIDATOR_VALIDATE_CERT);
     ValidateX509CertCtx *context = static_cast<ValidateX509CertCtx *>(data);
     if (context == nullptr || context->ccvClass == nullptr) {
         LOGE("context or ccvClass is nullptr!");
@@ -246,42 +271,29 @@ static void ValidateX509CertExecute(napi_env env, void *data)
         LOGE("validator is nullptr!");
         context->errCode = CF_ERR_CRYPTO_OPERATION;
         context->errMsg = "validator is nullptr";
+        guard.SetErrorCode(context->errCode);
         return;
     }
     context->errCode = validator->validateX509Cert(validator, context->cert, &context->params, &context->result);
     if (context->errCode != CF_SUCCESS) {
         LOGE("validate X509 cert failed, errCode = %{public}d!", context->errCode);
         context->errMsg = context->result.errorMsg;
+        guard.SetErrorCode(context->errCode);
         return;
     }
 
-    if (context->result.certs.data == nullptr || context->result.certs.count == 0) {
-        context->errCode = CF_ERR_INTERNAL;
-        context->errMsg = "validate X509 cert success, but cert chain is empty";
-        return;
-    }
-
-    /* Create CfObject for each cert in result chain (in async thread to avoid blocking JS thread) */
-    context->certObjCount = context->result.certs.count;
-    context->certObj = static_cast<CfObject **>(CfMallocEx(context->certObjCount * sizeof(CfObject *)));
-    if (context->certObj == nullptr) {
-        LOGE("malloc certObj array failed!");
-        context->errCode = CF_ERR_MALLOC;
-        context->errMsg = "validate X509 cert success, but malloc certObj array failed";
-        return;
-    }
-    for (uint32_t i = 0; i < context->certObjCount; i++) {
-        CfResult ret = GetCertObject(context->result.certs.data[i], &context->certObj[i]);
-        if (ret != CF_SUCCESS) {
-            LOGE("GetCertObject failed at index %{public}u", i);
-            context->errCode = ret;
+    context->errCode = BuildCertObjArray(context);
+    if (context->errCode != CF_SUCCESS) {
+        if (context->errCode == CF_ERR_INTERNAL) {
+            context->errMsg = "validate X509 cert success, but cert chain is empty";
+        } else if (context->errCode == CF_ERR_MALLOC) {
+            context->errMsg = "validate X509 cert success, but malloc certObj array failed";
+        } else {
             context->errMsg = "validate X509 cert success, but getCertObject failed";
-            FreeCreatedCertObjects(context->certObj, i);
-            context->certObj = nullptr;
-            context->certObjCount = 0;
-            return;
         }
+        guard.SetErrorCode(context->errCode);
     }
+    return;
 }
 
 static void ValidateX509CertComplete(napi_env env, napi_status status, void *data)
@@ -308,16 +320,14 @@ static ValidateX509CertCtx *CreateValidateX509CertContext(napi_env env, napi_val
 {
     ValidateX509CertCtx *context = static_cast<ValidateX509CertCtx *>(CfMallocEx(sizeof(ValidateX509CertCtx)));
     if (context == nullptr) {
-        LOGE("malloc context failed!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to allocate memory"));
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "Failed to allocate memory");
         return nullptr;
     }
     context->ccvClass = validator;
     NapiX509Certificate *napiCert = nullptr;
     napi_unwrap(env, certArg, reinterpret_cast<void **>(&napiCert));
     if (napiCert == nullptr) {
-        LOGE("napi cert object is nullptr!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Invalid X509Cert parameter"));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "Invalid X509Cert parameter");
         CfFree(context);
         return nullptr;
     }
@@ -344,12 +354,14 @@ static ValidateX509CertCtx *CreateValidateX509CertContext(napi_env env, napi_val
 
 napi_value NapiCertChainValidator::ValidateX509Cert(napi_env env, napi_callback_info info)
 {
+    HistogramScopeGuard guard(API_CERT_CHAIN_VALIDATOR_VALIDATE_CERT);
     size_t argc = ARGS_SIZE_TWO;
     napi_value argv[ARGS_SIZE_TWO] = { nullptr };
     napi_value thisVar = nullptr;
     napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr);
     if (!CertCheckArgsCount(env, argc, ARGS_SIZE_TWO, false)) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Invalid parameter count"));
+        guard.SetErrorCode(CF_INVALID_PARAMS);
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "Invalid parameter count");
         return nullptr;
     }
     ValidateX509CertCtx *context = CreateValidateX509CertContext(env, thisVar, argv[PARAM0], argv[PARAM1], this);
@@ -363,23 +375,25 @@ napi_value NapiCertChainValidator::ValidateX509Cert(napi_env env, napi_callback_
         ValidateX509CertExecute, ValidateX509CertComplete,
         static_cast<void *>(context), &context->asyncWork);
     if (status != napi_ok) {
-        LOGE("create async work failed!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "create async work failed"));
+        guard.SetErrorCode(CF_ERR_NAPI);
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "create async work failed");
         FreeValidateX509CertCtxComplete(env, context);
         return nullptr;
     }
     status = napi_queue_async_work(env, context->asyncWork);
     if (status != napi_ok) {
-        LOGE("queue async work failed!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "queue async work failed"));
+        guard.SetErrorCode(CF_ERR_NAPI);
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "queue async work failed");
         FreeValidateX509CertCtxComplete(env, context);
         return nullptr;
     }
+    guard.DisableScopeGuard();
     return promise;
 }
 
 napi_value NapiCertChainValidator::Validate(napi_env env, napi_callback_info info)
 {
+    HistogramScopeGuard guard(API_CERT_CHAIN_VALIDATOR_VALIDATE);
     size_t argc = ARGS_SIZE_TWO;
     napi_value argv[ARGS_SIZE_TWO] = { nullptr };
     napi_value thisVar = nullptr;
@@ -418,6 +432,7 @@ napi_value NapiCertChainValidator::Validate(napi_env env, napi_callback_info inf
         napi_create_promise(env, &context->deferred, &promise);
     }
 
+    guard.DisableScopeGuard();
     napi_create_async_work(
         env, nullptr, CertGetResourceName(env, "Validate"),
         ValidateExecute,
@@ -454,13 +469,11 @@ static napi_value NapiValidateCert(napi_env env, napi_callback_info info)
 
     napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&certChainValidator));
     if (status != napi_ok) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "unwrap certChainValidator failed"));
-        LOGE("unwrap certChainValidator failed");
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "unwrap certChainValidator failed");
         return nullptr;
     }
     if (certChainValidator == nullptr) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "certChainValidator is nullptr"));
-        LOGE("certChainValidator is nullptr");
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "certChainValidator is nullptr");
         return nullptr;
     }
     return certChainValidator->ValidateX509Cert(env, info);
@@ -477,8 +490,7 @@ static bool WrapCertChainValidatorInstance(napi_env env, napi_value instance, Hc
 {
     NapiCertChainValidator *ccvClass = new (std::nothrow) NapiCertChainValidator(certChainValidator);
     if (!ccvClass) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to create a ccv class"));
-        LOGE("Failed to create a ccv class");
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "Failed to create a ccv class");
         CfObjDestroy(certChainValidator);
         certChainValidator = nullptr;
         return false;
@@ -490,8 +502,7 @@ static bool WrapCertChainValidatorInstance(napi_env env, napi_value instance, Hc
         },
         nullptr, nullptr);
     if (status != napi_ok) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "failed to wrap obj!"));
-        LOGE("failed to wrap obj!");
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "failed to wrap obj!");
         delete ccvClass;
         return false;
     }
@@ -500,14 +511,15 @@ static bool WrapCertChainValidatorInstance(napi_env env, napi_value instance, Hc
 
 napi_value NapiCertChainValidator::CreateCertChainValidator(napi_env env, napi_callback_info info)
 {
+    HistogramScopeGuard guard(API_CREATE_CERT_CHAIN_VALIDATOR);
     napi_value thisVar = nullptr;
     size_t argc = ARGS_SIZE_ONE;
     napi_value argv[ARGS_SIZE_ONE] = { nullptr };
     napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr);
 
     if (argc != ARGS_SIZE_ONE) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "invalid params count"));
-        LOGE("invalid params count!");
+        guard.SetErrorCode(CF_INVALID_PARAMS);
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "invalid params count");
         return nullptr;
     }
 
@@ -519,8 +531,8 @@ napi_value NapiCertChainValidator::CreateCertChainValidator(napi_env env, napi_c
     HcfCertChainValidator *certChainValidator = nullptr;
     CfResult res = HcfCertChainValidatorCreate(algorithm.c_str(), &certChainValidator);
     if (res != CF_SUCCESS) {
-        napi_throw(env, CertGenerateBusinessError(env, res, "create cert chain validator failed"));
-        LOGE("Failed to create c cert chain validator.");
+        guard.SetErrorCode(res);
+        NAPI_LOG_THROW(env, res, "create cert chain validator failed");
         return nullptr;
     }
     const char *returnAlgorithm = certChainValidator->getAlgorithm(certChainValidator);

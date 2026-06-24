@@ -301,7 +301,7 @@ static CfResult GetNameExOpenssl(HcfX509DistinguishedNameSpi *self, CfEncodingTy
     if (res != CF_SUCCESS) {
         LOGE("CopyMemFromBIO failed!");
         BIO_free(bio);
-        return ret;
+        return res;
     }
     BIO_free(bio);
     return CF_SUCCESS;

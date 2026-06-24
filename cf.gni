@@ -12,3 +12,11 @@
 # limitations under the License.
 
 enable_coverage = false
+
+declare_args() {
+  certificate_framework_api_metrics_enable = true
+  if (defined(global_parts_info) &&
+      !defined(global_parts_info.hiviewdfx_api_metrics)) {
+    certificate_framework_api_metrics_enable = false
+  }
+}

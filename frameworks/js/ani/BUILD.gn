@@ -14,6 +14,7 @@
 import("//build/config/components/ets_frontend/ets2abc_config.gni")
 import("//build/ohos.gni")
 import("//build/ohos/taihe_idl/taihe.gni")
+import("//base/security/certificate_framework/cf.gni")
 
 framework_path = "//base/security/certificate_framework/frameworks"
 
@@ -44,9 +45,11 @@ taihe_shared_library("cert_framework_ani") {
   include_dirs = [
     "${framework_path}/js/ani/inc",
     "${framework_path}/common/v1.0/inc",
+    "${framework_path}/api_metrics/js/include",
   ]
   sources = get_target_outputs(":run_taihe")
   sources += [
+    "${framework_path}/api_metrics/js/src/js_api_metrics.cpp",
     "${framework_path}/js/ani/src/ani_cert_chain_build_result.cpp",
     "${framework_path}/js/ani/src/ani_cert_chain_validator.cpp",
     "${framework_path}/js/ani/src/ani_cert_cms_generator.cpp",
@@ -79,13 +82,18 @@ taihe_shared_library("cert_framework_ani") {
   cflags = [
     "-DHILOG_ENABLE",
     "-fPIC",
-    "-g3",
   ]
   external_deps = [
     "c_utils:utils",
     "crypto_framework:crypto_framework_lib",
     "hilog:libhilog",
   ]
+
+  defines = []
+  if (certificate_framework_api_metrics_enable) {
+    external_deps += [ "api_metrics:histogrammanager" ]
+    defines += [ "CERTIFICATE_FRAMEWORK_API_METRICS_ENABLE" ]
+  }
 }
 
 generate_static_abc("cert_framework_ets") {

@@ -189,19 +189,23 @@ static bool CreateCallbackAndPromise(
 
 static void CreateCertChainExecute(napi_env env, void *data)
 {
+    HistogramScopeGuard guard(API_CREATE_X509_CERT_CHAIN);
     CfCtx *context = static_cast<CfCtx *>(data);
     context->async->errCode = HcfCertChainCreate(context->encodingBlob, nullptr, &context->certChain);
     if (context->async->errCode != CF_SUCCESS) {
         context->async->errMsg = "create cert chain failed";
+        guard.SetErrorCode(context->async->errCode);
     }
 }
 
 static void BuildX509CertChainExecute(napi_env env, void *data)
 {
+    HistogramScopeGuard guard(API_BUILD_X509_CERT_CHAIN);
     CfCtx *context = static_cast<CfCtx *>(data);
     context->async->errCode = HcfCertChainBuildResultCreate(context->buildParams, &context->buildResult);
     if (context->async->errCode != CF_SUCCESS) {
         context->async->errMsg = "create cert chain failed";
+        guard.SetErrorCode(context->async->errCode);
         return;
     }
     HcfCertChain *certChain = context->buildResult->certChain;
@@ -211,6 +215,7 @@ static void BuildX509CertChainExecute(napi_env env, void *data)
         context->async->errMsg = "validate failed";
         CfObjDestroy(context->buildResult->certChain);
         context->buildResult->certChain = nullptr;
+        guard.SetErrorCode(context->async->errCode);
     }
 }
 
@@ -231,8 +236,7 @@ static napi_value BuildCreateInstance(napi_env env, HcfCertChain *certChain)
         },
         nullptr, nullptr);
     if (status != napi_ok) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "failed to wrap obj!"));
-        LOGE("failed to wrap obj!");
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "failed to wrap obj!");
         delete napiObject;
         return nullptr;
     }
@@ -333,10 +337,12 @@ static napi_value CreateCertChainExtAsyncWork(napi_env env, CfCtx *context)
 
 static void ValidateExecute(napi_env env, void *data)
 {
+    HistogramScopeGuard guard(API_X509_CERT_CHAIN_VALIDATE);
     CfCtx *context = static_cast<CfCtx *>(data);
     context->async->errCode = context->certChain->validate(context->certChain, &context->params, &context->result);
     if (context->async->errCode != CF_SUCCESS) {
         context->async->errMsg = "validate cert chain failed.";
+        guard.SetErrorCode(context->async->errCode);
     }
 }
 
@@ -377,51 +383,53 @@ static napi_value ValidateAsyncWork(napi_env env, CfCtx *context)
 
 napi_value NapiX509CertChain::Validate(napi_env env, napi_callback_info info)
 {
+    HistogramScopeGuard guard(API_X509_CERT_CHAIN_VALIDATE);
     size_t argc = ARGS_SIZE_TWO;
     napi_value argv[ARGS_SIZE_TWO] = { nullptr };
     napi_value thisVar = nullptr;
     napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr);
     if (!CertCheckArgsCount(env, argc, ARGS_SIZE_TWO, false)) {
-        LOGE("check args count failed.");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "check args count failed!"));
+        guard.SetErrorCode(CF_INVALID_PARAMS);
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "check args count failed!");
         return nullptr;
     }
 
     CfCtx *context = BuildCertChainContext();
     if (context == nullptr) {
-        LOGE("malloc context failed.");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc context failed!"));
+        guard.SetErrorCode(CF_ERR_MALLOC);
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "malloc context failed!");
         return nullptr;
     }
 
     if (!CreateCallbackAndPromise(env, context, argc, ARGS_SIZE_TWO, argv[PARAM1])) {
         DeleteCertChainContext(env, context);
-        LOGE("CreateCallbackAndPromise failed!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "CreateCallbackAndPromise failed!"));
+        guard.SetErrorCode(CF_INVALID_PARAMS);
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "CreateCallbackAndPromise failed!");
         return nullptr;
     }
     context->certChainClass = this;
     context->certChain = GetCertChain();
     if (!BuildX509CertChainValidateParams(env, argv[PARAM0], context->params)) {
-        LOGE("BuildX509CertChainValidateParams failed!");
         DeleteCertChainContext(env, context);
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "BuildX509CertChainValidateParams failed!"));
+        guard.SetErrorCode(CF_INVALID_PARAMS);
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "BuildX509CertChainValidateParams failed!");
         return nullptr;
     }
 
     if (napi_create_reference(env, thisVar, 1, &context->cfRef) != napi_ok) {
-        LOGE("create reference failed!");
         DeleteCertChainContext(env, context);
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Create reference failed!"));
+        guard.SetErrorCode(CF_INVALID_PARAMS);
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "Create reference failed!");
         return nullptr;
     }
     if (napi_create_reference(env, argv[PARAM0], 1, &context->certChainValidateParamsRef) != napi_ok) {
-        LOGE("create param ref failed!");
         DeleteCertChainContext(env, context);
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "create param ref failed!"));
+        guard.SetErrorCode(CF_INVALID_PARAMS);
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "create param ref failed!");
         return nullptr;
     }
 
+    guard.DisableScopeGuard();
     return ValidateAsyncWork(env, context);
 }
 
@@ -431,8 +439,7 @@ napi_value NapiX509CertChain::ToString(napi_env env, napi_callback_info info)
     CfBlob blob = { 0, nullptr };
     CfResult result = certChain->toString(certChain, &blob);
     if (result != CF_SUCCESS) {
-        LOGE("toString failed!");
-        napi_throw(env, CertGenerateBusinessError(env, result, "toString failed"));
+        NAPI_LOG_THROW(env, result, "toString failed");
         return nullptr;
     }
 
@@ -448,8 +455,7 @@ napi_value NapiX509CertChain::HashCode(napi_env env, napi_callback_info info)
     CfBlob blob = { 0, nullptr };
     CfResult result = certChain->hashCode(certChain, &blob);
     if (result != CF_SUCCESS) {
-        LOGE("hashCode failed!");
-        napi_throw(env, CertGenerateBusinessError(env, result, "hashCode failed"));
+        NAPI_LOG_THROW(env, result, "hashCode failed");
         return nullptr;
     }
     napi_value returnBlob = ConvertBlobToUint8ArrNapiValue(env, &blob);
@@ -461,8 +467,7 @@ static napi_value CreateX509CertChainByArray(napi_env env, napi_value param)
 {
     HcfX509CertificateArray certs = { nullptr, 0 };
     if (param != nullptr && !GetArrayCertFromNapiValue(env, param, &certs, false)) {
-        LOGE("get array cert from data failed!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get cert arr failed!"));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "get cert arr failed!");
         return nullptr;
     }
 
@@ -476,11 +481,10 @@ static napi_value CreateX509CertChainByArray(napi_env env, napi_value param)
     }
     napi_value instance = BuildCreateInstance(env, certChain);
     if (instance == nullptr) {
-        LOGE("BuildCreateInstance failed!");
         CfObjDestroy(certChain);
         certChain = nullptr;
         CF_FREE_PTR(certs.data);
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "build create instance failed!"));
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "build create instance failed!");
         return nullptr;
     }
     CF_FREE_PTR(certs.data);
@@ -490,27 +494,23 @@ static napi_value CreateX509CertChainByArray(napi_env env, napi_value param)
 static napi_value CreateX509CertChainByEncodingBlob(napi_env env, size_t argc, napi_value param1, napi_value param2)
 {
     if (!CertCheckArgsCount(env, argc, ARGS_SIZE_TWO, false)) {
-        LOGE("CertCheckArgsCount failed");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "CertCheckArgsCount failed!"));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "CertCheckArgsCount failed!");
         return nullptr;
     }
     CfCtx *context = BuildCertChainContext();
     if (context == nullptr) {
-        LOGE("context is nullptr");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "context is nullptr!"));
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "context is nullptr!");
         return nullptr;
     }
 
     if (!CreateCallbackAndPromise(env, context, argc, ARGS_SIZE_TWO, param2)) {
-        LOGE("Create Callback Promise failed");
         DeleteCertChainContext(env, context);
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Create Callback Promise failed!"));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "Create Callback Promise failed!");
         return nullptr;
     }
     if (!GetEncodingBlobFromValue(env, param1, &context->encodingBlob)) {
-        LOGE("Get Encoding Blob failed");
         DeleteCertChainContext(env, context);
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Get Encoding Blob failed!"));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "Get Encoding Blob failed!");
         return nullptr;
     }
 
@@ -519,6 +519,7 @@ static napi_value CreateX509CertChainByEncodingBlob(napi_env env, size_t argc, n
 
 napi_value NapiCreateX509CertChain(napi_env env, napi_callback_info info)
 {
+    HistogramScopeGuard guard(API_CREATE_X509_CERT_CHAIN);
     size_t argc = ARGS_SIZE_TWO;
     napi_value argv[ARGS_SIZE_TWO] = { nullptr };
     napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
@@ -528,14 +529,15 @@ napi_value NapiCreateX509CertChain(napi_env env, napi_callback_info info)
     napi_value instance = nullptr;
     if (flag) {
         if (argc != ARGS_SIZE_ONE) {
-            LOGE("arg size is not correct");
-            napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "arg size is not correct!"));
+            guard.SetErrorCode(CF_INVALID_PARAMS);
+            NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "arg size is not correct!");
             return nullptr;
         }
         LOGI("NapiCreateX509CertChain : Array<X509Cert>!");
         instance = CreateX509CertChainByArray(env, argv[PARAM0]);
     } else {
         LOGI("NapiCreateX509CertChain : inStream: EncodingBlob!");
+        guard.DisableScopeGuard();
         instance = CreateX509CertChainByEncodingBlob(env, argc, argv[PARAM0], argv[PARAM1]);
     }
     return instance;
@@ -543,6 +545,7 @@ napi_value NapiCreateX509CertChain(napi_env env, napi_callback_info info)
 
 static void CreateTrustAnchorsWithKeyStoreExecute(napi_env env, void *data)
 {
+    HistogramScopeGuard guard(API_CREATE_TRUST_ANCHORS_WITH_KEY_STORE);
     CfCtx *context = static_cast<CfCtx *>(data);
     if (context == nullptr) {
         LOGE("context is nullptr");
@@ -552,6 +555,7 @@ static void CreateTrustAnchorsWithKeyStoreExecute(napi_env env, void *data)
         HcfCreateTrustAnchorWithKeyStore(context->keyStore, context->pwd, &context->trustAnchorArray);
     if (context->async->errCode != CF_SUCCESS) {
         context->async->errMsg = "Failed to create trust anchor from p12!";
+        guard.SetErrorCode(context->async->errCode);
     }
 }
 
@@ -714,21 +718,18 @@ static napi_value CreateTrustAnchorsWithKeyStoreAsyncWork(napi_env env, CfCtx *c
 static napi_value CreateTrustAnchorsWithKeyStore(napi_env env, size_t argc, napi_value param1, napi_value param2)
 {
     if (!CertCheckArgsCount(env, argc, ARGS_SIZE_TWO, false)) {
-        LOGE("CertCheckArgsCount failed");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "CertCheckArgsCount failed!"));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "CertCheckArgsCount failed!");
         return nullptr;
     }
     CfCtx *context = BuildCertChainContext();
     if (context == nullptr) {
-        LOGE("context is nullptr");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "context is nullptr!"));
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "context is nullptr!");
         return nullptr;
     }
 
     context->async->asyncType = GetAsyncType(env, argc, ARGS_SIZE_TWO, nullptr);
     if (context->async->asyncType == ASYNC_TYPE_CALLBACK) {
-        LOGE("ASYNC_TYPE_CALLBACK is not supported.");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "ASYNC_TYPE_CALLBACK is not supported."));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "ASYNC_TYPE_CALLBACK is not supported.");
         DeleteCertChainContext(env, context);
         return nullptr;
     }
@@ -750,9 +751,11 @@ static napi_value CreateTrustAnchorsWithKeyStore(napi_env env, size_t argc, napi
 
 napi_value NapiCreateTrustAnchorsWithKeyStore(napi_env env, napi_callback_info info)
 {
+    HistogramScopeGuard guard(API_CREATE_TRUST_ANCHORS_WITH_KEY_STORE);
     size_t argc = ARGS_SIZE_TWO;
     napi_value argv[ARGS_SIZE_TWO] = { nullptr };
     napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
+    guard.DisableScopeGuard();
     napi_value instance = CreateTrustAnchorsWithKeyStore(env, argc, argv[PARAM0], argv[PARAM1]);
     return instance;
 }
@@ -937,8 +940,7 @@ static napi_value ParsePKCS12WithKeyStore(napi_env env, size_t argc, napi_value 
     HcfParsePKCS12Conf *conf = static_cast<HcfParsePKCS12Conf *>(CfMalloc(sizeof(HcfParsePKCS12Conf), 0));
     if (conf == nullptr) {
         CfBlobClearAndFree(&keyStore);
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to malloc conf"));
-        LOGE("Failed to malloc conf!");
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "Failed to malloc conf");
         return nullptr;
     };
 
@@ -946,8 +948,7 @@ static napi_value ParsePKCS12WithKeyStore(napi_env env, size_t argc, napi_value 
         CfBlobClearAndFree(&keyStore);
         FreeHcfParsePKCS12Conf(conf);
         conf = nullptr;
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Failed to get conf"));
-        LOGE("Failed to get conf!");
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "Failed to get conf");
         return nullptr;
     }
 
@@ -957,8 +958,7 @@ static napi_value ParsePKCS12WithKeyStore(napi_env env, size_t argc, napi_value 
         CfBlobClearAndFree(&keyStore);
         FreeHcfParsePKCS12Conf(conf);
         conf = nullptr;
-        napi_throw(env, CertGenerateBusinessError(env, ret, "Failed to parse pkcs12"));
-        LOGE("Failed to parse pkcs12!");
+        NAPI_LOG_THROW(env, ret, "Failed to parse pkcs12");
         return nullptr;
     }
 
@@ -969,8 +969,7 @@ static napi_value ParsePKCS12WithKeyStore(napi_env env, size_t argc, napi_value 
         conf = nullptr;
         FreeP12Collection(p12Collection);
         p12Collection = nullptr;
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to build instance"));
-        LOGE("Failed to build instance!");
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "Failed to build instance");
         return nullptr;
     }
     CfBlobClearAndFree(&keyStore);
@@ -1026,6 +1025,7 @@ static void FreePkcs12Ctx(napi_env env, ParsePkcs12Ctx *ctx)
 
 static void ParsePkcs12Execute(napi_env env, void *data)
 {
+    HistogramScopeGuard guard(API_PARSE_PKCS12);
     ParsePkcs12Ctx *ctx = static_cast<ParsePkcs12Ctx *>(data);
     ctx->errCode = HcfParsePKCS12(ctx->keyStore, ctx->conf, &ctx->p12Collection);
     if (ctx->errCode != CF_SUCCESS) {
@@ -1034,6 +1034,7 @@ static void ParsePkcs12Execute(napi_env env, void *data)
         }
         LOGE("HcfParsePKCS12 failed.");
         ctx->errMsg = "HcfParsePKCS12 failed.";
+        guard.SetErrorCode(ctx->errCode);
         return;
     }
 }
@@ -1072,18 +1073,16 @@ static void ParsePkcs12Complete(napi_env env, napi_status status, void *data)
 static napi_value ParsePkcs12AsyncWork(napi_env env, napi_value thisVar, ParsePkcs12Ctx *context)
 {
     if (napi_create_reference(env, thisVar, 1, &context->cfRef) != napi_ok) {
-        LOGE("create reference failed!");
         FreeParsePkcs12Ctx(env, context);
         context = nullptr;
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "Create reference failed!"));
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "Create reference failed!");
         return nullptr;
     }
 
     if (napi_create_promise(env, &context->deferred, &context->promise) != napi_ok) {
-        LOGE("create promise failed!");
         FreeParsePkcs12Ctx(env, context);
         context = nullptr;
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "Create promise failed!"));
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "Create promise failed!");
         return nullptr;
     }
     napi_create_async_work(
@@ -1095,10 +1094,9 @@ static napi_value ParsePkcs12AsyncWork(napi_env env, napi_value thisVar, ParsePk
 
     napi_status status = napi_queue_async_work(env, context->asyncWork);
     if (status != napi_ok) {
-        LOGE("napi_queue_async_work failed!");
         FreeParsePkcs12Ctx(env, context);
         context = nullptr;
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "napi_queue_async_work failed!"));
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "napi_queue_async_work failed!");
         return nullptr;
     }
     return context->promise;
@@ -1115,8 +1113,7 @@ static napi_value NapiParsePKCS12Async(napi_env env, napi_value thisVar, napi_va
     if (conf == nullptr) {
         CfBlobClearAndFree(&keyStore);
         keyStore = nullptr;
-        LOGE("Failed to malloc conf!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to malloc conf."));
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "Failed to malloc conf.");
         return nullptr;
     };
     conf->pwd = CertGetBlobFromStringJSParams(env, param2);
@@ -1125,9 +1122,7 @@ static napi_value NapiParsePKCS12Async(napi_env env, napi_value thisVar, napi_va
         keyStore = nullptr;
         FreeHcfParsePKCS12Conf(conf);
         conf = nullptr;
-        LOGE("CertGetBlobFromStringJSParams failed.");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_PARAMETER_CHECK,
-            "CertGetBlobFromStringJSParams failed."));
+        NAPI_LOG_THROW(env, CF_ERR_PARAMETER_CHECK, "CertGetBlobFromStringJSParams failed.");
         return nullptr;
     }
     conf->isPem = true;
@@ -1141,8 +1136,7 @@ static napi_value NapiParsePKCS12Async(napi_env env, napi_value thisVar, napi_va
         keyStore = nullptr;
         FreeHcfParsePKCS12Conf(conf);
         conf = nullptr;
-        LOGE("malloc context failed!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc context failed!"));
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "malloc context failed!");
         return nullptr;
     }
     context->keyStore = keyStore;
@@ -1152,27 +1146,29 @@ static napi_value NapiParsePKCS12Async(napi_env env, napi_value thisVar, napi_va
 
 napi_value NapiParsePKCS12(napi_env env, napi_callback_info info)
 {
+    HistogramScopeGuard guard(API_PARSE_PKCS12);
     size_t argc = ARGS_SIZE_TWO;
     napi_value argv[ARGS_SIZE_TWO] = { nullptr };
     napi_value thisVar;
     if (napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr) != napi_ok) {
-        LOGE("Failed to get cb info!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "Get cb info failed!"));
+        guard.SetErrorCode(CF_ERR_NAPI);
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "Get cb info failed!");
         return nullptr;
     }
     if (argc != ARGS_SIZE_TWO) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "invalid params count."));
-        LOGE("invalid params count!");
+        guard.SetErrorCode(CF_INVALID_PARAMS);
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "invalid params count.");
         return nullptr;
     }
     napi_valuetype valueType;
     napi_status status = napi_typeof(env, argv[PARAM1], &valueType);
     if (status != napi_ok) {
-        LOGE("Failed to get object type!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "Get object type failed!"));
+        guard.SetErrorCode(CF_ERR_NAPI);
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "Get object type failed!");
         return nullptr;
     }
     if (valueType == napi_string) {
+        guard.DisableScopeGuard();
         napi_value instance = NapiParsePKCS12Async(env, thisVar, argv[PARAM0], argv[PARAM1]);
         return instance;
     }
@@ -1495,14 +1491,12 @@ static napi_value CreatePkcs12(napi_env env, size_t argc, napi_value param0, nap
     HcfX509P12Collection *p12Collection =
         static_cast<HcfX509P12Collection *>(CfMalloc(sizeof(HcfX509P12Collection), 0));
     if (p12Collection == nullptr) {
-        LOGE("Failed to malloc p12Collection!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to malloc p12Collection!"));
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "Failed to malloc p12Collection!");
         return nullptr;
     }
     if (!GetP12DataFromValue(env, param0, p12Collection)) {
-        LOGE("Failed to get p12 data from value!");
         FreeCreateP12Collection(p12Collection);
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_PARAMETER_CHECK, "Failed to get p12 data from value!"));
+        NAPI_LOG_THROW(env, CF_ERR_PARAMETER_CHECK, "Failed to get p12 data from value!");
         return nullptr;
     }
 
@@ -1510,15 +1504,13 @@ static napi_value CreatePkcs12(napi_env env, size_t argc, napi_value param0, nap
         static_cast<HcfPkcs12CreatingConfig *>(CfMalloc(sizeof(HcfPkcs12CreatingConfig), 0));
     if (conf == nullptr) {
         FreeCreateP12Collection(p12Collection);
-        LOGE("Failed to malloc conf!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to malloc conf!"));
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "Failed to malloc conf!");
         return nullptr;
     }
     if (!GetP12CreateConfFromValue(env, param1, conf)) {
         FreeCreateP12Collection(p12Collection);
         FreeHcfPkcs12CreateConf(conf);
-        LOGE("GetP12CreateConfFromValue failed!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_PARAMETER_CHECK, "GetP12CreateConfFromValue failed!"));
+        NAPI_LOG_THROW(env, CF_ERR_PARAMETER_CHECK, "GetP12CreateConfFromValue failed!");
         return nullptr;
     }
     CfBlob blob = { 0, nullptr };
@@ -1527,8 +1519,7 @@ static napi_value CreatePkcs12(napi_env env, size_t argc, napi_value param0, nap
     if (ret != CF_SUCCESS) {
         FreeCreateP12Collection(p12Collection);
         FreeHcfPkcs12CreateConf(conf);
-        LOGE("HcfCreatePkcs12 failed!");
-        napi_throw(env, CertGenerateBusinessError(env, ret, "HcfCreatePkcs12 failed!"));
+        NAPI_LOG_THROW(env, ret, "HcfCreatePkcs12 failed!");
         return nullptr;
     }
     FreeCreateP12Collection(p12Collection);
@@ -1540,16 +1531,17 @@ static napi_value CreatePkcs12(napi_env env, size_t argc, napi_value param0, nap
 
 napi_value NapiCreatePkcs12Sync(napi_env env, napi_callback_info info)
 {
+    HistogramScopeGuard guard(API_CREATE_PKCS12_SYNC);
     size_t argc = ARGS_SIZE_TWO;
     napi_value argv[ARGS_SIZE_TWO] = { nullptr };
     if (napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr) != napi_ok) {
-        LOGE("Failed to get cb info!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "Get cb info failed!"));
+        guard.SetErrorCode(CF_ERR_NAPI);
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "Get cb info failed!");
         return nullptr;
     }
     if (argc != ARGS_SIZE_TWO) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_PARAMETER_CHECK, "invalid params count"));
-        LOGE("invalid params count!");
+        guard.SetErrorCode(CF_ERR_PARAMETER_CHECK);
+        NAPI_LOG_THROW(env, CF_ERR_PARAMETER_CHECK, "invalid params count");
         return nullptr;
     }
     napi_value instance = CreatePkcs12(env, argc, argv[PARAM0], argv[PARAM1]);
@@ -1558,11 +1550,13 @@ napi_value NapiCreatePkcs12Sync(napi_env env, napi_callback_info info)
 
 static void CreatePkcs12Execute(napi_env env, void *data)
 {
+    HistogramScopeGuard guard(API_CREATE_PKCS12);
     CreatePkcs12Ctx *ctx = static_cast<CreatePkcs12Ctx *>(data);
     ctx->errCode = HcfCreatePkcs12(ctx->p12Collection, ctx->conf, &(ctx->outBlob));
     if (ctx->errCode != CF_SUCCESS) {
         LOGE("HcfCreatePkcs12 failed.");
         ctx->errMsg = "HcfCreatePkcs12 failed.";
+        guard.SetErrorCode(ctx->errCode);
         return;
     }
 }
@@ -1626,15 +1620,13 @@ static void CreatePkcs12Complete(napi_env env, napi_status status, void *data)
 static napi_value CreatePkcs12AsyncWork(napi_env env, napi_value thisVar, CreatePkcs12Ctx *context)
 {
     if (napi_create_reference(env, thisVar, 1, &context->cfRef) != napi_ok) {
-        LOGE("create reference failed!");
         FreeCreatePkcs12Ctx(env, context);
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "Create reference failed!"));
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "Create reference failed!");
         return nullptr;
     }
     if (napi_create_promise(env, &context->deferred, &context->promise) != napi_ok) {
-        LOGE("napi_create_promise failed!");
         FreeCreatePkcs12Ctx(env, context);
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "napi_create_promise failed!"));
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "napi_create_promise failed!");
         return nullptr;
     }
 
@@ -1647,9 +1639,8 @@ static napi_value CreatePkcs12AsyncWork(napi_env env, napi_value thisVar, Create
 
     napi_status status = napi_queue_async_work(env, context->asyncWork);
     if (status != napi_ok) {
-        LOGE("napi_queue_async_work failed!");
         FreeCreatePkcs12Ctx(env, context);
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "napi_queue_async_work failed!"));
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "napi_queue_async_work failed!");
         return nullptr;
     }
     return context->promise;
@@ -1660,14 +1651,12 @@ static CreatePkcs12Ctx* BuildCreatePkcs12Context(napi_env env, napi_value* argv)
     HcfX509P12Collection *p12Collection =
         static_cast<HcfX509P12Collection *>(CfMalloc(sizeof(HcfX509P12Collection), 0));
     if (p12Collection == nullptr) {
-        LOGE("Failed to malloc p12Collection!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to malloc p12Collection."));
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "Failed to malloc p12Collection.");
         return nullptr;
     }
     if (!GetP12DataFromValue(env, argv[PARAM0], p12Collection)) {
-        LOGE("Failed to get p12 data from value!");
         FreeCreateP12Collection(p12Collection);
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_PARAMETER_CHECK, "Failed to get p12 data from value."));
+        NAPI_LOG_THROW(env, CF_ERR_PARAMETER_CHECK, "Failed to get p12 data from value.");
         return nullptr;
     }
 
@@ -1675,23 +1664,20 @@ static CreatePkcs12Ctx* BuildCreatePkcs12Context(napi_env env, napi_value* argv)
         static_cast<HcfPkcs12CreatingConfig *>(CfMalloc(sizeof(HcfPkcs12CreatingConfig), 0));
     if (conf == nullptr) {
         FreeCreateP12Collection(p12Collection);
-        LOGE("Failed to malloc conf!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to malloc conf."));
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "Failed to malloc conf.");
         return nullptr;
     }
     if (!GetP12CreateConfFromValue(env, argv[PARAM1], conf)) {
         FreeCreateP12Collection(p12Collection);
         FreeHcfPkcs12CreateConf(conf);
-        LOGE("Failed to get conf!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_PARAMETER_CHECK, "Failed to get conf."));
+        NAPI_LOG_THROW(env, CF_ERR_PARAMETER_CHECK, "Failed to get conf.");
         return nullptr;
     }
     CreatePkcs12Ctx *context = static_cast<CreatePkcs12Ctx *>(CfMalloc(sizeof(CreatePkcs12Ctx), 0));
     if (context == nullptr) {
-        LOGE("malloc context failed!");
         FreeCreateP12Collection(p12Collection);
         FreeHcfPkcs12CreateConf(conf);
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc context failed!"));
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "malloc context failed!");
         return nullptr;
     }
     context->p12Collection = p12Collection;
@@ -1701,17 +1687,18 @@ static CreatePkcs12Ctx* BuildCreatePkcs12Context(napi_env env, napi_value* argv)
 
 napi_value NapiCreatePkcs12(napi_env env, napi_callback_info info)
 {
+    HistogramScopeGuard guard(API_CREATE_PKCS12);
     size_t argc = ARGS_SIZE_TWO;
     napi_value argv[ARGS_SIZE_TWO] = { nullptr };
     napi_value thisVar = nullptr;
     if (napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr) != napi_ok) {
-        LOGE("Failed to get cb info!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "Get cb info failed!"));
+        guard.SetErrorCode(CF_ERR_NAPI);
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "Get cb info failed!");
         return nullptr;
     }
     if (argc != ARGS_SIZE_TWO) {
-        LOGE("invalid params count!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_PARAMETER_CHECK, "invalid params count"));
+        guard.SetErrorCode(CF_ERR_PARAMETER_CHECK);
+        NAPI_LOG_THROW(env, CF_ERR_PARAMETER_CHECK, "invalid params count");
         return nullptr;
     }
 
@@ -1720,6 +1707,7 @@ napi_value NapiCreatePkcs12(napi_env env, napi_callback_info info)
         LOGE("BuildCreatePkcs12Context failed!");
         return nullptr;
     }
+    guard.DisableScopeGuard();
     return CreatePkcs12AsyncWork(env, thisVar, context);
 }
 
@@ -1818,33 +1806,28 @@ bool GetChainBuildParametersFromValue(napi_env env, napi_value obj, HcfX509CertC
 static napi_value CreateX509CertChainExtReturn(napi_env env, size_t argc, napi_value param)
 {
     if (!CertCheckArgsCount(env, argc, ARGS_SIZE_ONE, false)) {
-        LOGE("CertCheckArgsCount failed");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "CertCheckArgsCount failed!"));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "CertCheckArgsCount failed!");
         return nullptr;
     }
     CfCtx *context = BuildCertChainContext();
     if (context == nullptr) {
-        LOGE("context is nullptr");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "context is nullptr!"));
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "context is nullptr!");
         return nullptr;
     }
 
     if (!CreateCallbackAndPromise(env, context, argc, ARGS_SIZE_ONE, nullptr)) {
-        LOGE("Create Callback Promise failed");
         DeleteCertChainContext(env, context);
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Create Callback Promise failed!"));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "Create Callback Promise failed!");
         return nullptr;
     }
     if (napi_create_reference(env, param, 1, &context->async->paramRef) != napi_ok) {
-        LOGE("create param ref failed!");
         DeleteCertChainContext(env, context);
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Create param ref failed"));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "Create param ref failed");
         return nullptr;
     }
     if (!GetChainBuildParametersFromValue(env, param, &context->buildParams)) {
-        LOGE("Get Cert Chain Build Parameters failed!");
         DeleteCertChainContext(env, context);
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Get Cert Chain Build Parameters failed!"));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "Get Cert Chain Build Parameters failed!");
         return nullptr;
     }
 
@@ -1853,10 +1836,12 @@ static napi_value CreateX509CertChainExtReturn(napi_env env, size_t argc, napi_v
 
 napi_value NapiBuildX509CertChain(napi_env env, napi_callback_info info)
 {
+    HistogramScopeGuard guard(API_BUILD_X509_CERT_CHAIN);
     size_t argc = ARGS_SIZE_ONE;
     napi_value argv[ARGS_SIZE_ONE] = { nullptr };
     napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
 
+    guard.DisableScopeGuard();
     napi_value instance = nullptr;
     instance = CreateX509CertChainExtReturn(env, argc, argv[PARAM0]);
     return instance;
@@ -1869,23 +1854,20 @@ napi_value NapiGetCertList(napi_env env, napi_callback_info info)
     NapiX509CertChain *napiCertChainObj = nullptr;
     napi_unwrap(env, thisVar, reinterpret_cast<void **>(&napiCertChainObj));
     if (napiCertChainObj == nullptr) {
-        LOGE("napi cert chain object is nullptr!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "napi cert chain object is nullptr!"));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "napi cert chain object is nullptr!");
         return nullptr;
     }
     HcfCertChain *certChain = napiCertChainObj->GetCertChain();
     HcfX509CertificateArray certs = { nullptr, 0 };
     CfResult res = certChain->getCertList(certChain, &certs);
     if (res != CF_SUCCESS) {
-        LOGE("napi getCertList failed!");
-        napi_throw(env, CertGenerateBusinessError(env, res, "get cert list failed!"));
+        NAPI_LOG_THROW(env, res, "get cert list failed!");
         return nullptr;
     }
     napi_value instance = ConvertCertArrToNapiValue(env, &certs);
     if (instance == nullptr) {
-        LOGE("convert arr to instance failed!");
         FreeCertArrayData(&certs);
-        napi_throw(env, CertGenerateBusinessError(env, res, "convert arr to instance failed!"));
+        NAPI_LOG_THROW(env, res, "convert arr to instance failed!");
         return nullptr;
     }
     CF_FREE_PTR(certs.data);
@@ -1899,8 +1881,7 @@ napi_value NapiValidate(napi_env env, napi_callback_info info)
     NapiX509CertChain *napiCertChainObj = nullptr;
     napi_unwrap(env, thisVar, reinterpret_cast<void **>(&napiCertChainObj));
     if (napiCertChainObj == nullptr) {
-        LOGE("napi cert chain object is nullptr!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "napi cert chain object is nullptr!"));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "napi cert chain object is nullptr!");
         return nullptr;
     }
     return napiCertChainObj->Validate(env, info);
@@ -1913,8 +1894,7 @@ napi_value NapiToString(napi_env env, napi_callback_info info)
     NapiX509CertChain *napiCertChainObj = nullptr;
     napi_unwrap(env, thisVar, reinterpret_cast<void **>(&napiCertChainObj));
     if (napiCertChainObj == nullptr) {
-        LOGE("napi cert chain object is nullptr!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "napi cert chain object is nullptr!"));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "napi cert chain object is nullptr!");
         return nullptr;
     }
     return napiCertChainObj->ToString(env, info);
@@ -1927,8 +1907,7 @@ napi_value NapiHashCode(napi_env env, napi_callback_info info)
     NapiX509CertChain *napiCertChainObj = nullptr;
     napi_unwrap(env, thisVar, reinterpret_cast<void **>(&napiCertChainObj));
     if (napiCertChainObj == nullptr) {
-        LOGE("napi cert chain object is nullptr!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "napi cert chain object is nullptr!"));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "napi cert chain object is nullptr!");
         return nullptr;
     }
     return napiCertChainObj->HashCode(env, info);

@@ -153,15 +153,9 @@ static CfResult IsInvalidPrivateKeyPassword(const PrivateKeyInfo *privateKey)
 
 static CfResult ConvertPemToKey(const PrivateKeyInfo *privateKey, EVP_PKEY **pkey)
 {
-    BIO *bio = BIO_new(BIO_s_mem());
+    BIO *bio = BIO_new_mem_buf(privateKey->privateKey->data, privateKey->privateKey->len);
     if (bio == NULL) {
         LOGE("Failed to init bio.");
-        CfPrintOpensslError();
-        return CF_ERR_CRYPTO_OPERATION;
-    }
-    if (BIO_write(bio, privateKey->privateKey->data, privateKey->privateKey->len) <= 0) {
-        BIO_free(bio);
-        LOGE("Failed to write pem private key to bio");
         CfPrintOpensslError();
         return CF_ERR_CRYPTO_OPERATION;
     }
