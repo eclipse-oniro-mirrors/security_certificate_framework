@@ -48,11 +48,60 @@ HILOG_ERROR(LOG_CORE, "%{public}s[%{public}u]: " fmt "\n", __FUNCTION__, __LINE_
 #else
 
 #include <stdio.h>
+#include <stdarg.h>
+#include <string.h>
+#include <time.h>
 
-#define CF_LOG_D(fmt, ...) printf("[CertificateFramework][D][%s]: " fmt "\n", __FUNCTION__, ##__VA_ARGS__)
-#define CF_LOG_I(fmt, ...) printf("[CertificateFramework][I][%s]: " fmt "\n", __FUNCTION__, ##__VA_ARGS__)
-#define CF_LOG_W(fmt, ...) printf("[CertificateFramework][W][%s]: " fmt "\n", __FUNCTION__, ##__VA_ARGS__)
-#define CF_LOG_E(fmt, ...) printf("[CertificateFramework][E][%s]: " fmt "\n", __FUNCTION__, ##__VA_ARGS__)
+#define CF_LOG_FILE "certificate_framework.log"
+#define CF_LOG_BUF_SIZE 512
+#define CF_PUBLIC_TAG "{public}"
+
+static void CfPrintLog(const char *level, const char *file, int line, const char *func, const char *fmt, ...)
+{
+    const char *slash = strrchr(file, '/');
+    const char *filename = (slash != NULL) ? slash + 1 : file;
+    size_t publicTagLen = sizeof(CF_PUBLIC_TAG) - 1;
+
+    char buf[CF_LOG_BUF_SIZE + 1] = {};
+    char *dst = buf;
+    const char *src = fmt;
+    while (*src && (size_t)(dst - buf) < sizeof(buf)) {
+        if (strncmp(src, CF_PUBLIC_TAG, publicTagLen) == 0) {
+            src += publicTagLen;
+        } else {
+            *dst++ = *src++;
+        }
+    }
+    *dst = '\0';
+
+    FILE *fp = fopen(CF_LOG_FILE, "a");
+    if (fp == NULL) {
+        fp = stderr;
+    }
+
+    time_t now = time(NULL);
+    struct tm t = {};
+    char ts[] = "0000-00-00 00:00:00";
+    (void)localtime_r(&now, &t);
+    (void)strftime(ts, sizeof(ts), "%Y-%m-%d %H:%M:%S", &t);
+
+    (void)fprintf(fp, "[%s] [%s] [%s:%d] [%s] ", ts, level, filename, line, func);
+
+    va_list args;
+    va_start(args, fmt);
+    (void)vfprintf(fp, buf, args);
+    va_end(args);
+    (void)fprintf(fp, "\n");
+
+    if (fp != stderr) {
+        fclose(fp);
+    }
+}
+
+#define CF_LOG_D(fmt, ...) CfPrintLog("DEBUG", __FILE__, __LINE__, __FUNCTION__, fmt, ##__VA_ARGS__)
+#define CF_LOG_I(fmt, ...) CfPrintLog("INFO",  __FILE__, __LINE__, __FUNCTION__, fmt, ##__VA_ARGS__)
+#define CF_LOG_W(fmt, ...) CfPrintLog("WARN",  __FILE__, __LINE__, __FUNCTION__, fmt, ##__VA_ARGS__)
+#define CF_LOG_E(fmt, ...) CfPrintLog("ERROR", __FILE__, __LINE__, __FUNCTION__, fmt, ##__VA_ARGS__)
 
 #endif
 

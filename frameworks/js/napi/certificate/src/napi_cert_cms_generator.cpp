@@ -238,8 +238,7 @@ napi_value NapiCertCmsGenerator::AddSigner(napi_env env, napi_callback_info info
     NapiCertCmsGenerator *napiCmsGenerator = nullptr;
     napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&napiCmsGenerator));
     if (status != napi_ok || napiCmsGenerator == nullptr) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "failed to unwrap napi cms generator obj."));
-        LOGE("failed to unwrap napi cms generator obj.");
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "failed to unwrap napi cms generator obj.");
         return nullptr;
     }
 
@@ -247,22 +246,19 @@ napi_value NapiCertCmsGenerator::AddSigner(napi_env env, napi_callback_info info
     NapiX509Certificate *napiX509Cert = nullptr;
     napi_unwrap(env, argv[PARAM0], reinterpret_cast<void **>(&napiX509Cert));
     if (napiX509Cert == nullptr) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "napiX509Cert is null."));
-        LOGE("napiX509Cert is null!");
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "napiX509Cert is null.");
         return nullptr;
     }
 
     PrivateKeyInfo *privateKey = nullptr;
     if (!GetPrivateKeyInfoFromValue(env, argv[PARAM1], &privateKey)) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get private key info from data failed!"));
-        LOGE("get private key info from data failed!");
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "get private key info from data failed!");
         return nullptr;
     }
 
     HcfCmsSignerOptions *options = nullptr;
     if (!GetCmsSignerOptionsFromValue(env, argv[PARAM2], &options)) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get cms signer options from data failed!"));
-        LOGE("get cms signer options from data failed!");
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "get cms signer options from data failed!");
         FreePrivateKeyInfo(privateKey);
         return nullptr;
     }
@@ -272,8 +268,7 @@ napi_value NapiCertCmsGenerator::AddSigner(napi_env env, napi_callback_info info
     FreePrivateKeyInfo(privateKey);
     FreeCmsSignerOptions(options);
     if (ret != CF_SUCCESS) {
-        LOGE("add signer fail.");
-        napi_throw(env, CertGenerateBusinessError(env, ret, "add signer fail."));
+        NAPI_LOG_THROW(env, ret, "add signer fail.");
         return nullptr;
     }
     return NapiGetNull(env);
@@ -305,16 +300,14 @@ napi_value NapiCertCmsGenerator::AddCert(napi_env env, napi_callback_info info)
     NapiX509Certificate *napiX509Cert = nullptr;
     napi_unwrap(env, argv[PARAM0], reinterpret_cast<void **>(&napiX509Cert));
     if (napiX509Cert == nullptr) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "napiX509Cert is null"));
-        LOGE("napiX509Cert is null!");
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "napiX509Cert is null");
         return nullptr;
     }
 
     NapiCertCmsGenerator *napiCmsGenerator = nullptr;
     napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&napiCmsGenerator));
     if (status != napi_ok || napiCmsGenerator == nullptr) {
-        LOGE("failed to unwrap napi cms generator obj.");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "failed to unwrap napi cms generator obj."));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "failed to unwrap napi cms generator obj.");
         return nullptr;
     }
 
@@ -323,8 +316,7 @@ napi_value NapiCertCmsGenerator::AddCert(napi_env env, napi_callback_info info)
 
     CfResult ret = cmsGenerator->addCert(cmsGenerator, &(certificate->base));
     if (ret != CF_SUCCESS) {
-        LOGE("add cert fail.");
-        napi_throw(env, CertGenerateBusinessError(env, ret, "add cert fail."));
+        NAPI_LOG_THROW(env, ret, "add cert fail.");
         return nullptr;
     }
     napi_value instance = NapiGetNull(env);
@@ -354,19 +346,16 @@ static CfBlob *CertGetCmsBlobFromUint8ArrJSParams(napi_env env, napi_value arg)
     napi_status status = napi_get_typedarray_info(
         env, arg, &arrayType, &len, reinterpret_cast<void **>(&data), &arrayBuffer, &offset);
     if (status != napi_ok) {
-        LOGE("failed to get valid data.");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "failed to get valid data!"));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "failed to get valid data!");
         return nullptr;
     }
     if (arrayType != napi_uint8_array) {
-        LOGE("input data is not uint8 array.");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "input data is not uint8 array!"));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "input data is not uint8 array!");
         return nullptr;
     }
 
     if (len == 0 || data == nullptr) {
-        LOGE("array len is 0!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "array len is 0!"));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "array len is 0!");
         return nullptr;
     }
 
@@ -380,8 +369,7 @@ static CfBlob *CertGetCmsBlobFromUint8ArrJSParams(napi_env env, napi_value arg)
     blob->size = len;
     blob->data = static_cast<uint8_t *>(CfMallocEx(len));
     if (blob->data == nullptr) {
-        LOGE("malloc blob data failed!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed!"));
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "malloc failed!");
         CfFree(blob);
         blob = nullptr;
         return nullptr;
@@ -532,14 +520,12 @@ napi_value NapiCertCmsGenerator::DoFinal(napi_env env, napi_callback_info info)
 {
     CmsDoFinalCtx *ctx = static_cast<CmsDoFinalCtx *>(CfMalloc(sizeof(CmsDoFinalCtx), 0));
     if (ctx == nullptr) {
-        LOGE("create context fail.");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "create context fail!"));
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "create context fail!");
         return nullptr;
     }
     ctx->options = static_cast<HcfCmsGeneratorOptions *>(CfMalloc(sizeof(HcfCmsGeneratorOptions), 0));
     if (ctx->options == nullptr) {
-        LOGE("create options fail.");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "create options fail!"));
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "create options fail!");
         FreeCmsDoFinalCtx(env, ctx);
         return nullptr;
     }
@@ -548,8 +534,7 @@ napi_value NapiCertCmsGenerator::DoFinal(napi_env env, napi_callback_info info)
     ctx->options->isDetachedContent = false;
 
     if (!BuildCmsDoFinalCtx(env, info, ctx)) {
-        LOGE("build context fail.");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "build cms doFinal Ctx fail."));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "build cms doFinal Ctx fail.");
         FreeCmsDoFinalCtx(env, ctx);
         return nullptr;
     }
@@ -576,8 +561,7 @@ static napi_value GetDoFinalResult(napi_env env, NapiCertCmsGenerator *napiCmsGe
     HcfCmsGenerator *cmsGenerator = napiCmsGenerator->GetCertCmsGenerator();
     CfResult ret = cmsGenerator->doFinal(cmsGenerator, content, options, &outBlob);
     if (ret != CF_SUCCESS) {
-        LOGE("Cms do final fail.");
-        napi_throw(env, CertGenerateBusinessError(env, ret, "Cms do final fail."));
+        NAPI_LOG_THROW(env, ret, "Cms do final fail.");
         CfBlobDataClearAndFree(content);
         FreeCmsGeneratorOptions(options);
         return nullptr;
@@ -609,8 +593,7 @@ napi_value NapiCertCmsGenerator::DoFinalSync(napi_env env, napi_callback_info in
     NapiCertCmsGenerator *napiCmsGenerator = nullptr;
     napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&napiCmsGenerator));
     if (status != napi_ok || napiCmsGenerator == nullptr) {
-        LOGE("failed to unwrap napi cms generator obj.");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "failed to unwrap napi cms generator obj."));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "failed to unwrap napi cms generator obj.");
         return nullptr;
     }
     CfBlob *content = CertGetCmsBlobFromUint8ArrJSParams(env, argv[PARAM0]);
@@ -646,28 +629,24 @@ napi_value NapiCertCmsGenerator::SetRecipientEncryptionAlgorithm(napi_env env, n
     napi_value thisVar = nullptr;
     napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr);
     if (napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr) != napi_ok) {
-        LOGE("Failed to get cb info!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "Get cb info failed!"));
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "Get cb info failed!");
         return nullptr;
     }
     if (argc != ARGS_SIZE_ONE) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "invalid params count."));
-        LOGE("invalid params count!");
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "invalid params count.");
         return nullptr;
     }
 
     int32_t algorithm = 0;
     if (!CertGetInt32FromJSParams(env, argv[PARAM0], algorithm)) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_PARAMETER_CHECK, "get algorithm failed!"));
-        LOGE("get algorithm failed!");
+        NAPI_LOG_THROW(env, CF_ERR_PARAMETER_CHECK, "get algorithm failed!");
         return nullptr;
     }
 
     NapiCertCmsGenerator *napiCmsGenerator = nullptr;
     napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&napiCmsGenerator));
     if (status != napi_ok || napiCmsGenerator == nullptr) {
-        LOGE("failed to unwrap napi cms generator obj.");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "failed to unwrap napi cms generator obj."));
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "failed to unwrap napi cms generator obj.");
         return nullptr;
     }
 
@@ -675,8 +654,7 @@ napi_value NapiCertCmsGenerator::SetRecipientEncryptionAlgorithm(napi_env env, n
     CfResult ret = cmsGenerator->setRecipientEncryptionAlgorithm(cmsGenerator,
         static_cast<CfCmsRecipientEncryptionAlgorithm>(algorithm));
     if (ret != CF_SUCCESS) {
-        LOGE("set recipient encryption algorithm fail.");
-        napi_throw(env, CertGenerateBusinessError(env, ret, "set recipient encryption algorithm fail."));
+        NAPI_LOG_THROW(env, ret, "set recipient encryption algorithm fail.");
         return nullptr;
     }
     return NapiGetNull(env);
@@ -768,8 +746,7 @@ static CfResult GetKeyTransInfo(napi_env env, napi_value arg, CmsRecipientInfo *
     KeyTransRecipientInfo *keyTransInfo = static_cast<KeyTransRecipientInfo *>(
         CfMalloc(sizeof(KeyTransRecipientInfo), 0));
     if (keyTransInfo == nullptr) {
-        LOGE("malloc KeyTransRecipientInfo failed!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc KeyTransRecipientInfo failed!"));
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "malloc KeyTransRecipientInfo failed!");
         return CF_ERR_MALLOC;
     }
 
@@ -779,8 +756,7 @@ static CfResult GetKeyTransInfo(napi_env env, napi_value arg, CmsRecipientInfo *
     HcfX509Certificate *outputCert = nullptr;
     if (!GetCertFromValue(env, keyTransInfoObj, &outputCert)) {
         CfFree(keyTransInfo);
-        LOGE("GetCertFromValue failed!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_PARAMETER_CHECK, "GetCertFromValue failed!"));
+        NAPI_LOG_THROW(env, CF_ERR_PARAMETER_CHECK, "GetCertFromValue failed!");
         return CF_ERR_PARAMETER_CHECK;
     }
     keyTransInfo->recipientCert = &(outputCert->base);
@@ -884,8 +860,7 @@ static CfResult GetKeyAgreeInfo(napi_env env, napi_value arg, CmsRecipientInfo *
     KeyAgreeRecipientInfo *keyAgreeInfo = static_cast<KeyAgreeRecipientInfo *>(
         CfMalloc(sizeof(KeyAgreeRecipientInfo), 0));
     if (keyAgreeInfo == nullptr) {
-        LOGE("malloc KeyAgreeRecipientInfo failed!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc KeyAgreeRecipientInfo failed!"));
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "malloc KeyAgreeRecipientInfo failed!");
         return CF_ERR_MALLOC;
     }
 
@@ -988,15 +963,13 @@ AddRecInfoCtx *AllocAddRecInfoCtx(napi_env env, NapiCertCmsGenerator *napiCmsGen
 {
     AddRecInfoCtx *context = static_cast<AddRecInfoCtx *>(CfMalloc(sizeof(AddRecInfoCtx), 0));
     if (context == nullptr) {
-        LOGE("malloc context failed!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc context failed!"));
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "malloc context failed!");
         return nullptr;
     }
     context->cmsGenerator = napiCmsGenerator->GetCertCmsGenerator();
     if (napi_create_reference(env, thisVar, 1, &context->cfRef) != napi_ok) {
-        LOGE("create reference failed!");
         FreeAddRecInfoCtx(env, context);
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "create reference failed!"));
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "create reference failed!");
         return nullptr;
     }
     return context;
@@ -1006,9 +979,8 @@ CmsRecipientInfo *AllocRecipientInfo(napi_env env, AddRecInfoCtx *context, napi_
 {
     CmsRecipientInfo *recInfo = static_cast<CmsRecipientInfo *>(CfMalloc(sizeof(CmsRecipientInfo), 0));
     if (recInfo == nullptr) {
-        LOGE("malloc recipient info failed!");
         FreeAddRecInfoCtx(env, context);
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc recipient info failed!"));
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "malloc recipient info failed!");
         return nullptr;
     }
     CfResult ret = GetCmsRecipientInfoFromValue(env, arg, recInfo);
@@ -1025,9 +997,8 @@ bool SetupAddRecipientInfoAsync(napi_env env, AddRecInfoCtx *context)
 {
     napi_status status = napi_create_promise(env, &context->deferred, &context->promise);
     if (status != napi_ok) {
-        LOGE("create promise failed!");
         FreeAddRecInfoCtx(env, context);
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "create promise failed!"));
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "create promise failed!");
         return false;
     }
     napi_create_async_work(
@@ -1038,9 +1009,8 @@ bool SetupAddRecipientInfoAsync(napi_env env, AddRecInfoCtx *context)
         &context->asyncWork);
     status = napi_queue_async_work(env, context->asyncWork);
     if (status != napi_ok) {
-        LOGE("queue async work failed!");
         FreeAddRecInfoCtx(env, context);
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "queue async work failed!"));
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "queue async work failed!");
         return false;
     }
     return true;
@@ -1053,21 +1023,18 @@ napi_value NapiCertCmsGenerator::AddRecipientInfo(napi_env env, napi_callback_in
     napi_value thisVar = nullptr;
 
     if (napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr) != napi_ok) {
-        LOGE("Failed to get cb info!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "Get cb info failed!"));
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "Get cb info failed!");
         return nullptr;
     }
 
     if (argc != ARGS_SIZE_ONE) {
-        LOGE("invalid params count!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "invalid params count."));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "invalid params count.");
         return nullptr;
     }
     NapiCertCmsGenerator *napiCmsGenerator = nullptr;
     napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&napiCmsGenerator));
     if (status != napi_ok || napiCmsGenerator == nullptr) {
-        LOGE("failed to unwrap napi cms generator obj.");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "failed to unwrap napi cms generator obj."));
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "failed to unwrap napi cms generator obj.");
         return nullptr;
     }
     AddRecInfoCtx *context = AllocAddRecInfoCtx(env, napiCmsGenerator, thisVar);
@@ -1120,22 +1087,19 @@ napi_value NapiCertCmsGenerator::GetEncryptedContentData(napi_env env, napi_call
     NapiCertCmsGenerator *napiCmsGenerator = nullptr;
     napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&napiCmsGenerator));
     if (status != napi_ok || napiCmsGenerator == nullptr) {
-        LOGE("failed to unwrap napi cms generator obj.");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "failed to unwrap napi cms generator obj."));
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "failed to unwrap napi cms generator obj.");
         return nullptr;
     }
 
     CmsGetEncryptedContentCtx *ctx = static_cast<CmsGetEncryptedContentCtx *>(
         CfMalloc(sizeof(CmsGetEncryptedContentCtx), 0));
     if (ctx == nullptr) {
-        LOGE("create context fail.");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "create context fail!"));
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "create context fail!");
         return nullptr;
     }
     ctx->cmsGenerator = napiCmsGenerator->GetCertCmsGenerator();
     if (napi_create_reference(env, thisVar, 1, &ctx->generatorRef) != napi_ok) {
-        LOGE("create generator ref failed!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "create generator ref failed!"));
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "create generator ref failed!");
         CfFree(ctx);
         return nullptr;
     }
@@ -1220,14 +1184,15 @@ static napi_value CmsGeneratorConstructor(napi_env env, napi_callback_info info)
 
 napi_value NapiCertCmsGenerator::CreateCmsGenerator(napi_env env, napi_callback_info info)
 {
+    HistogramScopeGuard guard(API_CREATE_CMS_GENERATOR);
     napi_value thisVar = nullptr;
     size_t argc = ARGS_SIZE_ONE;
     napi_value argv[ARGS_SIZE_ONE] = { nullptr };
     napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr);
 
     if (argc != ARGS_SIZE_ONE) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "invalid params count"));
-        LOGE("invalid params count!");
+        guard.SetErrorCode(CF_INVALID_PARAMS);
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "invalid params count");
         return nullptr;
     }
 
@@ -1238,22 +1203,22 @@ napi_value NapiCertCmsGenerator::CreateCmsGenerator(napi_env env, napi_callback_
 
     int32_t cmsContentType = 0;
     if (!CertGetInt32FromJSParams(env, argv[PARAM0], cmsContentType)) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get cmsContentType failed!"));
-        LOGE("get cmsContentType failed!");
+        guard.SetErrorCode(CF_INVALID_PARAMS);
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "get cmsContentType failed!");
         return nullptr;
     }
     HcfCmsGenerator *cmsGenerator = nullptr;
     CfResult res = HcfCreateCmsGenerator(static_cast<HcfCmsContentType>(cmsContentType), &cmsGenerator);
     if (res != CF_SUCCESS) {
-        napi_throw(env, CertGenerateBusinessError(env, res, "create cms generator failed"));
-        LOGE("Failed to create cms generator.");
+        guard.SetErrorCode(res);
+        NAPI_LOG_THROW(env, res, "create cms generator failed");
         return nullptr;
     }
 
     NapiCertCmsGenerator *napiCmsGenerator = new (std::nothrow) NapiCertCmsGenerator(cmsGenerator);
     if (napiCmsGenerator == nullptr) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to create a cmsGenerator class"));
-        LOGE("Failed to create a cmsGenerator class");
+        guard.SetErrorCode(CF_ERR_MALLOC);
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "Failed to create a cmsGenerator class");
         CfObjDestroy(cmsGenerator);
         cmsGenerator = nullptr;
         return nullptr;
@@ -1266,8 +1231,8 @@ napi_value NapiCertCmsGenerator::CreateCmsGenerator(napi_env env, napi_callback_
             return;
         }, nullptr, nullptr);
     if (status != napi_ok) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "failed to wrap napiCertCmsGenerator obj!"));
-        LOGE("failed to wrap napiCertCmsGenerator obj!");
+        guard.SetErrorCode(CF_INVALID_PARAMS);
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "failed to wrap napiCertCmsGenerator obj!");
         delete napiCmsGenerator;
         return nullptr;
     }
@@ -1296,11 +1261,13 @@ static void ReturnParserPromiseResult(napi_env env, CmsParserCtx *ctx, napi_valu
 
 static void CmsVerifySignedDataAsyncWorkProcess(napi_env env, void *data)
 {
+    HistogramScopeGuard guard(API_CERT_CMS_PARSER_VERIFY_SIGNED_DATA);
     CmsParserCtx *ctx = static_cast<CmsParserCtx *>(data);
     ctx->errCode = ctx->cmsParser->verifySignedData(ctx->cmsParser, ctx->options);
     if (ctx->errCode != CF_SUCCESS) {
         LOGE("Cms verify signed data fail.");
         ctx->errMsg = "Cms verify signed data fail.";
+        guard.SetErrorCode(ctx->errCode);
     }
 }
 
@@ -1368,12 +1335,14 @@ static void CmsGetCertsAsyncWorkReturn(napi_env env, napi_status status, void *d
 
 static void CmsDecryptEnvelopedDataAsyncWorkProcess(napi_env env, void *data)
 {
+    HistogramScopeGuard guard(API_CERT_CMS_PARSER_DECRYPT_ENVELOPED_DATA);
     CmsParserCtx *ctx = static_cast<CmsParserCtx *>(data);
     ctx->errCode = ctx->cmsParser->decryptEnvelopedData(ctx->cmsParser, ctx->decryptEnvelopedDataOptions,
         &(ctx->encryptedContentData));
     if (ctx->errCode != CF_SUCCESS) {
         LOGE("Cms decrypt enveloped data fail.");
         ctx->errMsg = "Cms decrypt enveloped data fail.";
+        guard.SetErrorCode(ctx->errCode);
     }
 }
 
@@ -1564,8 +1533,7 @@ napi_value NapiCertCmsParser::SetRawData(napi_env env, napi_callback_info info)
 
     int32_t format = 0;
     if (!CertGetInt32FromJSParams(env, argv[PARAM1], format)) {
-        LOGE("get cmsFormat failed");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_PARAMETER_CHECK, "get cmsFormat failed"));
+        NAPI_LOG_THROW(env, CF_ERR_PARAMETER_CHECK, "get cmsFormat failed");
         CfBlobClearAndFree(&ctx->rawData);
         FreeCmsParserCtx(env, ctx);
         return nullptr;
@@ -1583,22 +1551,19 @@ napi_value NapiCertCmsParser::GetContentType(napi_env env, napi_callback_info in
     NapiCertCmsParser *napiCmsParser = nullptr;
     napi_status status = napi_unwrap(env, thisVar, (void **)&napiCmsParser);
     if (status != napi_ok || napiCmsParser == nullptr) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_PARAMETER_CHECK, "get cmsParser instance failed"));
-        LOGE("get cmsParser instance failed");
+        NAPI_LOG_THROW(env, CF_ERR_PARAMETER_CHECK, "get cmsParser instance failed");
         return nullptr;
     }
 
     HcfCmsParser *cmsParser = napiCmsParser->GetCertCmsParser();
     if (cmsParser == nullptr) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_PARAMETER_CHECK, "cmsParser is null"));
-        LOGE("cmsParser is null");
+        NAPI_LOG_THROW(env, CF_ERR_PARAMETER_CHECK, "cmsParser is null");
         return nullptr;
     }
     HcfCmsContentType contentType;
     CfResult res = cmsParser->getContentType(cmsParser, &contentType);
     if (res != CF_SUCCESS) {
-        napi_throw(env, CertGenerateBusinessError(env, res, "getContentType failed"));
-        LOGE("getContentType failed");
+        NAPI_LOG_THROW(env, res, "getContentType failed");
         return nullptr;
     }
 
@@ -1628,6 +1593,7 @@ static CfResult BuildVerifySignedDataOption(napi_env env, napi_value arg, CmsPar
 
 napi_value NapiCertCmsParser::VerifySignedData(napi_env env, napi_callback_info info)
 {
+    HistogramScopeGuard guard(API_CERT_CMS_PARSER_VERIFY_SIGNED_DATA);
     size_t argc = ARGS_SIZE_ONE;
     napi_value argv[ARGS_SIZE_ONE] = { nullptr };
     napi_value thisVar = nullptr;
@@ -1640,6 +1606,7 @@ napi_value NapiCertCmsParser::VerifySignedData(napi_env env, napi_callback_info 
     napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&napiCmsParser));
     if (status != napi_ok || napiCmsParser == nullptr) {
         LOGE("failed to unwrap napi cms parser obj.");
+        guard.SetErrorCode(CF_ERR_PARAMETER_CHECK);
         napi_throw(env,
             CertGenerateBusinessError(env, CF_ERR_PARAMETER_CHECK, "failed to unwrap napi cms parser obj."));
         return nullptr;
@@ -1649,33 +1616,36 @@ napi_value NapiCertCmsParser::VerifySignedData(napi_env env, napi_callback_info 
     CmsParserCtx *ctx = static_cast<CmsParserCtx *>(CfMalloc(sizeof(CmsParserCtx), 0));
     if (ctx == nullptr) {
         LOGE("create context fail.");
+        guard.SetErrorCode(CF_ERR_MALLOC);
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to create a cmsParser class"));
         return nullptr;
     }
     ctx->cmsParser = cmsParser;
     CfResult res = BuildVerifySignedDataOption(env, argv[PARAM0], ctx);
     if (res != CF_SUCCESS) {
+        guard.SetErrorCode(res);
         napi_throw(env, CertGenerateBusinessError(env, res, "failed to build verify signed data."));
         FreeCmsParserCtx(env, ctx);
         return nullptr;
     }
 
     if (napi_create_reference(env, thisVar, 1, &ctx->parserRef) != napi_ok) {
-        LOGE("create reference failed!");
         FreeCmsParserCtx(env, ctx);
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "create reference failed!"));
+        guard.SetErrorCode(CF_ERR_NAPI);
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "create reference failed!");
         return nullptr;
     }
 
     if (napi_create_reference(env, argv[PARAM0], 1, &ctx->certParamsRef) != napi_ok) {
-        LOGE("create param ref failed!");
         FreeCmsParserCtx(env, ctx);
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "Create param ref failed"));
+        guard.SetErrorCode(CF_ERR_NAPI);
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "Create param ref failed");
         return nullptr;
     }
 
     napi_create_promise(env, &ctx->deferred, &ctx->promise);
 
+    guard.DisableScopeGuard();
     return NewCmsVerifySignedDataAsyncWork(env, ctx);
 }
 
@@ -1725,14 +1695,12 @@ napi_value NapiCertCmsParser::GetCerts(napi_env env, napi_callback_info info)
     }
     HcfCmsParser *cmsParser = napiCmsParser->GetCertCmsParser();
     if (cmsParser == nullptr) {
-        LOGE("cmsParser is nullptr!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_PARAMETER_CHECK, "cmsParser is nullptr!"));
+        NAPI_LOG_THROW(env, CF_ERR_PARAMETER_CHECK, "cmsParser is nullptr!");
         return nullptr;
     }
     int32_t format = 0;
     if (!CertGetInt32FromJSParams(env, argv[PARAM0], format)) {
-        LOGE("get cmsFormat failed");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_PARAMETER_CHECK, "get cmsFormat failed"));
+        NAPI_LOG_THROW(env, CF_ERR_PARAMETER_CHECK, "get cmsFormat failed");
         return nullptr;
     }
     CmsParserCtx *ctx = static_cast<CmsParserCtx *>(CfMalloc(sizeof(CmsParserCtx), 0));
@@ -1774,6 +1742,7 @@ static CfResult BuildDecryptEnvelopedDataOption(napi_env env, napi_value arg, Cm
 
 napi_value NapiCertCmsParser::DecryptEnvelopedData(napi_env env, napi_callback_info info)
 {
+    HistogramScopeGuard guard(API_CERT_CMS_PARSER_DECRYPT_ENVELOPED_DATA);
     size_t argc = ARGS_SIZE_ONE;
     napi_value argv[ARGS_SIZE_ONE] = { nullptr };
     napi_value thisVar = nullptr;
@@ -1784,41 +1753,41 @@ napi_value NapiCertCmsParser::DecryptEnvelopedData(napi_env env, napi_callback_i
     NapiCertCmsParser *napiCmsParser = nullptr;
     napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&napiCmsParser));
     if (status != napi_ok || napiCmsParser == nullptr) {
-        LOGE("failed to unwrap napi cms parser obj.");
-        napi_throw(env,
-            CertGenerateBusinessError(env, CF_ERR_PARAMETER_CHECK, "failed to unwrap napi cms parser obj."));
+        guard.SetErrorCode(CF_ERR_PARAMETER_CHECK);
+        NAPI_LOG_THROW(env, CF_ERR_PARAMETER_CHECK, "Failed to unwrap napi cms parser obj.");
         return nullptr;
     }
     HcfCmsParser *cmsParser = napiCmsParser->GetCertCmsParser();
     CmsParserCtx *ctx = static_cast<CmsParserCtx *>(CfMalloc(sizeof(CmsParserCtx), 0));
     if (ctx == nullptr) {
-        LOGE("create context fail.");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to create a cmsParser class"));
+        guard.SetErrorCode(CF_ERR_MALLOC);
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "Failed to create a cmsParser class.");
         return nullptr;
     }
     ctx->cmsParser = cmsParser;
     CfResult res = BuildDecryptEnvelopedDataOption(env, argv[PARAM0], ctx);
     if (res != CF_SUCCESS) {
-        napi_throw(env,
-            CertGenerateBusinessError(env, res, "failed to build decrypt enveloped data."));
+        guard.SetErrorCode(res);
+        NAPI_LOG_THROW(env, res, "Failed to build decrypt enveloped data.");
         FreeCmsParserCtx(env, ctx);
         return nullptr;
     }
 
     if (napi_create_reference(env, thisVar, 1, &ctx->parserRef) != napi_ok) {
-        LOGE("create reference failed!");
         FreeCmsParserCtx(env, ctx);
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_PARAMETER_CHECK, "create reference failed!"));
+        guard.SetErrorCode(CF_ERR_PARAMETER_CHECK);
+        NAPI_LOG_THROW(env, CF_ERR_PARAMETER_CHECK, "create reference failed!");
         return nullptr;
     }
 
     if (napi_create_reference(env, argv[PARAM0], 1, &ctx->certParamsRef) != napi_ok) {
-        LOGE("create param ref failed!");
         FreeCmsParserCtx(env, ctx);
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "Create param ref failed"));
+        guard.SetErrorCode(CF_ERR_NAPI);
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "Create param ref failed");
         return nullptr;
     }
     napi_create_promise(env, &ctx->deferred, &ctx->promise);
+    guard.DisableScopeGuard();
     return NewCmsDecryptEnvelopedDataAsyncWork(env, ctx);
 }
 
@@ -1829,8 +1798,7 @@ static napi_value NapiSetRawData(napi_env env, napi_callback_info info)
     NapiCertCmsParser *cmsParser = nullptr;
     napi_unwrap(env, thisVar, reinterpret_cast<void **>(&cmsParser));
     if (cmsParser == nullptr) {
-        LOGE("cmsParser is nullptr!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "cmsParser is nullptr!"));
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "cmsParser is nullptr!");
         return nullptr;
     }
     return cmsParser->SetRawData(env, info);
@@ -1843,8 +1811,7 @@ static napi_value NapiGetContentType(napi_env env, napi_callback_info info)
     NapiCertCmsParser *cmsParser = nullptr;
     napi_unwrap(env, thisVar, reinterpret_cast<void **>(&cmsParser));
     if (cmsParser == nullptr) {
-        LOGE("cmsParser is nullptr!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "cmsParser is nullptr!"));
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "cmsParser is nullptr!");
         return nullptr;
     }
     return cmsParser->GetContentType(env, info);
@@ -1857,8 +1824,7 @@ static napi_value NapiVerifySignedData(napi_env env, napi_callback_info info)
     NapiCertCmsParser *cmsParser = nullptr;
     napi_unwrap(env, thisVar, reinterpret_cast<void **>(&cmsParser));
     if (cmsParser == nullptr) {
-        LOGE("cmsParser is nullptr!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "cmsParser is nullptr!"));
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "cmsParser is nullptr!");
         return nullptr;
     }
     return cmsParser->VerifySignedData(env, info);
@@ -1871,8 +1837,7 @@ static napi_value NapiGetContentData(napi_env env, napi_callback_info info)
     NapiCertCmsParser *cmsParser = nullptr;
     napi_unwrap(env, thisVar, reinterpret_cast<void **>(&cmsParser));
     if (cmsParser == nullptr) {
-        LOGE("cmsParser is nullptr!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "cmsParser is nullptr!"));
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "cmsParser is nullptr!");
         return nullptr;
     }
     return cmsParser->GetContentData(env, info);
@@ -1885,8 +1850,7 @@ static napi_value NapiGetCerts(napi_env env, napi_callback_info info)
     NapiCertCmsParser *cmsParser = nullptr;
     napi_unwrap(env, thisVar, reinterpret_cast<void **>(&cmsParser));
     if (cmsParser == nullptr) {
-        LOGE("cmsParser is nullptr!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "cmsParser is nullptr!"));
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "cmsParser is nullptr!");
         return nullptr;
     }
     return cmsParser->GetCerts(env, info);
@@ -1899,8 +1863,7 @@ static napi_value NapiDecryptEnvelopedData(napi_env env, napi_callback_info info
     NapiCertCmsParser *cmsParser = nullptr;
     napi_unwrap(env, thisVar, reinterpret_cast<void **>(&cmsParser));
     if (cmsParser == nullptr) {
-        LOGE("cmsParser is nullptr!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "cmsParser is nullptr!"));
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "cmsParser is nullptr!");
         return nullptr;
     }
     return cmsParser->DecryptEnvelopedData(env, info);
@@ -1916,6 +1879,7 @@ static napi_value CmsParserConstructor(napi_env env, napi_callback_info info)
 
 napi_value NapiCertCmsParser::CreateCertCmsParser(napi_env env, napi_callback_info info)
 {
+    HistogramScopeGuard guard(API_CREATE_CMS_PARSER);
     napi_value instance;
     napi_value constructor = nullptr;
     napi_get_reference_value(env, classRef_, &constructor);
@@ -1924,15 +1888,15 @@ napi_value NapiCertCmsParser::CreateCertCmsParser(napi_env env, napi_callback_in
     HcfCmsParser *cmsParser = nullptr;
     CfResult res = HcfCreateCmsParser(&cmsParser);
     if (res != CF_SUCCESS) {
-        napi_throw(env, CertGenerateBusinessError(env, res, "create cms parser failed"));
-        LOGE("Failed to create cms parser.");
+        guard.SetErrorCode(res);
+        NAPI_LOG_THROW(env, res, "create cms parser failed");
         return nullptr;
     }
 
     NapiCertCmsParser *napiCmsParser = new (std::nothrow) NapiCertCmsParser(cmsParser);
     if (napiCmsParser == nullptr) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to create a cmsParser class"));
-        LOGE("Failed to create a cmsParser class");
+        guard.SetErrorCode(CF_ERR_MALLOC);
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "Failed to create a cmsParser class");
         CfObjDestroy(cmsParser);
         cmsParser = nullptr;
         return nullptr;
@@ -1945,8 +1909,8 @@ napi_value NapiCertCmsParser::CreateCertCmsParser(napi_env env, napi_callback_in
             return;
         }, nullptr, nullptr);
     if (status != napi_ok) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "failed to wrap obj!"));
-        LOGE("Failed to wrap cmsParser instance");
+        guard.SetErrorCode(CF_ERR_NAPI);
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "failed to wrap obj!");
         delete napiCmsParser;
         return nullptr;
     }

@@ -130,6 +130,7 @@ array<X509CRL> CertCRLCollectionImpl::SelectCRLsSync(X509CRLMatchParameters cons
 
 CertCRLCollection CreateCertCRLCollection(array_view<X509Cert> certs, optional_view<array<X509CRL>> crls)
 {
+    HistogramScopeGuard guard(API_CREATE_CERT_CRL_COLLECTION);
     HcfX509CertificateArray hcfCerts = {};
     HcfX509CrlArray hcfCrls = {};
     array<HcfX509Certificate *> hcfCertsArray(certs.size());
@@ -151,6 +152,7 @@ CertCRLCollection CreateCertCRLCollection(array_view<X509Cert> certs, optional_v
     HcfCertCrlCollection *collection = nullptr;
     CfResult res = HcfCertCrlCollectionCreate(&hcfCerts, &hcfCrls, &collection);
     if (res != CF_SUCCESS) {
+        guard.SetErrorCode(res);
         ANI_LOGE_THROW(res, "create cert crl collection obj failed!");
         return make_holder<CertCRLCollectionImpl, CertCRLCollection>();
     }

@@ -344,7 +344,6 @@ interface X509CertChain {
 @gen_promise("createX509CertChain")
 function CreateX509CertChainSync(inStream: EncodingBlob): X509CertChain;
 function CreateX509CertChain(certs: Array<X509Cert>): X509CertChain;
-@gen_async("buildX509CertChain")
 @gen_promise("buildX509CertChain")
 function BuildX509CertChainSync(param: CertChainBuildParameters): CertChainBuildResult;
 
@@ -369,13 +368,10 @@ struct Pkcs12ParsingConfig {
 function ParsePkcs12(data: @typedarray Array<u8>, config: Pkcs12ParsingConfig): Pkcs12Data;
 @gen_promise("parsePkcs12")
 function ParsePkcs12ByPasswdSync(data: @typedarray Array<u8>, password: String): Pkcs12Data;
-@gen_async("createTrustAnchorsWithKeyStore")
 @gen_promise("createTrustAnchorsWithKeyStore")
 function CreateTrustAnchorsWithKeyStoreSync(keystore: @typedarray Array<u8>, pwd: String): Array<X509TrustAnchor>;
-@gen_async("createX500DistinguishedName")
 @gen_promise("createX500DistinguishedName")
 function CreateX500DistinguishedNameByStrSync(nameStr: String): X500DistinguishedName;
-@gen_async("createX500DistinguishedName")
 @gen_promise("createX500DistinguishedName")
 function CreateX500DistinguishedNameByDerSync(nameDer: @typedarray Array<u8>): X500DistinguishedName;
 
@@ -539,7 +535,6 @@ interface CmsGenerator {
   SetRecipientEncryptionAlgorithm(algorithm: CmsRecipientEncryptionAlgorithm): void;
   @gen_promise("addRecipientInfo")
   AddRecipientInfoSync(recipientInfo: CmsRecipientInfo): void;
-  @gen_async("doFinal")
   @gen_promise("doFinal")
   DoFinalSync(data: @typedarray Array<u8>, options: Optional<CmsGeneratorOptions>): OptStrUint8Arr;
   @gen_promise("getEncryptedContentData")

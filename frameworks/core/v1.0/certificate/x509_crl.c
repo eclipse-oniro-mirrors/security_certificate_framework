@@ -395,7 +395,7 @@ static CfResult HashCode(HcfX509Crl *self, CfBlob *out)
         ((HcfX509CrlImpl *)self)->spiObj, out);
 }
 
-static CfResult GetExtensionsOjbect(HcfX509Crl *self, CfBlob *out)
+static CfResult GetExtensionsObject(HcfX509Crl *self, CfBlob *out)
 {
     if ((self == NULL) || (out == NULL)) {
         LOGE("Invalid input parameter.");
@@ -449,7 +449,7 @@ static void InitX509CrlImpl(HcfX509CrlImpl *x509CrlImpl, HcfX509CrlSpi *spiObj)
     x509CrlImpl->base.toString = ToString;
     x509CrlImpl->base.toStringEx = ToStringEx;
     x509CrlImpl->base.hashCode = HashCode;
-    x509CrlImpl->base.getExtensionsObject = GetExtensionsOjbect;
+    x509CrlImpl->base.getExtensionsObject = GetExtensionsObject;
     x509CrlImpl->base.match = Match;
     x509CrlImpl->spiObj = spiObj;
 }

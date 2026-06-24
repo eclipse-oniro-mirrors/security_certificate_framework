@@ -29,7 +29,8 @@
           "node",
           "openssl",
           "runtime_core",
-          "taihe_ffi_gen"
+          "taihe_ffi_gen",
+          "api_metrics"
         ],
         "third_party": [
         ]

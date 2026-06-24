@@ -28,7 +28,7 @@ static CfObjectAbilityFunc g_extensionObjectFunc = {
     .get = CfExtensionGet,
 };
 
-__attribute__((constructor)) static void LoadExtensionOjbectAbility(void)
+__attribute__((constructor)) static void LoadExtensionObjectAbility(void)
 {
     (void)RegisterAbility(CF_ABILITY(CF_ABILITY_TYPE_OBJECT, CF_OBJ_TYPE_EXTENSION), &g_extensionObjectFunc.base);
 }
