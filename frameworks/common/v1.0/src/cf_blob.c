@@ -73,6 +73,18 @@ void CfEncodingBlobDataFree(CfEncodingBlob *encodingBlob)
     encodingBlob->len = 0;
 }
 
+void CfEncodingBlobDataClearAndFree(CfEncodingBlob *encodingBlob)
+{
+    if ((encodingBlob == NULL) || (encodingBlob->data == NULL)) {
+        LOGD("The input encodingBlob is null, no need to free.");
+        return;
+    }
+    (void)memset_s(encodingBlob->data, encodingBlob->len, 0, encodingBlob->len);
+    CfFree(encodingBlob->data);
+    encodingBlob->data = NULL;
+    encodingBlob->len = 0;
+}
+
 void CfArrayDataClearAndFree(CfArray *array)
 {
     if (array == NULL) {
@@ -81,7 +93,10 @@ void CfArrayDataClearAndFree(CfArray *array)
     }
     if (array->data != NULL) {
         for (uint32_t i = 0; i < array->count; ++i) {
-            CfFree(array->data[i].data);
+            if (array->data[i].data != NULL) {
+                (void)memset_s(array->data[i].data, array->data[i].size, 0, array->data[i].size);
+                CfFree(array->data[i].data);
+            }
             array->data[i].data = NULL;
             array->data[i].size = 0;
         }

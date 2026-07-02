@@ -573,7 +573,7 @@ void FreeX509CertMatchParams(HcfX509CertMatchParams &hcfParam)
         CF_FREE_PTR(hcfParam.privateKey->data);
         CF_FREE_PTR(hcfParam.privateKey);
     }
-    CfBlobFree(&hcfParam.keyUsage);
+    CfBlobClearAndFree(&hcfParam.keyUsage);
     if (hcfParam.extendedKeyUsage != nullptr) {
         CF_FREE_PTR(hcfParam.extendedKeyUsage->data);
     }

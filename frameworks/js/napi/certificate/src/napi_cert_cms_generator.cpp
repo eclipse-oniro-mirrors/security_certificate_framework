@@ -134,7 +134,7 @@ static void FreeCmsDoFinalCtx(napi_env env, CmsDoFinalCtx *ctx)
         ctx->generatorRef = nullptr;
     }
     if (ctx->content != nullptr) {
-        CfBlobDataFree(ctx->content);
+        CfBlobDataClearAndFree(ctx->content);
         ctx->content = nullptr;
     }
     if (ctx->options != nullptr) {
@@ -142,7 +142,7 @@ static void FreeCmsDoFinalCtx(napi_env env, CmsDoFinalCtx *ctx)
         ctx->options = nullptr;
     }
     if (ctx->outBlob.data != nullptr) {
-        CfBlobDataFree(&ctx->outBlob);
+        CfBlobDataClearAndFree(&ctx->outBlob);
         ctx->outBlob.data = nullptr;
     }
     CfFree(ctx);
@@ -162,7 +162,7 @@ static void FreeCmsGetEncryptedContentCtx(napi_env env, CmsGetEncryptedContentCt
         ctx->generatorRef = nullptr;
     }
     if (ctx->outBlob.data != nullptr) {
-        CfBlobDataFree(&ctx->outBlob);
+        CfBlobDataClearAndFree(&ctx->outBlob);
         ctx->outBlob.data = nullptr;
     }
     CfFree(ctx);
@@ -186,7 +186,7 @@ static void FreeCmsParserCtx(napi_env env, CmsParserCtx *ctx)
         ctx->certParamsRef = nullptr;
     }
     if (ctx->rawData != nullptr) {
-        CfBlobDataFree(ctx->rawData);
+        CfBlobDataClearAndFree(ctx->rawData);
         ctx->rawData = nullptr;
     }
     if (ctx->options != nullptr) {
@@ -578,7 +578,7 @@ static napi_value GetDoFinalResult(napi_env env, NapiCertCmsGenerator *napiCmsGe
     if (ret != CF_SUCCESS) {
         LOGE("Cms do final fail.");
         napi_throw(env, CertGenerateBusinessError(env, ret, "Cms do final fail."));
-        CfBlobDataFree(content);
+        CfBlobDataClearAndFree(content);
         FreeCmsGeneratorOptions(options);
         return nullptr;
     }
@@ -588,8 +588,8 @@ static napi_value GetDoFinalResult(napi_env env, NapiCertCmsGenerator *napiCmsGe
     } else {
         instance = ConvertCmsBlobToUint8ArrNapiValue(env, &outBlob);
     }
-    CfBlobDataFree(&outBlob);
-    CfBlobDataFree(content);
+    CfBlobDataClearAndFree(&outBlob);
+    CfBlobDataClearAndFree(content);
     FreeCmsGeneratorOptions(options);
     return instance;
 }
@@ -1566,7 +1566,7 @@ napi_value NapiCertCmsParser::SetRawData(napi_env env, napi_callback_info info)
     if (!CertGetInt32FromJSParams(env, argv[PARAM1], format)) {
         LOGE("get cmsFormat failed");
         napi_throw(env, CertGenerateBusinessError(env, CF_ERR_PARAMETER_CHECK, "get cmsFormat failed"));
-        CfBlobFree(&ctx->rawData);
+        CfBlobClearAndFree(&ctx->rawData);
         FreeCmsParserCtx(env, ctx);
         return nullptr;
     }

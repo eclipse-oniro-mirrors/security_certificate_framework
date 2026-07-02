@@ -68,6 +68,7 @@ void CfBlobClearAndFree(CfBlob **blob);
 void CfBlobDataFree(CfBlob *blob);
 void CfBlobDataClearAndFree(CfBlob *blob);
 void CfEncodingBlobDataFree(CfEncodingBlob *encodingBlob);
+void CfEncodingBlobDataClearAndFree(CfEncodingBlob *encodingBlob);
 void CfArrayDataClearAndFree(CfArray *array);
 void FreeCfBlobArray(CfBlob *array, uint32_t arrayLen);
 bool CfBlobIsStr(const CfBlob *blob);
