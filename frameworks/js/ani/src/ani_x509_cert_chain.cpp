@@ -52,7 +52,7 @@ CfResult SetParsePKCS12Conf(Pkcs12ParsingConfig const& config, HcfParsePKCS12Con
         FreePkcs12Data(tmpConf, nullptr);
         return CF_ERR_MALLOC;
     }
-    tmpPwd->data = (uint8_t *)CfMalloc(config.password.size(), 0);
+    tmpPwd->data = (uint8_t *)CfMalloc(config.password.size() + 1, 0);
     if (tmpPwd->data == nullptr) {
         FreePkcs12Data(tmpConf, tmpPwd);
         return CF_ERR_MALLOC;

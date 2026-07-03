@@ -490,6 +490,12 @@ static int32_t CheckKeyUsage(const X509_EXTENSIONS *exts, int32_t *pathLen)
         return CF_ERR_CRYPTO_OPERATION;
     }
 
+    if (usage->data == NULL || usage->length <= 0) {
+        CF_LOG_E("keyUsage extension has no content");
+        ASN1_BIT_STRING_free(usage);
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
     uint32_t keyUsage = (uint32_t)usage->data[0];
     if (usage->length > 1) {
         keyUsage |= ((uint32_t)usage->data[1] << KEYUSAGE_SHIFT);
