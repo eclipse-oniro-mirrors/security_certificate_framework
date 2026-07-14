@@ -57,6 +57,7 @@ ohos_static_library("certificate_openssl_plugin_lib") {
   deps = [ "../../common:libcertificate_framework_common_static" ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "c_utils:utils",
     "crypto_framework:crypto_framework_lib",
     "hilog:libhilog",
