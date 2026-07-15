@@ -48,6 +48,7 @@ ohos_static_library("libcertificate_framework_cert_object") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "c_utils:utils",
     "hilog:libhilog",
   ]

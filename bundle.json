@@ -22,6 +22,7 @@
       "deps": {
         "components": [
           "c_utils",
+          "bounds_checking_function",
           "crypto_framework",
           "hilog",
           "napi",
