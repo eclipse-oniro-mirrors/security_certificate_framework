@@ -423,9 +423,42 @@ static CfResult Match(HcfX509Crl *self, const HcfX509CrlMatchParams *matchParams
         ((HcfX509CrlImpl *)self)->spiObj, matchParams, out);
 }
 
+static void InitX509CrlImpl(HcfX509CrlImpl *x509CrlImpl, HcfX509CrlSpi *spiObj)
+{
+    x509CrlImpl->base.base.base.getClass = GetX509CrlClass;
+    x509CrlImpl->base.base.base.destroy = DestroyX509Crl;
+    x509CrlImpl->base.base.getType = GetType;
+    x509CrlImpl->base.base.isRevoked = IsRevoked;
+    x509CrlImpl->base.verify = Verify;
+    x509CrlImpl->base.getEncoded = GetEncoded;
+    x509CrlImpl->base.getVersion = GetVersion;
+    x509CrlImpl->base.getIssuerName = GetIssuerName;
+    x509CrlImpl->base.getIssuerNameEx = GetIssuerNameEx;
+    x509CrlImpl->base.getIssuerNameDer = GetIssuerNameDer;
+    x509CrlImpl->base.getLastUpdate = GetLastUpdate;
+    x509CrlImpl->base.getNextUpdate = GetNextUpdate;
+    x509CrlImpl->base.getRevokedCert = GetRevokedCert;
+    x509CrlImpl->base.getRevokedCertWithCert = GetRevokedCertWithCert;
+    x509CrlImpl->base.getRevokedCerts = GetRevokedCerts;
+    x509CrlImpl->base.getTbsInfo = GetTbsInfo;
+    x509CrlImpl->base.getSignature = GetSignature;
+    x509CrlImpl->base.getSignatureAlgName = GetSignatureAlgName;
+    x509CrlImpl->base.getSignatureAlgOid = GetSignatureAlgOid;
+    x509CrlImpl->base.getSignatureAlgParams = GetSignatureAlgParams;
+    x509CrlImpl->base.getExtensions = GetExtensions;
+    x509CrlImpl->base.toString = ToString;
+    x509CrlImpl->base.toStringEx = ToStringEx;
+    x509CrlImpl->base.hashCode = HashCode;
+    x509CrlImpl->base.getExtensionsObject = GetExtensionsOjbect;
+    x509CrlImpl->base.match = Match;
+    x509CrlImpl->spiObj = spiObj;
+}
+
 CfResult HcfX509CrlCreate(const CfEncodingBlob *inStream, HcfX509Crl **returnObj)
 {
     if ((inStream == NULL) || (inStream->data == NULL) || (inStream->len > HCF_MAX_BUFFER_LEN) || (returnObj == NULL)) {
+        LOGE("inStream, inStream->data or returnObj is null, or input CRL size exceeds %{public}d!",
+            HCF_MAX_BUFFER_LEN);
         return CF_INVALID_PARAMS;
     }
     const HcfX509CrlFuncSet *funcSet = FindAbility("X509");
@@ -438,39 +471,13 @@ CfResult HcfX509CrlCreate(const CfEncodingBlob *inStream, HcfX509Crl **returnObj
         LOGE("Failed to create spi object!");
         return res;
     }
-    HcfX509CrlImpl *x509CertImpl = (HcfX509CrlImpl *)CfMalloc(sizeof(HcfX509CrlImpl), 0);
-    if (x509CertImpl == NULL) {
-        LOGE("Failed to allocate x509CertImpl memory!");
+    HcfX509CrlImpl *x509CrlImpl = (HcfX509CrlImpl *)CfMalloc(sizeof(HcfX509CrlImpl), 0);
+    if (x509CrlImpl == NULL) {
+        LOGE("Failed to allocate x509CrlImpl memory!");
         CfObjDestroy(spiObj);
         return CF_ERR_MALLOC;
     }
-    x509CertImpl->base.base.base.getClass = GetX509CrlClass;
-    x509CertImpl->base.base.base.destroy = DestroyX509Crl;
-    x509CertImpl->base.base.getType = GetType;
-    x509CertImpl->base.base.isRevoked = IsRevoked;
-    x509CertImpl->base.verify = Verify;
-    x509CertImpl->base.getEncoded = GetEncoded;
-    x509CertImpl->base.getVersion = GetVersion;
-    x509CertImpl->base.getIssuerName = GetIssuerName;
-    x509CertImpl->base.getIssuerNameEx = GetIssuerNameEx;
-    x509CertImpl->base.getIssuerNameDer = GetIssuerNameDer;
-    x509CertImpl->base.getLastUpdate = GetLastUpdate;
-    x509CertImpl->base.getNextUpdate = GetNextUpdate;
-    x509CertImpl->base.getRevokedCert = GetRevokedCert;
-    x509CertImpl->base.getRevokedCertWithCert = GetRevokedCertWithCert;
-    x509CertImpl->base.getRevokedCerts = GetRevokedCerts;
-    x509CertImpl->base.getTbsInfo = GetTbsInfo;
-    x509CertImpl->base.getSignature = GetSignature;
-    x509CertImpl->base.getSignatureAlgName = GetSignatureAlgName;
-    x509CertImpl->base.getSignatureAlgOid = GetSignatureAlgOid;
-    x509CertImpl->base.getSignatureAlgParams = GetSignatureAlgParams;
-    x509CertImpl->base.getExtensions = GetExtensions;
-    x509CertImpl->base.toString = ToString;
-    x509CertImpl->base.toStringEx = ToStringEx;
-    x509CertImpl->base.hashCode = HashCode;
-    x509CertImpl->base.getExtensionsObject = GetExtensionsOjbect;
-    x509CertImpl->base.match = Match;
-    x509CertImpl->spiObj = spiObj;
-    *returnObj = (HcfX509Crl *)x509CertImpl;
+    InitX509CrlImpl(x509CrlImpl, spiObj);
+    *returnObj = (HcfX509Crl *)x509CrlImpl;
     return CF_SUCCESS;
 }
