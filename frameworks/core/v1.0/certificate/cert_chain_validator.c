@@ -187,8 +187,8 @@ static CfResult ValidateX509Cert(HcfCertChainValidator *self, HcfX509Certificate
 
 CfResult HcfCertChainValidatorCreate(const char *algorithm, HcfCertChainValidator **pathValidator)
 {
-    CF_LOG_I("enter");
     if (!CfIsStrValid(algorithm, HCF_MAX_STR_LEN) || (pathValidator == NULL)) {
+        LOGE("algorithm or pathValidator is null, or algorithm length exceeds %{public}d!", HCF_MAX_STR_LEN);
         return CF_INVALID_PARAMS;
     }
     const HcfCertChainValidatorFuncSet *func = FindAbility(algorithm);
