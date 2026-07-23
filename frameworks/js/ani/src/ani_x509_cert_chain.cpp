@@ -242,8 +242,10 @@ array<X509Cert> X509CertChainImpl::GetCertList()
 
 CertChainValidationResult X509CertChainImpl::ValidateSync(CertChainValidationParameters const& param)
 {
+    HistogramScopeGuard guard(API_X509_CERT_CHAIN_VALIDATE);
     HcfX509CertChainValidateParams validateParams = {};
     if (!BuildX509CertChainValidateParams(param, validateParams)) {
+        guard.SetErrorCode(CF_INVALID_PARAMS);
         ANI_LOGE_THROW(CF_INVALID_PARAMS, "SetX509CertChainValidateParams failed");
         return make_holder<CertChainValidationResultImpl, CertChainValidationResult>();
     }
@@ -252,6 +254,7 @@ CertChainValidationResult X509CertChainImpl::ValidateSync(CertChainValidationPar
         (HcfX509CertChainValidateResult *)CfMalloc(sizeof(HcfX509CertChainValidateResult), 0);
     if (validateResult == nullptr) {
         FreeX509CertChainValidateParams(validateParams);
+        guard.SetErrorCode(CF_ERR_MALLOC);
         ANI_LOGE_THROW(CF_ERR_MALLOC, "Failed to allocate validateResult");
         return make_holder<CertChainValidationResultImpl, CertChainValidationResult>();
     }
@@ -259,6 +262,7 @@ CertChainValidationResult X509CertChainImpl::ValidateSync(CertChainValidationPar
     FreeX509CertChainValidateParams(validateParams);
     if (ret != CF_SUCCESS) {
         CF_FREE_PTR(validateResult);
+        guard.SetErrorCode(ret);
         ANI_LOGE_THROW(ret, "ValidateSync failed");
         return make_holder<CertChainValidationResultImpl, CertChainValidationResult>();
     }
@@ -303,6 +307,7 @@ array<uint8_t> X509CertChainImpl::HashCode()
 
 X509CertChain CreateX509CertChainSync(EncodingBlob const& inStream)
 {
+    HistogramScopeGuard guard(API_CREATE_X509_CERT_CHAIN);
     HcfCertChain *x509CertChain = nullptr;
     CfEncodingBlob encodingBlob = {};
     encodingBlob.data = inStream.data.data();
@@ -310,6 +315,7 @@ X509CertChain CreateX509CertChainSync(EncodingBlob const& inStream)
     encodingBlob.encodingFormat = static_cast<CfEncodingFormat>(inStream.encodingFormat.get_value());
     CfResult ret = HcfCertChainCreate(&encodingBlob, nullptr, &x509CertChain);
     if (ret != CF_SUCCESS) {
+        guard.SetErrorCode(ret);
         ANI_LOGE_THROW(ret, "CreateX509CertChainSync failed");
         return make_holder<X509CertChainImpl, X509CertChain>();
     }
@@ -318,14 +324,17 @@ X509CertChain CreateX509CertChainSync(EncodingBlob const& inStream)
 
 X509CertChain CreateX509CertChain(array_view<X509Cert> certs)
 {
+    HistogramScopeGuard guard(API_CREATE_X509_CERT_CHAIN);
     HcfX509CertificateArray certsArray = { nullptr, 0 };
     certsArray.count = certs.size();
     if (certsArray.count == 0) {
+        guard.SetErrorCode(CF_INVALID_PARAMS);
         ANI_LOGE_THROW(CF_INVALID_PARAMS, "certs is empty!");
         return make_holder<X509CertChainImpl, X509CertChain>();
     }
     certsArray.data = (HcfX509Certificate **)CfMalloc(certsArray.count * sizeof(HcfX509Certificate *), 0);
     if (certsArray.data == nullptr) {
+        guard.SetErrorCode(CF_ERR_MALLOC);
         ANI_LOGE_THROW(CF_ERR_MALLOC, "malloc failed!");
         return make_holder<X509CertChainImpl, X509CertChain>();
     }
@@ -336,6 +345,7 @@ X509CertChain CreateX509CertChain(array_view<X509Cert> certs)
     CfResult ret = HcfCertChainCreate(nullptr, &certsArray, &x509CertChain);
     if (ret != CF_SUCCESS) {
         CF_FREE_PTR(certsArray.data);
+        guard.SetErrorCode(ret);
         ANI_LOGE_THROW(ret, "CreateX509CertChain failed");
         return make_holder<X509CertChainImpl, X509CertChain>();
     }
@@ -345,16 +355,19 @@ X509CertChain CreateX509CertChain(array_view<X509Cert> certs)
 
 CertChainBuildResult BuildX509CertChainSync(CertChainBuildParameters const& param)
 {
+    HistogramScopeGuard guard(API_BUILD_X509_CERT_CHAIN);
     HcfX509CertChainBuildResult *buildResult = nullptr;
     HcfX509CertChainBuildParameters buildParam = {};
     if (!CreateParams(param, &buildParam)) {
         FreeX509CertChainBuildParameters(&buildParam);
+        guard.SetErrorCode(CF_INVALID_PARAMS);
         ANI_LOGE_THROW(CF_INVALID_PARAMS, "CreateParams failed");
         return make_holder<CertChainBuildResultImpl, CertChainBuildResult>();
     }
     CfResult ret = HcfCertChainBuildResultCreate(&buildParam, &buildResult);
     if (ret != CF_SUCCESS) {
         FreeX509CertChainBuildParameters(&buildParam);
+        guard.SetErrorCode(ret);
         ANI_LOGE_THROW(ret, "BuildX509CertChainSync failed");
         return make_holder<CertChainBuildResultImpl, CertChainBuildResult>();
     }
@@ -365,6 +378,7 @@ CertChainBuildResult BuildX509CertChainSync(CertChainBuildParameters const& para
         CfObjDestroy(buildResult->certChain);
         buildResult->certChain = nullptr;
         CF_FREE_PTR(buildResult);
+        guard.SetErrorCode(ret);
         ANI_LOGE_THROW(ret, "Validate failed");
         return make_holder<CertChainBuildResultImpl, CertChainBuildResult>();
     }
@@ -372,30 +386,28 @@ CertChainBuildResult BuildX509CertChainSync(CertChainBuildParameters const& para
     return result;
 }
 
-array<uint8_t> CreatePkcs12Sync(Pkcs12Data const& data, Pkcs12CreationConfig const& config)
+static CfResult SetP12PriKey(Pkcs12Data const& data, HcfX509P12Collection &p12Collection, CfBlob &prikeyBlob)
 {
-    if (config.password.empty()) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "config password is empty!");
-        return {};
+    if (!data.privateKey.has_value()) {
+        return CF_SUCCESS;
     }
-    HcfX509P12Collection p12Collection = {};
-    array<HcfX509Certificate *> certArray(data.otherCerts.has_value() ? data.otherCerts.value().size() : 0);
-    CfBlob prikeyBlob = {};
-    // Pkcs12Data
-    if (data.privateKey.has_value()) {
-        if (data.privateKey.value().get_tag() == OptStrUint8Arr::tag_t::STRING) {
-            p12Collection.isPem = true;
-            StringToDataBlob(data.privateKey.value().get_STRING_ref(), prikeyBlob);
-        } else { // OptStrUint8Arr::tag_t::UINT8ARRAY
-            p12Collection.isPem = false;
-            ArrayU8ToDataBlob(data.privateKey.value().get_UINT8ARRAY_ref(), prikeyBlob);
-        }
-        if (prikeyBlob.size == 0 || prikeyBlob.data == nullptr) {
-            ANI_LOGE_THROW(CF_INVALID_PARAMS, "private key is empty!");
-            return {};
-        }
-        p12Collection.prikey = &prikeyBlob;
+    if (data.privateKey.value().get_tag() == OptStrUint8Arr::tag_t::STRING) {
+        p12Collection.isPem = true;
+        StringToDataBlob(data.privateKey.value().get_STRING_ref(), prikeyBlob);
+    } else {
+        p12Collection.isPem = false;
+        ArrayU8ToDataBlob(data.privateKey.value().get_UINT8ARRAY_ref(), prikeyBlob);
     }
+    if (prikeyBlob.size == 0 || prikeyBlob.data == nullptr) {
+        return CF_INVALID_PARAMS;
+    }
+    p12Collection.prikey = &prikeyBlob;
+    return CF_SUCCESS;
+}
+
+static void SetP12Certs(Pkcs12Data const& data, HcfX509P12Collection &p12Collection,
+    array<HcfX509Certificate *> &certArray)
+{
     if (data.cert.has_value()) {
         p12Collection.cert = reinterpret_cast<HcfX509Certificate *>(data.cert.value()->GetX509CertObj());
     }
@@ -407,14 +419,34 @@ array<uint8_t> CreatePkcs12Sync(Pkcs12Data const& data, Pkcs12CreationConfig con
         p12Collection.otherCerts = certArray.data();
         p12Collection.otherCertsCount = certArray.size();
     }
-    // Pkcs12CreationConfig
+}
+
+array<uint8_t> CreatePkcs12Sync(Pkcs12Data const& data, Pkcs12CreationConfig const& config)
+{
+    HistogramScopeGuard guard(API_CREATE_PKCS12_SYNC);
+    if (config.password.empty()) {
+        guard.SetErrorCode(CF_INVALID_PARAMS);
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "config password is empty!");
+        return {};
+    }
+    HcfX509P12Collection p12Collection = {};
+    array<HcfX509Certificate *> certArray(data.otherCerts.has_value() ? data.otherCerts.value().size() : 0);
+    CfBlob prikeyBlob = {};
+    CfResult res = SetP12PriKey(data, p12Collection, prikeyBlob);
+    if (res != CF_SUCCESS) {
+        guard.SetErrorCode(res);
+        ANI_LOGE_THROW(res, "private key is empty!");
+        return {};
+    }
+    SetP12Certs(data, p12Collection, certArray);
     HcfPkcs12CreatingConfig conf = {};
     CfBlob passwdBlob = {};
     conf.pwd = &passwdBlob;
     CfBlob blob = {};
     SetPkcs12CreatingConfig(config, conf);
-    CfResult res = HcfCreatePkcs12(&p12Collection, &conf, &blob);
+    res = HcfCreatePkcs12(&p12Collection, &conf, &blob);
     if (res != CF_SUCCESS) {
+        guard.SetErrorCode(res);
         ANI_LOGE_THROW(res, "create pkcs12 obj failed!");
         return {};
     }
@@ -426,17 +458,20 @@ array<uint8_t> CreatePkcs12Sync(Pkcs12Data const& data, Pkcs12CreationConfig con
 
 Pkcs12Data ParsePkcs12(array_view<uint8_t> data, Pkcs12ParsingConfig const& config)
 {
+    HistogramScopeGuard guard(API_PARSE_PKCS12);
     HcfX509P12Collection *p12Collection = nullptr;
     HcfParsePKCS12Conf *conf = nullptr;
     CfBlob *keyStore = nullptr;
     CfResult res = SetPkcs12Data(config, data, &conf, &keyStore);
     if (res != CF_SUCCESS) {
+        guard.SetErrorCode(res);
         ANI_LOGE_THROW(res, "set pkcs12 data failed!");
         return {};
     }
     res = HcfParsePKCS12(keyStore, conf, &p12Collection);
     if (res != CF_SUCCESS) {
         FreePkcs12Data(conf, keyStore);
+        guard.SetErrorCode(res);
         ANI_LOGE_THROW(res, "parse pkcs12 failed!");
         return {};
     }
@@ -455,11 +490,9 @@ Pkcs12Data ParsePkcs12(array_view<uint8_t> data, Pkcs12ParsingConfig const& conf
         CfBlobDataClearAndFree(p12Collection->prikey);
         CF_FREE_PTR(p12Collection->prikey);
     }
-    if (p12Collection->cert == nullptr) {
-        pkcs12Data.cert = optional<X509Cert>(std::nullopt);
-    } else {
-        pkcs12Data.cert = optional<X509Cert>(std::in_place, make_holder<X509CertImpl, X509Cert>(p12Collection->cert));
-    }
+    pkcs12Data.cert = p12Collection->cert == nullptr
+        ? optional<X509Cert>(std::nullopt)
+        : optional<X509Cert>(std::in_place, make_holder<X509CertImpl, X509Cert>(p12Collection->cert));
     if (p12Collection->otherCertsCount == 0) {
         pkcs12Data.otherCerts = optional<array<X509Cert>>(std::nullopt);
     } else {
@@ -483,21 +516,24 @@ Pkcs12Data ParsePkcs12ByPasswdSync(array_view<uint8_t> data, string_view passwor
 
 array<X509TrustAnchor> CreateTrustAnchorsWithKeyStoreSync(array_view<uint8_t> keystore, string_view pwd)
 {
+    HistogramScopeGuard guard(API_CREATE_TRUST_ANCHORS_WITH_KEY_STORE);
+    if (pwd.empty()) {
+        guard.SetErrorCode(CF_INVALID_PARAMS);
+        ANI_LOGE_THROW(CF_INVALID_PARAMS, "pwd is empty!");
+        return {};
+    }
     HcfX509TrustAnchorArray* trustAnchors = nullptr;
     CfBlob *keyStore = nullptr;
     CfResult ret = SetKeyStore(keystore, &keyStore);
     if (ret != CF_SUCCESS) {
+        guard.SetErrorCode(ret);
         ANI_LOGE_THROW(ret, "set key store failed!");
-        return {};
-    }
-    uint32_t length = pwd.size();
-    if (length == 0) {
-        ANI_LOGE_THROW(CF_INVALID_PARAMS, "pwd is empty!");
         return {};
     }
     CfBlob *pwdBlob = nullptr;
     if (!StringCopyToBlob(pwd, &pwdBlob)) {
         CfBlobClearAndFree(&keyStore);
+        guard.SetErrorCode(CF_ERR_MALLOC);
         ANI_LOGE_THROW(CF_ERR_MALLOC, "set pwd blob failed!");
         return {};
     }
@@ -505,6 +541,7 @@ array<X509TrustAnchor> CreateTrustAnchorsWithKeyStoreSync(array_view<uint8_t> ke
     if (ret != CF_SUCCESS) {
         CfBlobClearAndFree(&keyStore);
         CfBlobClearAndFree(&pwdBlob);
+        guard.SetErrorCode(ret);
         ANI_LOGE_THROW(ret, "create trust anchors with keystore failed!");
         return {};
     }

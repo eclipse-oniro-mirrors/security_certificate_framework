@@ -29,7 +29,7 @@ static CfObjectAbilityFunc g_certObjectFunc = {
     .get = CfCertGet,
 };
 
-__attribute__((constructor)) static void LoadCertOjbectAbility(void)
+__attribute__((constructor)) static void LoadCertObjectAbility(void)
 {
     (void)RegisterAbility(CF_ABILITY(CF_ABILITY_TYPE_OBJECT, CF_OBJ_TYPE_CERT), &g_certObjectFunc.base);
     SetHcfX509CertCreateFunc(HcfX509CertificateCreate);

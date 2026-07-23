@@ -195,6 +195,7 @@ bool CertExtensionImpl::HasUnsupportedCriticalExtension()
 
 CertExtension CreateCertExtensionSync(EncodingBlob const& inStream)
 {
+    HistogramScopeGuard guard(API_CREATE_CERT_EXTENSION);
     CfObject *object = nullptr;
     CfEncodingBlob encodingBlob = {};
     encodingBlob.data = inStream.data.data();
@@ -202,6 +203,7 @@ CertExtension CreateCertExtensionSync(EncodingBlob const& inStream)
     encodingBlob.encodingFormat = static_cast<CfEncodingFormat>(inStream.encodingFormat.get_value());
     CfResult ret = static_cast<CfResult>(CfCreate(CF_OBJ_TYPE_EXTENSION, &encodingBlob, &object));
     if (ret != CF_SUCCESS) {
+        guard.SetErrorCode(ret);
         ANI_LOGE_THROW(ret, "create cert extension failed");
         return make_holder<CertExtensionImpl, CertExtension>();
     }

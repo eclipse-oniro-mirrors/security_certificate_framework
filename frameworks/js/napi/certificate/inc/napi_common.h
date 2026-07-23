@@ -36,7 +36,7 @@ struct AsyncContext {
     napi_deferred deferred = nullptr;
     napi_async_work asyncWork = nullptr;
     napi_ref paramRef = nullptr;
-    int32_t errCode = 0;
+    CfResult errCode = CF_SUCCESS;
     const char *errMsg = nullptr;
 };
 using AsyncCtx = AsyncContext *;

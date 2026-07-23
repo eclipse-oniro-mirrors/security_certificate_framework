@@ -151,6 +151,7 @@ EncodingBlob X500DistinguishedNameImpl::GetEncoded()
 
 X500DistinguishedName CreateX500DistinguishedNameByStrSync(string_view nameStr)
 {
+    HistogramScopeGuard guard(API_CREATE_X500_DISTINGUISHED_NAME);
     CfBlob blob = {};
     StringToDataBlob(nameStr, blob);
     return CreateX500DistinguishedNameInner(&blob, true);
@@ -158,6 +159,7 @@ X500DistinguishedName CreateX500DistinguishedNameByStrSync(string_view nameStr)
 
 X500DistinguishedName CreateX500DistinguishedNameByDerSync(array_view<uint8_t> nameDer)
 {
+    HistogramScopeGuard guard(API_CREATE_X500_DISTINGUISHED_NAME);
     CfBlob blob = {};
     ArrayU8ToDataBlob(nameDer, blob);
     return CreateX500DistinguishedNameInner(&blob, false);

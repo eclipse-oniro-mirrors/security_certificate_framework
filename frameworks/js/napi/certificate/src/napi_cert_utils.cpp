@@ -152,13 +152,11 @@ static bool GetDataOfEncodingBlob(napi_env env, napi_value data, CfEncodingBlob 
     napi_status status = napi_get_typedarray_info(env, data, &arrayType, &length,
         reinterpret_cast<void **>(&rawData), &arrayBuffer, &offset);
     if (status != napi_ok) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get array data failed"));
-        LOGE("failed to get array data!");
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "get array data failed");
         return false;
     }
     if (arrayType != napi_uint8_array) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "array type is not uint8 array"));
-        LOGE("array is not uint8 array!");
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "array type is not uint8 array");
         return false;
     }
 
@@ -186,15 +184,13 @@ static char *CertGetStringFromValue(napi_env env, napi_value arg)
     napi_valuetype valueType;
     napi_typeof(env, arg, &valueType);
     if (valueType != napi_string) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "param type is not string"));
-        LOGE("wrong argument type. expect string type. [Type]: %{public}d", valueType);
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "param type is not string");
         return nullptr;
     }
 
     size_t length = 0;
     if (napi_get_value_string_utf8(env, arg, nullptr, 0, &length) != napi_ok) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "can not get string length!"));
-        LOGE("can not get string length");
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "can not get string length!");
         return nullptr;
     }
 
@@ -205,14 +201,12 @@ static char *CertGetStringFromValue(napi_env env, napi_value arg)
 
     char *value = static_cast<char *>(CfMalloc(length + 1, 0));
     if (value == nullptr) {
-        LOGE("Failed to allocate value memory!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed!"));
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "malloc failed!");
         return nullptr;
     }
 
     if (napi_get_value_string_utf8(env, arg, value, length + 1, &length) != napi_ok) {
-        LOGE("can not get value value");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get value failed"));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "get value failed");
         (void)memset_s(value, length + 1, 0, length + 1);
         CfFree(value);
         value = nullptr;
@@ -231,8 +225,7 @@ bool GetEncodingBlobFromValue(napi_env env, napi_value obj, CfEncodingBlob **enc
     napi_value data = nullptr;
     napi_status status = napi_get_named_property(env, obj, CERT_TAG_DATA.c_str(), &data);
     if (status != napi_ok) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get encoding blob data failed"));
-        LOGE("failed to get encoding blob data!");
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "get encoding blob data failed");
         CfFree(*encodingBlob);
         *encodingBlob = nullptr;
         return false;
@@ -245,8 +238,7 @@ bool GetEncodingBlobFromValue(napi_env env, napi_value obj, CfEncodingBlob **enc
     napi_value format = nullptr;
     status = napi_get_named_property(env, obj, CERT_TAG_ENCODING_FORMAT.c_str(), &format);
     if (status != napi_ok) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get encoding blob format failed"));
-        LOGE("failed to get encoding blob format!");
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "get encoding blob format failed");
         CfFree((*encodingBlob)->data);
         (*encodingBlob)->data = nullptr;
         CfFree(*encodingBlob);
@@ -761,13 +753,11 @@ static bool GetDataOfCertChain(napi_env env, napi_value data, HcfCertChainData *
     napi_status status = napi_get_typedarray_info(env, data, &arrayType, &length,
         reinterpret_cast<void **>(&rawData), &arrayBuffer, &offset);
     if (status != napi_ok) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get array data failed"));
-        LOGE("failed to get array data!");
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "get array data failed");
         return false;
     }
     if (arrayType != napi_uint8_array) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "array type is not uint8 array"));
-        LOGE("array is not uint8 array!");
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "array type is not uint8 array");
         return false;
     }
 
@@ -800,8 +790,7 @@ bool GetCertChainFromValue(napi_env env, napi_value obj, HcfCertChainData **cert
     napi_value data = nullptr;
     napi_status status = napi_get_named_property(env, obj, CERT_TAG_DATA.c_str(), &data);
     if (status != napi_ok) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get cert chain data failed"));
-        LOGE("failed to get cert chain data!");
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "get cert chain data failed");
         CfFree(*certChainData);
         *certChainData = nullptr;
         return false;
@@ -815,8 +804,7 @@ bool GetCertChainFromValue(napi_env env, napi_value obj, HcfCertChainData **cert
     napi_value certCount = nullptr;
     status = napi_get_named_property(env, obj, CERT_TAG_COUNT.c_str(), &certCount);
     if (status != napi_ok) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get cert chain count failed"));
-        LOGE("failed to get cert count!");
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "get cert chain count failed");
         CfFree((*certChainData)->data);
         (*certChainData)->data = nullptr;
         CfFree(*certChainData);
@@ -828,8 +816,7 @@ bool GetCertChainFromValue(napi_env env, napi_value obj, HcfCertChainData **cert
     napi_value format = nullptr;
     status = napi_get_named_property(env, obj, CERT_TAG_ENCODING_FORMAT.c_str(), &format);
     if (status != napi_ok) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get cert chain format failed"));
-        LOGE("failed to get cert chain format!");
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "get cert chain format failed");
         CfFree((*certChainData)->data);
         (*certChainData)->data = nullptr;
         CfFree(*certChainData);
@@ -851,41 +838,35 @@ CfBlob *CertGetBlobFromUint8ArrJSParams(napi_env env, napi_value arg)
     napi_status status = napi_get_typedarray_info(
         env, arg, &arrayType, &length, reinterpret_cast<void **>(&rawData), &arrayBuffer, &offset);
     if (status != napi_ok) {
-        LOGE("failed to get valid rawData.");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "failed to get valid rawData!"));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "failed to get valid rawData!");
         return nullptr;
     }
     if (arrayType != napi_uint8_array) {
-        LOGE("input data is not uint8 array.");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "input data is not uint8 array!"));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "input data is not uint8 array!");
         return nullptr;
     }
 
     if (length == 0 || rawData == nullptr) {
-        LOGE("array length is 0!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "array length is 0!"));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "array length is 0!");
         return nullptr;
     }
 
     CfBlob *newBlob = static_cast<CfBlob *>(CfMalloc(sizeof(CfBlob), 0));
     if (newBlob == nullptr) {
-        LOGE("Failed to allocate newBlob memory!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed!"));
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "malloc failed!");
         return nullptr;
     }
 
     newBlob->size = length;
     newBlob->data = static_cast<uint8_t *>(CfMalloc(length, 0));
     if (newBlob->data == nullptr) {
-        LOGE("malloc blob data failed!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed!"));
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "malloc failed!");
         CfFree(newBlob);
         newBlob = nullptr;
         return nullptr;
     }
     if (memcpy_s(newBlob->data, length, rawData, length) != EOK) {
-        LOGE("memcpy_s blob data failed!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_COPY, "copy memory failed!"));
+        NAPI_LOG_THROW(env, CF_ERR_COPY, "copy memory failed!");
         CfFree(newBlob->data);
         newBlob->data = nullptr;
         CfFree(newBlob);
@@ -900,36 +881,31 @@ CfBlob *CertGetBlobFromStringJSParams(napi_env env, napi_value arg)
     napi_valuetype valueType;
     napi_typeof(env, arg, &valueType);
     if (valueType != napi_string) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "param type is not string"));
-        LOGE("wrong argument type. expect string type. [Type]: %{public}d", valueType);
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "param type is not string");
         return nullptr;
     }
 
     size_t length = 0;
     if (napi_get_value_string_utf8(env, arg, nullptr, 0, &length) != napi_ok) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "can not get string length!"));
-        LOGE("can not get string length");
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "can not get string length!");
         return nullptr;
     }
 
     if (length == 0) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "string length is 0!"));
-        LOGE("string length is 0");
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "string length is 0!");
         return nullptr;
     }
 
     CfBlob *newBlob = static_cast<CfBlob *>(CfMalloc(sizeof(CfBlob), 0));
     if (newBlob == nullptr) {
-        LOGE("Failed to allocate newBlob memory!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed!"));
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "malloc failed!");
         return nullptr;
     }
 
     newBlob->size = length + 1;
     newBlob->data = static_cast<uint8_t *>(CfMalloc(newBlob->size, 0));
     if (newBlob->data == nullptr) {
-        LOGE("malloc blob data failed!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed"));
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "malloc failed");
         CfFree(newBlob);
         newBlob = nullptr;
         return nullptr;
@@ -937,8 +913,7 @@ CfBlob *CertGetBlobFromStringJSParams(napi_env env, napi_value arg)
 
     if (napi_get_value_string_utf8(env, arg, reinterpret_cast<char *>(newBlob->data), newBlob->size, &length) !=
         napi_ok) {
-        LOGE("can not get string value");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get string failed"));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "get string failed");
         CfFree(newBlob->data);
         newBlob->data = nullptr;
         CfFree(newBlob);
@@ -978,30 +953,26 @@ CfBlobArray *CertGetBlobArrFromArrUarrJSParams(napi_env env, napi_value arg)
     bool flag = false;
     napi_status status = napi_is_array(env, arg, &flag);
     if (status != napi_ok || !flag) {
-        LOGE("not array!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "not array!"));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "not array!");
         return nullptr;
     }
     uint32_t length = 0;
     status = napi_get_array_length(env, arg, &length);
     if (status != napi_ok || length == 0 || length > MAX_NAPI_ARRAY_OF_U8ARR) {
-        LOGE("length is invalid!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "length is invalid!"));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "length is invalid!");
         return nullptr;
     }
 
     CfBlobArray *newBlobArr = static_cast<CfBlobArray *>(CfMalloc(sizeof(CfBlobArray), 0));
     if (newBlobArr == nullptr) {
-        LOGE("Failed to allocate newBlobArr memory!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed"));
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "malloc failed");
         return nullptr;
     }
 
     newBlobArr->count = length;
     newBlobArr->data = static_cast<CfBlob *>(CfMalloc(length * sizeof(CfBlob), 0));
     if (newBlobArr->data == nullptr) {
-        LOGE("Failed to allocate data memory!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed"));
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "malloc failed");
         CF_FREE_PTR(newBlobArr);
         return nullptr;
     }
@@ -1016,10 +987,9 @@ CfBlobArray *CertGetBlobArrFromArrUarrJSParams(napi_env env, napi_value arg)
                 continue;
             }
         }
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "input arr is invalid"));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "input arr is invalid");
         FreeCfBlobArray(newBlobArr->data, newBlobArr->count);
         CF_FREE_PTR(newBlobArr);
-        LOGE("Failed to allocate data memory!");
         return nullptr;
     }
     return newBlobArr;
@@ -1030,15 +1000,13 @@ static bool GetArrayLen(napi_env env, napi_value arg, uint32_t &length)
     bool flag = false;
     napi_status status = napi_is_array(env, arg, &flag);
     if (status != napi_ok || !flag) {
-        LOGE("not array!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "not array!"));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "not array!");
         return false;
     }
 
     status = napi_get_array_length(env, arg, &length);
     if (status != napi_ok || length == 0) {
-        LOGE("array length = 0!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "array length = 0!"));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "array length = 0!");
         return false;
     }
     return true;
@@ -1054,16 +1022,14 @@ CfBlob *CertGetBlobFromArrBoolJSParams(napi_env env, napi_value arg)
 
     CfBlob *newBlob = static_cast<CfBlob *>(CfMalloc(sizeof(CfBlob), 0));
     if (newBlob == nullptr) {
-        LOGE("Failed to allocate newBlob memory!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed"));
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "malloc failed");
         return nullptr;
     }
 
     newBlob->size = length;
     newBlob->data = static_cast<uint8_t *>(CfMalloc(length, 0));
     if (newBlob->data == nullptr) {
-        LOGE("Failed to allocate data memory!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed"));
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "malloc failed");
         CfFree(newBlob);
         newBlob = nullptr;
         return nullptr;
@@ -1133,15 +1099,13 @@ SubAltNameArray *CertGetSANArrFromArrUarrJSParams(napi_env env, napi_value arg)
 {
     uint32_t length = 0;
     if (!ParserArray(env, arg, length)) {
-        LOGE("Length is invalid!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "length is invalid!"));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "length is invalid!");
         return nullptr;
     }
 
     SubAltNameArray *newSANArr = static_cast<SubAltNameArray *>(CfMalloc(sizeof(SubAltNameArray), 0));
     if (newSANArr == nullptr) {
-        LOGE("Failed to allocate newSANArr memory!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed"));
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "malloc failed");
         return nullptr;
     }
 
@@ -1149,8 +1113,7 @@ SubAltNameArray *CertGetSANArrFromArrUarrJSParams(napi_env env, napi_value arg)
     newSANArr->data =
         static_cast<SubjectAlternaiveNameData *>(CfMalloc(length * sizeof(SubjectAlternaiveNameData), 0));
     if (newSANArr->data == nullptr) {
-        LOGE("Failed to allocate data memory!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed"));
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "malloc failed");
         goto exit;
     }
     for (uint32_t i = 0; i < length; i++) {
@@ -1170,8 +1133,7 @@ SubAltNameArray *CertGetSANArrFromArrUarrJSParams(napi_env env, napi_value arg)
                 continue;
             }
         }
-        LOGE("Failed to allocate data memory!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "input arr is invalid"));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "input arr is invalid");
         goto exit;
     }
     return newSANArr;
@@ -1187,29 +1149,25 @@ CfArray *CertGetArrFromArrUarrJSParams(napi_env env, napi_value arg)
     bool flag = false;
     napi_status status = napi_is_array(env, arg, &flag);
     if (status != napi_ok || !flag) {
-        LOGE("Not array!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "not array!"));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "not array!");
         return nullptr;
     }
     uint32_t length = 0;
     status = napi_get_array_length(env, arg, &length);
     if (status != napi_ok || length == 0 || length > MAX_NAPI_ARRAY_OF_U8ARR) {
-        LOGE("Length is invalid!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "length is invalid!"));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "length is invalid!");
         return nullptr;
     }
     CfArray *newBlobArr = static_cast<CfArray *>(CfMalloc(sizeof(CfArray), 0));
     if (newBlobArr == nullptr) {
-        LOGE("Failed to allocate newBlobArr memory!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed"));
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "malloc failed");
         return nullptr;
     }
     newBlobArr->count = length;
     newBlobArr->format = CF_FORMAT_DER;
     newBlobArr->data = static_cast<CfBlob *>(CfMalloc(length * sizeof(CfBlob), 0));
     if (newBlobArr->data == nullptr) {
-        LOGE("Failed to allocate data memory!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc failed"));
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "malloc failed");
         CF_FREE_PTR(newBlobArr);
         return nullptr;
     }
@@ -1223,10 +1181,9 @@ CfArray *CertGetArrFromArrUarrJSParams(napi_env env, napi_value arg)
                 continue;
             }
         }
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "input arr is invalid"));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "input arr is invalid");
         FreeCfBlobArray(newBlobArr->data, newBlobArr->count);
         CF_FREE_PTR(newBlobArr);
-        LOGE("Failed to allocate data memory!");
         return nullptr;
     }
     return newBlobArr;
@@ -1237,8 +1194,7 @@ bool CertGetBlobFromBigIntJSParams(napi_env env, napi_value arg, CfBlob &outBlob
     napi_valuetype valueType;
     napi_typeof(env, arg, &valueType);
     if (valueType != napi_bigint) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "param type error"));
-        LOGE("Wrong argument type. expect int type. [Type]: %{public}d", valueType);
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "param type error");
         return false;
     }
 
@@ -1278,20 +1234,17 @@ bool CertGetSerialNumberFromBigIntJSParams(napi_env env, napi_value arg, CfBlob 
     napi_valuetype valueType;
     napi_typeof(env, arg, &valueType);
     if (valueType != napi_bigint) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "param type error"));
-        LOGE("wrong argument type. expect int type. [Type]: %{public}d", valueType);
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "param type error");
         return false;
     }
 
     size_t wordCount = 0;
     if (napi_get_value_bigint_words(env, arg, nullptr, &wordCount, nullptr) != napi_ok) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get serialNum failed"));
-        LOGE("can not get word count");
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "get serialNum failed");
         return false;
     }
     if (wordCount == 0 || wordCount > (MAX_SN_BYTE_CNT / sizeof(int64_t))) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get serialNum len failed"));
-        LOGE("can not get wordCount, wordCount = %{public}zu", wordCount);
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "get serialNum len failed");
         return false;
     }
 
@@ -1301,14 +1254,12 @@ bool CertGetSerialNumberFromBigIntJSParams(napi_env env, napi_value arg, CfBlob 
     int sign = 0;
     if (napi_get_value_bigint_words(env, arg, &sign, &wordCount, reinterpret_cast<uint64_t *>(serialBuf)) != napi_ok ||
         sign > 0) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "get serialNum len failed"));
-        LOGE("can not get bigint value, sign = %{public}d", sign); // sign 0 : positive, sign 1 : negative
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "get serialNum len failed");
         return false;
     }
     outBlob.data = static_cast<uint8_t *>(CfMalloc(serialLen, 0));
     if (outBlob.data == nullptr) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc serialNum failed"));
-        LOGE("malloc blob data failed!");
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "malloc serialNum failed");
         return false;
     }
     outBlob.size = serialLen;
@@ -1325,8 +1276,7 @@ bool CertGetStringFromJSParams(napi_env env, napi_value arg, string &returnStr)
     napi_valuetype valueType;
     napi_typeof(env, arg, &valueType);
     if (valueType != napi_string) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "param type is not string"));
-        LOGE("wrong argument type. expect string type. [Type]: %{public}d", valueType);
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "param type is not string");
         return false;
     }
 
@@ -1349,8 +1299,7 @@ bool CertGetInt32FromJSParams(napi_env env, napi_value arg, int32_t &returnInt)
     napi_valuetype valueType;
     napi_typeof(env, arg, &valueType);
     if (valueType != napi_number) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "param type is not number"));
-        LOGE("wrong argument type. expect int type. [Type]: %{public}d", valueType);
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "param type is not number");
         return false;
     }
 
@@ -1387,8 +1336,7 @@ bool CertGetCallbackFromJSParams(napi_env env, napi_value arg, napi_ref *returnC
     napi_valuetype valueType = napi_undefined;
     napi_typeof(env, arg, &valueType);
     if (valueType != napi_function) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "param type is not function"));
-        LOGE("wrong argument type. expect callback type. [Type]: %{public}d", valueType);
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "param type is not function");
         return false;
     }
 
@@ -1396,7 +1344,7 @@ bool CertGetCallbackFromJSParams(napi_env env, napi_value arg, napi_ref *returnC
     return true;
 }
 
-static uint32_t GetCertErrValueByErrCode(int32_t errCode)
+static uint32_t GetCertErrValueByErrCode(CfResult errCode)
 {
     uint32_t count = sizeof(CODE_MAP) / sizeof(CODE_MAP[0]);
     for (uint32_t i = 0; i < count; i++) {
@@ -1407,7 +1355,7 @@ static uint32_t GetCertErrValueByErrCode(int32_t errCode)
     return JS_ERR_CERT_RUNTIME_ERROR;
 }
 
-napi_value CertGenerateBusinessError(napi_env env, int32_t errCode, const char *errMsg)
+napi_value CertGenerateBusinessError(napi_env env, CfResult errCode, const char *errMsg)
 {
     napi_value businessError = nullptr;
 
@@ -1427,14 +1375,12 @@ bool CertCheckArgsCount(napi_env env, size_t argc, size_t expectedCount, bool is
 {
     if (isSync) {
         if (argc != expectedCount) {
-            napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "invalid params count"));
-            LOGE("invalid params count!");
+            NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "invalid params count");
             return false;
         }
     } else {
         if ((argc != expectedCount) && (argc != (expectedCount - ARGS_SIZE_ONE))) {
-            napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "invalid params count"));
-            LOGE("invalid params count!");
+            NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "invalid params count");
             return false;
         }
     }
@@ -1603,8 +1549,7 @@ napi_value ConvertBlobToBigIntWords(napi_env env, const CfBlob &blob)
     uint32_t wordsCount = 0;
     CfResult ret = ConvertBlobToWords(blob, words, wordsCount);
     if (ret != CF_SUCCESS) {
-        napi_throw(env, CertGenerateBusinessError(env, ret, "convert data to words failed"));
-        LOGE("convert data to words failed");
+        NAPI_LOG_THROW(env, ret, "convert data to words failed");
         return nullptr;
     }
 

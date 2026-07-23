@@ -26,9 +26,17 @@
 #include "napi_cert_defines.h"
 #include "x509_cert_match_parameters.h"
 #include "cert_cms_generator.h"
+#include "js_api_metrics.h"
+#include "cf_log.h"
 
 namespace OHOS {
 namespace CertFramework {
+
+#define NAPI_LOG_THROW(env, code, msg) \
+    do { \
+        LOGE(msg); \
+        napi_throw(env, CertGenerateBusinessError(env, code, msg)); \
+    } while (0)
 
 constexpr size_t MAX_NAPI_ARRAY_OF_U8ARR = 1024;
 
@@ -67,7 +75,7 @@ napi_value GenerateArrayBuffer(napi_env env, uint8_t *data, uint32_t size);
 napi_value CertNapiGetNull(napi_env env);
 napi_value ConvertArrayToNapiValue(napi_env env, CfArray *array);
 napi_value ConvertEncodingBlobToNapiValue(napi_env env, CfEncodingBlob *encodingBlob);
-napi_value CertGenerateBusinessError(napi_env env, int32_t errCode, const char *errMsg);
+napi_value CertGenerateBusinessError(napi_env env, CfResult errCode, const char *errMsg);
 napi_value ConvertBlobToNapiValue(napi_env env, const CfBlob *blob);
 napi_value ConvertBlobToBigIntWords(napi_env env, const CfBlob &blob);
 napi_value ConvertBlobToInt64(napi_env env, const CfBlob &blob);

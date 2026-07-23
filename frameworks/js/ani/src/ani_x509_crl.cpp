@@ -499,6 +499,7 @@ CertExtension X509CRLImpl::GetExtensionsObject()
 
 X509CRL CreateX509CRLSync(EncodingBlob const& inStream)
 {
+    HistogramScopeGuard guard(API_CREATE_X509_CRL);
     CfBlob blob = {};
     ArrayU8ToDataBlob(inStream.data, blob);
     CfEncodingFormat encodingFormat = static_cast<CfEncodingFormat>(inStream.encodingFormat.get_value());
@@ -507,6 +508,7 @@ X509CRL CreateX509CRLSync(EncodingBlob const& inStream)
     HcfX509Crl *x509Crl = nullptr;
     CfResult res = HcfX509CrlCreate(&encodingBlob, &x509Crl);
     if (res != CF_SUCCESS) {
+        guard.SetErrorCode(res);
         ANI_LOGE_THROW(res, "create X509Crl obj failed!");
         return make_holder<X509CRLImpl, X509CRL>();
     }

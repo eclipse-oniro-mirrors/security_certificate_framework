@@ -411,7 +411,7 @@ napi_value CommonOperation(napi_env env, napi_callback_info info, const CfObject
     CfParamSet *inParamSet = NULL;
     int32_t ret = GetInParamSet(env, info, opType, typeValue, inParamSet);
     if (ret != CF_SUCCESS) {
-        napi_throw(env, CertGenerateBusinessError(env, ret, "get param failed"));
+        napi_throw(env, CertGenerateBusinessError(env, static_cast<CfResult>(ret), "get param failed"));
         return nullptr;
     }
 
@@ -419,7 +419,7 @@ napi_value CommonOperation(napi_env env, napi_callback_info info, const CfObject
     ret = DoOperation(obj, opType, inParamSet, &outParamSet);
     CfFreeParamSet(&inParamSet);
     if (ret != CF_SUCCESS) {
-        napi_throw(env, CertGenerateBusinessError(env, ret, "do operation failed"));
+        napi_throw(env, CertGenerateBusinessError(env, static_cast<CfResult>(ret), "do operation failed"));
         return nullptr;
     }
 

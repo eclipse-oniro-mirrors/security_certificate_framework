@@ -121,10 +121,13 @@ static napi_value CreateCertExtsJSInstance(napi_env env)
 
 static void CreateCertExtsExecute(napi_env env, void *data)
 {
+    HistogramScopeGuard guard(API_CREATE_CERT_EXTENSION);
     ExtsAsyncContext context = static_cast<ExtsAsyncContext>(data);
-    context->async->errCode = CfCreate(CF_OBJ_TYPE_EXTENSION, context->encodingBlob, &context->extsObj);
+    context->async->errCode =
+        static_cast<CfResult>(CfCreate(CF_OBJ_TYPE_EXTENSION, context->encodingBlob, &context->extsObj));
     if (context->async->errCode != CF_SUCCESS) {
         context->async->errMsg = "create extension failed";
+        guard.SetErrorCode(context->async->errCode);
     }
 }
 
@@ -159,8 +162,7 @@ static void CreateCertExtsComplete(napi_env env, napi_status status, void *data)
         },
         nullptr, nullptr);
     if (status != napi_ok) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "failed to wrap obj!"));
-        LOGE("failed to wrap obj!");
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "failed to wrap obj!");
         delete napiObject;
         return;
     }
@@ -190,6 +192,7 @@ static napi_value CreateCertExtsAsyncWork(napi_env env, ExtsAsyncContext context
 
 napi_value NapiCreateCertExtension(napi_env env, napi_callback_info info)
 {
+    HistogramScopeGuard guard(API_CREATE_CERT_EXTENSION);
     ExtsAsyncContext context = NewExtsAsyncContext();
     if (context == nullptr) {
         CF_LOG_E("Failed to new create exts async context");
@@ -203,6 +206,7 @@ napi_value NapiCreateCertExtension(napi_env env, napi_callback_info info)
         return nullptr;
     }
 
+    guard.DisableScopeGuard();
     result = CreateCertExtsAsyncWork(env, context);
     if (result == nullptr) {
         CF_LOG_E("Failed to create exts object in async work");
