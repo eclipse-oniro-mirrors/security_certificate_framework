@@ -530,6 +530,7 @@ static void HcfX509CertificateImplPack(HcfX509CertificateImpl *x509CertImpl, Hcf
 CfResult HcfX509CertificateCreate(const CfEncodingBlob *inStream, HcfX509Certificate **returnObj)
 {
     if ((inStream == NULL) || (inStream->len > HCF_MAX_BUFFER_LEN) || (returnObj == NULL)) {
+        LOGE("inStream or returnObj is null, or input cert size exceeds %{public}d!", HCF_MAX_BUFFER_LEN);
         return CF_INVALID_PARAMS;
     }
     const HcfX509CertificateFuncSet *funcSet = FindAbility("X509");
@@ -557,6 +558,7 @@ CfResult HcfX509CertificateCreate(const CfEncodingBlob *inStream, HcfX509Certifi
 CfResult HcfX509CertificateGenCsr(PrivateKeyInfo *privateKey, const HcfGenCsrConf *conf, CfBlob *csrBlob)
 {
     if (privateKey == NULL || conf == NULL || csrBlob == NULL) {
+        LOGE("privateKey, conf, or csrBlob is null!");
         return CF_INVALID_PARAMS;
     }
 

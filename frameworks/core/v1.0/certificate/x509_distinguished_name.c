@@ -139,6 +139,7 @@ static CfResult GetNameUtf8(HcfX509DistinguishedName *self, CfBlob *type, CfEnco
 CfResult HcfX509DistinguishedNameCreate(const CfBlob *inStream, bool bString, HcfX509DistinguishedName **returnObj)
 {
     if ((inStream == NULL) || (returnObj == NULL)) {
+        LOGE("inStream or returnObj is null!");
         return CF_INVALID_PARAMS;
     }
     const HcfX509DistinguishedNameFuncSet *funcSet = FindAbility("X509DistinguishedName");
