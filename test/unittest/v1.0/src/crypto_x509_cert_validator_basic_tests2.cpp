@@ -165,6 +165,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_basic_ignore_crl_not_find
     HcfX509CertValidatorParams params = {};
     params.trustSystemCa = false;
     params.validateDate = true;
+    params.date = const_cast<char *>("20260801000000Z");
     HcfX509Certificate *certs[1] = { root };
     params.trustedCerts.data = certs;
     params.trustedCerts.count = 1;
@@ -215,6 +216,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_basic_ignore_ocsp_respons
     HcfX509CertValidatorParams params = {};
     params.trustSystemCa = false;
     params.validateDate = true;
+    params.date = const_cast<char *>("20260801000000Z");
     HcfX509Certificate *certs[1] = { root };
     params.trustedCerts.data = certs;
     params.trustedCerts.count = 1;
@@ -265,6 +267,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_basic_ignore_empty, TestS
     HcfX509CertValidatorParams params = {};
     params.trustSystemCa = false;
     params.validateDate = true;
+    params.date = const_cast<char *>("20260801000000Z");
     HcfX509Certificate *certs[1] = { root };
     params.trustedCerts.data = certs;
     params.trustedCerts.count = 1;
