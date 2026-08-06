@@ -300,6 +300,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_037, TestSize.Level0)
     HcfX509CertValidatorParams params = {};
     params.trustSystemCa = false;
     params.validateDate = true;  /* Enable date validation */
+    params.date = const_cast<char *>("20260801000000Z");
 
     params.trustedCerts.count = 1;
     params.trustedCerts.data = static_cast<HcfX509Certificate **>(
@@ -318,6 +319,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_037, TestSize.Level0)
     EXPECT_EQ(res, CF_ERR_CERT_NOT_YET_VALID);
 
     CfObjDestroy(cert);
+    params.date = nullptr;
     FreeValidatorParams(params);
 }
 
