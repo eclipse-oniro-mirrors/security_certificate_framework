@@ -28,6 +28,7 @@
 #include "napi_common.h"
 #include "napi_cert_utils.h"
 #include "napi_cert_crl_common.h"
+#include "cert_crl_common.h"
 
 namespace OHOS {
 namespace CertFramework {
@@ -197,6 +198,9 @@ static void FreeCmsParserCtx(napi_env env, CmsParserCtx *ctx)
         FreeCmsParserDecryptEnvelopedDataOptions(ctx->decryptEnvelopedDataOptions);
         ctx->decryptEnvelopedDataOptions = nullptr;
     }
+    CfBlobDataClearAndFree(&ctx->contentData);
+    CfBlobDataClearAndFree(&ctx->encryptedContentData);
+    FreeCertArrayData(&ctx->certs);
     CfFree(ctx);
 }
 

@@ -228,8 +228,8 @@ static CfResult CloneCertArray(const HcfX509CertificateArray *inCerts, HcfX509Ce
         return CF_SUCCESS;
     }
 
-    if (inCerts->count > MAX_LEN_OF_CERT_CRL_ARR || certs == NULL) {
-        LOGE("array count is over limit.");
+    if (inCerts->data == NULL || inCerts->count > MAX_LEN_OF_CERT_CRL_ARR || certs == NULL) {
+        LOGE("inCerts data is null or array count is over limit.");
         return CF_INVALID_PARAMS;
     }
 
@@ -261,8 +261,8 @@ static CfResult CloneCrlArray(const HcfX509CrlArray *inCrls, HcfX509CrlArray *cr
         return CF_SUCCESS;
     }
 
-    if (inCrls->count > MAX_LEN_OF_CERT_CRL_ARR || crls == NULL) {
-        LOGE("array count is over limit.");
+    if (inCrls->data == NULL || inCrls->count > MAX_LEN_OF_CERT_CRL_ARR || crls == NULL) {
+        LOGE("inCrls data is null or array count is over limit.");
         return CF_INVALID_PARAMS;
     }
 
