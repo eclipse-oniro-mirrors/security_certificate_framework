@@ -39,6 +39,7 @@ ohos_fuzztest("CfParamFuzzTest") {
   deps = [ "${framework_path}/core:certificate_framework_core" ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "c_utils:utils",
   ]
 }
