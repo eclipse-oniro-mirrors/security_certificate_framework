@@ -31,6 +31,7 @@ ohos_fuzztest("X509CertificateFuzzTest") {
   sources = [ "x509certificate_fuzzer.cpp" ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "c_utils:utils",
     "crypto_framework:crypto_framework_lib",
     "hilog:libhilog",
