@@ -322,6 +322,7 @@ static bool GetPrivateKeyFromValue(napi_env env, napi_value obj, PrivateKeyInfo 
     (*privateKey)->privateKey->encodingFormat = (valueType == napi_string) ? CF_FORMAT_PEM : CF_FORMAT_DER;
 
     if (!CopyBlobDataToPrivateKey(blob, (*privateKey)->privateKey)) {
+        CfBlobDataClearAndFree(blob);
         CfFree(blob);
         blob = nullptr;
         CfFree((*privateKey)->privateKey);
@@ -329,6 +330,7 @@ static bool GetPrivateKeyFromValue(napi_env env, napi_value obj, PrivateKeyInfo 
         return false;
     }
 
+    CfBlobDataClearAndFree(blob);
     CfFree(blob);
     blob = nullptr;
     return true;
@@ -364,8 +366,7 @@ bool GetPrivateKeyInfoFromValue(napi_env env, napi_value obj, PrivateKeyInfo **p
         return false;
     }
     if (!GetPrivateKeyPasswordFromValue(env, obj, privateKey)) {
-        CfFree(*privateKey);
-        *privateKey = nullptr;
+        FreePrivateKeyInfo(*privateKey);
         return false;
     }
     return true;
