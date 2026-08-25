@@ -57,5 +57,7 @@ ohos_shared_library("cj_cert_ffi") {
     "c_utils:utils",
   ]
 
+  version_script = "libcj_cert_ffi.map"
+
   innerapi_tags = [ "platformsdk" ]
 }
