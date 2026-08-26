@@ -67,6 +67,9 @@ taihe_shared_library("cert_framework_ani") {
     "${framework_path}/js/ani/src/ani_x509_crl.cpp",
     "${framework_path}/js/ani/src/ani_x509_crl_entry.cpp",
   ]
+
+  shlib_type = "ani"
+
   deps = [
     ":run_taihe",
     "${framework_path}/core:certificate_framework_core",
