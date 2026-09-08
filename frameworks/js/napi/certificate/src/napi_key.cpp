@@ -80,8 +80,7 @@ napi_value NapiKey::JsGetEncoded(napi_env env, napi_callback_info info)
     HcfBlob blob = { nullptr, 0 };
     HcfResult res = key->getEncoded(key, &blob);
     if (res != HCF_SUCCESS) {
-        napi_throw(env, CertGenerateBusinessError(env, res, "getEncoded failed."));
-        LOGE("getEncoded failed!");
+        NAPI_LOG_THROW(env, static_cast<CfResult>(res), "getEncoded failed.");
         return nullptr;
     }
     CfBlob tmpCfBlob = { blob.len, blob.data };

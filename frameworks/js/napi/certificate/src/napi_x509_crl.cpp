@@ -56,7 +56,7 @@ struct CfCtx {
     std::string returnClassName;
 
     HcfX509CrlEntry *crlEntry = nullptr;
-    int32_t errCode = 0;
+    CfResult errCode = CF_SUCCESS;
     const char *errMsg = nullptr;
     HcfX509Crl *crl;
     CfEncodingBlob *encoded = nullptr;
@@ -260,8 +260,7 @@ static napi_value GenerateCrlEntryArray(napi_env env, CfArray *array, std::strin
         napi_value instance = NapiX509CrlEntry::CreateX509CrlEntry(env, returnClassName);
         NapiX509CrlEntry *x509CrlEntryClass = new (std::nothrow) NapiX509CrlEntry(entry);
         if (x509CrlEntryClass == nullptr) {
-            napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to create a x509CrlEntry class"));
-            LOGE("Failed to create a x509CrlEntry class");
+            NAPI_LOG_THROW(env, CF_ERR_MALLOC, "Failed to create a x509CrlEntry class");
             CfObjDestroy(entry);
             entry = nullptr;
             return nullptr; /* the C++ objects wrapped will be automatically released by scope manager. */
@@ -275,8 +274,7 @@ static napi_value GenerateCrlEntryArray(napi_env env, CfArray *array, std::strin
             },
             nullptr, nullptr);
         if (status != napi_ok) {
-            napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "failed to wrap obj!"));
-            LOGE("failed to wrap obj!");
+            NAPI_LOG_THROW(env, CF_ERR_NAPI, "failed to wrap obj!");
             delete x509CrlEntryClass;
             return nullptr;
         }
@@ -311,8 +309,7 @@ napi_value NapiX509Crl::IsRevoked(napi_env env, napi_callback_info info)
     NapiX509Certificate *napiX509Cert = nullptr;
     napi_unwrap(env, argv[PARAM0], reinterpret_cast<void **>(&napiX509Cert));
     if (napiX509Cert == nullptr) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "napiX509Cert is null"));
-        LOGE("napiX509Cert is null!");
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "napiX509Cert is null");
         return nullptr;
     }
 
@@ -351,9 +348,8 @@ napi_value NapiX509Crl::GetEncoded(napi_env env, napi_callback_info info)
     context->crlClass = this;
 
     if (napi_create_reference(env, thisVar, 1, &context->cfRef) != napi_ok) {
-        LOGE("create reference failed!");
         FreeCryptoFwkCtx(env, context);
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Create reference failed"));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "Create reference failed");
         return nullptr;
     }
 
@@ -386,8 +382,7 @@ __attribute__((no_sanitize("cfi"))) napi_value NapiX509Crl::Verify(napi_env env,
     NapiPubKey *pubKey = nullptr;
     napi_unwrap(env, argv[PARAM0], reinterpret_cast<void **>(&pubKey));
     if (pubKey == nullptr) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "public key is null"));
-        LOGE("pubKey is null!");
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "public key is null");
         return nullptr;
     }
 
@@ -400,16 +395,14 @@ __attribute__((no_sanitize("cfi"))) napi_value NapiX509Crl::Verify(napi_env env,
     context->crlClass = this;
 
     if (napi_create_reference(env, thisVar, 1, &context->cfRef) != napi_ok) {
-        LOGE("create reference failed!");
         FreeCryptoFwkCtx(env, context);
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Create reference failed"));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "Create reference failed");
         return nullptr;
     }
 
     if (napi_create_reference(env, argv[PARAM0], 1, &context->pubKeyParamsRef) != napi_ok) {
-        LOGE("create param ref failed!");
         FreeCryptoFwkCtx(env, context);
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Create param ref failed"));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "Create param ref failed");
         return nullptr;
     }
 
@@ -448,8 +441,7 @@ napi_value NapiX509Crl::GetIssuerDN(napi_env env, napi_callback_info info)
     }
     CfResult ret = x509Crl->getIssuerName(x509Crl, blob);
     if (ret != CF_SUCCESS) {
-        napi_throw(env, CertGenerateBusinessError(env, ret, "get issuer name failed"));
-        LOGE("getIssuerDN failed!");
+        NAPI_LOG_THROW(env, ret, "get issuer name failed");
         CfFree(blob);
         blob = nullptr;
         return nullptr;
@@ -467,8 +459,7 @@ napi_value NapiX509Crl::GetIssuerDNEx(napi_env env, napi_callback_info info, CfE
     CfBlob blob = { 0, nullptr };
     CfResult ret = x509Crl->getIssuerNameEx(x509Crl, encodingType, &blob);
     if (ret != CF_SUCCESS) {
-        napi_throw(env, CertGenerateBusinessError(env, ret, "getIssuerNameEx failed!"));
-        LOGE("GetIssuerDNEx failed!");
+        NAPI_LOG_THROW(env, ret, "getIssuerNameEx failed!");
         return nullptr;
     }
     napi_value returnValue = nullptr;
@@ -487,8 +478,7 @@ napi_value NapiX509Crl::GetThisUpdate(napi_env env, napi_callback_info info)
     }
     CfResult ret = x509Crl->getLastUpdate(x509Crl, blob);
     if (ret != CF_SUCCESS) {
-        napi_throw(env, CertGenerateBusinessError(env, ret, "get last update failed"));
-        LOGE("getLastUpdate failed!");
+        NAPI_LOG_THROW(env, ret, "get last update failed");
         CfFree(blob);
         blob = nullptr;
         return nullptr;
@@ -512,8 +502,7 @@ napi_value NapiX509Crl::GetNextUpdate(napi_env env, napi_callback_info info)
     }
     CfResult ret = x509Crl->getNextUpdate(x509Crl, blob);
     if (ret != CF_SUCCESS) {
-        napi_throw(env, CertGenerateBusinessError(env, ret, "get next update failed"));
-        LOGE("getNextUpdate failed!");
+        NAPI_LOG_THROW(env, ret, "get next update failed");
         CfFree(blob);
         blob = nullptr;
         return nullptr;
@@ -547,16 +536,14 @@ static bool GetCrlSerialNumberFromNapiValue(napi_env env, napi_value arg, CfBlob
     }
 
     if (memcpy_s(serialBuf, sizeof(serialBuf), &tmpData, sizeof(int64_t)) != EOK) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_COPY, "copy serialNum failed"));
-        LOGE("copy serialNum failed");
+        NAPI_LOG_THROW(env, CF_ERR_COPY, "copy serialNum failed");
         return false;
     }
 
     outBlob.size = serialLen;
     outBlob.data = static_cast<uint8_t *>(CfMalloc(serialLen, 0));
     if (outBlob.data == nullptr) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc serialNum failed"));
-        LOGE("malloc blob data failed!");
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "malloc serialNum failed");
         return false;
     }
     // reverse data: because BN_bin2bn() converts the positive integer in big-endian form of length len into a BIGNUM
@@ -571,8 +558,7 @@ static bool WrapX509CrlEntryInstance(napi_env env, napi_value instance, HcfX509C
 {
     NapiX509CrlEntry *x509CrlEntryClass = new (std::nothrow) NapiX509CrlEntry(crlEntry);
     if (!x509CrlEntryClass) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to create a x509CrlEntry class"));
-        LOGE("Failed to create a x509CrlEntry class");
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "Failed to create a x509CrlEntry class");
         CfObjDestroy(crlEntry);
         crlEntry = nullptr;
         return false;
@@ -584,8 +570,7 @@ static bool WrapX509CrlEntryInstance(napi_env env, napi_value instance, HcfX509C
         },
         nullptr, nullptr);
     if (status != napi_ok) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "failed to wrap obj!"));
-        LOGE("failed to wrap obj!");
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "failed to wrap obj!");
         delete x509CrlEntryClass;
         return false;
     }
@@ -619,8 +604,7 @@ napi_value NapiX509Crl::GetRevokedCertificate(napi_env env, napi_callback_info i
     CfResult ret = x509Crl->getRevokedCert(x509Crl, &serialNumber, &crlEntry);
     CF_FREE_PTR(serialNumber.data);
     if (ret != CF_SUCCESS) {
-        napi_throw(env, CertGenerateBusinessError(env, ret, "get revoked cert failed!"));
-        LOGE("get revoked cert failed!");
+        NAPI_LOG_THROW(env, ret, "get revoked cert failed!");
         return nullptr;
     }
 
@@ -645,8 +629,7 @@ napi_value NapiX509Crl::GetRevokedCertificateWithCert(
     NapiX509Certificate *napiX509Cert = nullptr;
     napi_unwrap(env, argv[PARAM0], reinterpret_cast<void **>(&napiX509Cert));
     if (napiX509Cert == nullptr) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "napiX509Cert is null"));
-        LOGE("napiX509Cert is null!");
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "napiX509Cert is null");
         return nullptr;
     }
 
@@ -655,16 +638,14 @@ napi_value NapiX509Crl::GetRevokedCertificateWithCert(
     HcfX509CrlEntry *crlEntry = nullptr;
     CfResult ret = x509Crl->getRevokedCertWithCert(x509Crl, certificate, &crlEntry);
     if (ret != CF_SUCCESS) {
-        napi_throw(env, CertGenerateBusinessError(env, ret, "get revoked cert with cert failed!"));
-        LOGE("get revoked cert with cert failed!");
+        NAPI_LOG_THROW(env, ret, "get revoked cert with cert failed!");
         return nullptr;
     }
 
     napi_value instance = NapiX509CrlEntry::CreateX509CrlEntry(env, returnClassName);
     NapiX509CrlEntry *x509CrlEntryClass = new (std::nothrow) NapiX509CrlEntry(crlEntry);
     if (x509CrlEntryClass == nullptr) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "Failed to create a x509CrlEntry class"));
-        LOGE("Failed to create a x509CrlEntry class");
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "Failed to create a x509CrlEntry class");
         CfObjDestroy(crlEntry);
         crlEntry = nullptr;
         return nullptr;
@@ -678,8 +659,7 @@ napi_value NapiX509Crl::GetRevokedCertificateWithCert(
         },
         nullptr, nullptr);
     if (status != napi_ok) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "failed to wrap obj!"));
-        LOGE("failed to wrap obj!");
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "failed to wrap obj!");
         delete x509CrlEntryClass;
         return nullptr;
     }
@@ -704,9 +684,8 @@ napi_value NapiX509Crl::GetRevokedCertificates(napi_env env, napi_callback_info 
     context->crlClass = this;
 
     if (napi_create_reference(env, thisVar, 1, &context->cfRef) != napi_ok) {
-        LOGE("create reference failed!");
         FreeCryptoFwkCtx(env, context);
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Create reference failed"));
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "Create reference failed");
         return nullptr;
     }
 
@@ -739,8 +718,7 @@ napi_value NapiX509Crl::GetTBSCertList(napi_env env, napi_callback_info info)
     }
     CfResult result = x509Crl->getTbsInfo(x509Crl, blob);
     if (result != CF_SUCCESS) {
-        napi_throw(env, CertGenerateBusinessError(env, result, "get tbs info failed"));
-        LOGE("get tbs info failed!");
+        NAPI_LOG_THROW(env, result, "get tbs info failed");
         CfFree(blob);
         blob = nullptr;
         return nullptr;
@@ -758,8 +736,7 @@ napi_value NapiX509Crl::ToString(napi_env env, napi_callback_info info)
     CfBlob blob = { 0, nullptr };
     CfResult result = x509Crl->toString(x509Crl, &blob);
     if (result != CF_SUCCESS) {
-        LOGE("toString failed!");
-        napi_throw(env, CertGenerateBusinessError(env, result, "toString failed"));
+        NAPI_LOG_THROW(env, result, "toString failed");
         return nullptr;
     }
     napi_value returnBlob = nullptr;
@@ -774,8 +751,7 @@ napi_value NapiX509Crl::ToStringEx(napi_env env, napi_callback_info info, CfEnco
     CfBlob blob = { 0, nullptr };
     CfResult result = x509Crl->toStringEx(x509Crl, encodingType, &blob);
     if (result != CF_SUCCESS) {
-        napi_throw(env, CertGenerateBusinessError(env, result, "ToStringEx failed"));
-        LOGE("ToStringEx failed!");
+        NAPI_LOG_THROW(env, result, "ToStringEx failed");
         return nullptr;
     }
     napi_value returnBlob = nullptr;
@@ -790,8 +766,7 @@ napi_value NapiX509Crl::HashCode(napi_env env, napi_callback_info info)
     CfBlob blob = { 0, nullptr };
     CfResult result = x509Crl->hashCode(x509Crl, &blob);
     if (result != CF_SUCCESS) {
-        LOGE("hashCode failed!");
-        napi_throw(env, CertGenerateBusinessError(env, result, "hashCode failed"));
+        NAPI_LOG_THROW(env, result, "hashCode failed");
         return nullptr;
     }
     napi_value returnBlob = ConvertBlobToUint8ArrNapiValue(env, &blob);
@@ -832,8 +807,7 @@ static napi_value BuildCertExtsObject(napi_env env, CfEncodingBlob *encodingBlob
             return;
         }, nullptr, nullptr);
     if (status != napi_ok) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "failed to wrap obj!"));
-        LOGE("failed to wrap obj!");
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "failed to wrap obj!");
         delete napiObject;
         return nullptr;
     }
@@ -846,8 +820,7 @@ napi_value NapiX509Crl::GetExtensionsObject(napi_env env, napi_callback_info inf
     CfBlob blob = { 0, nullptr };
     CfResult result = x509Crl->getExtensionsObject(x509Crl, &blob);
     if (result != CF_SUCCESS) {
-        LOGE("get Extensions Object failed!");
-        napi_throw(env, CertGenerateBusinessError(env, result, "get Extensions Object failed"));
+        NAPI_LOG_THROW(env, result, "get Extensions Object failed");
         return nullptr;
     }
 
@@ -859,11 +832,10 @@ napi_value NapiX509Crl::GetExtensionsObject(napi_env env, napi_callback_info inf
         return nullptr;
     }
     if (!ConvertBlobToEncodingBlob(blob, encodingBlob)) {
-        LOGE("ConvertBlobToEncodingBlob failed!");
         CfBlobDataFree(&blob);
         CfFree(encodingBlob);
         encodingBlob = nullptr;
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_CRYPTO_OPERATION, "ConvertBlobToEncodingBlob failed"));
+        NAPI_LOG_THROW(env, CF_ERR_CRYPTO_OPERATION, "ConvertBlobToEncodingBlob failed");
         return nullptr;
     }
     CfBlobDataFree(&blob);
@@ -873,8 +845,7 @@ napi_value NapiX509Crl::GetExtensionsObject(napi_env env, napi_callback_info inf
     CfFree(encodingBlob);
     encodingBlob = nullptr;
     if (object == nullptr) {
-        LOGE("BuildCertExtsObject failed!");
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "BuildCertExtsObject failed"));
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "BuildCertExtsObject failed");
         return nullptr;
     }
 
@@ -887,25 +858,22 @@ napi_value NapiX509Crl::GetIssuerX500DistinguishedName(napi_env env, napi_callba
     CfBlob blob = { 0, nullptr };
     CfResult ret = x509Crl->getIssuerNameDer(x509Crl, &blob);
     if (ret != CF_SUCCESS) {
-        LOGE("getIssuerNameDer failed!");
-        napi_throw(env, CertGenerateBusinessError(env, ret, "get issuer name der failed"));
+        NAPI_LOG_THROW(env, ret, "get issuer name der failed");
         return nullptr;
     }
     HcfX509DistinguishedName *x509NameUtf8 = nullptr;
     ret = HcfX509DistinguishedNameCreate(&blob, false, &x509NameUtf8);
     CfBlobDataFree(&blob);
     if (ret != CF_SUCCESS || x509NameUtf8 == nullptr) {
-        LOGE("HcfX509DistinguishedNameCreate failed");
-        napi_throw(env, CertGenerateBusinessError(env, ret, "HcfX509DistinguishedNameCreate failed"));
+        NAPI_LOG_THROW(env, ret, "HcfX509DistinguishedNameCreate failed");
         return nullptr;
     }
 
     ret = x509Crl->getIssuerName(x509Crl, &blob);
     if (ret != CF_SUCCESS) {
-        LOGE("getIssuerName failed!");
         CfObjDestroy(x509NameUtf8);
         x509NameUtf8 = nullptr;
-        napi_throw(env, CertGenerateBusinessError(env, ret, "get issuer name failed"));
+        NAPI_LOG_THROW(env, ret, "get issuer name failed");
         return nullptr;
     }
     HcfX509DistinguishedName *x509Name = nullptr;
@@ -929,8 +897,7 @@ napi_value NapiX509Crl::GetSignature(napi_env env, napi_callback_info info)
     }
     CfResult result = x509Crl->getSignature(x509Crl, blob);
     if (result != CF_SUCCESS) {
-        napi_throw(env, CertGenerateBusinessError(env, result, "get signature failed"));
-        LOGE("getSignature failed!");
+        NAPI_LOG_THROW(env, result, "get signature failed");
         CfFree(blob);
         blob = nullptr;
         return nullptr;
@@ -952,8 +919,7 @@ napi_value NapiX509Crl::GetSigAlgName(napi_env env, napi_callback_info info)
     }
     CfResult ret = x509Crl->getSignatureAlgName(x509Crl, blob);
     if (ret != CF_SUCCESS) {
-        napi_throw(env, CertGenerateBusinessError(env, ret, "get signature alg name failed"));
-        LOGE("getSigAlgName failed!");
+        NAPI_LOG_THROW(env, ret, "get signature alg name failed");
         CfFree(blob);
         blob = nullptr;
         return nullptr;
@@ -977,8 +943,7 @@ napi_value NapiX509Crl::GetSigAlgOID(napi_env env, napi_callback_info info)
     }
     CfResult ret = x509Crl->getSignatureAlgOid(x509Crl, blob);
     if (ret != CF_SUCCESS) {
-        napi_throw(env, CertGenerateBusinessError(env, ret, "get signature alg oid failed"));
-        LOGE("getSigAlgOID failed!");
+        NAPI_LOG_THROW(env, ret, "get signature alg oid failed");
         CfFree(blob);
         blob = nullptr;
         return nullptr;
@@ -1002,8 +967,7 @@ napi_value NapiX509Crl::GetSigAlgParams(napi_env env, napi_callback_info info)
     }
     CfResult result = x509Crl->getSignatureAlgParams(x509Crl, blob);
     if (result != CF_SUCCESS) {
-        napi_throw(env, CertGenerateBusinessError(env, result, "get signature alg params failed"));
-        LOGE("getSigAlgParams failed!");
+        NAPI_LOG_THROW(env, result, "get signature alg params failed");
         CfFree(blob);
         blob = nullptr;
         return nullptr;
@@ -1025,8 +989,7 @@ napi_value NapiX509Crl::GetExtensions(napi_env env, napi_callback_info info)
     }
     CfResult result = x509Crl->getExtensions(x509Crl, blob);
     if (result != CF_SUCCESS) {
-        napi_throw(env, CertGenerateBusinessError(env, result, "get extensions failed"));
-        LOGE("getExtensions failed!");
+        NAPI_LOG_THROW(env, result, "get extensions failed");
         CfFree(blob);
         blob = nullptr;
         return nullptr;
@@ -1045,20 +1008,17 @@ napi_value NapiX509Crl::Match(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr);
     if (!CertCheckArgsCount(env, argc, ARGS_SIZE_ONE, false)) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "CertCheckArgsCount failed"));
-        LOGE("CertCheckArgsCount failed!");
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "CertCheckArgsCount failed");
         return nullptr;
     }
 
     HcfX509CrlMatchParams *param = static_cast<HcfX509CrlMatchParams *>(CfMalloc(sizeof(HcfX509CrlMatchParams), 0));
     if (param == nullptr) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_MALLOC, "malloc matchParams failed"));
-        LOGE("malloc matchParams failed!");
+        NAPI_LOG_THROW(env, CF_ERR_MALLOC, "malloc matchParams failed");
         return nullptr;
     }
     if (!BuildX509CrlMatchParams(env, argv[PARAM0], param)) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "BuildX509CrlMatchParams failed"));
-        LOGE("BuildX509CrlMatchParams failed!");
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "BuildX509CrlMatchParams failed");
         FreeX509CrlMatchParams(param);
         return nullptr;
     }
@@ -1066,8 +1026,7 @@ napi_value NapiX509Crl::Match(napi_env env, napi_callback_info info)
     bool boolFlag = false;
     CfResult result = MatchProc(param, boolFlag);
     if (result != CF_SUCCESS) {
-        napi_throw(env, CertGenerateBusinessError(env, result, "match failed"));
-        LOGE("call match failed!");
+        NAPI_LOG_THROW(env, result, "match failed");
         FreeX509CrlMatchParams(param);
         return nullptr;
     }
@@ -1155,15 +1114,13 @@ static napi_value NapiGetIssuerDN(napi_env env, napi_callback_info info)
     napi_value argv[ARGS_SIZE_ONE] = { nullptr };
     napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr);
     if (argc != 0 && argc != ARGS_SIZE_ONE) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "wrong argument num!"));
-        LOGE("wrong argument num!");
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "wrong argument num!");
         return nullptr;
     }
     NapiX509Crl *x509Crl = nullptr;
     napi_unwrap(env, thisVar, reinterpret_cast<void **>(&x509Crl));
     if (x509Crl == nullptr) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "x509Crl is nullptr!"));
-        LOGE("x509Crl is nullptr!");
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "x509Crl is nullptr!");
         return nullptr;
     }
 
@@ -1171,14 +1128,12 @@ static napi_value NapiGetIssuerDN(napi_env env, napi_callback_info info)
         napi_valuetype valueType;
         napi_typeof(env, argv[PARAM0], &valueType);
         if ((valueType != napi_number)) {
-            napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "wrong argument type!"));
-            LOGE("wrong argument type!");
+            NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "wrong argument type!");
             return nullptr;
         }
         CfEncodingType encodingType;
         if (napi_get_value_uint32(env, argv[PARAM0], reinterpret_cast<uint32_t *>(&encodingType)) != napi_ok) {
-            napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "napi_get_value_uint32 failed!"));
-            LOGE("napi_get_value_uint32 failed!");
+            NAPI_LOG_THROW(env, CF_ERR_NAPI, "napi_get_value_uint32 failed!");
             return nullptr;
         }
         return x509Crl->GetIssuerDNEx(env, info, encodingType);
@@ -1323,29 +1278,25 @@ static napi_value NapiToString(napi_env env, napi_callback_info info)
     napi_value argv[ARGS_SIZE_ONE] = { nullptr };
     napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr);
     if (argc != 0 && argc != ARGS_SIZE_ONE) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "wrong argument num!"));
-        LOGE("wrong argument num!");
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "wrong argument num!");
         return nullptr;
     }
     NapiX509Crl *x509Crl = nullptr;
     napi_unwrap(env, thisVar, reinterpret_cast<void **>(&x509Crl));
     if (x509Crl == nullptr) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "x509Crl is nullptr!"));
-        LOGE("x509Crl is nullptr!");
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "x509Crl is nullptr!");
         return nullptr;
     }
     if (argc == ARGS_SIZE_ONE) {
         napi_valuetype valueType;
         napi_typeof(env, argv[PARAM0], &valueType);
         if ((valueType != napi_number)) {
-            napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "wrong argument type!"));
-            LOGE("wrong argument type!");
+            NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "wrong argument type!");
             return nullptr;
         }
         CfEncodingType encodingType;
         if (napi_get_value_uint32(env, argv[PARAM0], reinterpret_cast<uint32_t *>(&encodingType)) != napi_ok) {
-            napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "napi_get_value_uint32 failed!"));
-            LOGE("napi_get_value_uint32 failed!");
+            NAPI_LOG_THROW(env, CF_ERR_NAPI, "napi_get_value_uint32 failed!");
             return nullptr;
         }
         return x509Crl->ToStringEx(env, info, encodingType);
@@ -1473,9 +1424,13 @@ static napi_value NapiMatch(napi_env env, napi_callback_info info)
 void NapiX509Crl::CreateX509CrlExecute(napi_env env, void *data)
 {
     CfCtx *context = static_cast<CfCtx *>(data);
+    CfJsApiId apiId =
+        (context->createX509CrlName == "createX509Crl") ? API_CREATE_X509_CRL_DEPRECATED : API_CREATE_X509_CRL;
+    HistogramScopeGuard guard(apiId);
     context->errCode = HcfX509CrlCreate(context->encodingBlob, &context->crl);
     if (context->errCode != CF_SUCCESS) {
         context->errMsg = "create X509Crl failed";
+        guard.SetErrorCode(context->errCode);
     }
 }
 
@@ -1509,8 +1464,7 @@ void NapiX509Crl::CreateX509CrlComplete(napi_env env, napi_status status, void *
         },
         nullptr, nullptr);
     if (status != napi_ok) {
-        napi_throw(env, CertGenerateBusinessError(env, CF_ERR_NAPI, "failed to wrap obj!"));
-        LOGE("failed to wrap obj!");
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "failed to wrap obj!");
         delete x509CrlClass;
         return;
     }
@@ -1520,6 +1474,8 @@ void NapiX509Crl::CreateX509CrlComplete(napi_env env, napi_status status, void *
 
 napi_value NapiX509Crl::NapiCreateX509CrlBase(napi_env env, napi_callback_info info, std::string createName)
 {
+    CfJsApiId apiId = (createName == "createX509Crl") ? API_CREATE_X509_CRL_DEPRECATED : API_CREATE_X509_CRL;
+    HistogramScopeGuard guard(apiId);
     size_t argc = ARGS_SIZE_TWO;
     napi_value argv[ARGS_SIZE_TWO] = { nullptr };
     napi_value thisVar = nullptr;
@@ -1540,9 +1496,9 @@ napi_value NapiX509Crl::NapiCreateX509CrlBase(napi_env env, napi_callback_info i
     }
 
     if (napi_create_reference(env, thisVar, 1, &context->cfRef) != napi_ok) {
-        LOGE("create reference failed!");
         FreeCryptoFwkCtx(env, context);
-        napi_throw(env, CertGenerateBusinessError(env, CF_INVALID_PARAMS, "Create reference failed"));
+        guard.SetErrorCode(CF_INVALID_PARAMS);
+        NAPI_LOG_THROW(env, CF_INVALID_PARAMS, "Create reference failed");
         return nullptr;
     }
 
@@ -1553,6 +1509,7 @@ napi_value NapiX509Crl::NapiCreateX509CrlBase(napi_env env, napi_callback_info i
 
     context->createX509CrlName = createName;
 
+    guard.DisableScopeGuard();
     napi_create_async_work(env, nullptr, CertGetResourceName(env, createName.c_str()), CreateX509CrlExecute,
         CreateX509CrlComplete, static_cast<void *>(context), &context->asyncWork);
 

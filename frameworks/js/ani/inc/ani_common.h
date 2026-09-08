@@ -33,6 +33,7 @@
 
 #include "x509_certificate.h"
 #include "cert_cms_generator.h"
+#include "js_api_metrics.h"
 
 namespace ANI::CertFramework {
 using namespace taihe;
