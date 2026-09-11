@@ -6,6 +6,12 @@
 
 ## 项目定位
 
+### 大文件读取策略
+- 适配层 .c 文件通常超过 1000 行，不要全文读取
+- 先用 grep 搜索关键函数名（如 Validate、VerifyCertChain、ExecuteSingleVerification）定位行号
+- 再按行号范围局部读取（offset + limit）
+- 词汇型路由表已指明文件路径，到达后用搜索定位函数而非全文扫描
+
 本仓库对应 OpenHarmony `base/security/certificate_framework`。证书算法库框架屏蔽了第三方证书算法库（OpenSSL）的实现差异，对外提供统一的证书、证书扩展域段、证书吊销列表解析及证书链校验等能力。优先按这些目录定位问题：
 
 - `frameworks/core/`：框架核心实现层，统一对象管理、参数解析、能力注册。
@@ -25,7 +31,9 @@
 
 ### 按任务类型定位代码
 
-| 任务类型　　　　　　　　　　　　　　 | 先看　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　 |
+> **修改前强制检查**：通过本表定位到目标文件后，修改代码前必须先阅读"公共 API 约束"章节，确认修改不会导致已有 API 的行为语义变更（如新增校验导致原先可接受的输入被拒绝）。
+
+| 任务类型　　　　　　　　　　　　　　 | 先看　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　 |
 | --------------------------------------| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | 新增/修改证书解析　　　　　　　　　　| `frameworks/core/v1.0/certificate/x509_certificate.c`、`frameworks/adapter/v1.0/src/x509_certificate_openssl.c`　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　|
 | 新增/修改证书扩展域段　　　　　　　　| `frameworks/core/extension/`、`frameworks/adapter/v1.0/src/` 中 extension 相关　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　 |
@@ -51,26 +59,106 @@
 
 本仓库无目录级别的嵌套指引。所有任务级指导通过本文件和接口头文件中的注释提供。
 
+### 大文件读取策略
+
+适配层 `.c` 文件通常超过 1000 行，全文读取会消耗大量 Token。定位到目标文件后：
+- 先用 grep 搜索关键函数名（如 `Validate`、`VerifyCertChain`、`InitializeRequest`、`ExecuteSingleVerification`）定位行号
+- 再按行号范围局部读取（offset + limit）
+- 词汇型路由表已指明文件路径，到达后用搜索定位函数而非全文扫描
+
 ## 知识索引
 
 ### 词汇型路由
 
-当任务描述、issue、日志、API 或文件中出现以下术语时，先读对应文件再动手：
+当任务描述、issue、日志、API 或文件中出现以下术语时，按所属层级先读对应文件再动手。"—"表示该术语在该层无独立文件。
 
-| 领域术语 | 先读文件 |
-| --- | --- |
-| X.509 证书（解析/校验/字段获取） | `interfaces/inner_api/certificate/x509_certificate.h`、`certificate.h`、`frameworks/core/v1.0/certificate/x509_certificate.c`、`frameworks/adapter/v1.0/src/x509_certificate_openssl.c` |
-| 证书扩展域段（Extension/OID） | `interfaces/inner_api/include/cf_type.h`（`CfExtensionOidType`/`CfExtensionEntryType`）、`frameworks/core/extension/`、`frameworks/adapter/v1.0/inc/x509_certificate_openssl.h` |
-| 证书吊销列表（CRL） | `interfaces/inner_api/certificate/x509_crl.h`、`x509_crl_entry.h`、`frameworks/core/v1.0/certificate/x509_crl.c`、`frameworks/adapter/v1.0/src/x509_crl_openssl.c` |
-| 证书链校验（CertChain/Validator） | `interfaces/inner_api/certificate/x509_cert_chain.h`、`cert_chain_validator.h`、`x509_cert_chain_validate_params.h`、`frameworks/core/v1.0/certificate/x509_cert_chain.c`、`cert_chain_validator.c`、`frameworks/adapter/v1.0/src/x509_cert_chain_openssl.c` |
-| 证书 DN（Distinguished Name） | `interfaces/inner_api/certificate/x509_distinguished_name.h`、`frameworks/core/v1.0/certificate/x509_distinguished_name.c`、`frameworks/adapter/v1.0/src/x509_distinguished_name_openssl.c` |
-| CMS（Cryptographic Message Syntax） | `interfaces/inner_api/certificate/cert_cms_generator.h`、`frameworks/core/v1.0/certificate/cert_cms_generator.c`、`frameworks/adapter/v1.0/src/x509_cert_cms_generator_openssl.c` |
-| CSR（Certificate Signing Request） | `interfaces/inner_api/certificate/x509_csr.h`、`frameworks/adapter/v1.0/src/x509_csr_openssl.c` |
-| 设备证书校验（Attestation） | `interfaces/inner_api/attestation/hm_attestation_cert_verify.h`、`hm_attestation_cert_ext_type.h`、`frameworks/core/attestation/src/hm_attestation_cert_verify.c`、`frameworks/adapter/attestation/` |
-| 证书匹配参数（CertMatchParameters） | `interfaces/inner_api/certificate/x509_cert_match_parameters.h`、`x509_crl_match_parameters.h` |
-| 信任锚（TrustAnchor） | `interfaces/inner_api/certificate/x509_trust_anchor.h` |
-| CfObject/CfObjectBase（对象模型） | `interfaces/inner_api/include/cf_api.h`、`interfaces/inner_api/common/cf_object_base.h`、`frameworks/core/life/cf_api.c` |
-| CfParamSet（参数集） | `interfaces/inner_api/include/cf_param.h`、`cf_type.h`、`frameworks/core/param/src/cf_param.c`、`cf_param_parse.c` |
+词汇型路由使用原则：
+- 仅当术语是题目的核心分析对象时才读取对应文件
+- 参数结构体中引用的支撑类型（CfBlob/CfResult/CfObjectBase）在上下文中内联理解
+- 不要对参数字段类型做连锁式词汇查询
+
+#### JS/ANI 层
+
+JS 绑定层包含 NAPI（`frameworks/js/napi/certificate/`）、ANI（`frameworks/js/ani/`）、Cangjie FFI（`frameworks/cj/`）三种封装。ANI 以 IDL（`frameworks/js/ani/idl/*.taihe`）为接口定义唯一入口，生成代码不可手改。
+
+| 领域术语 | NAPI（`frameworks/js/napi/certificate/`） | ANI（`frameworks/js/ani/`） | CJ（`frameworks/cj/`） |
+| --- | --- | --- | --- |
+| X.509 证书（解析/校验/字段获取） | `src/napi_x509_certificate.cpp`、`inc/napi_x509_certificate.h` | `src/ani_x509_cert.cpp`、`inc/ani_x509_cert.h` | `src/cj_x509_certificate.cpp`、`inc/cj_x509_certificate.h` |
+| 证书扩展域段（Extension/OID） | `src/napi_cert_extension.cpp`、`inc/napi_cert_extension.h` | `src/ani_cert_extension.cpp`、`inc/ani_cert_extension.h` | — |
+| 证书吊销列表（CRL） | `src/napi_x509_crl.cpp`、`inc/napi_x509_crl.h`、`src/napi_x509_crl_entry.cpp`、`inc/napi_x509_crl_entry.h` | `src/ani_x509_crl.cpp`、`inc/ani_x509_crl.h`、`src/ani_x509_crl_entry.cpp`、`inc/ani_x509_crl_entry.h` | `src/cj_x509_crl.cpp`、`inc/cj_x509_crl.h`、`src/cj_x509_crl_entry.cpp`、`inc/cj_x509_crl_entry.h` |
+| CRL 集合 | `src/napi_cert_crl_collection.cpp`、`inc/napi_cert_crl_collection.h` | `src/ani_cert_crl_collection.cpp`、`inc/ani_cert_crl_collection.h` | `src/cj_cert_crl_collection.cpp`、`inc/cj_cert_crl_collection.h` |
+| 证书链校验（CertChain/Validator） | `src/napi_x509_cert_chain.cpp`、`inc/napi_x509_cert_chain.h`、`src/napi_cert_chain_validator.cpp`、`inc/napi_cert_chain_validator.h`、`src/napi_x509_cert_chain_validate_params.cpp`、`inc/napi_x509_cert_chain_validate_params.h`、`src/napi_x509_cert_chain_validate_result.cpp`、`inc/napi_x509_cert_chain_validate_result.h` | `src/ani_x509_cert_chain.cpp`、`inc/ani_x509_cert_chain.h`、`src/ani_cert_chain_validator.cpp`、`inc/ani_cert_chain_validator.h`、`src/ani_x509_cert_chain_validate_result.cpp`、`inc/ani_x509_cert_chain_validate_result.h` | `src/cj_x509_certchain.cpp`、`inc/cj_x509_certchain.h`、`src/cj_certchain_validator.cpp`、`inc/cj_certchain_validator.h` |
+| 证书 DN（Distinguished Name） | `src/napi_x509_distinguished_name.cpp`、`inc/napi_x509_distinguished_name.h` | `src/ani_x500_distinguished_name.cpp`、`inc/ani_x500_distinguished_name.h` | `src/cj_x500_distinguished_name.cpp`、`inc/cj_x500_distinguished_name.h` |
+| CMS（Cryptographic Message Syntax） | `src/napi_cert_cms_generator.cpp`、`inc/napi_cert_cms_generator.h` | `src/ani_cert_cms_generator.cpp`、`inc/ani_cert_cms_generator.h` | — |
+| CSR（Certificate Signing Request） | — | — | — |
+| 设备证书校验（Attestation） | — | — | — |
+| 证书匹配参数（CertMatchParameters） | `src/napi_x509_cert_match_parameters.cpp`、`inc/napi_x509_cert_match_parameters.h`、`src/napi_x509_crl_match_parameters.cpp`、`inc/napi_x509_crl_match_parameters.h` | `src/ani_parameters.cpp`、`inc/ani_parameters.h` | — |
+| 信任锚（TrustAnchor） | `src/napi_x509_trust_anchor.cpp`、`inc/napi_x509_trust_anchor.h` | `src/ani_parameters.cpp`、`inc/ani_parameters.h` | — |
+| CfObject/CfObjectBase（对象模型） | `src/napi_object.cpp`、`inc/napi_object.h`、`src/napi_certificate_init.cpp` | `src/ani_object.cpp`、`inc/ani_object.h` | `src/cj_cf_object.cpp`、`inc/cj_cf_object.h` |
+| CfParamSet（参数集） | `src/napi_common.cpp`、`inc/napi_common.h`、`src/napi_cert_utils.cpp`、`inc/napi_cert_utils.h` | `src/ani_common.cpp`、`inc/ani_common.h` | `src/cj_cert_common.cpp`、`inc/cj_cert_common.h` |
+| 公钥（PubKey） | `src/napi_pub_key.cpp`、`inc/napi_pub_key.h`、`src/napi_key.cpp`、`inc/napi_key.h` | `src/ani_pub_key.cpp`、`inc/ani_pub_key.h` | — |
+
+#### inner c 接口
+
+inner c 接口头文件位于 `interfaces/inner_api/`，为框架层的对外接口，JS 接口均调用 inner c 接口，OpenHarmony 内部模块也可能调用。
+
+| 领域术语　　　　　　　　　　　　　　| 头文件（`interfaces/inner_api/`）　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　 |
+| -------------------------------------| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| X.509 证书（解析/校验/字段获取）　　| `certificate/x509_certificate.h`、`certificate/certificate.h`　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　 |
+| 证书扩展域段（Extension/OID）　　　 | `include/cf_type.h`（`CfExtensionOidType`/`CfExtensionEntryType`）　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　|
+| 证书吊销列表（CRL）　　　　　　　　 | `certificate/x509_crl.h`、`certificate/x509_crl_entry.h`、`certificate/crl.h`、`certificate/cert_crl_common.h`　　　　　　　　　　　　　　　　　　　　　　　　　　　　　|
+| 证书和CRL 集合　　　　　　　　　　　| `certificate/cert_crl_collection.h`　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　 |
+| 证书链校验（CertChain/Validator）　 | `certificate/x509_cert_chain.h`、`certificate/cert_chain_validator.h`、`certificate/x509_cert_chain_validate_params.h`、`certificate/x509_cert_chain_validate_result.h` |
+| 证书 DN（Distinguished Name）　　　 | `certificate/x509_distinguished_name.h`　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　 |
+| CMS（Cryptographic Message Syntax） | `certificate/cert_cms_generator.h`　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　|
+| CSR（Certificate Signing Request）　| `certificate/x509_csr.h`　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　|
+| 设备证书校验（Attestation）　　　　 | `attestation/hm_attestation_cert_verify.h`、`attestation/hm_attestation_cert_ext_type.h`　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　|
+| 证书匹配参数（CertMatchParameters） | `certificate/x509_cert_match_parameters.h`、`certificate/x509_crl_match_parameters.h`　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　 |
+| 信任锚（TrustAnchor）　　　　　　　 | `certificate/x509_trust_anchor.h`　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　 |
+| CfObject/CfObjectBase（对象模型）　 | `include/cf_api.h`、`common/cf_object_base.h`、`common/cf_blob.h`、`common/cf_result.h`　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　 |
+| CfParamSet（参数集）　　　　　　　　| `include/cf_param.h`、`include/cf_type.h`　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　 |
+
+#### 框架层
+
+框架核心实现层位于 `frameworks/core/`，统一对象管理、参数解析、能力注册，通过 SPI（`frameworks/core/v1.0/spi/`）与适配层解耦。
+
+| 领域术语　　　　　　　　　　　　　　| 文件（`frameworks/core/`）　　　　　　　　　　　　　　　　　　　　　　　　　　　| SPI 定义（`frameworks/core/v1.0/spi/`）　　　　　　　 |
+| -------------------------------------| ---------------------------------------------------------------------------------| -------------------------------------------------------|
+| X.509 证书（解析/校验/字段获取）　　| `v1.0/certificate/x509_certificate.c`　　　　　　　　　　　　　　　　　　　　　 | `x509_certificate_spi.h`　　　　　　　　　　　　　　　|
+| 证书扩展域段（Extension/OID）　　　 | `extension/`　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　| —　　　　　　　　　　　　　　　　　　　　　　　　　　 |
+| 证书吊销列表（CRL）　　　　　　　　 | `v1.0/certificate/x509_crl.c`、`v1.0/certificate/cert_crl_common.c`　　　　　　 | `x509_crl_spi.h`　　　　　　　　　　　　　　　　　　　|
+| 证书和CRL 集合　　　　　　　　　　　| `v1.0/certificate/cert_crl_collection.c`　　　　　　　　　　　　　　　　　　　　| —　　　　　　　　　　　　　　　　　　　　　　　　　　 |
+| 证书链校验（CertChain/Validator）　 | `v1.0/certificate/x509_cert_chain.c`、`v1.0/certificate/cert_chain_validator.c` | `x509_cert_chain_spi.h`、`cert_chain_validator_spi.h` |
+| 证书 DN（Distinguished Name）　　　 | `v1.0/certificate/x509_distinguished_name.c`　　　　　　　　　　　　　　　　　　| `x509_distinguished_name_spi.h`　　　　　　　　　　　 |
+| CMS（Cryptographic Message Syntax） | `v1.0/certificate/cert_cms_generator.c`　　　　　　　　　　　　　　　　　　　　 | `cert_cms_generator_spi.h`　　　　　　　　　　　　　　|
+| CSR（Certificate Signing Request）　| —　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　 | —　　　　　　　　　　　　　　　　　　　　　　　　　　 |
+| 设备证书校验（Attestation）　　　　 | `attestation/src/hm_attestation_cert_verify.c`　　　　　　　　　　　　　　　　　| —　　　　　　　　　　　　　　　　　　　　　　　　　　 |
+| 证书匹配参数（CertMatchParameters） | —　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　 | —　　　　　　　　　　　　　　　　　　　　　　　　　　 |
+| 信任锚（TrustAnchor）　　　　　　　 | —　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　 | —　　　　　　　　　　　　　　　　　　　　　　　　　　 |
+| CfObject/CfObjectBase（对象模型）　 | `life/cf_api.c`、`ability/src/cf_ability.c`（`frameworks/ability/`）　　　　　　| —　　　　　　　　　　　　　　　　　　　　　　　　　　 |
+| CfParamSet（参数集）　　　　　　　　| `param/src/cf_param.c`、`param/src/cf_param_parse.c`　　　　　　　　　　　　　　| —　　　　　　　　　　　　　　　　　　　　　　　　　　 |
+
+#### 实现层
+
+适配层位于 `frameworks/adapter/`，依赖 OpenSSL 调用具体接口实现上层能力。
+
+| 领域术语　　　　　　　　　　　　　　| 文件（`frameworks/adapter/`）　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　|
+| -------------------------------------| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| X.509 证书（解析/校验/字段获取）　　| `v1.0/src/x509_certificate_openssl.c`、`v1.0/src/x509_certificate_create.c`、`v1.0/inc/x509_certificate_openssl.h`、`v1.0/inc/x509_certificate_create.h`　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　 |
+| 证书扩展域段（Extension/OID）　　　 | `v1.0/src/x509_certificate_openssl.c` 中 extension 相关、`v1.0/inc/x509_certificate_openssl.h`　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　 |
+| 证书吊销列表（CRL）　　　　　　　　 | `v1.0/src/x509_crl_openssl.c`、`v1.0/src/x509_crl_entry_openssl.c`、`v1.0/inc/x509_crl_openssl.h`、`v1.0/inc/x509_crl_entry_openssl.h`　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　 |
+| 证书和CRL 集合　　　　　　　　　　　| —　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　|
+| 证书链校验（CertChain/Validator）　 | `v1.0/src/x509_cert_chain_openssl.c`、`v1.0/src/x509_cert_chain_openssl_ex.c`、`v1.0/src/x509_cert_chain_validator_openssl.c`、`v1.0/inc/x509_cert_chain_openssl.h`、`v1.0/inc/x509_cert_chain_openssl_ex.h`、`v1.0/inc/x509_cert_chain_validator_openssl.h` |
+| 证书 DN（Distinguished Name）　　　 | `v1.0/src/x509_distinguished_name_openssl.c`、`v1.0/inc/x509_distinguished_name_openssl.h`　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　 |
+| CMS（Cryptographic Message Syntax） | `v1.0/src/x509_cert_cms_generator_openssl.c`、`v1.0/inc/x509_cert_cms_generator_openssl.h`　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　 |
+| CSR（Certificate Signing Request）　| `v1.0/src/x509_csr_openssl.c`、`v1.0/inc/x509_csr_openssl.h`　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　 |
+| 设备证书校验（Attestation）　　　　 | `attestation/`　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　 |
+| 证书匹配参数（CertMatchParameters） | —　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　|
+| 信任锚（TrustAnchor）　　　　　　　 | —　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　|
+| CfObject/CfObjectBase（对象模型）　 | —　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　|
+| CfParamSet（参数集）　　　　　　　　| —　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　|
+| OpenSSL 适配公共逻辑（通用）　　　　| `v1.0/src/certificate_openssl_common.c`、`v1.0/inc/certificate_openssl_common.h`、`v1.0/inc/certificate_openssl_class.h`　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　 |
+| v2.0 适配（通用）　　　　　　　　　 | `v2.0/`　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　|
 
 ### 任务型路由
 
@@ -216,13 +304,15 @@ bash build.sh test cf_version1_test
 - JS 接口调用失败抛出异常时，`errMsg` 应尽可能详细，包含失败原因、关键参数值等上下文信息，便于应用开发者定位问题。
 - 不要修改原有逻辑的返回值和输出值，避免破坏既有调用方的行为契约。
 
-### 公共 API 约束
+### 公共 API 约束（修改前必须完整阅读本节）
+
+> **强制检查**：在进行任何代码修改前，必须逐条检查以下约束。即使不修改函数签名或结构体定义，修改函数的行为逻辑（如新增校验、改变返回条件、缩小接受范围、改变处理逻辑）也属于行为语义变更，适用以下禁止条款。
 
 **Do not（禁止）：**
 - 修改已发布的 NAPI、ANI、Inner API 的函数签名、参数类型、返回值类型
 - 修改已有 API 的错误码（`CfResult` 枚举值），除非明确标注为废弃
 - 删除或重命名已有公共 API
-- 修改已有 API 的行为语义（如同步变异步、返回数据格式变化）
+- 修改已有 API 的行为语义，包括但不限于：同步变异步、返回数据格式变化、新增校验导致原先可接受的输入被拒绝、缩小已有函数的处理范围、改变已有函数的返回条件
 - 修改 `frameworks/core/adapter.map` 中已导出的符号
 - 修改 `interfaces/inner_api/` 下已发布的头文件结构布局
 
@@ -231,6 +321,7 @@ bash build.sh test cf_version1_test
 - 修改inner c接口：确认是否影响OpenHarmony内部调用者
 - 修改错误处理逻辑：确认是否影响应用层的错误码兼容性
 - 新增inner c接口：确认API必须CF开头（对象基类 API 如 `CfCreate`/`CfObjDestroy` 同样遵循）
+- 新增输入校验、白名单、过滤逻辑：确认是否导致已有调用方的合法输入被拒绝，这属于行为语义变更，适用上述 Do not 第 4 条；如确需新增校验，应新增独立 API 而非修改现有 API
 
 ### 安全与边界
 
