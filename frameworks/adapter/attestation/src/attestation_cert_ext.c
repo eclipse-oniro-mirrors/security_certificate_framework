@@ -475,15 +475,21 @@ exit:
 
 static CfResult ParseAppId(AttestationRecord *record)
 {
-    CfBlob blob = {0};
-    CfResult ret = GetOctetStringItem(record, ATTESTATION_APP_ID_OID, sizeof(ATTESTATION_APP_ID_OID), &blob);
+    HmAttestationClaim *claim = NULL;
+    CfResult ret = FindClaim(record, ATTESTATION_APP_ID_OID, sizeof(ATTESTATION_APP_ID_OID), &claim);
     if (ret != CF_SUCCESS) {
         return ret;
     }
 
-    HmApplicationIdType *appId = NULL;
-    const unsigned char *p = blob.data;
-    appId = d2i_HmApplicationIdType(NULL, &p, blob.size);
+    if (claim->value == NULL || ASN1_TYPE_get(claim->value) != V_ASN1_SEQUENCE ||
+        claim->value->value.sequence == NULL) {
+        LOGE("app id claim value is not a sequence\n");
+        return CF_ERR_INVALID_EXTENSION;
+    }
+
+    const unsigned char *p = claim->value->value.sequence->data;
+    long len = claim->value->value.sequence->length;
+    HmApplicationIdType *appId = d2i_HmApplicationIdType(NULL, &p, len);
     if (appId == NULL) {
         LOGE("d2i_HmApplicationIdType failed\n");
         return CF_ERR_INVALID_EXTENSION;

@@ -37,6 +37,11 @@ CfResult HcfAttestSetVerifyParamRootCa(HcfAttestCertVerifyParam *param, const Cf
     return AttestSetVerifyParamRootCa(param, rootCa);
 }
 
+CfResult HcfAttestSetVerifyParamTrustCaFile(HcfAttestCertVerifyParam *param, const char *caFilePath)
+{
+    return AttestSetVerifyParamTrustCaFile(param, caFilePath);
+}
+
 CfResult HcfAttestSetVerifyParamSnInfos(HcfAttestCertVerifyParam *param, const HmAttestationSnInfo *snInfo)
 {
     return AttestSetVerifyParamSnInfos(param, snInfo);
