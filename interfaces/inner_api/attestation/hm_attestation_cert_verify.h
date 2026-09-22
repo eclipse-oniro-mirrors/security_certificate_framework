@@ -57,6 +57,15 @@ CfResult HcfAttestSetVerifyParamCheckTime(HcfAttestCertVerifyParam *param, bool 
 CfResult HcfAttestSetVerifyParamRootCa(HcfAttestCertVerifyParam *param, const CfEncodingBlob *rootCa);
 
 /*
+ * Set the trusted CA certificate file path. The file is PEM encoded and may contain multiple certificates.
+ *
+ * @param [in] param The certificate verify param.
+ * @param [in] caFilePath The path of the trusted CA certificate file.
+ * @return The result code.
+ */
+CfResult HcfAttestSetVerifyParamTrustCaFile(HcfAttestCertVerifyParam *param, const char *caFilePath);
+
+/*
  * Set the trusted SN infos to check sub ca.
  *
  * @param [in] param The certificate verify param.
@@ -75,10 +84,10 @@ void HcfAttestFreeVerifyParam(HcfAttestCertVerifyParam *param);
 /*
  * Verify the certificate and return the attestation info.
  *
- * @param [in] encodingBlob The certificate encoding blob. Currently only PEM is supported.
- * @param [in] param The certificate verify param, can be NULL. If NULL, the default param will be used.
- * (1) Use system time to check certificate validity.
- * (2) Verify the certificate using the built-in CA certificate.
+ * @param [in] encodingBlob The certificate encoding blob. Support PEM and DER encoding, specified by encodingFormat.
+ * @param [in] param The certificate verify param, cannot be NULL. If NULL, CF_NULL_POINTER will be returned.
+ * The trust anchor must be set via HcfAttestSetVerifyParamRootCa or HcfAttestSetVerifyParamTrustCaFile,
+ * otherwise CF_ERR_PARAMETER_CHECK will be returned. No built-in CA is provided.
  * @param [out] info The attestation info.
  * @return The result code.
  */

@@ -37,6 +37,8 @@ CfResult AttestSetVerifyParamCheckTime(HcfAttestCertVerifyParam *param, bool che
 
 CfResult AttestSetVerifyParamRootCa(HcfAttestCertVerifyParam *param, const CfEncodingBlob *rootCa);
 
+CfResult AttestSetVerifyParamTrustCaFile(HcfAttestCertVerifyParam *param, const char *caFilePath);
+
 CfResult AttestSetVerifyParamSnInfos(HcfAttestCertVerifyParam *param, const HmAttestationSnInfo *snInfos);
 
 void AttestFreeVerifyParam(HcfAttestCertVerifyParam *param);

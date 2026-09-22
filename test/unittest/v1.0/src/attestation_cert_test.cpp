@@ -15,8 +15,10 @@
  */
 
 #include <string>
+#include <cstdio>
 #include <gtest/gtest.h>
 #include <openssl/pem.h>
+#include <openssl/crypto.h>
 #include "securec.h"
 #include "cf_memory.h"
 #include "hm_attestation_cert_verify.h"
@@ -24,9 +26,15 @@
 #include "attestation_cert_ext.h"
 #include "attestation_cert_verify.h"
 #include "attestation_common.h"
+#include "cf_mock.h"
 
 using namespace std;
 using namespace testing::ext;
+using namespace CFMock;
+using ::testing::Return;
+using ::testing::_;
+using ::testing::Mock;
+using ::testing::InSequence;
 
 namespace {
 class CfAttestationTest : public testing::Test {
@@ -411,7 +419,7 @@ HWTEST_F(CfAttestationTest, CfAttestationTest003, TestSize.Level0)
 
 /**
  * @tc.name: CfAttestationTest004
- * @tc.desc: attestation cert verify failed
+ * @tc.desc: attestation cert verify failed without trust anchor
  * @tc.type: FUNC
  * @tc.require: NA
  */
@@ -438,7 +446,7 @@ HWTEST_F(CfAttestationTest, CfAttestationTest004, TestSize.Level0)
     certsChain.len = strlen(chain);
     HmAttestationInfo *info = nullptr;
     ret= HcfAttestCertVerify(&certsChain, param, &info);
-    ASSERT_EQ(ret, CF_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY);
+    ASSERT_EQ(ret, CF_ERR_PARAMETER_CHECK);
 
     HcfAttestFreeVerifyParam(param);
     CfFree(chain);
@@ -501,6 +509,9 @@ HWTEST_F(CfAttestationTest, CfAttestationTest006, TestSize.Level0)
     ASSERT_EQ(ret, CF_NULL_POINTER);
 
     ret = HcfAttestSetVerifyParamSnInfos(nullptr, nullptr);
+    ASSERT_EQ(ret, CF_NULL_POINTER);
+
+    ret = HcfAttestSetVerifyParamTrustCaFile(nullptr, nullptr);
     ASSERT_EQ(ret, CF_NULL_POINTER);
 
     ret= HcfAttestCertVerify(nullptr, nullptr, nullptr);
@@ -795,6 +806,10 @@ HWTEST_F(CfAttestationTest, CfAttestationTest009, TestSize.Level0)
  */
 HWTEST_F(CfAttestationTest, CfAttestationTest010, TestSize.Level0)
 {
+    HcfAttestCertVerifyParam *param = nullptr;
+    CfResult ret = HcfAttestCreateVerifyParam(&param);
+    ASSERT_EQ(ret, CF_SUCCESS);
+
     HmAttestationInfo *info = nullptr;
     char *chain = nullptr;
     const char *certs[] = {RSA_APP_CERT};
@@ -805,7 +820,7 @@ HWTEST_F(CfAttestationTest, CfAttestationTest010, TestSize.Level0)
     certsChain.encodingFormat = CF_FORMAT_PEM;
     certsChain.data = reinterpret_cast<uint8_t *>(chain);
     certsChain.len = strlen(chain);
-    CfResult ret = HcfAttestCertVerify(&certsChain, nullptr, &info);
+    ret = HcfAttestCertVerify(&certsChain, param, &info);
     ASSERT_EQ(ret, CF_ERR_PARAMETER_CHECK);
     CfFree(chain);
 
@@ -817,30 +832,36 @@ HWTEST_F(CfAttestationTest, CfAttestationTest010, TestSize.Level0)
     ASSERT_EQ(res, 0);
     certsChain.data = reinterpret_cast<uint8_t *>(chain);
     certsChain.len = strlen(chain);
-    ret = HcfAttestCertVerify(&certsChain, nullptr, &info);
+    ret = HcfAttestCertVerify(&certsChain, param, &info);
     ASSERT_EQ(ret, CF_ERR_PARAMETER_CHECK);
     CfFree(chain);
 
     chain = nullptr;
     const char *certs3[] = {BAD_CERT};
     num = sizeof(certs3) / sizeof(certs3[0]);
-    res = CreateCertChain(certs, num, &chain);
+    res = CreateCertChain(certs3, num, &chain);
     ASSERT_EQ(res, 0);
     certsChain.data = reinterpret_cast<uint8_t *>(chain);
     certsChain.len = strlen(chain);
-    ret = HcfAttestCertVerify(&certsChain, nullptr, &info);
+    ret = HcfAttestCertVerify(&certsChain, param, &info);
     ASSERT_EQ(ret, CF_ERR_PARAMETER_CHECK);
     CfFree(chain);
+
+    HcfAttestFreeVerifyParam(param);
 }
 
 /**
  * @tc.name: CfAttestationTest011
- * @tc.desc: use built-in CA certificate, verify failed
+ * @tc.desc: no trust anchor provided, verify failed
  * @tc.type: FUNC
  * @tc.require: NA
  */
 HWTEST_F(CfAttestationTest, CfAttestationTest011, TestSize.Level0)
 {
+    HcfAttestCertVerifyParam *param = nullptr;
+    CfResult ret = HcfAttestCreateVerifyParam(&param);
+    ASSERT_EQ(ret, CF_SUCCESS);
+
     HmAttestationInfo *info = nullptr;
     char *chain = nullptr;
     const char *certs[] = {EC_APP_CERT, EC_DEVICE_CERT, EC_SUB_CA_CERT, EC_ROOT_CA};
@@ -851,9 +872,11 @@ HWTEST_F(CfAttestationTest, CfAttestationTest011, TestSize.Level0)
     certsChain.encodingFormat = CF_FORMAT_PEM;
     certsChain.data = reinterpret_cast<uint8_t *>(chain);
     certsChain.len = strlen(chain);
-    CfResult ret = HcfAttestCertVerify(&certsChain, nullptr, &info);
-    ASSERT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
+    ret = HcfAttestCertVerify(&certsChain, param, &info);
+    ASSERT_EQ(ret, CF_ERR_PARAMETER_CHECK);
     CfFree(chain);
+
+    HcfAttestFreeVerifyParam(param);
 }
 
 /**
@@ -893,6 +916,184 @@ HWTEST_F(CfAttestationTest, CfAttestationTest012, TestSize.Level0)
     ret = HcfAttestSetVerifyParamRootCa(param, &rootCa);
     ASSERT_EQ(ret, CF_ERR_PARAMETER_CHECK);
     HcfAttestFreeVerifyParam(param);
+
+    ret = HcfAttestCreateVerifyParam(&param);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ret = HcfAttestSetVerifyParamTrustCaFile(param, "nonexistent_trust_ca.pem");
+    ASSERT_EQ(ret, CF_ERR_PARAMETER_CHECK);
+    HcfAttestFreeVerifyParam(param);
+}
+
+static bool WriteCertFile(const char *path, const char *data)
+{
+    if (path == nullptr || data == nullptr) {
+        return false;
+    }
+    FILE *fp = fopen(path, "w");
+    if (fp == nullptr) {
+        return false;
+    }
+    size_t len = strlen(data);
+    size_t written = fwrite(data, 1, len, fp);
+    int closeRet = fclose(fp);
+    if (closeRet != 0) {
+        return false;
+    }
+    return written == len;
+}
+
+/**
+ * @tc.name: CfAttestationTest021
+ * @tc.desc: AttestSetVerifyParamTrustCaFile set once succeeds, set twice returns CF_ERR_SHOULD_NOT_CALL
+ * @tc.type: FUNC
+ * @tc.require: NA
+ */
+HWTEST_F(CfAttestationTest, CfAttestationTest021, TestSize.Level0)
+{
+    const char *caFilePath = "./trust_ca_test.pem";
+    ASSERT_TRUE(WriteCertFile(caFilePath, EC_ROOT_CA));
+
+    HcfAttestCertVerifyParam *param = nullptr;
+    CfResult ret = HcfAttestCreateVerifyParam(&param);
+    ASSERT_EQ(ret, CF_SUCCESS);
+
+    ret = HcfAttestSetVerifyParamTrustCaFile(param, caFilePath);
+    ASSERT_EQ(ret, CF_SUCCESS);
+
+    ret = HcfAttestSetVerifyParamTrustCaFile(param, caFilePath);
+    ASSERT_EQ(ret, CF_ERR_SHOULD_NOT_CALL);
+
+    HcfAttestFreeVerifyParam(param);
+    remove(caFilePath);
+}
+
+#define DER_CHAIN_CERT_NUM_MAX 5
+
+/*
+ * Convert a single PEM certificate to DER bytes. The output buffer is allocated
+ * by CfMalloc and must be freed by the caller with CfFree.
+ */
+static bool PemCertToDer(const char *pem, uint8_t **der, uint32_t *derLen)
+{
+    if (pem == nullptr || der == nullptr || derLen == nullptr) {
+        return false;
+    }
+    BIO *bio = BIO_new_mem_buf(pem, -1);
+    if (bio == nullptr) {
+        return false;
+    }
+    X509 *cert = PEM_read_bio_X509(bio, nullptr, nullptr, nullptr);
+    BIO_free(bio);
+    if (cert == nullptr) {
+        return false;
+    }
+    unsigned char *tmp = nullptr;
+    int len = i2d_X509(cert, &tmp);
+    X509_free(cert);
+    if (len <= 0) {
+        OPENSSL_free(tmp);
+        return false;
+    }
+    uint8_t *out = reinterpret_cast<uint8_t *>(CfMalloc(static_cast<uint32_t>(len), 0));
+    if (out == nullptr) {
+        OPENSSL_free(tmp);
+        return false;
+    }
+    if (memcpy_s(out, static_cast<uint32_t>(len), tmp, static_cast<uint32_t>(len)) != EOK) {
+        CfFree(out);
+        OPENSSL_free(tmp);
+        return false;
+    }
+    OPENSSL_free(tmp);
+    *der = out;
+    *derLen = static_cast<uint32_t>(len);
+    return true;
+}
+
+/*
+ * Build a DER certificate chain by concatenating the DER encoding of each PEM cert.
+ * The output buffer is allocated by CfMalloc and must be freed by the caller with CfFree.
+ */
+static bool BuildDerChain(const char *const certs[], uint32_t num, uint8_t **out, uint32_t *outLen)
+{
+    if (certs == nullptr || out == nullptr || outLen == nullptr || num == 0 || num > DER_CHAIN_CERT_NUM_MAX) {
+        return false;
+    }
+    uint8_t *ders[DER_CHAIN_CERT_NUM_MAX] = { nullptr };
+    uint32_t lens[DER_CHAIN_CERT_NUM_MAX] = { 0 };
+    uint32_t total = 0;
+    for (uint32_t i = 0; i < num; i++) {
+        if (!PemCertToDer(certs[i], &ders[i], &lens[i])) {
+            for (uint32_t j = 0; j < i; j++) {
+                CfFree(ders[j]);
+            }
+            return false;
+        }
+        total += lens[i];
+    }
+
+    uint8_t *buf = reinterpret_cast<uint8_t *>(CfMalloc(total, 0));
+    if (buf == nullptr) {
+        for (uint32_t j = 0; j < num; j++) {
+            CfFree(ders[j]);
+        }
+        return false;
+    }
+
+    uint32_t offset = 0;
+    for (uint32_t i = 0; i < num; i++) {
+        if (memcpy_s(buf + offset, total - offset, ders[i], lens[i]) != EOK) {
+            CfFree(buf);
+            for (uint32_t j = 0; j < num; j++) {
+                CfFree(ders[j]);
+            }
+            return false;
+        }
+        offset += lens[i];
+        CfFree(ders[i]);
+        ders[i] = nullptr;
+    }
+    *out = buf;
+    *outLen = total;
+    return true;
+}
+
+/**
+ * @tc.name: CfAttestationTest022
+ * @tc.desc: HcfAttestCertVerify verifies a DER encoded certificate chain successfully
+ * @tc.type: FUNC
+ * @tc.require: NA
+ */
+HWTEST_F(CfAttestationTest, CfAttestationTest022, TestSize.Level0)
+{
+    HcfAttestCertVerifyParam *param = nullptr;
+    CfResult ret = HcfAttestCreateVerifyParam(&param);
+    ASSERT_EQ(ret, CF_SUCCESS);
+
+    CfEncodingBlob rootCa = {0};
+    rootCa.encodingFormat = CF_FORMAT_PEM;
+    rootCa.data = reinterpret_cast<uint8_t *>(const_cast<char *>(EC_ROOT_CA));
+    rootCa.len = strlen(EC_ROOT_CA);
+    ret = HcfAttestSetVerifyParamRootCa(param, &rootCa);
+    ASSERT_EQ(ret, CF_SUCCESS);
+
+    const char *certs[] = {EC_APP_CERT, EC_DEVICE_CERT, EC_SUB_CA_CERT};
+    uint32_t num = sizeof(certs) / sizeof(certs[0]);
+    uint8_t *chainDer = nullptr;
+    uint32_t chainLen = 0;
+    ASSERT_TRUE(BuildDerChain(certs, num, &chainDer, &chainLen));
+
+    CfEncodingBlob data = {0};
+    data.encodingFormat = CF_FORMAT_DER;
+    data.data = chainDer;
+    data.len = chainLen;
+    HmAttestationInfo *info = nullptr;
+    ret = HcfAttestCertVerify(&data, param, &info);
+    ASSERT_EQ(ret, CF_SUCCESS);
+
+    HcfAttestInfoFree(info);
+    HcfAttestFreeVerifyParam(param);
+    CfFree(chainDer);
 }
 
 const char *APP_CERT_HM = "-----BEGIN CERTIFICATE-----\n"
@@ -961,6 +1162,68 @@ const char *APP_CERT_HM_CA_CA_CA = "-----BEGIN CERTIFICATE-----\n"
 "HNDvXTx0p1G+hmwCIQDJdBYp2XCgzbBIvC6iFLSM2uvkAKlfjOudTV3Ym25OyA==\n"
 "-----END CERTIFICATE-----";
 
+/*
+ * OH7.1 new format: APP_ID claim value is directly a HmApplicationIdType SEQUENCE,
+ * no longer wrapped in an OCTET STRING. The signature of this certificate is intentionally
+ * invalid (DER re-encoded by removing the wrapping), so it is only used for extension
+ * parse tests, not for full chain verification.
+ */
+const char *APP_CERT_HM_NEW = "-----BEGIN CERTIFICATE-----\n"
+"MIIEGzCCA8CgAwIBAgIFBTPn/LEwCgYIKoZIzj0EAwIwTTEPMA0GA1UECgwGVEVT\n"
+"VCBYMS0wKwYDVQQDDCRURVNUIFggRUNDIERldmljZSBBdHRlc3RhdGlvbiBERVZJ\n"
+"Q0UxCzAJBgNVBAYTAkNOMB4XDTI1MDYxMTA5MTA0NloXDTQ1MDQwNzA5MTA0Nlow\n"
+"ETEPMA0GA1UECwwGZnV0dXJlMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEGXqK\n"
+"9yhyiPTpqUwlaQoRSv/+mhh2GIdTJItsJF88vVgUxqw4zjwFGLvjDAdK+fpqk1it\n"
+"nXBqdUYBwdecU9c+k6OCAscwggLDMIICZwYMKwYBBAGPWwKCeAEDBIICVTCCAlEC\n"
+"AQEwHwIBAQYNKwYBBAGPWwKCeAIBAQQLa2V5X3B1cnBvc2UwMgIBAQYNKwYBBAGP\n"
+"WwKCeAIBAzAeBg4rBgEEAY9bAoJ4AgEDAQQMYXBwSURfaGFwX2lkMB4CAQEGDSsG\n"
+"AQQBj1sCgngCAQQECmNoYW5sbGVuZ2UwHAIBAQYNKwYBBAGPWwKCeAIBBQQIa2V5\n"
+"X2ZsYWcwGgIBAQYNKwYBBAGPWwKCeAIBCAQGZGlnZXN0MCACAQEGDSsGAQQBj1sC\n"
+"gngCAQkEDHNpZ25fcGFkZGluZzAfAgEBBg0rBgEEAY9bAoJ4AgEKBAtlbmNfcGFk\n"
+"ZGluZzAdAgEBBg0rBgEEAY9bAoJ4AgELBAlzaWduX3R5cGUwIQIBAQYOKwYBBAGP\n"
+"WwKCeAICAgQEDHZlcnNpb25faW5mbzAmAgEBBg4rBgEEAY9bAoJ4AgICBgQRa2V5\n"
+"X21hbmFnZXJfdGFfaWQwFgIBAQYOKwYBBAGPWwKCeAICAgcCAQEwFgIBAQYOKwYB\n"
+"BAGPWwKCeAICAggBAQAwGgIBAQYOKwYBBAGPWwKCeAICAgkEBW5vbmNlMBkCAQEG\n"
+"DisGAQQBj1sCgngCAgQBBARpbWVpMBkCAQEGDisGAQQBj1sCgngCAgQCBARtZWlk\n"
+"MBsCAQEGDisGAQQBj1sCgngCAgQDBAZzZXJpYWwwGgIBAQYOKwYBBAGPWwKCeAIC\n"
+"BAgEBW1vZGVsMBoCAQEGDisGAQQBj1sCgngCAgQJBAVzb2NpZDAZAgEBBg4rBgEE\n"
+"AY9bAoJ4AgIECgQEdWRpZDAJBgNVHRMEAjAAMAsGA1UdDwQEAwIF4DAdBgNVHQ4E\n"
+"FgQUrRrjnxaG6+ZdzciBRhFyrAdLH3UwHwYDVR0jBBgwFoAUD79GmTN9lHteoq5K\n"
+"fv1FoT+7/pQwCgYIKoZIzj0EAwIDSQAwRgIhANXOCrZbEfAjrjFpkHBNZG3AapvW\n"
+"KpdQbgERy+wLPHjgAiEA1Ske5il6EVepliR3mxSJGtBazplLcazMOgO/0ezNt5A=\n"
+"-----END CERTIFICATE-----";
+
+/*
+ * OH7.1 new format: APP_ID claim value is directly a HmApplicationIdType SEQUENCE,
+ * but the inner content is not a valid HmApplicationIdType (a SEQUENCE wrapping an
+ * OCTET STRING only). d2i_HmApplicationIdType fails, covering the invalid APP_ID
+ * sequence branch in ParseAppId. Only used for extension parse tests.
+ */
+const char *APP_CERT_HM_NEW_INVALID_APPID = "-----BEGIN CERTIFICATE-----\n"
+"MIIEGzCCA8CgAwIBAgIFBTPn/LEwCgYIKoZIzj0EAwIwTTEPMA0GA1UECgwGVEVT\n"
+"VCBYMS0wKwYDVQQDDCRURVNUIFggRUNDIERldmljZSBBdHRlc3RhdGlvbiBERVZJ\n"
+"Q0UxCzAJBgNVBAYTAkNOMB4XDTI1MDYwNzA5MzExOVoXDTQ1MDQwMzA5MzExOVow\n"
+"ETEPMA0GA1UECwwGZnV0dXJlMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEGXqK\n"
+"9yhyiPTpqUwlaQoRSv/+mhh2GIdTJItsJF88vVgUxqw4zjwFGLvjDAdK+fpqk1it\n"
+"nXBqdUYBwdecU9c+k6OCAscwggLDMIICZwYMKwYBBAGPWwKCeAEDBIICVTCCAlEC\n"
+"AQEwHwIBAQYNKwYBBAGPWwKCeAIBAQQLa2V5X3B1cnBvc2UwMgIBAQYNKwYBBAGP\n"
+"WwKCeAIBAzAeBBwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMB4CAQEGDSsG\n"
+"AQQBj1sCgngCAQQECmNoYWxsZW5nZTAcAgEBBg0rBgEEAY9bAoJ4AgEFBAhrZXlf\n"
+"ZmxhZzAaAgEBBg0rBgEEAY9bAoJ4AgEIBAZkaWdlc3QwIAIBAQYNKwYBBAGPWwKC\n"
+"eAIBCQQMc2lnbl9wYWRkaW5nMB8CAQEGDSsGAQQBj1sCgngCAQoEC2VuY19wYWRk\n"
+"aW5nMB0CAQEGDSsGAQQBj1sCgngCAQsECXNpZ25fdHlwZTAhAgEBBg4rBgEEAY9b\n"
+"AoJ4AgICBAQMdmVyc2lvbl9pbmZvMCYCAQEGDisGAQQBj1sCgngCAgIGBBFrZXlf\n"
+"bWFuYWdlcl90YV9pZDAWAgEBBg4rBgEEAY9bAoJ4AgICAgcCAQEwFgIBAQYOKwYB\n"
+"BAGPWwKCeAICAggBAQAwGgIBAQYOKwYBBAGPWwKCeAICAgkEBW5vbmNlMBkCAQEG\n"
+"DisGAQQBj1sCgngCAgQBBARpbWVpMBkCAQEGDisGAQQBj1sCgngCAgQCBARtZWlk\n"
+"MBsCAQEGDisGAQQBj1sCgngCAgQDBAZzZXJpYWwwGgIBAQYOKwYBBAGPWwKCeAIC\n"
+"BAgEBW1vZGVsMBoCAQEGDisGAQQBj1sCgngCAgQKBAVzb2NpZDAZAgEBBg4rBgEE\n"
+"AY9bAoJ4AgIECgQEdWRpZDAJBgNVHRMEAjAAMAsGA1UdDwQEAwIF4DAdBgNVHQ4E\n"
+"FgQUrRrjnxaG6+ZdzciBRhFyrAdLH3UwHwYDVR0jBBgwFoAUD79GmTN9lHteoq5K\n"
+"fv1FoT+7/pQwCgYIKoZIzj0EAwIDSQAwRgIhANXOCrZbEfAjrjFpkHBNZG3AapvW\n"
+"KpdQbgERy+wLPHjgAiEA1Ske5il6EVepliR3mxSJGtBazplLcazMOgO/0ezNt5A=\n"
+"-----END CERTIFICATE-----";
+
 static void TestGetAttestCertExtALL(AttestationRecord *record)
 {
     CfResult ret;
@@ -1009,7 +1272,7 @@ static void TestGetAttestCertExtALL(AttestationRecord *record)
 
 /**
  * @tc.name: CfAttestationTest013
- * @tc.desc: GetHmAttestationRecord all ext
+ * @tc.desc: GetHmAttestationRecord, APP_ID claim value wrapped by OCTET STRING (old format) rejected
  * @tc.type: FUNC
  * @tc.require: NA
  */
@@ -1023,8 +1286,50 @@ HWTEST_F(CfAttestationTest, CfAttestationTest013, TestSize.Level0)
 
     AttestationRecord *record = nullptr;
     CfResult ret = GetHmAttestationRecord(cert, &record);
+    ASSERT_EQ(ret, CF_ERR_INVALID_EXTENSION);
+    FreeHmAttestationRecord(record);
+    X509_free(cert);
+}
+
+/**
+ * @tc.name: CfAttestationTest020
+ * @tc.desc: GetHmAttestationRecord with new format APP_ID (direct SEQUENCE) succeeds
+ * @tc.type: FUNC
+ * @tc.require: NA
+ */
+HWTEST_F(CfAttestationTest, CfAttestationTest020, TestSize.Level0)
+{
+    BIO *bio = BIO_new_mem_buf(APP_CERT_HM_NEW, -1);
+    ASSERT_NE(bio, nullptr);
+    X509 *cert = PEM_read_bio_X509(bio, nullptr, nullptr, nullptr);
+    ASSERT_NE(cert, nullptr);
+    BIO_free(bio);
+
+    AttestationRecord *record = nullptr;
+    CfResult ret = GetHmAttestationRecord(cert, &record);
     ASSERT_EQ(ret, CF_SUCCESS);
     TestGetAttestCertExtALL(record);
+    FreeHmAttestationRecord(record);
+    X509_free(cert);
+}
+
+/**
+ * @tc.name: CfAttestationTest023
+ * @tc.desc: GetHmAttestationRecord, APP_ID claim value is a SEQUENCE but not a valid HmApplicationIdType, d2i fails
+ * @tc.type: FUNC
+ * @tc.require: NA
+ */
+HWTEST_F(CfAttestationTest, CfAttestationTest023, TestSize.Level0)
+{
+    BIO *bio = BIO_new_mem_buf(APP_CERT_HM_NEW_INVALID_APPID, -1);
+    ASSERT_NE(bio, nullptr);
+    X509 *cert = PEM_read_bio_X509(bio, nullptr, nullptr, nullptr);
+    ASSERT_NE(cert, nullptr);
+    BIO_free(bio);
+
+    AttestationRecord *record = nullptr;
+    CfResult ret = GetHmAttestationRecord(cert, &record);
+    ASSERT_EQ(ret, CF_ERR_INVALID_EXTENSION);
     FreeHmAttestationRecord(record);
     X509_free(cert);
 }
@@ -1055,7 +1360,7 @@ static HcfAttestCertVerifyParam *GetHcfAttestCertVerifyParam(const char *in)
 }
 /**
  * @tc.name: CfAttestationTest014
- * @tc.desc: HmAttestation cert test, include all ext, but decvice id is invalid
+ * @tc.desc: old format APP_ID cert verify succeeds, but parse extension fails
  * @tc.type: FUNC
  * @tc.require: NA
  */
@@ -1079,26 +1384,8 @@ HWTEST_F(CfAttestationTest, CfAttestationTest014, TestSize.Level0)
     ASSERT_EQ(ret, CF_SUCCESS);
 
     ret = HcfAttestCertParseExtension(info);
-    ASSERT_EQ(ret, CF_SUCCESS);
-
-    ret = HcfAttestCheckBoundedWithUdId(info);
     ASSERT_EQ(ret, CF_ERR_INVALID_EXTENSION);
 
-    ret = HcfAttestCheckBoundedWithSocid(info);
-    ASSERT_EQ(ret, CF_ERR_INVALID_EXTENSION);
-
-    HmAttestationCertExt ext = { 0 };
-    ret = HcfAttestGetCertExtension(info, DEVICE_ACTIVATION_DEVICE_ID1, &ext);
-    ASSERT_EQ(ret, CF_SUCCESS);
-    ret = HcfAttestGetCertExtension(info, ATTESTATION_ENC_PADDING, &ext);
-    ASSERT_EQ(ret, CF_SUCCESS);
-    ret = HcfAttestGetCertExtension(info, ATTESTATION_CERT_EXT_TYPE_MAX, &ext);
-    ASSERT_EQ(ret, CF_ERR_PARAMETER_CHECK);
-
-    ret = HcfAttestGetCertExtension(info, LEGACY_VERSION, &ext);
-    ASSERT_EQ(ret, CF_ERR_EXTENSION_NOT_EXIST);
-    ret = HcfAttestGetCertExtension(info, KM_TAG_TYPE_MAX, &ext);
-    ASSERT_EQ(ret, CF_ERR_PARAMETER_CHECK);
     HcfAttestInfoFree(info);
 
     HcfAttestFreeVerifyParam(param);
@@ -1304,6 +1591,705 @@ HWTEST_F(CfAttestationTest, CfAttestationTest019, TestSize.Level0)
 
     HcfAttestFreeVerifyParam(param);
     CfFree(chain);
+}
+
+/**
+ * @tc.name: CfAttestationTest024
+ * @tc.desc: ReadTrustCaFile, mock OPENSSL_sk_new_null returns NULL, expect CF_ERR_CRYPTO_OPERATION
+ * @tc.type: FUNC
+ * @tc.require: NA
+ */
+HWTEST_F(CfAttestationTest, CfAttestationTest024, TestSize.Level0)
+{
+    const char *caFilePath = "./trust_ca_mock_new_null.pem";
+    ASSERT_TRUE(WriteCertFile(caFilePath, EC_ROOT_CA));
+
+    HcfAttestCertVerifyParam *param = nullptr;
+    CfResult ret = HcfAttestCreateVerifyParam(&param);
+    ASSERT_EQ(ret, CF_SUCCESS);
+
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_new_null())
+        .WillOnce(Return(nullptr));
+    ret = HcfAttestSetVerifyParamTrustCaFile(param, caFilePath);
+    X509OpensslMock::SetMockFlag(false);
+    Mock::VerifyAndClearExpectations(&X509OpensslMock::GetInstance());
+
+    ASSERT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
+
+    HcfAttestFreeVerifyParam(param);
+    remove(caFilePath);
+}
+
+/**
+ * @tc.name: CfAttestationTest025
+ * @tc.desc: ReadTrustCaFile, mock OPENSSL_sk_push returns 0, expect CF_ERR_CRYPTO_OPERATION
+ * @tc.type: FUNC
+ * @tc.require: NA
+ */
+HWTEST_F(CfAttestationTest, CfAttestationTest025, TestSize.Level0)
+{
+    const char *caFilePath = "./trust_ca_mock_push.pem";
+    ASSERT_TRUE(WriteCertFile(caFilePath, EC_ROOT_CA));
+
+    HcfAttestCertVerifyParam *param = nullptr;
+    CfResult ret = HcfAttestCreateVerifyParam(&param);
+    ASSERT_EQ(ret, CF_SUCCESS);
+
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_push(_, _))
+        .WillOnce(Return(0));
+    ret = HcfAttestSetVerifyParamTrustCaFile(param, caFilePath);
+    X509OpensslMock::SetMockFlag(false);
+    Mock::VerifyAndClearExpectations(&X509OpensslMock::GetInstance());
+
+    ASSERT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
+
+    HcfAttestFreeVerifyParam(param);
+    remove(caFilePath);
+}
+
+/**
+ * @tc.name: CfAttestationTest026
+ * @tc.desc: ReadTrustCaFile, more than MAX_CERT_NUM (20) certificates in file, expect CF_ERR_PARAMETER_CHECK
+ * @tc.type: FUNC
+ * @tc.require: NA
+ */
+HWTEST_F(CfAttestationTest, CfAttestationTest026, TestSize.Level0)
+{
+    const char *caFilePath = "./trust_ca_over_max.pem";
+    std::string manyCerts;
+    const int certCount = 21;
+    for (int i = 0; i < certCount; i++) {
+        manyCerts += EC_ROOT_CA;
+        manyCerts += "\n";
+    }
+    ASSERT_TRUE(WriteCertFile(caFilePath, manyCerts.c_str()));
+
+    HcfAttestCertVerifyParam *param = nullptr;
+    CfResult ret = HcfAttestCreateVerifyParam(&param);
+    ASSERT_EQ(ret, CF_SUCCESS);
+
+    ret = HcfAttestSetVerifyParamTrustCaFile(param, caFilePath);
+    ASSERT_EQ(ret, CF_ERR_PARAMETER_CHECK);
+
+    HcfAttestFreeVerifyParam(param);
+    remove(caFilePath);
+}
+
+/**
+ * @tc.name: CfAttestationTest027
+ * @tc.desc: ReadTrustCaFile, file without any valid PEM certificate, expect CF_ERR_PARAMETER_CHECK
+ * @tc.type: FUNC
+ * @tc.require: NA
+ */
+HWTEST_F(CfAttestationTest, CfAttestationTest027, TestSize.Level0)
+{
+    const char *caFilePath = "./trust_ca_no_cert.pem";
+    ASSERT_TRUE(WriteCertFile(caFilePath, "not a valid pem certificate"));
+
+    HcfAttestCertVerifyParam *param = nullptr;
+    CfResult ret = HcfAttestCreateVerifyParam(&param);
+    ASSERT_EQ(ret, CF_SUCCESS);
+
+    ret = HcfAttestSetVerifyParamTrustCaFile(param, caFilePath);
+    ASSERT_EQ(ret, CF_ERR_PARAMETER_CHECK);
+
+    HcfAttestFreeVerifyParam(param);
+    remove(caFilePath);
+}
+
+/**
+ * @tc.name: CfAttestationTest028
+ * @tc.desc: ReadX509FromData, mock OPENSSL_sk_new_null returns NULL, expect CF_ERR_CRYPTO_OPERATION
+ * @tc.type: FUNC
+ * @tc.require: NA
+ */
+HWTEST_F(CfAttestationTest, CfAttestationTest028, TestSize.Level0)
+{
+    HcfAttestCertVerifyParam *param = nullptr;
+    CfResult ret = HcfAttestCreateVerifyParam(&param);
+    ASSERT_EQ(ret, CF_SUCCESS);
+
+    CfEncodingBlob rootCa = {0};
+    rootCa.encodingFormat = CF_FORMAT_PEM;
+    rootCa.data = reinterpret_cast<uint8_t *>(const_cast<char *>(EC_ROOT_CA));
+    rootCa.len = strlen(EC_ROOT_CA);
+
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_new_null())
+        .WillOnce(Return(nullptr));
+    ret = HcfAttestSetVerifyParamRootCa(param, &rootCa);
+    X509OpensslMock::SetMockFlag(false);
+    Mock::VerifyAndClearExpectations(&X509OpensslMock::GetInstance());
+
+    ASSERT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
+
+    HcfAttestFreeVerifyParam(param);
+}
+
+/**
+ * @tc.name: CfAttestationTest029
+ * @tc.desc: ReadDerX509FromData, invalid DER data, d2i_X509 returns NULL, expect CF_ERR_PARAMETER_CHECK
+ * @tc.type: FUNC
+ * @tc.require: NA
+ */
+HWTEST_F(CfAttestationTest, CfAttestationTest029, TestSize.Level0)
+{
+    HcfAttestCertVerifyParam *param = nullptr;
+    CfResult ret = HcfAttestCreateVerifyParam(&param);
+    ASSERT_EQ(ret, CF_SUCCESS);
+
+    uint8_t invalidDer[] = {0x30, 0x00};
+    CfEncodingBlob rootCa = {0};
+    rootCa.encodingFormat = CF_FORMAT_DER;
+    rootCa.data = invalidDer;
+    rootCa.len = sizeof(invalidDer);
+
+    ret = HcfAttestSetVerifyParamRootCa(param, &rootCa);
+    ASSERT_EQ(ret, CF_ERR_PARAMETER_CHECK);
+
+    HcfAttestFreeVerifyParam(param);
+}
+
+/**
+ * @tc.name: CfAttestationTest030
+ * @tc.desc: ReadDerX509FromData, mock OPENSSL_sk_push returns 0, expect CF_ERR_CRYPTO_OPERATION
+ * @tc.type: FUNC
+ * @tc.require: NA
+ */
+HWTEST_F(CfAttestationTest, CfAttestationTest030, TestSize.Level0)
+{
+    uint8_t *der = nullptr;
+    uint32_t derLen = 0;
+    ASSERT_TRUE(PemCertToDer(EC_ROOT_CA, &der, &derLen));
+
+    HcfAttestCertVerifyParam *param = nullptr;
+    CfResult ret = HcfAttestCreateVerifyParam(&param);
+    ASSERT_EQ(ret, CF_SUCCESS);
+
+    CfEncodingBlob rootCa = {0};
+    rootCa.encodingFormat = CF_FORMAT_DER;
+    rootCa.data = der;
+    rootCa.len = derLen;
+
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_push(_, _))
+        .WillOnce(Return(0));
+    ret = HcfAttestSetVerifyParamRootCa(param, &rootCa);
+    X509OpensslMock::SetMockFlag(false);
+    Mock::VerifyAndClearExpectations(&X509OpensslMock::GetInstance());
+
+    ASSERT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
+
+    CfFree(der);
+    HcfAttestFreeVerifyParam(param);
+}
+
+/**
+ * @tc.name: CfAttestationTest031
+ * @tc.desc: ReadDerX509FromData, more than MAX_CERT_NUM (20) certificates, expect CF_ERR_PARAMETER_CHECK
+ * @tc.type: FUNC
+ * @tc.require: NA
+ */
+HWTEST_F(CfAttestationTest, CfAttestationTest031, TestSize.Level0)
+{
+    uint8_t *single = nullptr;
+    uint32_t singleLen = 0;
+    ASSERT_TRUE(PemCertToDer(EC_ROOT_CA, &single, &singleLen));
+
+    const int certCount = 21;
+    uint32_t totalLen = singleLen * certCount;
+    uint8_t *chainDer = reinterpret_cast<uint8_t *>(CfMalloc(totalLen, 0));
+    ASSERT_NE(chainDer, nullptr);
+    for (int i = 0; i < certCount; i++) {
+        ASSERT_EQ(memcpy_s(chainDer + i * singleLen, totalLen - i * singleLen, single, singleLen), EOK);
+    }
+    CfFree(single);
+
+    HcfAttestCertVerifyParam *param = nullptr;
+    CfResult ret = HcfAttestCreateVerifyParam(&param);
+    ASSERT_EQ(ret, CF_SUCCESS);
+
+    CfEncodingBlob rootCa = {0};
+    rootCa.encodingFormat = CF_FORMAT_DER;
+    rootCa.data = chainDer;
+    rootCa.len = totalLen;
+
+    ret = HcfAttestSetVerifyParamRootCa(param, &rootCa);
+    ASSERT_EQ(ret, CF_ERR_PARAMETER_CHECK);
+
+    CfFree(chainDer);
+    HcfAttestFreeVerifyParam(param);
+}
+
+/**
+ * @tc.name: CfAttestationTest032
+ * @tc.desc: CreateTrustedCerts, mock OPENSSL_sk_new_null returns NULL on second call, expect CF_ERR_CRYPTO_OPERATION
+ * @tc.type: FUNC
+ * @tc.require: NA
+ */
+HWTEST_F(CfAttestationTest, CfAttestationTest032, TestSize.Level0)
+{
+    HcfAttestCertVerifyParam *param = nullptr;
+    CfResult ret = HcfAttestCreateVerifyParam(&param);
+    ASSERT_EQ(ret, CF_SUCCESS);
+
+    char *chain = nullptr;
+    const char *certs[] = {EC_APP_CERT, EC_DEVICE_CERT, EC_SUB_CA_CERT};
+    int num = sizeof(certs) / sizeof(certs[0]);
+    ASSERT_EQ(CreateCertChain(certs, num, &chain), 0);
+
+    CfEncodingBlob data = {0};
+    data.encodingFormat = CF_FORMAT_PEM;
+    data.data = reinterpret_cast<uint8_t *>(chain);
+    data.len = strlen(chain);
+
+    HmAttestationInfo *info = nullptr;
+    X509OpensslMock::SetMockFlag(true);
+    {
+        InSequence seq;
+        EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_new_null());
+        EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_new_null())
+            .WillOnce(Return(nullptr));
+        ret = HcfAttestCertVerify(&data, param, &info);
+    }
+    X509OpensslMock::SetMockFlag(false);
+    Mock::VerifyAndClearExpectations(&X509OpensslMock::GetInstance());
+
+    ASSERT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
+
+    HcfAttestFreeVerifyParam(param);
+    CfFree(chain);
+}
+
+/**
+ * @tc.name: CfAttestationTest033
+ * @tc.desc: AddTrustedCertsNoDup, mock OPENSSL_sk_value returns NULL, expect CF_ERR_PARAMETER_CHECK
+ * @tc.type: FUNC
+ * @tc.require: NA
+ */
+HWTEST_F(CfAttestationTest, CfAttestationTest033, TestSize.Level0)
+{
+    HcfAttestCertVerifyParam *param = nullptr;
+    CfResult ret = HcfAttestCreateVerifyParam(&param);
+    ASSERT_EQ(ret, CF_SUCCESS);
+
+    CfEncodingBlob rootCa = {0};
+    rootCa.encodingFormat = CF_FORMAT_PEM;
+    rootCa.data = reinterpret_cast<uint8_t *>(const_cast<char *>(EC_ROOT_CA));
+    rootCa.len = strlen(EC_ROOT_CA);
+    ASSERT_EQ(HcfAttestSetVerifyParamRootCa(param, &rootCa), CF_SUCCESS);
+
+    char *chain = nullptr;
+    const char *certs[] = {EC_APP_CERT, EC_DEVICE_CERT, EC_SUB_CA_CERT};
+    int num = sizeof(certs) / sizeof(certs[0]);
+    ASSERT_EQ(CreateCertChain(certs, num, &chain), 0);
+
+    CfEncodingBlob data = {0};
+    data.encodingFormat = CF_FORMAT_PEM;
+    data.data = reinterpret_cast<uint8_t *>(chain);
+    data.len = strlen(chain);
+
+    HmAttestationInfo *info = nullptr;
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_value(_, _))
+        .WillOnce(Return(nullptr));
+    ret = HcfAttestCertVerify(&data, param, &info);
+    X509OpensslMock::SetMockFlag(false);
+    Mock::VerifyAndClearExpectations(&X509OpensslMock::GetInstance());
+
+    ASSERT_EQ(ret, CF_ERR_PARAMETER_CHECK);
+
+    HcfAttestFreeVerifyParam(param);
+    CfFree(chain);
+}
+
+/**
+ * @tc.name: CfAttestationTest034
+ * @tc.desc: AddTrustedCertsNoDup, blob and file contain the same cert, dedup by X509_cmp, expect CF_SUCCESS
+ * @tc.type: FUNC
+ * @tc.require: NA
+ */
+HWTEST_F(CfAttestationTest, CfAttestationTest034, TestSize.Level0)
+{
+    const char *caFilePath = "./trust_ca_dedup.pem";
+    ASSERT_TRUE(WriteCertFile(caFilePath, EC_ROOT_CA));
+
+    HcfAttestCertVerifyParam *param = nullptr;
+    CfResult ret = HcfAttestCreateVerifyParam(&param);
+    ASSERT_EQ(ret, CF_SUCCESS);
+
+    CfEncodingBlob rootCa = {0};
+    rootCa.encodingFormat = CF_FORMAT_PEM;
+    rootCa.data = reinterpret_cast<uint8_t *>(const_cast<char *>(EC_ROOT_CA));
+    rootCa.len = strlen(EC_ROOT_CA);
+    ASSERT_EQ(HcfAttestSetVerifyParamRootCa(param, &rootCa), CF_SUCCESS);
+    ASSERT_EQ(HcfAttestSetVerifyParamTrustCaFile(param, caFilePath), CF_SUCCESS);
+
+    char *chain = nullptr;
+    const char *certs[] = {EC_APP_CERT, EC_DEVICE_CERT, EC_SUB_CA_CERT};
+    int num = sizeof(certs) / sizeof(certs[0]);
+    ASSERT_EQ(CreateCertChain(certs, num, &chain), 0);
+
+    CfEncodingBlob data = {0};
+    data.encodingFormat = CF_FORMAT_PEM;
+    data.data = reinterpret_cast<uint8_t *>(chain);
+    data.len = strlen(chain);
+
+    HmAttestationInfo *info = nullptr;
+    ret = HcfAttestCertVerify(&data, param, &info);
+    ASSERT_EQ(ret, CF_SUCCESS);
+
+    HcfAttestInfoFree(info);
+    HcfAttestFreeVerifyParam(param);
+    CfFree(chain);
+    remove(caFilePath);
+}
+
+/**
+ * @tc.name: CfAttestationTest035
+ * @tc.desc: AddTrustedCertsNoDup, mock X509_up_ref returns 0, expect CF_ERR_CRYPTO_OPERATION
+ * @tc.type: FUNC
+ * @tc.require: NA
+ */
+HWTEST_F(CfAttestationTest, CfAttestationTest035, TestSize.Level0)
+{
+    HcfAttestCertVerifyParam *param = nullptr;
+    CfResult ret = HcfAttestCreateVerifyParam(&param);
+    ASSERT_EQ(ret, CF_SUCCESS);
+
+    CfEncodingBlob rootCa = {0};
+    rootCa.encodingFormat = CF_FORMAT_PEM;
+    rootCa.data = reinterpret_cast<uint8_t *>(const_cast<char *>(EC_ROOT_CA));
+    rootCa.len = strlen(EC_ROOT_CA);
+    ASSERT_EQ(HcfAttestSetVerifyParamRootCa(param, &rootCa), CF_SUCCESS);
+
+    char *chain = nullptr;
+    const char *certs[] = {EC_APP_CERT, EC_DEVICE_CERT, EC_SUB_CA_CERT};
+    int num = sizeof(certs) / sizeof(certs[0]);
+    ASSERT_EQ(CreateCertChain(certs, num, &chain), 0);
+
+    CfEncodingBlob data = {0};
+    data.encodingFormat = CF_FORMAT_PEM;
+    data.data = reinterpret_cast<uint8_t *>(chain);
+    data.len = strlen(chain);
+
+    HmAttestationInfo *info = nullptr;
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_up_ref(_))
+        .WillOnce(Return(0));
+    ret = HcfAttestCertVerify(&data, param, &info);
+    X509OpensslMock::SetMockFlag(false);
+    Mock::VerifyAndClearExpectations(&X509OpensslMock::GetInstance());
+
+    ASSERT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
+
+    HcfAttestFreeVerifyParam(param);
+    CfFree(chain);
+}
+
+/**
+ * @tc.name: CfAttestationTest036
+ * @tc.desc: AddTrustedCertsNoDup, mock OPENSSL_sk_push returns 0, expect CF_ERR_CRYPTO_OPERATION
+ * @tc.type: FUNC
+ * @tc.require: NA
+ */
+HWTEST_F(CfAttestationTest, CfAttestationTest036, TestSize.Level0)
+{
+    HcfAttestCertVerifyParam *param = nullptr;
+    CfResult ret = HcfAttestCreateVerifyParam(&param);
+    ASSERT_EQ(ret, CF_SUCCESS);
+
+    CfEncodingBlob rootCa = {0};
+    rootCa.encodingFormat = CF_FORMAT_PEM;
+    rootCa.data = reinterpret_cast<uint8_t *>(const_cast<char *>(EC_ROOT_CA));
+    rootCa.len = strlen(EC_ROOT_CA);
+    ASSERT_EQ(HcfAttestSetVerifyParamRootCa(param, &rootCa), CF_SUCCESS);
+
+    char *chain = nullptr;
+    const char *certs[] = {EC_APP_CERT, EC_DEVICE_CERT};
+    int num = sizeof(certs) / sizeof(certs[0]);
+    ASSERT_EQ(CreateCertChain(certs, num, &chain), 0);
+
+    CfEncodingBlob data = {0};
+    data.encodingFormat = CF_FORMAT_PEM;
+    data.data = reinterpret_cast<uint8_t *>(chain);
+    data.len = strlen(chain);
+
+    HmAttestationInfo *info = nullptr;
+    X509OpensslMock::SetMockFlag(true);
+    {
+        InSequence seq;
+        EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_push(_, _));
+        EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_push(_, _));
+        EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_push(_, _))
+            .WillOnce(Return(0));
+        ret = HcfAttestCertVerify(&data, param, &info);
+    }
+    X509OpensslMock::SetMockFlag(false);
+    Mock::VerifyAndClearExpectations(&X509OpensslMock::GetInstance());
+
+    ASSERT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
+
+    HcfAttestFreeVerifyParam(param);
+    CfFree(chain);
+}
+
+/**
+ * @tc.name: CfAttestationTest037
+ * @tc.desc: ReadX509FromData, encodingFormat is CF_FORMAT_PKCS7, expect CF_ERR_INVALID_CODE_FORMAT
+ * @tc.type: FUNC
+ * @tc.require: NA
+ */
+HWTEST_F(CfAttestationTest, CfAttestationTest037, TestSize.Level0)
+{
+    HcfAttestCertVerifyParam *param = nullptr;
+    CfResult ret = HcfAttestCreateVerifyParam(&param);
+    ASSERT_EQ(ret, CF_SUCCESS);
+
+    CfEncodingBlob rootCa = {0};
+    rootCa.encodingFormat = CF_FORMAT_PEM;
+    rootCa.data = reinterpret_cast<uint8_t *>(const_cast<char *>(EC_ROOT_CA));
+    rootCa.len = strlen(EC_ROOT_CA);
+    ASSERT_EQ(HcfAttestSetVerifyParamRootCa(param, &rootCa), CF_SUCCESS);
+
+    char *chain = nullptr;
+    const char *certs[] = {EC_APP_CERT, EC_DEVICE_CERT, EC_SUB_CA_CERT};
+    int num = sizeof(certs) / sizeof(certs[0]);
+    ASSERT_EQ(CreateCertChain(certs, num, &chain), 0);
+
+    CfEncodingBlob data = {0};
+    data.encodingFormat = CF_FORMAT_PKCS7;
+    data.data = reinterpret_cast<uint8_t *>(chain);
+    data.len = strlen(chain);
+
+    HmAttestationInfo *info = nullptr;
+    ret = HcfAttestCertVerify(&data, param, &info);
+    ASSERT_EQ(ret, CF_ERR_INVALID_CODE_FORMAT);
+
+    HcfAttestFreeVerifyParam(param);
+    CfFree(chain);
+}
+
+/**
+ * @tc.name: CfAttestationTest038
+ * @tc.desc: ReadX509FromData, encodingFormat is invalid value, expect CF_ERR_INVALID_CODE_FORMAT
+ * @tc.type: FUNC
+ * @tc.require: NA
+ */
+HWTEST_F(CfAttestationTest, CfAttestationTest038, TestSize.Level0)
+{
+    HcfAttestCertVerifyParam *param = nullptr;
+    CfResult ret = HcfAttestCreateVerifyParam(&param);
+    ASSERT_EQ(ret, CF_SUCCESS);
+
+    CfEncodingBlob rootCa = {0};
+    rootCa.encodingFormat = CF_FORMAT_PEM;
+    rootCa.data = reinterpret_cast<uint8_t *>(const_cast<char *>(EC_ROOT_CA));
+    rootCa.len = strlen(EC_ROOT_CA);
+    ASSERT_EQ(HcfAttestSetVerifyParamRootCa(param, &rootCa), CF_SUCCESS);
+
+    char *chain = nullptr;
+    const char *certs[] = {EC_APP_CERT, EC_DEVICE_CERT, EC_SUB_CA_CERT};
+    int num = sizeof(certs) / sizeof(certs[0]);
+    ASSERT_EQ(CreateCertChain(certs, num, &chain), 0);
+
+    CfEncodingBlob data = {0};
+    data.encodingFormat = static_cast<CfEncodingFormat>(0xFF);
+    data.data = reinterpret_cast<uint8_t *>(chain);
+    data.len = strlen(chain);
+
+    HmAttestationInfo *info = nullptr;
+    ret = HcfAttestCertVerify(&data, param, &info);
+    ASSERT_EQ(ret, CF_ERR_INVALID_CODE_FORMAT);
+
+    HcfAttestFreeVerifyParam(param);
+    CfFree(chain);
+}
+
+/**
+ * @tc.name: CfAttestationTest039
+ * @tc.desc: AttestCertVerify with only TrustCaFile as trust anchor, expect CF_SUCCESS
+ * @tc.type: FUNC
+ * @tc.require: NA
+ */
+HWTEST_F(CfAttestationTest, CfAttestationTest039, TestSize.Level0)
+{
+    const char *caFilePath = "./trust_ca_only.pem";
+    ASSERT_TRUE(WriteCertFile(caFilePath, EC_ROOT_CA));
+
+    HcfAttestCertVerifyParam *param = nullptr;
+    CfResult ret = HcfAttestCreateVerifyParam(&param);
+    ASSERT_EQ(ret, CF_SUCCESS);
+
+    ASSERT_EQ(HcfAttestSetVerifyParamTrustCaFile(param, caFilePath), CF_SUCCESS);
+
+    char *chain = nullptr;
+    const char *certs[] = {EC_APP_CERT, EC_DEVICE_CERT, EC_SUB_CA_CERT};
+    int num = sizeof(certs) / sizeof(certs[0]);
+    ASSERT_EQ(CreateCertChain(certs, num, &chain), 0);
+
+    CfEncodingBlob data = {0};
+    data.encodingFormat = CF_FORMAT_PEM;
+    data.data = reinterpret_cast<uint8_t *>(chain);
+    data.len = strlen(chain);
+
+    HmAttestationInfo *info = nullptr;
+    ret = HcfAttestCertVerify(&data, param, &info);
+    ASSERT_EQ(ret, CF_SUCCESS);
+
+    HcfAttestInfoFree(info);
+    HcfAttestFreeVerifyParam(param);
+    CfFree(chain);
+    remove(caFilePath);
+}
+
+/**
+ * @tc.name: CfAttestationTest040
+ * @tc.desc: RootCa and TrustCaFile contain different root certs, union as trust set, both chains verify successfully
+ * @tc.type: FUNC
+ * @tc.require: NA
+ */
+HWTEST_F(CfAttestationTest, CfAttestationTest040, TestSize.Level0)
+{
+    const char *caFilePath = "./trust_ca_rsa.pem";
+    ASSERT_TRUE(WriteCertFile(caFilePath, RSA_ROOT_CA));
+
+    HcfAttestCertVerifyParam *param = nullptr;
+    CfResult ret = HcfAttestCreateVerifyParam(&param);
+    ASSERT_EQ(ret, CF_SUCCESS);
+
+    CfEncodingBlob rootCa = {0};
+    rootCa.encodingFormat = CF_FORMAT_PEM;
+    rootCa.data = reinterpret_cast<uint8_t *>(const_cast<char *>(EC_ROOT_CA));
+    rootCa.len = strlen(EC_ROOT_CA);
+    ASSERT_EQ(HcfAttestSetVerifyParamRootCa(param, &rootCa), CF_SUCCESS);
+    ASSERT_EQ(HcfAttestSetVerifyParamTrustCaFile(param, caFilePath), CF_SUCCESS);
+
+    char *ecChain = nullptr;
+    const char *ecCerts[] = {EC_APP_CERT, EC_DEVICE_CERT, EC_SUB_CA_CERT};
+    int ecNum = sizeof(ecCerts) / sizeof(ecCerts[0]);
+    ASSERT_EQ(CreateCertChain(ecCerts, ecNum, &ecChain), 0);
+
+    CfEncodingBlob ecData = {0};
+    ecData.encodingFormat = CF_FORMAT_PEM;
+    ecData.data = reinterpret_cast<uint8_t *>(ecChain);
+    ecData.len = strlen(ecChain);
+
+    HmAttestationInfo *info = nullptr;
+    ret = HcfAttestCertVerify(&ecData, param, &info);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    HcfAttestInfoFree(info);
+    CfFree(ecChain);
+
+    char *rsaChain = nullptr;
+    const char *rsaCerts[] = {RSA_APP_CERT, RSA_DEVICE_CERT, RSA_SUB_CA_CERT};
+    int rsaNum = sizeof(rsaCerts) / sizeof(rsaCerts[0]);
+    ASSERT_EQ(CreateCertChain(rsaCerts, rsaNum, &rsaChain), 0);
+
+    CfEncodingBlob rsaData = {0};
+    rsaData.encodingFormat = CF_FORMAT_PEM;
+    rsaData.data = reinterpret_cast<uint8_t *>(rsaChain);
+    rsaData.len = strlen(rsaChain);
+
+    info = nullptr;
+    ret = HcfAttestCertVerify(&rsaData, param, &info);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    HcfAttestInfoFree(info);
+    CfFree(rsaChain);
+
+    HcfAttestFreeVerifyParam(param);
+    remove(caFilePath);
+}
+
+/**
+ * @tc.name: CfAttestationTest041
+ * @tc.desc: AddTrustedCertsNoDup with fileTrustedCerts, mock X509_up_ref returns 0, expect CF_ERR_CRYPTO_OPERATION
+ * @tc.type: FUNC
+ * @tc.require: NA
+ */
+HWTEST_F(CfAttestationTest, CfAttestationTest041, TestSize.Level0)
+{
+    const char *caFilePath = "./trust_ca_up_ref.pem";
+    ASSERT_TRUE(WriteCertFile(caFilePath, EC_ROOT_CA));
+
+    HcfAttestCertVerifyParam *param = nullptr;
+    CfResult ret = HcfAttestCreateVerifyParam(&param);
+    ASSERT_EQ(ret, CF_SUCCESS);
+
+    ASSERT_EQ(HcfAttestSetVerifyParamTrustCaFile(param, caFilePath), CF_SUCCESS);
+
+    char *chain = nullptr;
+    const char *certs[] = {EC_APP_CERT, EC_DEVICE_CERT, EC_SUB_CA_CERT};
+    int num = sizeof(certs) / sizeof(certs[0]);
+    ASSERT_EQ(CreateCertChain(certs, num, &chain), 0);
+
+    CfEncodingBlob data = {0};
+    data.encodingFormat = CF_FORMAT_PEM;
+    data.data = reinterpret_cast<uint8_t *>(chain);
+    data.len = strlen(chain);
+
+    HmAttestationInfo *info = nullptr;
+    X509OpensslMock::SetMockFlag(true);
+    EXPECT_CALL(X509OpensslMock::GetInstance(), X509_up_ref(_))
+        .WillOnce(Return(0));
+    ret = HcfAttestCertVerify(&data, param, &info);
+    X509OpensslMock::SetMockFlag(false);
+    Mock::VerifyAndClearExpectations(&X509OpensslMock::GetInstance());
+
+    ASSERT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
+
+    HcfAttestFreeVerifyParam(param);
+    CfFree(chain);
+    remove(caFilePath);
+}
+
+/**
+ * @tc.name: CfAttestationTest042
+ * @tc.desc: AddTrustedCertsNoDup with fileTrustedCerts, mock OPENSSL_sk_push returns 0, expect CF_ERR_CRYPTO_OPERATION
+ * @tc.type: FUNC
+ * @tc.require: NA
+ */
+HWTEST_F(CfAttestationTest, CfAttestationTest042, TestSize.Level0)
+{
+    const char *caFilePath = "./trust_ca_push.pem";
+    ASSERT_TRUE(WriteCertFile(caFilePath, EC_ROOT_CA));
+
+    HcfAttestCertVerifyParam *param = nullptr;
+    CfResult ret = HcfAttestCreateVerifyParam(&param);
+    ASSERT_EQ(ret, CF_SUCCESS);
+
+    ASSERT_EQ(HcfAttestSetVerifyParamTrustCaFile(param, caFilePath), CF_SUCCESS);
+
+    char *chain = nullptr;
+    const char *certs[] = {EC_APP_CERT, EC_DEVICE_CERT};
+    int num = sizeof(certs) / sizeof(certs[0]);
+    ASSERT_EQ(CreateCertChain(certs, num, &chain), 0);
+
+    CfEncodingBlob data = {0};
+    data.encodingFormat = CF_FORMAT_PEM;
+    data.data = reinterpret_cast<uint8_t *>(chain);
+    data.len = strlen(chain);
+
+    HmAttestationInfo *info = nullptr;
+    X509OpensslMock::SetMockFlag(true);
+    {
+        InSequence seq;
+        EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_push(_, _));
+        EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_push(_, _));
+        EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_push(_, _))
+            .WillOnce(Return(0));
+        ret = HcfAttestCertVerify(&data, param, &info);
+    }
+    X509OpensslMock::SetMockFlag(false);
+    Mock::VerifyAndClearExpectations(&X509OpensslMock::GetInstance());
+
+    ASSERT_EQ(ret, CF_ERR_CRYPTO_OPERATION);
+
+    HcfAttestFreeVerifyParam(param);
+    CfFree(chain);
+    remove(caFilePath);
 }
 
 } // namespace

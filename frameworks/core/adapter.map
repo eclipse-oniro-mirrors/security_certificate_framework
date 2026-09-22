@@ -82,6 +82,7 @@
     HcfAttestSetVerifyParamCheckTime;
     HcfAttestSetVerifyParamRootCa;
     HcfAttestSetVerifyParamSnInfos;
+    HcfAttestSetVerifyParamTrustCaFile;
   local:
     *;
 };

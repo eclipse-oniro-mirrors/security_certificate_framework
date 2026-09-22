@@ -15,6 +15,7 @@
 
 #include <openssl/x509.h>
 #include <openssl/pem.h>
+#include <openssl/bio.h>
 #include <openssl/err.h>
 #include <openssl/sha.h>
 #include <openssl/evp.h>
@@ -26,71 +27,10 @@
 #include "attestation_cert_verify.h"
 #include "attestation_cert_ext_legacy.h"
 
-static const char *ROOT_CA = "-----BEGIN CERTIFICATE-----\n"
-"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\n"
-"-----END CERTIFICATE-----";
-
-static const char *ROOT_G2_CA = "-----BEGIN CERTIFICATE-----\n"
-"MIICGjCCAaGgAwIBAgIIShhpn519jNAwCgYIKoZIzj0EAwMwUzELMAkGA1UEBhMC\n"
-"Q04xDzANBgNVBAoMBkh1YXdlaTETMBEGA1UECwwKSHVhd2VpIENCRzEeMBwGA1UE\n"
-"AwwVSHVhd2VpIENCRyBSb290IENBIEcyMB4XDTIwMDMxNjAzMDQzOVoXDTQ5MDMx\n"
-"NjAzMDQzOVowUzELMAkGA1UEBhMCQ04xDzANBgNVBAoMBkh1YXdlaTETMBEGA1UE\n"
-"CwwKSHVhd2VpIENCRzEeMBwGA1UEAwwVSHVhd2VpIENCRyBSb290IENBIEcyMHYw\n"
-"EAYHKoZIzj0CAQYFK4EEACIDYgAEWidkGnDSOw3/HE2y2GHl+fpWBIa5S+IlnNrs\n"
-"GUvwC1I2QWvtqCHWmwFlFK95zKXiM8s9yV3VVXh7ivN8ZJO3SC5N1TCrvB2lpHMB\n"
-"wcz4DA0kgHCMm/wDec6kOHx1xvCRo0IwQDAOBgNVHQ8BAf8EBAMCAQYwDwYDVR0T\n"
-"AQH/BAUwAwEB/zAdBgNVHQ4EFgQUo45a9Vq8cYwqaiVyfkiS4pLcIAAwCgYIKoZI\n"
-"zj0EAwMDZwAwZAIwMypeB7P0IbY7c6gpWcClhRznOJFj8uavrNu2PIoz9KIqr3jn\n"
-"BlBHJs0myI7ntYpEAjBbm8eDMZY5zq5iMZUC6H7UzYSix4Uy1YlsLVV738PtKP9h\n"
-"FTjgDHctXJlC5L7+ZDY=\n"
-"-----END CERTIFICATE-----";
-
-static const char *EQUIPMENT_ROOT_CA = "-----BEGIN CERTIFICATE-----\n"
-"MIICEDCCAZagAwIBAgIDM4vWMAoGCCqGSM49BAMDME8xCzAJBgNVBAYTAkNOMRMw\n"
-"EQYDVQQKEwpIdWF3ZWkgQ0JHMSswKQYDVQQDEyJIdWF3ZWkgQ0JHIEVDQyBFcXVp\n"
-"cG1lbnQgUm9vdCBDQSAzMCAXDTI0MDQxMzA0MjAwN1oYDzIwNzQwNDEzMDQyMDA3\n"
-"WjBPMQswCQYDVQQGEwJDTjETMBEGA1UEChMKSHVhd2VpIENCRzErMCkGA1UEAxMi\n"
-"SHVhd2VpIENCRyBFQ0MgRXF1aXBtZW50IFJvb3QgQ0EgMzB2MBAGByqGSM49AgEG\n"
-"BSuBBAAiA2IABIqIk8IWZQaD80A5w8IxUN5HYs6coMCoA2uMffx8PQhoRE+OqsFM\n"
-"g4AkdZmIqSjD0UMVNgN90gwTWYsjFRtztang3bujaQfABwb2PoLwd8bvdZaD8eq6\n"
-"uYMBqgbEEeb23aNCMEAwDgYDVR0PAQH/BAQDAgEGMA8GA1UdEwEB/wQFMAMBAf8w\n"
-"HQYDVR0OBBYEFCnkWR/rJwU1EGXzxZPD1X2pTWhFMAoGCCqGSM49BAMDA2gAMGUC\n"
-"MH+QnarOVBE2RtbqVMMTKBlKMc/sas/CZuawZazpdEhNKZIfe/9cODWMpV0/NpKJ\n"
-"/QIxAKNJ6Wb0ir3VGYpCfXLAGgCcJU5G/DHorT+7eF6T8Bg4t2Di1XGT9HIaZ2W+\n"
-"OSPInA==\n"
-"-----END CERTIFICATE-----";
-
 struct HcfAttestCertVerifyParam {
     bool checkTime;
     STACK_OF(X509) *trustedCerts;
+    STACK_OF(X509) *fileTrustedCerts;
     const HmAttestationSnInfo *snInfos;
 };
 #define SUB_CA_SUBJECT_INFO_LEN 3
@@ -368,62 +308,78 @@ static CfResult VerifySubCa(X509 *subCa, const HcfAttestCertVerifyParam *param)
     return CF_ERR_PARAMETER_CHECK;
 }
 
-static CfResult CreateTrustedCerts(const HcfAttestCertVerifyParam *param, STACK_OF(X509) **trustedCerts)
+static bool IsCertInStack(STACK_OF(X509) *certs, X509 *cert)
 {
-    if (param != NULL && param->trustedCerts != NULL) {
-        *trustedCerts = X509_chain_up_ref(param->trustedCerts);
-        if (*trustedCerts == NULL) {
-            return CF_ERR_CRYPTO_OPERATION;
+    int i;
+    for (i = 0; i < sk_X509_num(certs); i++) {
+        if (X509_cmp(sk_X509_value(certs, i), cert) == 0) {
+            return true;
         }
+    }
+    return false;
+}
+
+static CfResult AddTrustedCertsNoDup(STACK_OF(X509) *src, STACK_OF(X509) *dst)
+{
+    if (src == NULL) {
         return CF_SUCCESS;
     }
 
+    int i;
+    for (i = 0; i < sk_X509_num(src); i++) {
+        X509 *cert = sk_X509_value(src, i);
+        if (cert == NULL) {
+            continue;
+        }
+        if (IsCertInStack(dst, cert)) {
+            continue;
+        }
+        if (X509_up_ref(cert) != 1) {
+            return CF_ERR_CRYPTO_OPERATION;
+        }
+        if (sk_X509_push(dst, cert) <= 0) {
+            X509_free(cert);
+            return CF_ERR_CRYPTO_OPERATION;
+        }
+    }
+    return CF_SUCCESS;
+}
+
+static CfResult CreateTrustedCerts(const HcfAttestCertVerifyParam *param, STACK_OF(X509) **trustedCerts)
+{
     STACK_OF(X509) *certs = sk_X509_new_null();
     if (certs == NULL) {
         return CF_ERR_CRYPTO_OPERATION;
     }
 
-    const char *rootCa[] = {ROOT_CA, ROOT_G2_CA, EQUIPMENT_ROOT_CA};
-    uint32_t rootCaNum = sizeof(rootCa) / sizeof(rootCa[0]);
-    uint32_t i;
-    ERR_clear_error();
-    for (i = 0; i < rootCaNum; i++) {
-        BIO *bio = BIO_new_mem_buf(rootCa[i], -1);
-        if (bio == NULL) {
-            break;
-        }
-        X509 *cert = PEM_read_bio_X509(bio, NULL, NULL, NULL);
-        if (cert == NULL) {
-            BIO_free(bio);
-            break;
-        }
-        if (sk_X509_push(certs, cert) <= 0) {
-            BIO_free(bio);
-            X509_free(cert);
-            break;
-        }
-        BIO_free(bio);
+    CfResult ret = AddTrustedCertsNoDup(param->trustedCerts, certs);
+    if (ret != CF_SUCCESS) {
+        LOGE("Add blob trustedCerts failed, ret = %{public}d\n", ret);
+        goto exit;
     }
-    // Record the error
-    ProcessOpensslError(CF_ERR_CRYPTO_OPERATION);
-    if ((uint32_t)sk_X509_num(certs) != rootCaNum) {
-        sk_X509_pop_free(certs, X509_free);
-        return CF_ERR_PARAMETER_CHECK;
+    ret = AddTrustedCertsNoDup(param->fileTrustedCerts, certs);
+    if (ret != CF_SUCCESS) {
+        LOGE("Add file trustedCerts failed, ret = %{public}d\n", ret);
+        goto exit;
+    }
+
+    if (sk_X509_num(certs) == 0) {
+        LOGE("No trusted cert is provided\n");
+        ret = CF_ERR_PARAMETER_CHECK;
+        goto exit;
     }
 
     *trustedCerts = certs;
     return CF_SUCCESS;
+exit:
+    sk_X509_pop_free(certs, X509_free);
+    return ret;
 }
 
-static CfResult ReadX509FromData(const CfEncodingBlob *encodingBlob, STACK_OF(X509) **certs)
+static CfResult ReadPemX509FromData(const CfEncodingBlob *encodingBlob, STACK_OF(X509) *certs)
 {
     BIO *bio = BIO_new_mem_buf(encodingBlob->data, encodingBlob->len);
     if (bio == NULL) {
-        return CF_ERR_CRYPTO_OPERATION;
-    }
-    STACK_OF(X509) *tmp = sk_X509_new_null();
-    if (tmp == NULL) {
-        BIO_free(bio);
         return CF_ERR_CRYPTO_OPERATION;
     }
 
@@ -433,7 +389,7 @@ static CfResult ReadX509FromData(const CfEncodingBlob *encodingBlob, STACK_OF(X5
     ERR_clear_error();
     X509 *cert = PEM_read_bio_X509(bio, NULL, NULL, NULL);
     while (cert != NULL) {
-        if (sk_X509_push(tmp, cert) <= 0) {
+        if (sk_X509_push(certs, cert) <= 0) {
             X509_free(cert);
             ret = CF_ERR_CRYPTO_OPERATION;
             break;
@@ -448,6 +404,56 @@ static CfResult ReadX509FromData(const CfEncodingBlob *encodingBlob, STACK_OF(X5
     // Record the error
     ProcessOpensslError(CF_ERR_CRYPTO_OPERATION);
     BIO_free(bio);
+    return ret;
+}
+
+static CfResult ReadDerX509FromData(const CfEncodingBlob *encodingBlob, STACK_OF(X509) *certs)
+{
+    const unsigned char *p = encodingBlob->data;
+    const unsigned char *end = encodingBlob->data + encodingBlob->len;
+
+    CfResult ret = CF_SUCCESS;
+    uint32_t certNum = 0;
+
+    ERR_clear_error();
+    while (p < end) {
+        X509 *cert = d2i_X509(NULL, &p, (long)(end - p));
+        if (cert == NULL) {
+            ret = CF_ERR_PARAMETER_CHECK;
+            break;
+        }
+        if (sk_X509_push(certs, cert) <= 0) {
+            X509_free(cert);
+            ret = CF_ERR_CRYPTO_OPERATION;
+            break;
+        }
+        certNum++;
+        if (certNum > MAX_CERT_NUM) {
+            ret = CF_ERR_PARAMETER_CHECK;
+            break;
+        }
+    }
+    // Record the error
+    ProcessOpensslError(CF_ERR_CRYPTO_OPERATION);
+    return ret;
+}
+
+static CfResult ReadX509FromData(const CfEncodingBlob *encodingBlob, STACK_OF(X509) **certs)
+{
+    STACK_OF(X509) *tmp = sk_X509_new_null();
+    if (tmp == NULL) {
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    CfResult ret;
+    if (encodingBlob->encodingFormat == CF_FORMAT_DER) {
+        ret = ReadDerX509FromData(encodingBlob, tmp);
+    } else if (encodingBlob->encodingFormat == CF_FORMAT_PEM) {
+        ret = ReadPemX509FromData(encodingBlob, tmp);
+    } else {
+        LOGE("invalid encoding format\n");
+        ret = CF_ERR_INVALID_CODE_FORMAT;
+    }
     if (ret != CF_SUCCESS) {
         sk_X509_pop_free(tmp, X509_free);
         return ret;
@@ -457,7 +463,7 @@ static CfResult ReadX509FromData(const CfEncodingBlob *encodingBlob, STACK_OF(X5
         return CF_ERR_PARAMETER_CHECK;
     }
     *certs = tmp;
-    return ret;
+    return CF_SUCCESS;
 }
 
 static CfResult CreateCerts(const CfEncodingBlob *encodingBlob, STACK_OF(X509) **certs)
@@ -675,7 +681,7 @@ exit:
 CfResult AttestCertVerify(const CfEncodingBlob *encodingBlob, const HcfAttestCertVerifyParam *param,
     HmAttestationInfo **info)
 {
-    if (encodingBlob == NULL || info == NULL) {
+    if (encodingBlob == NULL || param == NULL || info == NULL) {
         return CF_NULL_POINTER;
     }
 
@@ -932,6 +938,73 @@ CfResult AttestSetVerifyParamRootCa(HcfAttestCertVerifyParam *param, const CfEnc
     return ret;
 }
 
+static CfResult ReadTrustCaFile(const char *caFilePath, STACK_OF(X509) **certs)
+{
+    BIO *bio = BIO_new_file(caFilePath, "r");
+    if (bio == NULL) {
+        LOGE("BIO_new_file failed\n");
+        return CF_ERR_PARAMETER_CHECK;
+    }
+
+    STACK_OF(X509) *tmp = sk_X509_new_null();
+    if (tmp == NULL) {
+        BIO_free(bio);
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    CfResult ret = CF_SUCCESS;
+    uint32_t certNum = 0;
+
+    ERR_clear_error();
+    X509 *cert = PEM_read_bio_X509(bio, NULL, NULL, NULL);
+    while (cert != NULL) {
+        if (sk_X509_push(tmp, cert) <= 0) {
+            X509_free(cert);
+            ret = CF_ERR_CRYPTO_OPERATION;
+            break;
+        }
+        certNum++;
+        if (certNum > MAX_CERT_NUM) {
+            ret = CF_ERR_PARAMETER_CHECK;
+            break;
+        }
+        cert = PEM_read_bio_X509(bio, NULL, NULL, NULL);
+    }
+    // Record the error
+    ProcessOpensslError(CF_ERR_CRYPTO_OPERATION);
+    BIO_free(bio);
+    if (ret != CF_SUCCESS) {
+        sk_X509_pop_free(tmp, X509_free);
+        return ret;
+    }
+    if (sk_X509_num(tmp) == 0) {
+        sk_X509_pop_free(tmp, X509_free);
+        return CF_ERR_PARAMETER_CHECK;
+    }
+    *certs = tmp;
+    return CF_SUCCESS;
+}
+
+CfResult AttestSetVerifyParamTrustCaFile(HcfAttestCertVerifyParam *param, const char *caFilePath)
+{
+    if (param == NULL || caFilePath == NULL) {
+        return CF_NULL_POINTER;
+    }
+    if (param->fileTrustedCerts != NULL) {
+        return CF_ERR_SHOULD_NOT_CALL;
+    }
+
+    STACK_OF(X509) *cas = NULL;
+    CfResult ret = ReadTrustCaFile(caFilePath, &cas);
+    if (ret != CF_SUCCESS) {
+        LOGE("ReadTrustCaFile failed, ret = %{public}d\n", ret);
+        return ret;
+    }
+
+    param->fileTrustedCerts = cas;
+    return CF_SUCCESS;
+}
+
 CfResult AttestSetVerifyParamSnInfos(HcfAttestCertVerifyParam *param, const HmAttestationSnInfo *snInfos)
 {
     if (param == NULL || snInfos == NULL) {
@@ -953,6 +1026,9 @@ void AttestFreeVerifyParam(HcfAttestCertVerifyParam *param)
     }
     if (param->trustedCerts != NULL) {
         sk_X509_pop_free(param->trustedCerts, X509_free);
+    }
+    if (param->fileTrustedCerts != NULL) {
+        sk_X509_pop_free(param->fileTrustedCerts, X509_free);
     }
     CfFree(param);
 }
