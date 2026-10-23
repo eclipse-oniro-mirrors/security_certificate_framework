@@ -71,7 +71,7 @@ void FreeX509CertChainValidateResult(HcfX509CertChainValidateResult &param, bool
     param.entityCert = nullptr;
 }
 
-CfResult BuildVerifyCertResultJS(napi_env env, HcfVerifyCertResult *result,
+CfResult BuildVerifyCertResultJS(napi_env env, HcfCertVerifyResult *result,
     CfObject **certObj, uint32_t certObjCount, napi_value *outValue)
 {
     if (result == nullptr || result->certs.data == nullptr || certObj == nullptr || outValue == nullptr) {
@@ -124,20 +124,9 @@ CfResult BuildVerifyCertResultJS(napi_env env, HcfVerifyCertResult *result,
     return CF_SUCCESS;
 }
 
-void FreeVerifyCertResult(HcfVerifyCertResult &param, CfObject **certObj, uint32_t certObjCount)
+void FreeVerifyCertResult(HcfCertVerifyResult &param, CfObject **certObj, uint32_t certObjCount)
 {
-    if (param.certs.data != nullptr) {
-        for (uint32_t i = 0; i < param.certs.count; i++) {
-            /* Always destroy if not null (ownership not transferred) */
-            if (param.certs.data[i] != nullptr) {
-                CfObjDestroy(param.certs.data[i]);
-                param.certs.data[i] = nullptr;
-            }
-        }
-        CfFree(param.certs.data);
-        param.certs.data = nullptr;
-    }
-    param.certs.count = 0;
+    HcfFreeCertVerifyResult(&param);
 
     /* Free certObj array */
     if (certObj != nullptr) {

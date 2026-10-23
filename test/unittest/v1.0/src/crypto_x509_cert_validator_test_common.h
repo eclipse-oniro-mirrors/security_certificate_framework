@@ -47,7 +47,7 @@ public:
 };
 
 HcfX509Certificate *CreateCertFromPem(const char *pemCert);
-void FreeVerifyCertResult(HcfVerifyCertResult &result);
+void FreeVerifyCertResult(HcfCertVerifyResult &result);
 void FreeValidatorParams(HcfX509CertValidatorParams &params);
 void FreeValidatorParamsWithOcspData(HcfX509CertValidatorParams &params);
 OCSP_RESPONSE *CreateOcspResponseFromDer(const uint8_t *der, size_t len);

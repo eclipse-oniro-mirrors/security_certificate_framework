@@ -890,6 +890,8 @@ CfResult BuildRevokedParamsInner(optional<X509CertRevokedParams> const& params, 
         CfBuildErrorMsg(&errMsg, "revokedParams malloc %zu bytes failed", sizeof(HcfX509CertRevokedParams));
         return CF_ERR_MALLOC;
     }
+    hcfParams->size = sizeof(HcfX509CertRevokedParams);
+    hcfParams->enableRevocationCache = false;
     CfResult ret = BuildRevocationFlagsInner(params->revocationFlags, hcfParams->revocationFlags, errMsg);
     if (ret != CF_SUCCESS) {
         return ret;
@@ -989,9 +991,22 @@ CfResult BuildStringInner(optional<string> const& strs, char *&res, uint32_t min
     return CF_SUCCESS;
 }
 
+static void InitEnhancedCertParamsDefault(HcfX509CertValidatorParams &hcfParam)
+{
+    hcfParam.trustCertPath.count = 0;
+    hcfParam.trustCertPath.data = nullptr;
+    hcfParam.ipAddresses.count = 0;
+    hcfParam.ipAddresses.data = nullptr;
+    hcfParam.extendedKeyUsage.count = 0;
+    hcfParam.extendedKeyUsage.data = nullptr;
+    hcfParam.sslMode = SSL_MODE_NONE;
+}
+
 CfResult BuildX509CertValidatorParams(CertValidationParams const& param,
     HcfX509CertValidatorParams &hcfParam, char *&errMsg)
 {
+    hcfParam.size = sizeof(HcfX509CertValidatorParams);
+    InitEnhancedCertParamsDefault(hcfParam);
     AniParamInfo untrustedCertsInfo = {"untrustedCerts", 0, MAX_UNTRUSTED_CERT_COUNT, nullptr};
     CfResult ret = BuildCertArrayInner(&untrustedCertsInfo, param.untrustedCerts, hcfParam.untrustedCerts, errMsg);
     if (ret != CF_SUCCESS) {
@@ -1049,17 +1064,13 @@ void FreeX509CertValidatorParams(HcfX509CertValidatorParams &hcfParam)
     FreeStringArray(hcfParam.emailAddresses);
     FreeInt32Array(hcfParam.keyUsage);
     FreeRevokedParams(hcfParam.revokedParams);
+    FreeStringArray(hcfParam.trustCertPath);
+    FreeStringArray(hcfParam.ipAddresses);
+    FreeInt32Array(hcfParam.extendedKeyUsage);
 }
 
-void FreeVerifyCertResult(HcfVerifyCertResult &result)
+void FreeVerifyCertResult(HcfCertVerifyResult &result)
 {
-    if (result.certs.data != nullptr) {
-        for (uint32_t i = 0; i < result.certs.count; ++i) {
-            CfObjDestroy(result.certs.data[i]);
-            result.certs.data[i] = nullptr;
-        }
-        CF_FREE_PTR(result.certs.data);
-        result.certs.count = 0;
-    }
+    HcfFreeCertVerifyResult(&result);
 }
 } // namespace ANI::CertFramework

@@ -30,9 +30,9 @@ namespace CertFramework {
 napi_value BuildX509CertChainValidateResultJS(napi_env env, const HcfX509CertChainValidateResult *param);
 void FreeX509CertChainValidateResult(HcfX509CertChainValidateResult &param, bool freeCertFlag = false);
 
-CfResult BuildVerifyCertResultJS(napi_env env, HcfVerifyCertResult *result,
+CfResult BuildVerifyCertResultJS(napi_env env, HcfCertVerifyResult *result,
     CfObject **certObj, uint32_t certObjCount, napi_value *outValue);
-void FreeVerifyCertResult(HcfVerifyCertResult &param, CfObject **certObj, uint32_t certObjCount);
+void FreeVerifyCertResult(HcfCertVerifyResult &param, CfObject **certObj, uint32_t certObjCount);
 
 } // namespace CertFramework
 } // namespace OHOS

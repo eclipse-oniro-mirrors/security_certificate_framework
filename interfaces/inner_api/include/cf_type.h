@@ -255,7 +255,7 @@ typedef enum {
 #define MAX_COUNT_NID          1195
 #define MAX_REVOCATION_FLAGS_COUNT 4
 
-#define MAX_LEN_CERTIFICATE    65536
+#define CF_MAX_LEN_CERTIFICATE 65536
 #define MAX_LEN_EXTENSIONS     65536
 
 #define BASIC_CONSTRAINTS_NO_CA             (-1)

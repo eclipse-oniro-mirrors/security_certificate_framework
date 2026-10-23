@@ -53,6 +53,7 @@ public:
     MOCK_METHOD(int, X509_verify_cert, (X509_STORE_CTX * ctx));
     MOCK_METHOD(int, i2d_PUBKEY, (EVP_PKEY * a, unsigned char **pp));
     MOCK_METHOD(void *, X509_get_ext_d2i, (const X509 *x, int nid, int *crit, int *idx));
+    MOCK_METHOD(void *, X509_REVOKED_get_ext_d2i, (const X509_REVOKED *x, int nid, int *crit, int *idx));
     MOCK_METHOD(int, i2d_ASN1_OCTET_STRING, (ASN1_OCTET_STRING * a, unsigned char **out));
     MOCK_METHOD(int, i2d_AUTHORITY_KEYID, (AUTHORITY_KEYID * a, unsigned char **out));
     MOCK_METHOD(CfResult, DeepCopyDataToBlob, (const unsigned char *data, uint32_t len, CfBlob *outBlob));
@@ -86,6 +87,9 @@ public:
     MOCK_METHOD(X509 *, X509_dup, (X509 * x509));
     MOCK_METHOD(int, X509_check_host, (X509 * x, const char *chk, size_t chklen, unsigned int flags, char **peername));
     MOCK_METHOD(OCSP_REQUEST *, OCSP_REQUEST_new, ());
+    MOCK_METHOD(int, OCSP_check_nonce, (OCSP_REQUEST * req, OCSP_BASICRESP *bs));
+    MOCK_METHOD(int, OCSP_check_validity, (ASN1_GENERALIZEDTIME * thisupd, ASN1_GENERALIZEDTIME *nextupd,
+        long sec, long maxsec));
     MOCK_METHOD(X509_CRL *, X509_CRL_load_http, (const char *url, BIO *bio, BIO *rbio, int timeout));
     MOCK_METHOD(struct stack_st_OPENSSL_STRING *, X509_get1_ocsp, (X509 * x));
     MOCK_METHOD(int, OSSL_HTTP_parse_url,
@@ -159,6 +163,7 @@ public:
     MOCK_METHOD(X509 *, X509_load_http, (const char *url, BIO *bio, BIO *rbio, int timeout));
     MOCK_METHOD(int, X509_check_issued, (X509 *issuer, X509 *subject));
     MOCK_METHOD(int, X509_STORE_CTX_get_error, (X509_STORE_CTX *ctx));
+    MOCK_METHOD(X509_VERIFY_PARAM *, X509_STORE_CTX_get0_param, (X509_STORE_CTX *ctx));
     MOCK_METHOD(STACK_OF(X509) *, X509_STORE_CTX_get0_chain, (X509_STORE_CTX *ctx));
     MOCK_METHOD(STACK_OF(X509) *, X509_STORE_CTX_get1_chain, (X509_STORE_CTX *ctx));
     MOCK_METHOD(X509 *, X509_STORE_CTX_get_current_cert, (X509_STORE_CTX *ctx));
@@ -186,6 +191,7 @@ private:
     void SetMockFunDefaultBehaviorPartSeven(void);
     void SetMockFunDefaultBehaviorPartEight(void);
     void SetMockFunDefaultBehaviorPartNine(void);
+    void SetMockFunDefaultBehaviorPartTen(void);
 };
 } // namespace CFMock
 #endif /* CF_MOCK_H */

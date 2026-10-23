@@ -170,12 +170,12 @@ HWTEST_F(CfAdapterCertTest, OpensslCreateCertTest007, TestSize.Level0)
 {
     CfBase *obj005 = nullptr;
     /* cert size beyond max */
-    CfEncodingBlob invalCert005 = { const_cast<uint8_t *>(g_certData03), MAX_LEN_CERTIFICATE + 1, CF_FORMAT_DER };
+    CfEncodingBlob invalCert005 = { const_cast<uint8_t *>(g_certData03), CF_MAX_LEN_CERTIFICATE + 1, CF_FORMAT_DER };
     int32_t ret = CfOpensslCreateCert(&invalCert005, &obj005);
     EXPECT_EQ(ret, CF_INVALID_PARAMS) << "Abnormal adapter create cert object test failed, recode:" << ret;
 
     obj005 = nullptr;
-    invalCert005.len = MAX_LEN_CERTIFICATE; /* cert size equal max */
+    invalCert005.len = CF_MAX_LEN_CERTIFICATE; /* cert size equal max */
     ret = CfOpensslCreateCert(&invalCert005, &obj005);
     EXPECT_EQ(ret, CF_ERR_CRYPTO_OPERATION) << "Abnormal adapter create cert object test failed, recode:" << ret;
 }

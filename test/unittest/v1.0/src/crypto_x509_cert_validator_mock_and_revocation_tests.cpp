@@ -41,6 +41,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509CertMockTest016, TestSize.Leve
     ASSERT_NE(intermediateCaCert, nullptr);
 
     HcfX509CertValidatorParams params = {};
+    params.size = sizeof(HcfX509CertValidatorParams);
     params.trustSystemCa = false;
     params.validateDate = false;
 
@@ -56,7 +57,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509CertMockTest016, TestSize.Leve
     ASSERT_NE(params.untrustedCerts.data, nullptr);
     params.untrustedCerts.data[0] = intermediateCaCert;
 
-    HcfVerifyCertResult result = {};
+    HcfCertVerifyResult result = {};
 
     X509OpensslMock::SetMockFlag(true);
     EXPECT_CALL(X509OpensslMock::GetInstance(), OPENSSL_sk_push(_, _))
@@ -87,6 +88,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_048, TestSize.Level0)
     ASSERT_NE(intermediateCert, nullptr);
 
     HcfX509CertValidatorParams params = {};
+    params.size = sizeof(HcfX509CertValidatorParams);
     params.trustSystemCa = false;
     params.validateDate = false;
 
@@ -102,7 +104,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_048, TestSize.Level0)
     ASSERT_NE(params.untrustedCerts.data, nullptr);
     params.untrustedCerts.data[0] = intermediateCert;
 
-    HcfVerifyCertResult result = {};
+    HcfCertVerifyResult result = {};
 
     CfResult res = g_validator->validateX509Cert(g_validator, endEntityCert, &params, &result);
     EXPECT_EQ(res, CF_ERR_KEYUSAGE_NO_CERTSIGN);
@@ -128,6 +130,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_049, TestSize.Level0)
     ASSERT_NE(corruptedIntermediateCert, nullptr);
 
     HcfX509CertValidatorParams params = {};
+    params.size = sizeof(HcfX509CertValidatorParams);
     params.trustSystemCa = false;
     params.validateDate = false;
 
@@ -143,7 +146,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_049, TestSize.Level0)
     ASSERT_NE(params.untrustedCerts.data, nullptr);
     params.untrustedCerts.data[0] = corruptedIntermediateCert;
 
-    HcfVerifyCertResult result = {};
+    HcfCertVerifyResult result = {};
 
     CfResult res = g_validator->validateX509Cert(g_validator, endEntityCert, &params, &result);
     EXPECT_EQ(res, CF_ERR_CERT_SIGNATURE_FAILURE);
@@ -166,6 +169,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_050, TestSize.Level0)
     ASSERT_NE(rootCaCert, nullptr);
 
     HcfX509CertValidatorParams params = {};
+    params.size = sizeof(HcfX509CertValidatorParams);
     params.trustSystemCa = false;
     params.validateDate = false;
 
@@ -183,7 +187,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_050, TestSize.Level0)
     ASSERT_NE(params.trustedCerts.data, nullptr);
     params.trustedCerts.data[0] = rootCaCert;
 
-    HcfVerifyCertResult result = {};
+    HcfCertVerifyResult result = {};
     CfResult res = g_validator->validateX509Cert(g_validator, cert, &params, &result);
 
     EXPECT_EQ(res, CF_SUCCESS);
@@ -211,6 +215,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509CertMockTest017, TestSize.Leve
     ASSERT_NE(intermediateCaCert, nullptr);
 
     HcfX509CertValidatorParams params = {};
+    params.size = sizeof(HcfX509CertValidatorParams);
     params.trustSystemCa = false;
     params.validateDate = false;
     params.allowDownloadIntermediateCa = true;
@@ -227,7 +232,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509CertMockTest017, TestSize.Leve
     ASSERT_NE(params.untrustedCerts.data, nullptr);
     params.untrustedCerts.data[0] = intermediateCaCert;
 
-    HcfVerifyCertResult result = {};
+    HcfCertVerifyResult result = {};
 
     X509OpensslMock::SetMockFlag(true);
     EXPECT_CALL(X509OpensslMock::GetInstance(), X509_verify_cert(_))
@@ -261,6 +266,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509CertMockTest018, TestSize.Leve
     ASSERT_NE(intermediateCaCert, nullptr);
 
     HcfX509CertValidatorParams params = {};
+    params.size = sizeof(HcfX509CertValidatorParams);
     params.trustSystemCa = false;
     params.validateDate = false;
 
@@ -276,7 +282,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509CertMockTest018, TestSize.Leve
     ASSERT_NE(params.untrustedCerts.data, nullptr);
     params.untrustedCerts.data[0] = intermediateCaCert;
 
-    HcfVerifyCertResult result = {};
+    HcfCertVerifyResult result = {};
 
     X509OpensslMock::SetMockFlag(true);
     EXPECT_CALL(X509OpensslMock::GetInstance(), X509_STORE_CTX_get1_chain(_))
@@ -313,6 +319,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509CertMockTest019, TestSize.Leve
     ASSERT_NE(rootCaCert, nullptr);
 
     HcfX509CertValidatorParams params = {};
+    params.size = sizeof(HcfX509CertValidatorParams);
     params.trustSystemCa = false;
     params.validateDate = false;
     params.allowDownloadIntermediateCa = true;
@@ -323,7 +330,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509CertMockTest019, TestSize.Leve
     ASSERT_NE(params.trustedCerts.data, nullptr);
     params.trustedCerts.data[0] = rootCaCert;
 
-    HcfVerifyCertResult result = {};
+    HcfCertVerifyResult result = {};
 
     X509OpensslMock::SetMockFlag(true);
     EXPECT_CALL(X509OpensslMock::GetInstance(), X509_load_http(_, _, _, _))
@@ -360,6 +367,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509CertMockTest020, TestSize.Leve
     ASSERT_NE(intermediateCaCert, nullptr);
 
     HcfX509CertValidatorParams params = {};
+    params.size = sizeof(HcfX509CertValidatorParams);
     params.trustSystemCa = false;
     params.validateDate = false;
 
@@ -375,7 +383,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509CertMockTest020, TestSize.Leve
     ASSERT_NE(params.untrustedCerts.data, nullptr);
     params.untrustedCerts.data[0] = intermediateCaCert;
 
-    HcfVerifyCertResult result = {};
+    HcfCertVerifyResult result = {};
 
     StartRecordMallocNum();
     SetMockMallocIndex(0);
@@ -408,6 +416,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509CertMockTest021, TestSize.Leve
     ASSERT_NE(rootCaCert, nullptr);
 
     HcfX509CertValidatorParams params = {};
+    params.size = sizeof(HcfX509CertValidatorParams);
     params.trustSystemCa = false;
     params.validateDate = false;
     params.allowDownloadIntermediateCa = true;
@@ -418,7 +427,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509CertMockTest021, TestSize.Leve
     ASSERT_NE(params.trustedCerts.data, nullptr);
     params.trustedCerts.data[0] = rootCaCert;
 
-    HcfVerifyCertResult result = {};
+    HcfCertVerifyResult result = {};
 
     SetMockFlag(true);
     CfResult res = g_validator->validateX509Cert(g_validator, endEntityCert, &params, &result);
@@ -444,6 +453,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_001, TestSize.
     ASSERT_NE(intermediateCert, nullptr);
 
     HcfX509CertValidatorParams params = {};
+    params.size = sizeof(HcfX509CertValidatorParams);
     params.trustSystemCa = false;
     params.validateDate = false;
 
@@ -463,13 +473,14 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_001, TestSize.
         CfMalloc(sizeof(HcfX509CertRevokedParams), 0));
     ASSERT_NE(params.revokedParams, nullptr);
     (void)memset_s(params.revokedParams, sizeof(HcfX509CertRevokedParams), 0, sizeof(HcfX509CertRevokedParams));
+    params.revokedParams->size = sizeof(HcfX509CertRevokedParams);
     params.revokedParams->revocationFlags.count = 1;
     params.revokedParams->revocationFlags.data = static_cast<int32_t *>(
         CfMalloc(sizeof(int32_t), 0));
     ASSERT_NE(params.revokedParams->revocationFlags.data, nullptr);
     params.revokedParams->revocationFlags.data[0] = CERT_REVOCATION_CRL_CHECK;
 
-    HcfVerifyCertResult result = {};
+    HcfCertVerifyResult result = {};
     CfResult res = g_validator->validateX509Cert(g_validator, cert, &params, &result);
     EXPECT_EQ(res, CF_ERR_CRL_NOT_FOUND);
 
@@ -492,6 +503,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_002, TestSize.
     ASSERT_NE(intermediateCert, nullptr);
 
     HcfX509CertValidatorParams params = {};
+    params.size = sizeof(HcfX509CertValidatorParams);
     params.trustSystemCa = false;
     params.validateDate = false;
 
@@ -511,6 +523,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_002, TestSize.
         CfMalloc(sizeof(HcfX509CertRevokedParams), 0));
     ASSERT_NE(params.revokedParams, nullptr);
     (void)memset_s(params.revokedParams, sizeof(HcfX509CertRevokedParams), 0, sizeof(HcfX509CertRevokedParams));
+    params.revokedParams->size = sizeof(HcfX509CertRevokedParams);
     params.revokedParams->revocationFlags.count = 1;
     params.revokedParams->revocationFlags.data = static_cast<int32_t *>(
         CfMalloc(sizeof(int32_t), 0));
@@ -518,7 +531,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_002, TestSize.
     params.revokedParams->revocationFlags.data[0] = CERT_REVOCATION_OCSP_CHECK;
     params.revokedParams->allowOcspCheckOnline = false;
 
-    HcfVerifyCertResult result = {};
+    HcfCertVerifyResult result = {};
     CfResult res = g_validator->validateX509Cert(g_validator, cert, &params, &result);
     EXPECT_EQ(res, CF_ERR_OCSP_RESPONSE_NOT_FOUND);
 
@@ -541,6 +554,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_003, TestSize.
     ASSERT_NE(intermediateCert, nullptr);
 
     HcfX509CertValidatorParams params = {};
+    params.size = sizeof(HcfX509CertValidatorParams);
     params.trustSystemCa = false;
     params.validateDate = false;
 
@@ -559,6 +573,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_003, TestSize.
     params.revokedParams = static_cast<HcfX509CertRevokedParams *>(
         CfMalloc(sizeof(HcfX509CertRevokedParams), 0));
     ASSERT_NE(params.revokedParams, nullptr);
+    params.revokedParams->size = sizeof(HcfX509CertRevokedParams);
     params.revokedParams->revocationFlags.count = 2;
     params.revokedParams->revocationFlags.data = static_cast<int32_t *>(
         CfMalloc(2 * sizeof(int32_t), 0));
@@ -569,7 +584,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_003, TestSize.
     params.revokedParams->ocspResponses.count = 0;
     params.revokedParams->allowOcspCheckOnline = false;
 
-    HcfVerifyCertResult result = {};
+    HcfCertVerifyResult result = {};
     CfResult res = g_validator->validateX509Cert(g_validator, cert, &params, &result);
     EXPECT_EQ(res, CF_ERR_OCSP_RESPONSE_NOT_FOUND);
 
@@ -592,6 +607,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_004, TestSize.
     ASSERT_NE(intermediateCert, nullptr);
 
     HcfX509CertValidatorParams params = {};
+    params.size = sizeof(HcfX509CertValidatorParams);
     params.trustSystemCa = false;
     params.validateDate = false;
 
@@ -610,6 +626,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_004, TestSize.
     params.revokedParams = static_cast<HcfX509CertRevokedParams *>(
         CfMalloc(sizeof(HcfX509CertRevokedParams), 0));
     ASSERT_NE(params.revokedParams, nullptr);
+    params.revokedParams->size = sizeof(HcfX509CertRevokedParams);
     params.revokedParams->revocationFlags.count = 3;
     params.revokedParams->revocationFlags.data = static_cast<int32_t *>(
         CfMalloc(3 * sizeof(int32_t), 0));
@@ -621,7 +638,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_004, TestSize.
     params.revokedParams->ocspResponses.count = 0;
     params.revokedParams->allowOcspCheckOnline = false;
 
-    HcfVerifyCertResult result = {};
+    HcfCertVerifyResult result = {};
     CfResult res = g_validator->validateX509Cert(g_validator, cert, &params, &result);
     EXPECT_EQ(res, CF_ERR_CRL_NOT_FOUND);
 
@@ -642,6 +659,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_005, TestSize.
     ASSERT_NE(trustCert, nullptr);
 
     HcfX509CertValidatorParams params = {};
+    params.size = sizeof(HcfX509CertValidatorParams);
     params.trustSystemCa = false;
     params.validateDate = false;
 
@@ -654,6 +672,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_005, TestSize.
     params.revokedParams = static_cast<HcfX509CertRevokedParams *>(
         CfMalloc(sizeof(HcfX509CertRevokedParams), 0));
     ASSERT_NE(params.revokedParams, nullptr);
+    params.revokedParams->size = sizeof(HcfX509CertRevokedParams);
     params.revokedParams->revocationFlags.count = 1;
     params.revokedParams->revocationFlags.data = static_cast<int32_t *>(
         CfMalloc(sizeof(int32_t), 0));
@@ -661,7 +680,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_005, TestSize.
     params.revokedParams->revocationFlags.data[0] = CERT_REVOCATION_CRL_CHECK;
     params.revokedParams->crls.count = 0;
 
-    HcfVerifyCertResult result = {};
+    HcfCertVerifyResult result = {};
     CfResult res = g_validator->validateX509Cert(g_validator, cert, &params, &result);
 
     EXPECT_EQ(res, CF_SUCCESS);
@@ -688,6 +707,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_006, TestSize.
     ASSERT_NE(ts1Cert, nullptr);
 
     HcfX509CertValidatorParams params = {};
+    params.size = sizeof(HcfX509CertValidatorParams);
     params.trustSystemCa = false;
     params.validateDate = false;
 
@@ -707,6 +727,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_006, TestSize.
         CfMalloc(sizeof(HcfX509CertRevokedParams), 0));
     ASSERT_NE(params.revokedParams, nullptr);
     (void)memset_s(params.revokedParams, sizeof(HcfX509CertRevokedParams), 0, sizeof(HcfX509CertRevokedParams));
+    params.revokedParams->size = sizeof(HcfX509CertRevokedParams);
     params.revokedParams->revocationFlags.count = 1;
     params.revokedParams->revocationFlags.data = static_cast<int32_t *>(
         CfMalloc(sizeof(int32_t), 0));
@@ -726,7 +747,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_006, TestSize.
     ASSERT_NE(params.revokedParams->crls.data, nullptr);
     params.revokedParams->crls.data[0] = crl;
 
-    HcfVerifyCertResult result = {};
+    HcfCertVerifyResult result = {};
     CfResult res = g_validator->validateX509Cert(g_validator, cert, &params, &result);
     /* validateDate=false skips CRL expiration, but cert IS in CRL, should be revoked */
     EXPECT_EQ(res, CF_ERR_CERT_REVOKED);
@@ -750,6 +771,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_007, TestSize.
     ASSERT_NE(rootCert, nullptr);
 
     HcfX509CertValidatorParams params = {};
+    params.size = sizeof(HcfX509CertValidatorParams);
     params.trustSystemCa = false;
     params.validateDate = false;
 
@@ -769,6 +791,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_007, TestSize.
         CfMalloc(sizeof(HcfX509CertRevokedParams), 0));
     ASSERT_NE(params.revokedParams, nullptr);
     (void)memset_s(params.revokedParams, sizeof(HcfX509CertRevokedParams), 0, sizeof(HcfX509CertRevokedParams));
+    params.revokedParams->size = sizeof(HcfX509CertRevokedParams);
     params.revokedParams->revocationFlags.count = 1;
     params.revokedParams->revocationFlags.data = static_cast<int32_t *>(
         CfMalloc(sizeof(int32_t), 0));
@@ -788,7 +811,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_007, TestSize.
     ASSERT_NE(params.revokedParams->crls.data, nullptr);
     params.revokedParams->crls.data[0] = crl;
 
-    HcfVerifyCertResult result = {};
+    HcfCertVerifyResult result = {};
     CfResult res = g_validator->validateX509Cert(g_validator, cert, &params, &result);
     EXPECT_EQ(res, CF_ERR_CRL_NOT_FOUND);
 
@@ -811,6 +834,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_008, TestSize.
     ASSERT_NE(intermediateCert, nullptr);
 
     HcfX509CertValidatorParams params = {};
+    params.size = sizeof(HcfX509CertValidatorParams);
     params.trustSystemCa = false;
     params.validateDate = false;
 
@@ -830,6 +854,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_008, TestSize.
         CfMalloc(sizeof(HcfX509CertRevokedParams), 0));
     ASSERT_NE(params.revokedParams, nullptr);
     (void)memset_s(params.revokedParams, sizeof(HcfX509CertRevokedParams), 0, sizeof(HcfX509CertRevokedParams));
+    params.revokedParams->size = sizeof(HcfX509CertRevokedParams);
     params.revokedParams->revocationFlags.count = 2;
     params.revokedParams->revocationFlags.data = static_cast<int32_t *>(
         CfMalloc(2 * sizeof(int32_t), 0));
@@ -837,7 +862,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_008, TestSize.
     params.revokedParams->revocationFlags.data[0] = CERT_REVOCATION_CRL_CHECK;
     params.revokedParams->revocationFlags.data[1] = CERT_REVOCATION_CHECK_ALL_CERT;
 
-    HcfVerifyCertResult result = {};
+    HcfCertVerifyResult result = {};
     CfResult res = g_validator->validateX509Cert(g_validator, cert, &params, &result);
     EXPECT_EQ(res, CF_ERR_CRL_NOT_FOUND);
 
@@ -860,6 +885,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_009, TestSize.
     ASSERT_NE(intermediateCert, nullptr);
 
     HcfX509CertValidatorParams params = {};
+    params.size = sizeof(HcfX509CertValidatorParams);
     params.trustSystemCa = false;
     params.validateDate = false;
 
@@ -879,6 +905,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_009, TestSize.
         CfMalloc(sizeof(HcfX509CertRevokedParams), 0));
     ASSERT_NE(params.revokedParams, nullptr);
     (void)memset_s(params.revokedParams, sizeof(HcfX509CertRevokedParams), 0, sizeof(HcfX509CertRevokedParams));
+    params.revokedParams->size = sizeof(HcfX509CertRevokedParams);
     params.revokedParams->revocationFlags.count = 1;
     params.revokedParams->revocationFlags.data = static_cast<int32_t *>(
         CfMalloc(sizeof(int32_t), 0));
@@ -893,7 +920,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_009, TestSize.
     params.revokedParams->ocspResponses.data[0].data = const_cast<uint8_t *>(g_testOcspResponses);
     params.revokedParams->ocspResponses.data[0].size = sizeof(g_testOcspResponses);
 
-    HcfVerifyCertResult result = {};
+    HcfCertVerifyResult result = {};
     CfResult res = g_validator->validateX509Cert(g_validator, cert, &params, &result);
     EXPECT_EQ(res, CF_ERR_OCSP_RESPONSE_NOT_FOUND);
 
@@ -916,6 +943,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_010, TestSize.
     ASSERT_NE(intermediateCert, nullptr);
 
     HcfX509CertValidatorParams params = {};
+    params.size = sizeof(HcfX509CertValidatorParams);
     params.trustSystemCa = false;
     params.validateDate = false;
 
@@ -935,6 +963,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_010, TestSize.
         CfMalloc(sizeof(HcfX509CertRevokedParams), 0));
     ASSERT_NE(params.revokedParams, nullptr);
     (void)memset_s(params.revokedParams, sizeof(HcfX509CertRevokedParams), 0, sizeof(HcfX509CertRevokedParams));
+    params.revokedParams->size = sizeof(HcfX509CertRevokedParams);
     params.revokedParams->revocationFlags.count = 3;
     params.revokedParams->revocationFlags.data = static_cast<int32_t *>(
         CfMalloc(3 * sizeof(int32_t), 0));
@@ -944,7 +973,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_010, TestSize.
     params.revokedParams->revocationFlags.data[2] = CERT_REVOCATION_OCSP_CHECK;
     params.revokedParams->allowOcspCheckOnline = false;
 
-    HcfVerifyCertResult result = {};
+    HcfCertVerifyResult result = {};
     CfResult res = g_validator->validateX509Cert(g_validator, cert, &params, &result);
     EXPECT_EQ(res, CF_ERR_CRL_NOT_FOUND);
 
@@ -967,6 +996,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_011, TestSize.
     ASSERT_NE(intermediateCert, nullptr);
 
     HcfX509CertValidatorParams params = {};
+    params.size = sizeof(HcfX509CertValidatorParams);
     params.trustSystemCa = false;
     params.validateDate = false;
 
@@ -986,6 +1016,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_011, TestSize.
         CfMalloc(sizeof(HcfX509CertRevokedParams), 0));
     ASSERT_NE(params.revokedParams, nullptr);
     (void)memset_s(params.revokedParams, sizeof(HcfX509CertRevokedParams), 0, sizeof(HcfX509CertRevokedParams));
+    params.revokedParams->size = sizeof(HcfX509CertRevokedParams);
     params.revokedParams->revocationFlags.count = 1;
     params.revokedParams->revocationFlags.data = static_cast<int32_t *>(
         CfMalloc(sizeof(int32_t), 0));
@@ -993,10 +1024,10 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_011, TestSize.
     params.revokedParams->revocationFlags.data[0] = CERT_REVOCATION_OCSP_CHECK;
     params.revokedParams->allowOcspCheckOnline = false;
 
-    HcfVerifyCertResult result = {};
+    HcfCertVerifyResult result = {};
     CfResult res = g_validator->validateX509Cert(g_validator, cert, &params, &result);
     EXPECT_EQ(res, CF_ERR_OCSP_RESPONSE_NOT_FOUND);
-    EXPECT_NE(result.errorMsg, nullptr);
+    EXPECT_NE(result.error, nullptr);
 
     CfObjDestroy(cert);
     FreeValidatorParams(params);
@@ -1017,6 +1048,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_012, TestSize.
     ASSERT_NE(intermediateCert, nullptr);
 
     HcfX509CertValidatorParams params = {};
+    params.size = sizeof(HcfX509CertValidatorParams);
     params.trustSystemCa = false;
     params.validateDate = false;
 
@@ -1036,13 +1068,14 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_012, TestSize.
         CfMalloc(sizeof(HcfX509CertRevokedParams), 0));
     ASSERT_NE(params.revokedParams, nullptr);
     (void)memset_s(params.revokedParams, sizeof(HcfX509CertRevokedParams), 0, sizeof(HcfX509CertRevokedParams));
+    params.revokedParams->size = sizeof(HcfX509CertRevokedParams);
     params.revokedParams->revocationFlags.count = 0;
     params.revokedParams->revocationFlags.data = nullptr;
 
-    HcfVerifyCertResult result = {};
+    HcfCertVerifyResult result = {};
     CfResult res = g_validator->validateX509Cert(g_validator, cert, &params, &result);
     EXPECT_EQ(res, CF_ERR_PARAMETER_CHECK);
-    EXPECT_NE(result.errorMsg, nullptr);
+    EXPECT_NE(result.error, nullptr);
 
     CfObjDestroy(cert);
     FreeValidatorParams(params);
@@ -1065,6 +1098,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_013, TestSize.
     ASSERT_NE(intermediateCert, nullptr);
 
     HcfX509CertValidatorParams params = {};
+    params.size = sizeof(HcfX509CertValidatorParams);
     params.trustSystemCa = false;
     params.validateDate = false;
 
@@ -1084,6 +1118,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_013, TestSize.
         CfMalloc(sizeof(HcfX509CertRevokedParams), 0));
     ASSERT_NE(params.revokedParams, nullptr);
     (void)memset_s(params.revokedParams, sizeof(HcfX509CertRevokedParams), 0, sizeof(HcfX509CertRevokedParams));
+    params.revokedParams->size = sizeof(HcfX509CertRevokedParams);
     params.revokedParams->revocationFlags.count = 1;
     params.revokedParams->revocationFlags.data = static_cast<int32_t *>(
         CfMalloc(sizeof(int32_t), 0));
@@ -1091,10 +1126,10 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_013, TestSize.
     params.revokedParams->revocationFlags.data[0] = CERT_REVOCATION_CRL_CHECK;
     params.revokedParams->allowDownloadCrl = true;
 
-    HcfVerifyCertResult result = {};
+    HcfCertVerifyResult result = {};
     CfResult res = g_validator->validateX509Cert(g_validator, cert, &params, &result);
     EXPECT_EQ(res, CF_ERR_CRL_NOT_FOUND);
-    EXPECT_NE(result.errorMsg, nullptr);
+    EXPECT_NE(result.error, nullptr);
 
     CfObjDestroy(cert);
     FreeValidatorParams(params);
@@ -1117,6 +1152,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_014, TestSize.
     ASSERT_NE(intermediateCert, nullptr);
 
     HcfX509CertValidatorParams params = {};
+    params.size = sizeof(HcfX509CertValidatorParams);
     params.trustSystemCa = false;
     params.validateDate = false;
 
@@ -1136,6 +1172,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_014, TestSize.
         CfMalloc(sizeof(HcfX509CertRevokedParams), 0));
     ASSERT_NE(params.revokedParams, nullptr);
     (void)memset_s(params.revokedParams, sizeof(HcfX509CertRevokedParams), 0, sizeof(HcfX509CertRevokedParams));
+    params.revokedParams->size = sizeof(HcfX509CertRevokedParams);
     params.revokedParams->revocationFlags.count = 1;
     params.revokedParams->revocationFlags.data = static_cast<int32_t *>(
         CfMalloc(sizeof(int32_t), 0));
@@ -1143,11 +1180,11 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_014, TestSize.
     params.revokedParams->revocationFlags.data[0] = CERT_REVOCATION_CRL_CHECK;
     params.revokedParams->allowDownloadCrl = true;
 
-    HcfVerifyCertResult result = {};
+    HcfCertVerifyResult result = {};
     CfResult res = g_validator->validateX509Cert(g_validator, cert, &params, &result);
     /* CRL download should fail with network timeout since URL is unreachable */
     EXPECT_EQ(res, CF_ERR_NETWORK_TIMEOUT);
-    EXPECT_NE(result.errorMsg, nullptr);
+    EXPECT_NE(result.error, nullptr);
 
     CfObjDestroy(cert);
     FreeValidatorParams(params);
@@ -1163,6 +1200,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_015, TestSize.
     ASSERT_NE(intermediateCert, nullptr);
 
     HcfX509CertValidatorParams params = {};
+    params.size = sizeof(HcfX509CertValidatorParams);
     params.trustSystemCa = false;
     params.validateDate = false;
 
@@ -1182,6 +1220,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_015, TestSize.
         CfMalloc(sizeof(HcfX509CertRevokedParams), 0));
     ASSERT_NE(params.revokedParams, nullptr);
     (void)memset_s(params.revokedParams, sizeof(HcfX509CertRevokedParams), 0, sizeof(HcfX509CertRevokedParams));
+    params.revokedParams->size = sizeof(HcfX509CertRevokedParams);
     params.revokedParams->revocationFlags.count = 1;
     params.revokedParams->revocationFlags.data = static_cast<int32_t *>(
         CfMalloc(sizeof(int32_t), 0));
@@ -1189,10 +1228,10 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_015, TestSize.
     params.revokedParams->revocationFlags.data[0] = CERT_REVOCATION_OCSP_CHECK;
     params.revokedParams->allowOcspCheckOnline = true;
 
-    HcfVerifyCertResult result = {};
+    HcfCertVerifyResult result = {};
     CfResult res = g_validator->validateX509Cert(g_validator, cert, &params, &result);
     EXPECT_EQ(res, CF_ERR_OCSP_RESPONSE_NOT_FOUND);
-    EXPECT_NE(result.errorMsg, nullptr);
+    EXPECT_NE(result.error, nullptr);
 
     CfObjDestroy(cert);
     FreeValidatorParams(params);
@@ -1215,6 +1254,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_016, TestSize.
     ASSERT_NE(intermediateCert, nullptr);
 
     HcfX509CertValidatorParams params = {};
+    params.size = sizeof(HcfX509CertValidatorParams);
     params.trustSystemCa = false;
     params.validateDate = false;
 
@@ -1234,6 +1274,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_016, TestSize.
         CfMalloc(sizeof(HcfX509CertRevokedParams), 0));
     ASSERT_NE(params.revokedParams, nullptr);
     (void)memset_s(params.revokedParams, sizeof(HcfX509CertRevokedParams), 0, sizeof(HcfX509CertRevokedParams));
+    params.revokedParams->size = sizeof(HcfX509CertRevokedParams);
     params.revokedParams->revocationFlags.count = 1;
     params.revokedParams->revocationFlags.data = static_cast<int32_t *>(
         CfMalloc(sizeof(int32_t), 0));
@@ -1241,11 +1282,11 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_Revocation_016, TestSize.
     params.revokedParams->revocationFlags.data[0] = CERT_REVOCATION_OCSP_CHECK;
     params.revokedParams->allowOcspCheckOnline = true;
 
-    HcfVerifyCertResult result = {};
+    HcfCertVerifyResult result = {};
     CfResult res = g_validator->validateX509Cert(g_validator, cert, &params, &result);
     /* OCSP online check timeout due to unreachable server */
     EXPECT_EQ(res, CF_ERR_NETWORK_TIMEOUT);
-    EXPECT_NE(result.errorMsg, nullptr);
+    EXPECT_NE(result.error, nullptr);
 
     CfObjDestroy(cert);
     FreeValidatorParams(params);

@@ -23,6 +23,7 @@
         "components": [
           "c_utils",
           "bounds_checking_function",
+          "certificate_manager",
           "crypto_framework",
           "hilog",
           "napi",

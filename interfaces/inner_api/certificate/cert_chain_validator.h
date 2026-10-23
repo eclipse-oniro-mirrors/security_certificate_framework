@@ -48,6 +48,41 @@ typedef enum {
     CERT_REVOCATION_CHECK_ALL_CERT  = 3,
 } HcfCertRevocationFlag;
 
+typedef enum {
+    SSL_MODE_NONE = 0,
+    SSL_MODE_CLIENT = 1,
+    SSL_MODE_SERVER = 2,
+} HcfSslMode;
+
+typedef enum {
+    EKU_ANY = 0,
+    EKU_TLS_SERVER_AUTH = 1,
+    EKU_TLS_CLIENT_AUTH = 2,
+    EKU_CODE_SIGNING = 3,
+    EKU_EMAIL_PROTECTION = 4,
+    EKU_TIME_STAMPING = 5,
+    EKU_OCSP_SIGNING = 6,
+} HcfEkuType;
+
+typedef enum {
+    CERT_REVOKED_METHOD_CRL = 1,
+    CERT_REVOKED_METHOD_OCSP = 2,
+} HcfCertRevokedMethod;
+
+typedef enum {
+    REVOCATION_REASON_NONE = -1,
+    REVOCATION_REASON_UNSPECIFIED = 0,
+    REVOCATION_REASON_KEY_COMPROMISE = 1,
+    REVOCATION_REASON_CA_COMPROMISE = 2,
+    REVOCATION_REASON_AFFILIATION_CHANGED = 3,
+    REVOCATION_REASON_SUPERSEDED = 4,
+    REVOCATION_REASON_CESSATION_OF_OPERATION = 5,
+    REVOCATION_REASON_CERTIFICATE_HOLD = 6,
+    REVOCATION_REASON_REMOVE_FROM_CRL = 8,
+    REVOCATION_REASON_PRIVILEGE_WITHDRAWN = 9,
+    REVOCATION_REASON_AA_COMPROMISE = 10,
+} HcfRevocationReasonType;
+
 typedef struct HcfResultArray {
     CfResult *data;
     uint32_t count;
@@ -59,12 +94,14 @@ typedef struct HcfInt32Array {
 } HcfInt32Array;
 
 typedef struct HcfX509CertRevokedParams {
+    uint32_t size;
     HcfInt32Array revocationFlags;
     HcfX509CrlArray crls;
     bool allowDownloadCrl;
     bool allowOcspCheckOnline;
     CfBlobArray ocspResponses;
     int32_t ocspDigest;
+    bool enableRevocationCache;
 } HcfX509CertRevokedParams;
 
 
@@ -73,13 +110,19 @@ typedef struct HcfX509CertRevokedParams {
 #define MAX_OCSP_RESPONSE_COUNT 100
 #define MAX_UNTRUSTED_CERT_COUNT 100
 #define MAX_TRUSTED_CERT_COUNT 100
+#define MAX_TRUST_CERT_PATH_COUNT 5
+#define MAX_TRUST_CERT_PATH_LENGTH 128
 #define MAX_IGNORE_ERR_COUNT 8
 #define MAX_HOSTNAMES_COUNT 100
 #define MAX_KEYUSAGE_COUNT 9
+#define MAX_EXTENDED_KEY_USAGE_COUNT 9
 #define MAX_EMAIL_ADDRESS_COUNT 1
 #define MAX_HOSTNAME_LENGTH 128
 #define MAX_EMAIL_ADDRESS_LENGTH 128
+#define MAX_IP_ADDRESSES_COUNT 100
+#define MAX_IP_ADDRESS_LENGTH 45
 #define MAX_USER_ID_LEN 128
+#define MAX_REVOCATION_TIME_LEN 32
 
 #define MIN_DATE_LEN 13
 #define MAX_DATE_LEN 15
@@ -95,6 +138,7 @@ typedef struct HcfX509CertRevokedParams {
 #define NETWORK_TIMEOUT 19030024
 
 typedef struct HcfX509CertValidatorParams {
+    uint32_t size;
     HcfX509CertificateArray untrustedCerts;
     HcfX509CertificateArray trustedCerts;
     bool trustSystemCa;
@@ -108,16 +152,28 @@ typedef struct HcfX509CertValidatorParams {
     HcfInt32Array keyUsage;
     CfBlob userId;
     HcfX509CertRevokedParams *revokedParams;
+    HcfStringArray trustCertPath;
+    HcfStringArray ipAddresses;
+    HcfInt32Array extendedKeyUsage;
+    int32_t sslMode;
 } HcfX509CertValidatorParams;
 
-#define MAX_VERIFY_ERROR_MSG_LEN 512
+typedef struct {
+    HcfX509Certificate *cert;
+    uint32_t usedMethod;
+    int32_t revocationReason;
+    char revocationTime[MAX_REVOCATION_TIME_LEN];
+} HcfCertRevocationInfo;
+
+typedef struct {
+    char *errorMsg;
+    HcfCertRevocationInfo *revocationInfo;
+} HcfCertVerifyErrorResult;
 
 typedef struct {
     HcfX509CertificateArray certs;
-    char errorMsgBuf[MAX_VERIFY_ERROR_MSG_LEN];
-    const char *errorMsg;
-} HcfVerifyCertResult;
-
+    HcfCertVerifyErrorResult *error;
+} HcfCertVerifyResult;
 
 struct HcfCertChainValidator {
     struct CfObjectBase base;
@@ -130,7 +186,7 @@ struct HcfCertChainValidator {
 
     /** validate a single X509 certificate with parameters. */
     CfResult (*validateX509Cert)(HcfCertChainValidator *self, HcfX509Certificate *cert,
-        const HcfX509CertValidatorParams *params, HcfVerifyCertResult *result);
+        const HcfX509CertValidatorParams *params, HcfCertVerifyResult *result);
 };
 
 #ifdef __cplusplus
@@ -141,6 +197,11 @@ extern "C" {
  * @brief Generate cert chain validator instance.
  */
 CfResult HcfCertChainValidatorCreate(const char *algorithm, HcfCertChainValidator **pathValidator);
+
+/**
+ * @brief Free the result of validateX509Cert.
+ */
+void HcfFreeCertVerifyResult(HcfCertVerifyResult *result);
 
 #ifdef __cplusplus
 }

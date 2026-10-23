@@ -101,5 +101,9 @@ typedef enum CfResult {
     CF_ERR_OCSP_CERT_STATUS_UNKNOWN = -30029,
     /* Indicates that network timeout. */
     CF_ERR_NETWORK_TIMEOUT = -30030,
+    /* Indicates that cert ip address does not match. */
+    CF_ERR_CERT_IP_ADDRESS_MISMATCH = -30031,
+    /* Indicates that cert extended key usage does not match. */
+    CF_ERR_CERT_EXTENDED_KEY_USAGE_MISMATCH = -30032,
 } CfResult;
 #endif

@@ -36,6 +36,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_basic_001, TestSize.Level
     ASSERT_NE(root, nullptr);
 
     HcfX509CertValidatorParams params = {};
+    params.size = sizeof(HcfX509CertValidatorParams);
     params.trustSystemCa = false;
     params.validateDate = false;
     HcfX509Certificate *certs[1] = { root };
@@ -46,11 +47,11 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_basic_001, TestSize.Level
     params.untrustedCerts.data = untrustedCerts;
     params.untrustedCerts.count = 1;
 
-    HcfVerifyCertResult result = {};
+    HcfCertVerifyResult result = {};
 
     CfResult res = g_validator->validateX509Cert(g_validator, cert, &params, &result);
     CF_LOG_I("ValidateX509Cert_basic_001: result=%d, errorMsg=%s",
-             res, result.errorMsg ? result.errorMsg : "null");
+             res, (result.error != nullptr ? result.error->errorMsg : "null"));
 
     EXPECT_EQ(res, CF_SUCCESS);
     EXPECT_EQ(result.certs.count, 3);
@@ -71,6 +72,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_basic_ignore_cert_expired
     ASSERT_NE(root, nullptr);
 
     HcfX509CertValidatorParams params = {};
+    params.size = sizeof(HcfX509CertValidatorParams);
     params.trustSystemCa = false;
     params.validateDate = true;
     params.date = const_cast<char *>("20800409120000Z");
@@ -83,11 +85,11 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_basic_ignore_cert_expired
     params.untrustedCerts.data = untrustedCerts;
     params.untrustedCerts.count = 1;
 
-    HcfVerifyCertResult result = {};
+    HcfCertVerifyResult result = {};
 
     CfResult res = g_validator->validateX509Cert(g_validator, cert, &params, &result);
     CF_LOG_I("ValidateX509Cert_basic_ignore_cert_expired: result=%d, errorMsg=%s",
-             res, result.errorMsg ? result.errorMsg : "null");
+             res, (result.error != nullptr ? result.error->errorMsg : "null"));
 
     EXPECT_EQ(res, CF_ERR_CERT_HAS_EXPIRED);
 
@@ -97,7 +99,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_basic_ignore_cert_expired
 
     res = g_validator->validateX509Cert(g_validator, cert, &params, &result);
     CF_LOG_I("ValidateX509Cert_basic_ignore_cert_expired: result=%d, errorMsg=%s",
-             res, result.errorMsg ? result.errorMsg : "null");
+             res, (result.error != nullptr ? result.error->errorMsg : "null"));
 
     EXPECT_EQ(res, CF_SUCCESS);
 
@@ -117,6 +119,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_basic_ignore_cert_not_yet
     ASSERT_NE(root, nullptr);
 
     HcfX509CertValidatorParams params = {};
+    params.size = sizeof(HcfX509CertValidatorParams);
     params.trustSystemCa = false;
     params.validateDate = true;
     params.date = const_cast<char *>("20000409120000Z");
@@ -129,11 +132,11 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_basic_ignore_cert_not_yet
     params.untrustedCerts.data = untrustedCerts;
     params.untrustedCerts.count = 1;
 
-    HcfVerifyCertResult result = {};
+    HcfCertVerifyResult result = {};
 
     CfResult res = g_validator->validateX509Cert(g_validator, cert, &params, &result);
     CF_LOG_I("ValidateX509Cert_basic_ignore_cert_not_yet_valid: result=%d, errorMsg=%s",
-             res, result.errorMsg ? result.errorMsg : "null");
+             res, (result.error != nullptr ? result.error->errorMsg : "null"));
 
     EXPECT_EQ(res, CF_ERR_CERT_NOT_YET_VALID);
 
@@ -143,7 +146,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_basic_ignore_cert_not_yet
 
     res = g_validator->validateX509Cert(g_validator, cert, &params, &result);
     CF_LOG_I("ValidateX509Cert_basic_ignore_cert_not_yet_valid: result=%d, errorMsg=%s",
-             res, result.errorMsg ? result.errorMsg : "null");
+             res, (result.error != nullptr ? result.error->errorMsg : "null"));
 
     EXPECT_EQ(res, CF_SUCCESS);
 
@@ -163,6 +166,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_basic_ignore_crl_not_find
     ASSERT_NE(root, nullptr);
 
     HcfX509CertValidatorParams params = {};
+    params.size = sizeof(HcfX509CertValidatorParams);
     params.trustSystemCa = false;
     params.validateDate = true;
     params.date = const_cast<char *>("20260801000000Z");
@@ -175,16 +179,17 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_basic_ignore_crl_not_find
     params.untrustedCerts.count = 1;
 
     HcfX509CertRevokedParams revokedParams = {};
+    revokedParams.size = sizeof(HcfX509CertRevokedParams);
     revokedParams.revocationFlags.count = 1;
     int32_t revocationFlags[2] = { CERT_REVOCATION_CRL_CHECK, CERT_REVOCATION_CHECK_ALL_CERT};
     revokedParams.revocationFlags.data = revocationFlags;
     params.revokedParams = &revokedParams;
 
-    HcfVerifyCertResult result = {};
+    HcfCertVerifyResult result = {};
 
     CfResult res = g_validator->validateX509Cert(g_validator, cert, &params, &result);
     CF_LOG_I("ValidateX509Cert_basic_ignore_crl_not_find: result=%d, errorMsg=%s",
-             res, result.errorMsg ? result.errorMsg : "null");
+             res, (result.error != nullptr ? result.error->errorMsg : "null"));
 
     EXPECT_EQ(res, CF_ERR_CRL_NOT_FOUND);
 
@@ -194,7 +199,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_basic_ignore_crl_not_find
 
     res = g_validator->validateX509Cert(g_validator, cert, &params, &result);
     CF_LOG_I("ValidateX509Cert_basic_ignore_crl_not_find: result=%d, errorMsg=%s",
-             res, result.errorMsg ? result.errorMsg : "null");
+             res, (result.error != nullptr ? result.error->errorMsg : "null"));
 
     EXPECT_EQ(res, CF_SUCCESS);
 
@@ -214,6 +219,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_basic_ignore_ocsp_respons
     ASSERT_NE(root, nullptr);
 
     HcfX509CertValidatorParams params = {};
+    params.size = sizeof(HcfX509CertValidatorParams);
     params.trustSystemCa = false;
     params.validateDate = true;
     params.date = const_cast<char *>("20260801000000Z");
@@ -226,16 +232,17 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_basic_ignore_ocsp_respons
     params.untrustedCerts.count = 1;
 
     HcfX509CertRevokedParams revokedParams = {};
+    revokedParams.size = sizeof(HcfX509CertRevokedParams);
     revokedParams.revocationFlags.count = 1;
     int32_t revocationFlags[2] = { CERT_REVOCATION_OCSP_CHECK, CERT_REVOCATION_CHECK_ALL_CERT};
     revokedParams.revocationFlags.data = revocationFlags;
     params.revokedParams = &revokedParams;
 
-    HcfVerifyCertResult result = {};
+    HcfCertVerifyResult result = {};
 
     CfResult res = g_validator->validateX509Cert(g_validator, cert, &params, &result);
     CF_LOG_I("ValidateX509Cert_basic_ignore_ocsp_response_not_find: result=%d, errorMsg=%s",
-             res, result.errorMsg ? result.errorMsg : "null");
+             res, (result.error != nullptr ? result.error->errorMsg : "null"));
 
     EXPECT_EQ(res, CF_ERR_OCSP_RESPONSE_NOT_FOUND);
 
@@ -245,7 +252,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_basic_ignore_ocsp_respons
 
     res = g_validator->validateX509Cert(g_validator, cert, &params, &result);
     CF_LOG_I("ValidateX509Cert_basic_ignore_ocsp_response_not_find: result=%d, errorMsg=%s",
-             res, result.errorMsg ? result.errorMsg : "null");
+             res, (result.error != nullptr ? result.error->errorMsg : "null"));
 
     EXPECT_EQ(res, CF_SUCCESS);
 
@@ -265,6 +272,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_basic_ignore_empty, TestS
     ASSERT_NE(root, nullptr);
 
     HcfX509CertValidatorParams params = {};
+    params.size = sizeof(HcfX509CertValidatorParams);
     params.trustSystemCa = false;
     params.validateDate = true;
     params.date = const_cast<char *>("20260801000000Z");
@@ -277,6 +285,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_basic_ignore_empty, TestS
     params.untrustedCerts.count = 1;
 
     HcfX509CertRevokedParams revokedParams = {};
+    revokedParams.size = sizeof(HcfX509CertRevokedParams);
     revokedParams.revocationFlags.count = 1;
     int32_t revocationFlags[2] = { CERT_REVOCATION_OCSP_CHECK, CERT_REVOCATION_CHECK_ALL_CERT};
     revokedParams.revocationFlags.data = revocationFlags;
@@ -286,11 +295,11 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_basic_ignore_empty, TestS
     params.ignoreErrs.data = ignoreErrs;
     params.ignoreErrs.count = 0;
 
-    HcfVerifyCertResult result = {};
+    HcfCertVerifyResult result = {};
 
     CfResult res = g_validator->validateX509Cert(g_validator, cert, &params, &result);
     CF_LOG_I("ValidateX509Cert_basic_ignore_ocsp_response_not_find: result=%d, errorMsg=%s",
-             res, result.errorMsg ? result.errorMsg : "null");
+             res, (result.error != nullptr ? result.error->errorMsg : "null"));
 
     EXPECT_EQ(res, CF_ERR_OCSP_RESPONSE_NOT_FOUND);
 
@@ -310,6 +319,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_basic_ignore_error_invali
     ASSERT_NE(root, nullptr);
 
     HcfX509CertValidatorParams params = {};
+    params.size = sizeof(HcfX509CertValidatorParams);
     params.trustSystemCa = false;
     params.validateDate = false;
     HcfX509Certificate *certs[1] = { root };
@@ -325,11 +335,11 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_basic_ignore_error_invali
     params.ignoreErrs.data = ignoreErrs;
     params.ignoreErrs.count = (uint32_t)(sizeof(ignoreErrs) / sizeof(ignoreErrs[0]));
 
-    HcfVerifyCertResult result = {};
+    HcfCertVerifyResult result = {};
 
     CfResult res = g_validator->validateX509Cert(g_validator, cert, &params, &result);
     CF_LOG_I("ValidateX509Cert_basic_ignore_ocsp_response_not_find: result=%d, errorMsg=%s",
-             res, result.errorMsg ? result.errorMsg : "null");
+             res, (result.error != nullptr ? result.error->errorMsg : "null"));
     EXPECT_EQ(res, CF_SUCCESS);
     FreeVerifyCertResult(result);
 
@@ -339,7 +349,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_basic_ignore_error_invali
     params.ignoreErrs.count = (uint32_t)(sizeof(ignoreErrs2) / sizeof(ignoreErrs2[0]));
     res = g_validator->validateX509Cert(g_validator, cert, &params, &result);
     CF_LOG_I("ValidateX509Cert_basic_ignore_ocsp_response_not_find: result=%d, errorMsg=%s",
-             res, result.errorMsg ? result.errorMsg : "null");
+             res, (result.error != nullptr ? result.error->errorMsg : "null"));
     EXPECT_EQ(res, CF_ERR_PARAMETER_CHECK);
 
     int32_t ignoreErrs3[] = { CERT_NOT_YET_VALID, CERT_HAS_EXPIRED, CERT_UNKNOWN_CRITICAL_EXTENSION, CRL_NOT_FOUND,
@@ -348,7 +358,7 @@ HWTEST_F(CryptoX509CertValidatorTest, ValidateX509Cert_basic_ignore_error_invali
     params.ignoreErrs.count = (uint32_t)(sizeof(ignoreErrs3) / sizeof(ignoreErrs3[0]));
     res = g_validator->validateX509Cert(g_validator, cert, &params, &result);
     CF_LOG_I("ValidateX509Cert_basic_ignore_ocsp_response_not_find: result=%d, errorMsg=%s",
-             res, result.errorMsg ? result.errorMsg : "null");
+             res, (result.error != nullptr ? result.error->errorMsg : "null"));
     EXPECT_EQ(res, CF_ERR_PARAMETER_CHECK);
     CfObjDestroy(cert);
     CfObjDestroy(issuer);

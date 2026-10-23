@@ -734,6 +734,8 @@ static CfResult BuildX509CertRevokedParamsEx(napi_env env, napi_value arg, HcfX5
         CfBuildErrorMsg(errMsg, "'revokedParams': allocate memory failed");
         return CF_ERR_MALLOC;
     }
+    param->size = sizeof(HcfX509CertRevokedParams);
+    param->enableRevocationCache = false;
 
     ret = GetRevokedParamsFieldsEx(env, revokedParamsObj, param, errMsg);
     if (ret != CF_SUCCESS) {
@@ -856,7 +858,16 @@ CfResult BuildX509CertValidatorParams(napi_env env, napi_value arg, HcfX509CertV
     }
 
     (void)memset_s(&param, sizeof(HcfX509CertValidatorParams), 0, sizeof(HcfX509CertValidatorParams));
+    param.size = sizeof(HcfX509CertValidatorParams);
     param.validateDate = true;
+    /* Default values for new fields: JS parsing not yet integrated, explicitly set to null/default */
+    param.trustCertPath.count = 0;
+    param.trustCertPath.data = nullptr;
+    param.ipAddresses.count = 0;
+    param.ipAddresses.data = nullptr;
+    param.extendedKeyUsage.count = 0;
+    param.extendedKeyUsage.data = nullptr;
+    param.sslMode = SSL_MODE_NONE;
 
     ret = BuildX509BaseVerifyParamsEx(env, arg, param, errMsg);
     if (ret != CF_SUCCESS) {
@@ -898,6 +909,9 @@ void FreeX509CertValidatorParams(HcfX509CertValidatorParams &param)
     NapiFreeStringArray(param.emailAddresses);
     CfFree(param.keyUsage.data);
     FreeX509CertRevokedParams(param.revokedParams);
+    NapiFreeStringArray(param.trustCertPath);
+    NapiFreeStringArray(param.ipAddresses);
+    CfFree(param.extendedKeyUsage.data);
 
     (void)memset_s(&param, sizeof(HcfX509CertValidatorParams), 0, sizeof(HcfX509CertValidatorParams));
 }

@@ -93,7 +93,7 @@ extern const char *SM2_INTER_CERT;
 extern const char *SM2_ROOT_CERT;
 
 HcfX509Certificate *CreateCertFromPem(const char *pemCert);
-void FreeVerifyCertResult(HcfVerifyCertResult &result);
+void FreeVerifyCertResult(HcfCertVerifyResult &result);
 void FreeValidatorParams(HcfX509CertValidatorParams &params);
 void FreeValidatorParamsWithOcspData(HcfX509CertValidatorParams &params);
 

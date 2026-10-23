@@ -36,7 +36,7 @@ void FreeCertChainValidateResult(HcfX509CertChainValidateResult *result);
 CfResult BuildX509CertValidatorParams(CertValidationParams const& param,
     HcfX509CertValidatorParams &hcfParam, char *&errMsg);
 void FreeX509CertValidatorParams(HcfX509CertValidatorParams &hcfParam);
-void FreeVerifyCertResult(HcfVerifyCertResult &result);
+void FreeVerifyCertResult(HcfCertVerifyResult &result);
 } // namespace ANI::CertFramework
 
 #endif // ANI_PARAMETERS_H
