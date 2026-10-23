@@ -38,6 +38,7 @@ ohos_static_library("certificate_openssl_plugin_lib") {
     "src/x509_cert_chain_openssl.c",
     "src/x509_cert_chain_openssl_ex.c",
     "src/x509_cert_chain_validator_openssl.c",
+    "src/x509_cert_chain_validator_openssl_private.c",
     "src/x509_cert_cms_generator_openssl.c",
     "src/x509_certificate_create.c",
     "src/x509_certificate_openssl.c",
@@ -59,6 +60,7 @@ ohos_static_library("certificate_openssl_plugin_lib") {
   external_deps = [
     "bounds_checking_function:libsec_shared",
     "c_utils:utils",
+    "certificate_manager:cert_manager_sdk",
     "crypto_framework:crypto_framework_lib",
     "hilog:libhilog",
     "openssl:libcrypto_shared",

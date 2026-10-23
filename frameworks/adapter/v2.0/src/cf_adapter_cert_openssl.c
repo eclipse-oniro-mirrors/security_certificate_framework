@@ -82,7 +82,7 @@ static int32_t CreateX509Cert(const CfEncodingBlob *inData, CfOpensslCertObj *ce
 
 int32_t CfOpensslCreateCert(const CfEncodingBlob *inData, CfBase **object)
 {
-    if ((CfCheckEncodingBlob(inData, MAX_LEN_CERTIFICATE) != CF_SUCCESS) || (object == NULL)) {
+    if ((CfCheckEncodingBlob(inData, CF_MAX_LEN_CERTIFICATE) != CF_SUCCESS) || (object == NULL)) {
         CF_LOG_E("invalid input params");
         return CF_INVALID_PARAMS;
     }

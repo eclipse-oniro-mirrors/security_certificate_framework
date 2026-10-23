@@ -100,14 +100,15 @@ CertValidationResult CertChainValidatorImpl::ValidateCertSync(weak::X509Cert cer
         CF_FREE_PTR(errMsg);
         return make_holder<VerifyCertResultImpl, CertValidationResult>();
     }
-    HcfVerifyCertResult result = {};
+    HcfCertVerifyResult result = {};
     res = this->certChainValidator_->validateX509Cert(
         this->certChainValidator_, x509Cert, &hcfParams, &result);
     FreeX509CertValidatorParams(hcfParams);
     if (res != CF_SUCCESS) {
+        const char *errMsg = (result.error != nullptr) ? result.error->errorMsg : nullptr;
         FreeVerifyCertResult(result);
         guard.SetErrorCode(res);
-        ANI_LOGE_THROW(res, result.errorMsg != nullptr ? result.errorMsg : "validate cert failed");
+        ANI_LOGE_THROW(res, errMsg != nullptr ? errMsg : "validate cert failed");
         return make_holder<VerifyCertResultImpl, CertValidationResult>();
     }
     return make_holder<VerifyCertResultImpl, CertValidationResult>(result.certs);

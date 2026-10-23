@@ -15,6 +15,7 @@
 
 #include "cf_mock.h"
 #include "cf_log.h"
+#include <cstring>
 
 using namespace std;
 using namespace testing::ext;
@@ -36,10 +37,12 @@ int __real_i2d_X509(X509 *a, unsigned char **out);
 int __real_X509_STORE_add_cert(X509_STORE *ctx, X509 *x);
 X509_STORE_CTX *__real_X509_STORE_CTX_new(void);
 X509_STORE *__real_X509_STORE_new(void);
+int __real_X509_STORE_load_locations(X509_STORE *ctx, const char *file, const char *path);
 int __real_X509_STORE_CTX_init(X509_STORE_CTX *ctx, X509_STORE *store, X509 *x509, STACK_OF(X509) * chain);
 int __real_X509_verify_cert(X509_STORE_CTX *ctx);
 int __real_i2d_PUBKEY(EVP_PKEY *a, unsigned char **pp);
 void *__real_X509_get_ext_d2i(const X509 *x, int nid, int *crit, int *idx);
+void *__real_X509_REVOKED_get_ext_d2i(const X509_REVOKED *x, int nid, int *crit, int *idx);
 int __real_i2d_ASN1_OCTET_STRING(ASN1_OCTET_STRING *a, unsigned char **out);
 int __real_i2d_AUTHORITY_KEYID(AUTHORITY_KEYID *a, unsigned char **out);
 CfResult __real_DeepCopyDataToBlob(const unsigned char *data, uint32_t len, CfBlob *outBlob);
@@ -74,7 +77,12 @@ int __real_OBJ_obj2nid(const ASN1_OBJECT *o);
 X509 *__real_X509_dup(X509 *x509);
 int __real_i2d_X509_EXTENSIONS(X509_EXTENSIONS *a, unsigned char **out);
 int __real_X509_check_host(X509 *x, const char *chk, size_t chklen, unsigned int flags, char **peername);
+int __real_X509_check_ip_asc(X509 *x, const char *ipasc, unsigned int flags);
+int __real_X509_VERIFY_PARAM_set_purpose(X509_VERIFY_PARAM *param, int purpose);
+CfResult __real_X509ToHcfX509Certificate(X509 *cert, HcfX509Certificate **returnObj);
 OCSP_REQUEST *__real_OCSP_REQUEST_new(void);
+int __real_OCSP_check_nonce(OCSP_REQUEST *req, OCSP_BASICRESP *bs);
+int __real_OCSP_check_validity(ASN1_GENERALIZEDTIME *thisupd, ASN1_GENERALIZEDTIME *nextupd, long sec, long maxsec);
 X509_CRL *__real_X509_CRL_load_http(const char *url, BIO *bio, BIO *rbio, int timeout);
 struct stack_st_OPENSSL_STRING *__real_X509_get1_ocsp(X509 *x);
 int __real_OSSL_HTTP_parse_url(const char *url, int *pssl, char **puser, char **phost, char **pport, int *pport_num,
@@ -145,6 +153,7 @@ int __real_X509_check_issued(X509 *issuer, X509 *subject);
 CfResult __real_ValidateCertDate(X509 *cert, CfBlob *date);
 int __real_X509_STORE_CTX_get1_issuer(X509 **issuer, X509_STORE_CTX *ctx, X509 *x);
 int __real_X509_STORE_CTX_get_error(X509_STORE_CTX *ctx);
+X509_VERIFY_PARAM *__real_X509_STORE_CTX_get0_param(X509_STORE_CTX *ctx);
 STACK_OF(X509) *__real_X509_STORE_CTX_get0_chain(X509_STORE_CTX *ctx);
 STACK_OF(X509) *__real_X509_STORE_CTX_get1_chain(X509_STORE_CTX *ctx);
 X509 *__real_X509_STORE_CTX_get_current_cert(X509_STORE_CTX *ctx);
@@ -298,6 +307,10 @@ void X509OpensslMock::SetMockFunDefaultBehaviorPartThree(void)
         return __real_X509_get_ext_d2i(x, nid, crit, idx);
     });
 
+    ON_CALL(*this, X509_REVOKED_get_ext_d2i).WillByDefault([this](const X509_REVOKED *x, int nid, int *crit, int *idx) {
+        return __real_X509_REVOKED_get_ext_d2i(x, nid, crit, idx);
+    });
+
     ON_CALL(*this, i2d_ASN1_OCTET_STRING).WillByDefault([this](ASN1_OCTET_STRING *a, unsigned char **out) {
         return __real_i2d_ASN1_OCTET_STRING(a, out);
     });
@@ -316,6 +329,20 @@ void X509OpensslMock::SetMockFunDefaultBehaviorPartThree(void)
 
     ON_CALL(*this, OBJ_nid2obj).WillByDefault([this](int n) { return __real_OBJ_nid2obj(n); });
 
+    ON_CALL(*this, X509_CRL_load_http).WillByDefault([this](const char *url, BIO *bio, BIO *rbio, int timeout) {
+        return __real_X509_CRL_load_http(url, bio, rbio, timeout);
+    });
+
+    ON_CALL(*this, X509_get1_ocsp).WillByDefault([this](X509 *x) { return __real_X509_get1_ocsp(x); });
+
+    ON_CALL(*this, d2i_AutoPrivateKey)
+        .WillByDefault([this](EVP_PKEY **a, const unsigned char **pp, long length) {
+            return __real_d2i_AutoPrivateKey(a, pp, length);
+    });
+}
+
+void X509OpensslMock::SetMockFunDefaultBehaviorPartTen(void)
+{
     ON_CALL(*this, OBJ_obj2txt).WillByDefault([this](char *buf, int buf_len, const ASN1_OBJECT *a, int no_name) {
         return __real_OBJ_obj2txt(buf, buf_len, a, no_name);
     });
@@ -339,16 +366,14 @@ void X509OpensslMock::SetMockFunDefaultBehaviorPartThree(void)
 
     ON_CALL(*this, OCSP_REQUEST_new).WillByDefault([this](void) { return __real_OCSP_REQUEST_new(); });
 
-    ON_CALL(*this, X509_CRL_load_http).WillByDefault([this](const char *url, BIO *bio, BIO *rbio, int timeout) {
-        return __real_X509_CRL_load_http(url, bio, rbio, timeout);
+    ON_CALL(*this, OCSP_check_nonce).WillByDefault([this](OCSP_REQUEST *req, OCSP_BASICRESP *bs) {
+        return __real_OCSP_check_nonce(req, bs);
     });
 
-    ON_CALL(*this, X509_get1_ocsp).WillByDefault([this](X509 *x) { return __real_X509_get1_ocsp(x); });
-
-    ON_CALL(*this, d2i_AutoPrivateKey)
-        .WillByDefault([this](EVP_PKEY **a, const unsigned char **pp, long length) {
-            return __real_d2i_AutoPrivateKey(a, pp, length);
-    });
+    ON_CALL(*this, OCSP_check_validity)
+        .WillByDefault([this](ASN1_GENERALIZEDTIME *thisupd, ASN1_GENERALIZEDTIME *nextupd, long sec, long maxsec) {
+            return __real_OCSP_check_validity(thisupd, nextupd, sec, maxsec);
+        });
 }
 
 void X509OpensslMock::SetMockFunDefaultBehaviorPartFour(void)
@@ -600,6 +625,9 @@ void X509OpensslMock::SetMockFunDefaultBehaviorPartNine(void)
     ON_CALL(*this, X509_STORE_CTX_get_error).WillByDefault([this](X509_STORE_CTX *ctx) {
         return __real_X509_STORE_CTX_get_error(ctx);
     });
+    ON_CALL(*this, X509_STORE_CTX_get0_param).WillByDefault([this](X509_STORE_CTX *ctx) {
+        return __real_X509_STORE_CTX_get0_param(ctx);
+    });
     ON_CALL(*this, X509_STORE_CTX_get0_chain).WillByDefault([this](X509_STORE_CTX *ctx) {
         return __real_X509_STORE_CTX_get0_chain(ctx);
     });
@@ -631,6 +659,7 @@ X509OpensslMock::X509OpensslMock()
     SetMockFunDefaultBehaviorPartSeven();
     SetMockFunDefaultBehaviorPartEight();
     SetMockFunDefaultBehaviorPartNine();
+    SetMockFunDefaultBehaviorPartTen();
 }
 
 X509OpensslMock::~X509OpensslMock() {}
@@ -794,14 +823,56 @@ X509_STORE_CTX *__wrap_X509_STORE_CTX_new(void)
     }
 }
 
+int g_x509StoreNewCallCount = 0;
+int g_mockX509StoreNewFailAt = -1;  // The N-th X509_STORE_new call returns NULL; -1 means no mocking
+
 X509_STORE *__wrap_X509_STORE_new(void)
 {
     if (g_mockTagX509Openssl) {
         CF_LOG_I("X509OpensslMock X509_STORE_new");
         return X509OpensslMock::GetInstance().X509_STORE_new();
-    } else {
-        return __real_X509_STORE_new();
     }
+    g_x509StoreNewCallCount++;
+    if (g_mockX509StoreNewFailAt >= 0 && g_x509StoreNewCallCount == g_mockX509StoreNewFailAt) {
+        return nullptr;
+    }
+    return __real_X509_STORE_new();
+}
+
+/* The test environment has no system CA directory: only the system CA directory returns success to avoid
+ * load failure, while other paths use the real load.
+ * This wrap is fixed logic (independent of g_mockTagX509Openssl).
+ * g_mockSystemCaCert: settable by tests; when the system CA directory is loaded, this certificate is added
+ * to the store so that IsTrustAnchorSystemCa determines the trust anchor comes from the system CA. */
+X509 *g_mockSystemCaCert = nullptr;
+int g_loadLocationsCallCount = 0;
+int g_mockLoadLocationsFailAt = -1;  // The N-th system CA directory load returns 0 (failure); -1 means no mocking
+// Set to 1 by tests; the non-system CA directory (trustCertPath) load returns 1 (success)
+int g_mockTrustCertPathLoadSuccess = 0;
+// Set to 1 by tests; the non-system CA directory (trustCertPath) load returns 0 (failure)
+int g_mockTrustCertPathLoadFail = 0;
+
+int __wrap_X509_STORE_load_locations(X509_STORE *ctx, const char *file, const char *path)
+{
+    if (path != nullptr &&
+        (strcmp(path, "/etc/security/certificates") == 0 ||
+         strcmp(path, "/etc/security/certificates_gm") == 0)) {
+        g_loadLocationsCallCount++;
+        if (g_mockLoadLocationsFailAt >= 0 && g_loadLocationsCallCount == g_mockLoadLocationsFailAt) {
+            return 0;
+        }
+        if (g_mockSystemCaCert != nullptr) {
+            (void)X509_STORE_add_cert(ctx, g_mockSystemCaCert);
+        }
+        return 1;
+    }
+    if (g_mockTrustCertPathLoadSuccess) {
+        return 1;
+    }
+    if (g_mockTrustCertPathLoadFail) {
+        return 0;
+    }
+    return __real_X509_STORE_load_locations(ctx, file, path);
 }
 
 int __wrap_X509_STORE_CTX_init(X509_STORE_CTX *ctx, X509_STORE *store, X509 *x509, STACK_OF(X509) * chain)
@@ -834,14 +905,29 @@ int __wrap_i2d_PUBKEY(EVP_PKEY *a, unsigned char **pp)
     }
 }
 
+/* Set to 1 by tests; X509_get_ext_d2i returns nullptr for NID_ext_key_usage to */
+/* cover the no-extension branch of CheckExtendedKeyUsage */
+int g_mockX509GetExtD2iNull = 0;
+
 void *__wrap_X509_get_ext_d2i(const X509 *x, int nid, int *crit, int *idx)
 {
     if (g_mockTagX509Openssl) {
         CF_LOG_I("X509OpensslMock X509_get_ext_d2i");
         return X509OpensslMock::GetInstance().X509_get_ext_d2i(x, nid, crit, idx);
-    } else {
-        return __real_X509_get_ext_d2i(x, nid, crit, idx);
     }
+    if (g_mockX509GetExtD2iNull && nid == NID_ext_key_usage) {
+        return nullptr;
+    }
+    return __real_X509_get_ext_d2i(x, nid, crit, idx);
+}
+
+void *__wrap_X509_REVOKED_get_ext_d2i(const X509_REVOKED *x, int nid, int *crit, int *idx)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock X509_REVOKED_get_ext_d2i");
+        return X509OpensslMock::GetInstance().X509_REVOKED_get_ext_d2i(x, nid, crit, idx);
+    }
+    return __real_X509_REVOKED_get_ext_d2i(x, nid, crit, idx);
 }
 
 int __wrap_BIO_do_connect_retry(BIO *b, int timeout, int retry)
@@ -933,6 +1019,16 @@ int __wrap_X509_STORE_CTX_get_error(X509_STORE_CTX *ctx)
         return X509OpensslMock::GetInstance().X509_STORE_CTX_get_error(ctx);
     } else {
         return __real_X509_STORE_CTX_get_error(ctx);
+    }
+}
+
+X509_VERIFY_PARAM *__wrap_X509_STORE_CTX_get0_param(X509_STORE_CTX *ctx)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock X509_STORE_CTX_get0_param");
+        return X509OpensslMock::GetInstance().X509_STORE_CTX_get0_param(ctx);
+    } else {
+        return __real_X509_STORE_CTX_get0_param(ctx);
     }
 }
 
@@ -1266,6 +1362,41 @@ int __wrap_X509_check_host(X509 *x, const char *chk, size_t chklen, unsigned int
     }
 }
 
+/* Set to 1 by tests; forces X509_check_ip_asc to return 1 (IP match) to cover the match branch of CheckIpAddresses */
+int g_mockX509CheckIpAsc = 0;
+
+int __wrap_X509_check_ip_asc(X509 *x, const char *ipasc, unsigned int flags)
+{
+    if (g_mockX509CheckIpAsc) {
+        return 1;
+    }
+    return __real_X509_check_ip_asc(x, ipasc, flags);
+}
+
+/* Set to 1 by tests; */
+/* forces X509_VERIFY_PARAM_set_purpose to return 0 (failure) to cover the failure branch of SetSslPurposeIfNeeded */
+int g_mockX509VerifyParamSetPurposeFail = 0;
+
+int __wrap_X509_VERIFY_PARAM_set_purpose(X509_VERIFY_PARAM *param, int purpose)
+{
+    if (g_mockX509VerifyParamSetPurposeFail) {
+        return 0;
+    }
+    return __real_X509_VERIFY_PARAM_set_purpose(param, purpose);
+}
+
+/* Set to 1 by tests; forces X509ToHcfX509Certificate to return failure to */
+/* cover the certificate conversion failure branch of CopyVerifyErrorMsg */
+int g_mockX509ToHcfCertFail = 0;
+
+CfResult __wrap_X509ToHcfX509Certificate(X509 *cert, HcfX509Certificate **returnObj)
+{
+    if (g_mockX509ToHcfCertFail) {
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+    return __real_X509ToHcfX509Certificate(cert, returnObj);
+}
+
 OCSP_REQUEST *__wrap_OCSP_REQUEST_new(void)
 {
     if (g_mockTagX509Openssl) {
@@ -1273,6 +1404,26 @@ OCSP_REQUEST *__wrap_OCSP_REQUEST_new(void)
         return X509OpensslMock::GetInstance().OCSP_REQUEST_new();
     } else {
         return __real_OCSP_REQUEST_new();
+    }
+}
+
+int __wrap_OCSP_check_nonce(OCSP_REQUEST *req, OCSP_BASICRESP *bs)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock OCSP_check_nonce");
+        return X509OpensslMock::GetInstance().OCSP_check_nonce(req, bs);
+    } else {
+        return __real_OCSP_check_nonce(req, bs);
+    }
+}
+
+int __wrap_OCSP_check_validity(ASN1_GENERALIZEDTIME *thisupd, ASN1_GENERALIZEDTIME *nextupd, long sec, long maxsec)
+{
+    if (g_mockTagX509Openssl) {
+        CF_LOG_I("X509OpensslMock OCSP_check_validity");
+        return X509OpensslMock::GetInstance().OCSP_check_validity(thisupd, nextupd, sec, maxsec);
+    } else {
+        return __real_OCSP_check_validity(thisupd, nextupd, sec, maxsec);
     }
 }
 

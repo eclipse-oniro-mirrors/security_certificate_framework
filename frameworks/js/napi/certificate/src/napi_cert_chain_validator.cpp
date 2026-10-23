@@ -60,7 +60,7 @@ struct ValidateX509CertCtx {
 
     CfResult errCode = CF_SUCCESS;
     const char *errMsg = nullptr;
-    HcfVerifyCertResult result = {};
+    HcfCertVerifyResult result = {};
     CfObject **certObj = nullptr;
     uint32_t certObjCount = 0;
 };
@@ -277,7 +277,7 @@ static void ValidateX509CertExecute(napi_env env, void *data)
     context->errCode = validator->validateX509Cert(validator, context->cert, &context->params, &context->result);
     if (context->errCode != CF_SUCCESS) {
         LOGE("validate X509 cert failed, errCode = %{public}d!", context->errCode);
-        context->errMsg = context->result.errorMsg;
+        context->errMsg = (context->result.error != nullptr) ? context->result.error->errorMsg : nullptr;
         guard.SetErrorCode(context->errCode);
         return;
     }

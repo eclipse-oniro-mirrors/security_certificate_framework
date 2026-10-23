@@ -63,6 +63,7 @@
     HcfCertChainCreate;
     HcfCertChainBuildResultCreate;
     HcfCertChainValidatorCreate;
+    HcfFreeCertVerifyResult;
     HcfX509CrlCreate;
     HcfX509DistinguishedNameCreate;
     HcfCertCrlCollectionCreate;

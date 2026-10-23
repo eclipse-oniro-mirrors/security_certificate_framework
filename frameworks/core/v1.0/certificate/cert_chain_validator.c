@@ -171,7 +171,7 @@ static const char *GetAlgorithm(HcfCertChainValidator *self)
 }
 
 static CfResult ValidateX509Cert(HcfCertChainValidator *self, HcfX509Certificate *cert,
-    const HcfX509CertValidatorParams *params, HcfVerifyCertResult *result)
+    const HcfX509CertValidatorParams *params, HcfCertVerifyResult *result)
 {
     if (self == NULL) {
         LOGE("HcfCertChainValidator is NULL.");
@@ -183,6 +183,33 @@ static CfResult ValidateX509Cert(HcfCertChainValidator *self, HcfX509Certificate
     }
     CertChainValidatorImpl *impl = (CertChainValidatorImpl *)self;
     return impl->spiObj->engineValidateX509Cert(impl->spiObj, cert, params, result);
+}
+
+void HcfFreeCertVerifyResult(HcfCertVerifyResult *result)
+{
+    if (result == NULL) {
+        return;
+    }
+    if (result->certs.data != NULL) {
+        for (uint32_t i = 0; i < result->certs.count; i++) {
+            if (result->certs.data[i] != NULL) {
+                CfObjDestroy(result->certs.data[i]);
+                result->certs.data[i] = NULL;
+            }
+        }
+        CfFree(result->certs.data);
+        result->certs.data = NULL;
+    }
+    result->certs.count = 0;
+    if (result->error != NULL) {
+        CfFree(result->error->errorMsg);
+        result->error->errorMsg = NULL;
+        /* revocationInfo->cert is a reference to an object in the certs array, not freed here */
+        CfFree(result->error->revocationInfo);
+        result->error->revocationInfo = NULL;
+        CfFree(result->error);
+        result->error = NULL;
+    }
 }
 
 CfResult HcfCertChainValidatorCreate(const char *algorithm, HcfCertChainValidator **pathValidator)

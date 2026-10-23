@@ -14,6 +14,7 @@
  */
 
 #include "crypto_x509_cert_validator_test_common.h"
+#include "revocation_cache_mock.h"
 
 HcfCertChainValidator *g_validator = nullptr;
 
@@ -32,9 +33,15 @@ void CryptoX509CertValidatorTest::TearDownTestCase()
     }
 }
 
-void CryptoX509CertValidatorTest::SetUp() {}
+void CryptoX509CertValidatorTest::SetUp()
+{
+    RevocationCacheMockReset();
+}
 
-void CryptoX509CertValidatorTest::TearDown() {}
+void CryptoX509CertValidatorTest::TearDown()
+{
+    RevocationCacheMockReset();
+}
 
 HcfX509Certificate *CreateCertFromPem(const char *pemCert)
 {
@@ -51,19 +58,9 @@ HcfX509Certificate *CreateCertFromPem(const char *pemCert)
     return cert;
 }
 
-void FreeVerifyCertResult(HcfVerifyCertResult &result)
+void FreeVerifyCertResult(HcfCertVerifyResult &result)
 {
-    if (result.certs.data != nullptr) {
-        for (uint32_t i = 0; i < result.certs.count; i++) {
-            if (result.certs.data[i] != nullptr) {
-                CfObjDestroy(result.certs.data[i]);
-                result.certs.data[i] = nullptr;
-            }
-        }
-        CfFree(result.certs.data);
-        result.certs.data = nullptr;
-        result.certs.count = 0;
-    }
+    HcfFreeCertVerifyResult(&result);
 }
 
 static void FreeCertArray(HcfX509CertificateArray &certs)
@@ -117,8 +114,13 @@ void FreeValidatorParams(HcfX509CertValidatorParams &params)
     }
     FreeStringArray(params.hostnames);
     FreeStringArray(params.emailAddresses);
+    FreeStringArray(params.trustCertPath);
+    FreeStringArray(params.ipAddresses);
     if (params.keyUsage.data != nullptr) {
         CfFree(params.keyUsage.data);
+    }
+    if (params.extendedKeyUsage.data != nullptr) {
+        CfFree(params.extendedKeyUsage.data);
     }
     if (params.ignoreErrs.data != nullptr) {
         CfFree(params.ignoreErrs.data);
@@ -205,6 +207,7 @@ void SetupCrlCheckParams(HcfX509CertValidatorParams &params, bool allowDownload)
     params.revokedParams = static_cast<HcfX509CertRevokedParams *>(
         CfMalloc(sizeof(HcfX509CertRevokedParams), 0));
     if (params.revokedParams != nullptr) {
+        params.revokedParams->size = sizeof(HcfX509CertRevokedParams);
         params.revokedParams->revocationFlags.count = 1;
         params.revokedParams->revocationFlags.data = static_cast<int32_t *>(CfMalloc(sizeof(int32_t), 0));
         if (params.revokedParams->revocationFlags.data != nullptr) {
@@ -219,6 +222,7 @@ void SetupOcspCheckParams(HcfX509CertValidatorParams &params, bool allowOnline)
     params.revokedParams = static_cast<HcfX509CertRevokedParams *>(
         CfMalloc(sizeof(HcfX509CertRevokedParams), 0));
     if (params.revokedParams != nullptr) {
+        params.revokedParams->size = sizeof(HcfX509CertRevokedParams);
         params.revokedParams->revocationFlags.count = 1;
         params.revokedParams->revocationFlags.data = static_cast<int32_t *>(CfMalloc(sizeof(int32_t), 0));
         if (params.revokedParams->revocationFlags.data != nullptr) {

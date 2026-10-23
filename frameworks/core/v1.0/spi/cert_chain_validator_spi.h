@@ -30,7 +30,7 @@ struct HcfCertChainValidatorSpi {
     CfObjectBase base;
     CfResult (*engineValidate)(HcfCertChainValidatorSpi *self, const CfArray *certsList);
     CfResult (*engineValidateX509Cert)(HcfCertChainValidatorSpi *self, HcfX509Certificate *cert,
-        const HcfX509CertValidatorParams *params, HcfVerifyCertResult *result);
+        const HcfX509CertValidatorParams *params, HcfCertVerifyResult *result);
 };
 
 #endif // CF_CERT_CHAIN_VALIDATOR_SPI_H
