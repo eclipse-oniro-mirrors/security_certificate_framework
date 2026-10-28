@@ -271,11 +271,14 @@ ohos_unittest("cf_version1_test") {
   external_deps = [
     "bounds_checking_function:libsec_shared",
     "c_utils:utils",
-    "certificate_manager:cert_manager_sdk",
     "crypto_framework:crypto_framework_lib",
     "googletest:gmock",
     "hilog:libhilog",
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
   ]
+
+  if (!is_arkui_x) {
+    external_deps += [ "certificate_manager:cert_manager_sdk" ]
+  }
 }
