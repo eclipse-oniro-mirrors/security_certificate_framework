@@ -684,7 +684,7 @@ static bool HasRevocationFlag(const HcfX509CertRevokedParams *revo, int32_t flag
 static void SetupRevocationCache(const HcfX509CertValidatorParams *params,
     HcfX509CertValidatorOpenSSLParams *opensslParams, CertVerifyResultInner *result)
 {
-#ifndef IS_ARKUI_X_TARGET
+#ifndef ARKUI_X_TARGET
     if (params->revokedParams != NULL && params->revokedParams->enableRevocationCache && params->trustSystemCa) {
         CfResult ret = BuildSystemCaStore(&opensslParams->systemCaStore, result);
         if (ret == CF_SUCCESS) {
