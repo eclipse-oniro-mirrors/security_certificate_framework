@@ -14,7 +14,9 @@
  */
 
 #include "x509_cert_chain_validator_openssl_private.h"
+#ifndef ARKUI_X_TARGET
 #include "cert_manager_api.h"
+#endif
 
 /* KeyUsage type to OpenSSL KU_* bit mapping table */
 const uint32_t KEYUSAGE_TO_OPENSSL_MAP[] = {
@@ -215,10 +217,12 @@ uint64_t GetCrlExpirationTime(X509_CRL *crl)
 
 #define SHA256_HEX_LEN (SHA256_DIGEST_LENGTH * 2)
 
+#ifndef ARKUI_X_TARGET
 static enum CmRevocationType ToCmRevocationType(HcfRevocationType type)
 {
     return (type == REVOCATION_TYPE_CRL) ? CM_REVOCATION_TYPE_CRL : CM_REVOCATION_TYPE_OCSP;
 }
+#endif
 
 /* Output an uppercase hex string after SHA256 on DER data (32 bytes -> 64 characters + null) */
 static CfResult HashDerToHex(const unsigned char *der, uint32_t derLen, char *hexBuf, uint32_t hexBufLen)
@@ -345,6 +349,7 @@ CfResult BuildRevocationCacheIdentifier(X509 *cert, X509 *issuer,
 CfResult RevocationCacheStore(const char *identifier, HcfRevocationType type,
     const CfBlob *data, uint64_t expirationTime)
 {
+#ifndef ARKUI_X_TARGET
     if (identifier == NULL || data == NULL || data->data == NULL) {
         return CF_ERR_PARAMETER_CHECK;
     }
@@ -356,10 +361,18 @@ CfResult RevocationCacheStore(const char *identifier, HcfRevocationType type,
     }
     LOGW("CmSaveRevocationCache failed, ret = %{public}d.", cmRet);
     return CF_ERR_CRYPTO_OPERATION;
+#else
+    (void)identifier;
+    (void)type;
+    (void)data;
+    (void)expirationTime;
+    return CF_NOT_SUPPORT;
+#endif
 }
 
 CfResult RevocationCacheQuery(const char *identifier, HcfRevocationType type, CfBlob *dataOut)
 {
+#ifndef ARKUI_X_TARGET
     if (identifier == NULL || dataOut == NULL) {
         return CF_ERR_PARAMETER_CHECK;
     }
@@ -375,4 +388,10 @@ CfResult RevocationCacheQuery(const char *identifier, HcfRevocationType type, Cf
         LOGW("CmGetRevocationCache failed, ret = %{public}d.", cmRet);
     }
     return CF_NOT_EXIST;
+#else
+    (void)identifier;
+    (void)type;
+    (void)dataOut;
+    return CF_NOT_EXIST;
+#endif
 }
