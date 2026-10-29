@@ -14,7 +14,7 @@
  */
 
 #include "x509_cert_chain_validator_openssl_private.h"
-#ifndef IS_ARKUI_X_TARGET
+#ifndef ARKUI_X_TARGET
 #include "cert_manager_api.h"
 #endif
 
@@ -217,7 +217,7 @@ uint64_t GetCrlExpirationTime(X509_CRL *crl)
 
 #define SHA256_HEX_LEN (SHA256_DIGEST_LENGTH * 2)
 
-#ifndef IS_ARKUI_X_TARGET
+#ifndef ARKUI_X_TARGET
 static enum CmRevocationType ToCmRevocationType(HcfRevocationType type)
 {
     return (type == REVOCATION_TYPE_CRL) ? CM_REVOCATION_TYPE_CRL : CM_REVOCATION_TYPE_OCSP;
@@ -349,7 +349,7 @@ CfResult BuildRevocationCacheIdentifier(X509 *cert, X509 *issuer,
 CfResult RevocationCacheStore(const char *identifier, HcfRevocationType type,
     const CfBlob *data, uint64_t expirationTime)
 {
-#ifndef IS_ARKUI_X_TARGET
+#ifndef ARKUI_X_TARGET
     if (identifier == NULL || data == NULL || data->data == NULL) {
         return CF_ERR_PARAMETER_CHECK;
     }
@@ -372,7 +372,7 @@ CfResult RevocationCacheStore(const char *identifier, HcfRevocationType type,
 
 CfResult RevocationCacheQuery(const char *identifier, HcfRevocationType type, CfBlob *dataOut)
 {
-#ifndef IS_ARKUI_X_TARGET
+#ifndef ARKUI_X_TARGET
     if (identifier == NULL || dataOut == NULL) {
         return CF_ERR_PARAMETER_CHECK;
     }
