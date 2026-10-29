@@ -56,7 +56,7 @@ ohos_static_library("certificate_openssl_plugin_lib") {
   ]
 
   if (is_arkui_x) {
-    cflags += [ "-DIS_ARKUI_X_TARGET" ]
+    cflags += [ "-DARKUI_X_TARGET" ]
   }
 
   deps = [ "../../common:libcertificate_framework_common_static" ]
