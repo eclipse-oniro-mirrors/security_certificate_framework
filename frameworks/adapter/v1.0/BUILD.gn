@@ -30,6 +30,7 @@ ohos_static_library("certificate_openssl_plugin_lib") {
   include_dirs = [
     "inc",
     "../../core/v1.0/spi",
+    "../../adapter/revocation/inc",
     "src/attestation",
   ]
 

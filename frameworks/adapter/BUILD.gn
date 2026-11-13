@@ -37,7 +37,8 @@ ohos_static_library("libcertificate_framework_adapter") {
   deps = [
     "v1.0:certificate_openssl_plugin_lib",
     "v2.0:libcertificate_framework_adapter_openssl",
-    "attestation:attestation_lib"
+    "attestation:attestation_lib",
+    "revocation:revocation_lib"
   ]
   external_deps = [ "c_utils:utils" ]
 

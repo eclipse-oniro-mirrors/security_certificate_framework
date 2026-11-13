@@ -39,6 +39,7 @@
 #include "cf_result.h"
 #include "config.h"
 #include "fwk_class.h"
+#include "revocation_check.h"
 #include "utils.h"
 #include "x509_cert_chain_spi.h"
 
@@ -1707,6 +1708,18 @@ static CfResult ValidateOther(const HcfX509CertChainValidateParams *params, STAC
     }
     res = ValidateRevocation(x509CertChain, anchorResult, params);
     if (res != CF_SUCCESS) {
+        FreeTrustAnchorData(anchorResult);
+        CfFree(anchorResult);
+        return res;
+    }
+
+    res = RevocationCheckX509Stack(x509CertChain, NULL);
+    if (res != CF_SUCCESS) {
+        if (res == CF_ERR_CERT_REVOKED) {
+            LOGE("Certificate is force revoked by policy.");
+        } else {
+            LOGE("Force revocation check failed, res = %{public}d.", res);
+        }
         FreeTrustAnchorData(anchorResult);
         CfFree(anchorResult);
         return res;

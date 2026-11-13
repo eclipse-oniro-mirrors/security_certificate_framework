@@ -29,11 +29,13 @@ ohos_unittest("cf_version1_test") {
     "../../../interfaces/inner_api/common",
     "../../../interfaces/inner_api/include",
     "../../../interfaces/inner_api/attestation",
+    "../../../interfaces/inner_api/revocation",
     "../../../frameworks/common/v1.0/inc",
     "../../../frameworks/core/v1.0/spi",
     "../../../frameworks/adapter/v1.0/inc",
     "../../../frameworks/adapter/attestation/inc",
     "../../../frameworks/adapter/attestation/src",
+    "../../../frameworks/adapter/revocation/inc",
     "../../../frameworks/ability/inc",
     "../../../frameworks/core/life/inc",
     "../../../frameworks/core/cert/inc",
@@ -63,6 +65,7 @@ ohos_unittest("cf_version1_test") {
     "src/crypto_x509_cert_validator_branch_coverage_tests.cpp",
     "src/crypto_x509_cert_validator_mock_failure_tests.cpp",
     "src/revocation_cache_mock.c",
+    "src/revocation_test.cpp",
     "src/crypto_x509_cert_cms_generator_test.cpp",
     "src/crypto_x509_cert_cms_generator_test_part2.cpp",
     "src/crypto_x509_cert_cms_parser_test_mock.cpp",
@@ -119,13 +122,23 @@ ohos_unittest("cf_version1_test") {
   ]
 
   sources += [
+    "../../../frameworks/adapter/revocation/src/revocation_cache.c",
+    "../../../frameworks/adapter/revocation/src/revocation_check.c",
+    "../../../frameworks/core/revocation/src/hm_cert_revocation.c",
+    "src/revocation_event_subscriber_stub.c",
+  ]
+
+  sources += [
     "../../../frameworks/common/v1.0/src/cf_blob.c",
     "../../../frameworks/common/v1.0/src/cf_object_base.c",
     "../../../frameworks/common/v1.0/src/utils.c",
     "../../../frameworks/api_metrics/js/src/js_api_metrics.cpp",
     "src/memory_mock.c",
   ]
-  cflags = [ "-DHILOG_ENABLE" ]
+  cflags = [
+    "-DHILOG_ENABLE",
+    "-DREVOCATION_TEST_CFG_DIR=\"/data/test/revocation_forceCheck\"",
+  ]
 
   ldflags = [
     "-fPIC",
