@@ -168,6 +168,24 @@ struct AttestationRecord {
     HmApplicationIdType *appId;
 };
 
+#define MAX_DEVICE_ACTIVATION_ITEM_NUM 32
+
+typedef struct {
+    ASN1_OBJECT *type;
+    ASN1_TYPE *value;
+} HmDeviceActivationItem;
+
+ASN1_SEQUENCE(HmDeviceActivationItem) = {
+    ASN1_SIMPLE(HmDeviceActivationItem, type, ASN1_OBJECT),
+    ASN1_SIMPLE(HmDeviceActivationItem, value, ASN1_ANY),
+} ASN1_SEQUENCE_END(HmDeviceActivationItem)
+IMPLEMENT_ASN1_FUNCTIONS(HmDeviceActivationItem)
+
+struct DeviceActivationRecord {
+    uint32_t itemNum;
+    HmDeviceActivationItem **items;
+};
+
 static void HmAttestationClaimfree(HmAttestationClaim **claims, uint32_t count)
 {
     if (claims == NULL) {
@@ -534,6 +552,128 @@ CfResult GetHmAttestationRecord(const X509 *cert, AttestationRecord **record)
     return CF_SUCCESS;
 }
 
+static void DeviceActivationItemFree(HmDeviceActivationItem **items, uint32_t count)
+{
+    if (items == NULL) {
+        return;
+    }
+    uint32_t i;
+    for (i = 0; i < count; i++) {
+        if (items[i] != NULL) {
+            HmDeviceActivationItem_free(items[i]);
+        }
+    }
+    CfFree(items);
+}
+
+static CfResult ParseDeviceActivationItem(ASN1_TYPE *asn1Type, HmDeviceActivationItem **item)
+{
+    if (asn1Type == NULL || ASN1_TYPE_get(asn1Type) != V_ASN1_SEQUENCE || asn1Type->value.sequence == NULL) {
+        return CF_ERR_INVALID_EXTENSION;
+    }
+
+    const unsigned char *p = asn1Type->value.sequence->data;
+    long len = asn1Type->value.sequence->length;
+    *item = d2i_HmDeviceActivationItem(NULL, &p, len);
+    if (*item == NULL) {
+        LOGE("d2i_HmDeviceActivationItem failed\n");
+        return CF_ERR_INVALID_EXTENSION;
+    }
+    return CF_SUCCESS;
+}
+
+static CfResult GetDeviceActivationExts(X509_EXTENSION *extension, STACK_OF(ASN1_TYPE) **exts, int *extCount)
+{
+    ASN1_OCTET_STRING *extValue = X509_EXTENSION_get_data(extension);
+    if (extValue == NULL) {
+        LOGE("X509_EXTENSION_get_data failed\n");
+        return CF_ERR_CRYPTO_OPERATION;
+    }
+
+    int extValueLen = ASN1_STRING_length(extValue);
+    const unsigned char *data = ASN1_STRING_get0_data(extValue);
+    if (extValueLen == 0 || data == NULL) {
+        LOGE("extValueLen = %{public}d\n", extValueLen);
+        return CF_ERR_EXTENSION_NOT_EXIST;
+    }
+    STACK_OF(ASN1_TYPE) *tmpExts = d2i_ASN1_SEQUENCE_ANY(NULL, &data, extValueLen);
+    if (tmpExts == NULL) {
+        LOGE("d2i_ASN1_SEQUENCE_ANY failed\n");
+        return CF_ERR_INVALID_EXTENSION;
+    }
+
+    int tmpCount = sk_ASN1_TYPE_num(tmpExts);
+    if (tmpCount <= 0) {
+        LOGE("exts has no element\n");
+        sk_ASN1_TYPE_pop_free(tmpExts, ASN1_TYPE_free);
+        return CF_ERR_EXTENSION_NOT_EXIST;
+    }
+    if (tmpCount > MAX_DEVICE_ACTIVATION_ITEM_NUM) {
+        LOGE("extCount = %{public}d, exceed max item num = %{public}d\n", tmpCount, MAX_DEVICE_ACTIVATION_ITEM_NUM);
+        sk_ASN1_TYPE_pop_free(tmpExts, ASN1_TYPE_free);
+        return CF_ERR_INVALID_EXTENSION;
+    }
+
+    *exts = tmpExts;
+    *extCount = tmpCount;
+    return CF_SUCCESS;
+}
+
+static CfResult ParseDeviceActivationItems(STACK_OF(ASN1_TYPE) *exts, int extCount, HmDeviceActivationItem ***itemsOut,
+    uint32_t *countOut)
+{
+    HmDeviceActivationItem **items = (HmDeviceActivationItem **)CfMalloc(
+        sizeof(HmDeviceActivationItem *) * (uint32_t)extCount, 0);
+    if (items == NULL) {
+        LOGE("Malloc failed\n");
+        return CF_ERR_MALLOC;
+    }
+
+    CfResult ret = CF_SUCCESS;
+    uint32_t count = 0;
+    int i;
+    for (i = 0; i < extCount; i++) {
+        HmDeviceActivationItem *item = NULL;
+        ret = ParseDeviceActivationItem(sk_ASN1_TYPE_value(exts, i), &item);
+        if (ret != CF_SUCCESS) {
+            LOGE("ParseDeviceActivationItem failed, ret = %{public}d\n", ret);
+            break;
+        }
+        items[i] = item;
+        count++;
+    }
+    if (ret != CF_SUCCESS) {
+        DeviceActivationItemFree(items, count);
+        return ret;
+    }
+
+    *itemsOut = items;
+    *countOut = count;
+    return CF_SUCCESS;
+}
+
+static CfResult ParseDeviceActivationExt(X509_EXTENSION *extension, DeviceActivationCertExt *record)
+{
+    STACK_OF(ASN1_TYPE) *exts = NULL;
+    int extCount = 0;
+    CfResult ret = GetDeviceActivationExts(extension, &exts, &extCount);
+    if (ret != CF_SUCCESS) {
+        return ret;
+    }
+
+    HmDeviceActivationItem **items = NULL;
+    uint32_t count = 0;
+    ret = ParseDeviceActivationItems(exts, extCount, &items, &count);
+    sk_ASN1_TYPE_pop_free(exts, ASN1_TYPE_free);
+    if (ret != CF_SUCCESS) {
+        return ret;
+    }
+
+    record->itemNum = count;
+    record->items = items;
+    return CF_SUCCESS;
+}
+
 CfResult GetDeviceActivationCertExt(const X509 *cert, DeviceActivationCertExt **record)
 {
     if (cert == NULL || record == NULL) {
@@ -551,7 +691,7 @@ CfResult GetDeviceActivationCertExt(const X509 *cert, DeviceActivationCertExt **
         LOGE("Malloc failed\n");
         return CF_ERR_MALLOC;
     }
-    ret = ParseAttestationExt(extension, tmp);
+    ret = ParseDeviceActivationExt(extension, tmp);
     if (ret != CF_SUCCESS) {
         CfFree(tmp);
         tmp = NULL;
@@ -590,7 +730,8 @@ void FreeDeviveActiveCertExt(DeviceActivationCertExt *record)
         return;
     }
 
-    HmAttestationClaimfree(record->claims, record->claimNum);
+    DeviceActivationItemFree(record->items, record->itemNum);
+    record->items = NULL;
     CfFree(record);
 }
 
@@ -640,4 +781,29 @@ CfResult GetAttestCertExt(AttestationRecord *record, HmAttestationCertExtType ty
         default:
             return GetOctetStringItem(record, oid, oidLen, &ext->blob);
     }
+}
+
+CfResult GetDeviceActivationExtValue(DeviceActivationCertExt *record, HmAttestationCertExtType type,
+    HmAttestationCertExt *ext)
+{
+    if (record == NULL || ext == NULL) {
+        return CF_ERR_EXTENSION_NOT_EXIST;
+    }
+    if (type != DEVICE_ACTIVATION_DEVICE_ID1 && type != DEVICE_ACTIVATION_DEVICE_ID2) {
+        return CF_ERR_PARAMETER_CHECK;
+    }
+
+    const uint8_t *oid = ATTESTATION_EXT_OIDS[type].oid;
+    uint32_t oidLen = ATTESTATION_EXT_OIDS[type].oidLen;
+    uint32_t i;
+    for (i = 0; i < record->itemNum; i++) {
+        HmDeviceActivationItem *item = record->items[i];
+        if (item == NULL || item->value == NULL) {
+            continue;
+        }
+        if (CmpObjOid(item->type, oid, oidLen) == true) {
+            return GetOctectOrUtf8Data(item->value, &ext->blob);
+        }
+    }
+    return CF_ERR_EXTENSION_NOT_EXIST;
 }

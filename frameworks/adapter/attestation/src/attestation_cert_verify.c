@@ -579,7 +579,7 @@ static CfResult ParseAttestationCert(X509 *cert, HmAttestationInfo *info)
 static CfResult ParseDeviceCert(X509 *deviceCert, HmAttestationInfo *info)
 {
     DeviceCertSecureLevel *level = NULL;
-    AttestationRecord *devActRecord = NULL;
+    DeviceActivationCertExt *devActRecord = NULL;
     CfResult ret = GetDeviceCertSecureLevel(deviceCert, &level);
     if (ret != CF_SUCCESS && ret != CF_ERR_EXTENSION_NOT_EXIST) {
         LOGE("GetDeviceCertSecureLevel failed, ret = %{public}d\n", ret);
@@ -778,7 +778,7 @@ CfResult AttestCheckBoundedWithUdId(HmAttestationInfo *info)
     HmAttestationCertExt nonce = {0};
     HmAttestationCertExt udid = {0};
 
-    CfResult ret = GetAttestCertExt(info->deviveActiveCertExt, DEVICE_ACTIVATION_DEVICE_ID1, &deviceId1);
+    CfResult ret = GetDeviceActivationExtValue(info->deviveActiveCertExt, DEVICE_ACTIVATION_DEVICE_ID1, &deviceId1);
     if (ret != CF_SUCCESS) {
         LOGE("Get deviceId1 failed, ret = %{public}d\n", ret);
         return ret;
@@ -830,7 +830,7 @@ CfResult AttestCheckBoundedWithSocid(HmAttestationInfo *info)
     HmAttestationCertExt nonce = {0};
     HmAttestationCertExt socId = {0};
 
-    CfResult ret = GetAttestCertExt(info->deviveActiveCertExt, DEVICE_ACTIVATION_DEVICE_ID2, &deviceId2);
+    CfResult ret = GetDeviceActivationExtValue(info->deviveActiveCertExt, DEVICE_ACTIVATION_DEVICE_ID2, &deviceId2);
     if (ret != CF_SUCCESS) {
         LOGE("Get deviceId2 failed, ret = %{public}d\n", ret);
         return ret;
@@ -874,7 +874,7 @@ CfResult AttestGetCertExtension(HmAttestationInfo *info, HmAttestationCertExtTyp
     }
 
     if (type == DEVICE_ACTIVATION_DEVICE_ID1 || type == DEVICE_ACTIVATION_DEVICE_ID2) {
-        return GetAttestCertExt(info->deviveActiveCertExt, type, ext);
+        return GetDeviceActivationExtValue(info->deviveActiveCertExt, type, ext);
     }
 
     if (type >= ATTESTATION_KEY_PURPOSE && type < ATTESTATION_CERT_EXT_TYPE_MAX) {

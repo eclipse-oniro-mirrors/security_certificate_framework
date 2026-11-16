@@ -27,7 +27,7 @@ typedef struct AttestationRecord AttestationRecord;
 
 typedef struct DeviceCertSecureLevel DeviceCertSecureLevel;
 
-typedef struct AttestationRecord DeviceActivationCertExt;
+typedef struct DeviceActivationRecord DeviceActivationCertExt;
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,6 +48,9 @@ void FreeAttestationDevSecLevel(DeviceCertSecureLevel *record);
 void FreeDeviveActiveCertExt(DeviceActivationCertExt *record);
 
 CfResult GetAttestCertExt(AttestationRecord *record, HmAttestationCertExtType type, HmAttestationCertExt *ext);
+
+CfResult GetDeviceActivationExtValue(DeviceActivationCertExt *record, HmAttestationCertExtType type,
+    HmAttestationCertExt *ext);
 
 #ifdef __cplusplus
 }
