@@ -1224,6 +1224,22 @@ const char *APP_CERT_HM_NEW_INVALID_APPID = "-----BEGIN CERTIFICATE-----\n"
 "KpdQbgERy+wLPHjgAiEA1Ske5il6EVepliR3mxSJGtBazplLcazMOgO/0ezNt5A=\n"
 "-----END CERTIFICATE-----";
 
+const char *NEW_DEVICE_CERT = "-----BEGIN CERTIFICATE-----\n"
+"MIICazCCAhGgAwIBAgIUC3M3IQeYTXINr3O3K1TYVYbe3zUwCgYIKoZIzj0EAwIw\n"
+"SzELMAkGA1UEBhMCQ04xDzANBgNVBAoMBlRFU1QgWDErMCkGA1UEAwwiVEVTVCBY\n"
+"IEVDQyBEZXZpY2UgQXR0ZXN0YXRpb24gQ0EgMTAeFw0yNjExMTQwNzQ2MDlaFw00\n"
+"NTA2MjcwNzQ2MDlaME0xCzAJBgNVBAYTAkNOMQ8wDQYDVQQKDAZURVNUIFgxLTAr\n"
+"BgNVBAMMJFRFU1QgWCBFQ0MgRGV2aWNlIEF0dGVzdGF0aW9uIERFVklDRTBZMBMG\n"
+"ByqGSM49AgEGCCqGSM49AwEHA0IABNbwj9ngPuhMANOdRCerQGPC4gSoHJHdiKXv\n"
+"XcVBxvE3exEShittrUfAgAuCtg4PfFQVTN0E9q8WDc9gt3LmPW2jgdAwgc0wDwYD\n"
+"VR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMCAqQwHQYDVR0OBBYEFAsQLnKdfJiK\n"
+"oP19mqnaVgP4WrN6MB8GA1UdIwQYMBaAFHIpM1Ex09OK/LAAsjkl22a0jinDMBgG\n"
+"DCsGAQQBj1sCgngBAQQIMAYCAQEKAQIwUAYMKwYBBAGPWwKCeAEFBEAwPjAdBg0r\n"
+"BgEEAY9bAoJ4AQUBBAwxMjM0NTY3ODkwMDEwHQYNKwYBBAGPWwKCeAEFAgwMMTIz\n"
+"NDU2Nzg5MDAyMAoGCCqGSM49BAMCA0gAMEUCIQCJoRkeEfUbcFM9TmkTGZsTwUMu\n"
+"qb0c+4hLlCoOzXWuugIgHXMIP2eSJqZ6Hds6NH+KcBM5KkJFtbh2tvADmODVtvI=\n"
+"-----END CERTIFICATE-----\n";
+
 static void TestGetAttestCertExtALL(AttestationRecord *record)
 {
     CfResult ret;
@@ -1390,6 +1406,66 @@ HWTEST_F(CfAttestationTest, CfAttestationTest014, TestSize.Level0)
 
     HcfAttestFreeVerifyParam(param);
     CfFree(chain);
+}
+
+/**
+ * @tc.name: CfAttestationTest043
+ * @tc.desc: GetDeviceActivationCertExt new format test
+ * @tc.type: FUNC
+ * @tc.require: NA
+ */
+HWTEST_F(CfAttestationTest, CfAttestationTest043, TestSize.Level0)
+{
+    BIO *bio = BIO_new_mem_buf(NEW_DEVICE_CERT, -1);
+    ASSERT_NE(bio, nullptr);
+    X509 *cert = PEM_read_bio_X509(bio, nullptr, nullptr, nullptr);
+    ASSERT_NE(cert, nullptr);
+    BIO_free(bio);
+
+    DeviceActivationCertExt *record = nullptr;
+    CfResult ret = GetDeviceActivationCertExt(cert, &record);
+    ASSERT_EQ(ret, CF_SUCCESS);
+
+    HmAttestationCertExt ext = { 0 };
+    ret = GetDeviceActivationExtValue(record, DEVICE_ACTIVATION_DEVICE_ID1, &ext);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ASSERT_EQ(ext.blob.size, strlen("123456789001"));
+    ASSERT_EQ(memcmp(ext.blob.data, "123456789001", ext.blob.size), 0);
+
+    ret = GetDeviceActivationExtValue(record, DEVICE_ACTIVATION_DEVICE_ID2, &ext);
+    ASSERT_EQ(ret, CF_SUCCESS);
+    ASSERT_EQ(ext.blob.size, strlen("123456789002"));
+    ASSERT_EQ(memcmp(ext.blob.data, "123456789002", ext.blob.size), 0);
+
+    ret = GetDeviceActivationExtValue(record, ATTESTATION_KEY_PURPOSE, &ext);
+    ASSERT_EQ(ret, CF_ERR_PARAMETER_CHECK);
+
+    ret = GetDeviceActivationExtValue(nullptr, DEVICE_ACTIVATION_DEVICE_ID1, &ext);
+    ASSERT_EQ(ret, CF_ERR_EXTENSION_NOT_EXIST);
+
+    FreeDeviveActiveCertExt(record);
+    X509_free(cert);
+}
+
+/**
+ * @tc.name: CfAttestationTest044
+ * @tc.desc: old device activation format is not supported
+ * @tc.type: FUNC
+ * @tc.require: NA
+ */
+HWTEST_F(CfAttestationTest, CfAttestationTest044, TestSize.Level0)
+{
+    BIO *bio = BIO_new_mem_buf(APP_CERT_HM_CA, -1);
+    ASSERT_NE(bio, nullptr);
+    X509 *cert = PEM_read_bio_X509(bio, nullptr, nullptr, nullptr);
+    ASSERT_NE(cert, nullptr);
+    BIO_free(bio);
+
+    DeviceActivationCertExt *record = nullptr;
+    CfResult ret = GetDeviceActivationCertExt(cert, &record);
+    ASSERT_EQ(ret, CF_ERR_INVALID_EXTENSION);
+
+    X509_free(cert);
 }
 
 const char *CERT_NULL_DEVICE_ID_AND_SECURITY_LEVEL = "-----BEGIN CERTIFICATE-----\n"
