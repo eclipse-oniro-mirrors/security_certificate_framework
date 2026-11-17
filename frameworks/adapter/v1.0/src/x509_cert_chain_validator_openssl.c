@@ -263,8 +263,7 @@ static char *GetCertSubjectName(X509 *cert, char *buf, int bufLen)
         if (len <= 0) {
             return NULL;
         }
-        len = len > bufLen ? bufLen : len;
-        len--;
+        len = len >= bufLen ? bufLen - 1 : len;
         ret = BIO_read(bio, buf, len);
         if (ret > 0) {
             buf[ret] = '\0';
@@ -651,11 +650,16 @@ static CfResult ParseIgnoreErrs(const HcfX509CertValidatorParams *params,
         RETURN_VERIFY_ERROR(CF_ERR_PARAMETER_CHECK, "Invalid ignoreErrs count, max count is 8.", resultInner);
     }
     opensslParams->ignoreOcspRespNotFound = false;
+    opensslParams->ignoreCrlNotFound = false;
     opensslParams->ignoreNetworkTimeout = false;
     uint32_t pos = 0;
     for (uint32_t i = 0; i < params->ignoreErrs.count; i++) {
         if (params->ignoreErrs.data[i] == OCSP_RESPONSE_NOT_FOUND) {
             opensslParams->ignoreOcspRespNotFound = true;
+            continue;
+        }
+        if (params->ignoreErrs.data[i] == CRL_NOT_FOUND) {
+            opensslParams->ignoreCrlNotFound = true;
             continue;
         }
         if (params->ignoreErrs.data[i] == NETWORK_TIMEOUT) {
@@ -919,6 +923,36 @@ static CfResult SetSslPurposeIfNeeded(X509_STORE_CTX *verifyCtx, const HcfX509Ce
     return CF_SUCCESS;
 }
 
+static CfResult HandleCertChainVerifyFailure(X509_STORE_CTX *verifyCtx, CertVerifyResultInner *result)
+{
+    result->errCode = X509_STORE_CTX_get_error(verifyCtx);
+
+    X509 *currentCert = X509_STORE_CTX_get_current_cert(verifyCtx);
+    const char *opensslErrMsg = X509_verify_cert_error_string(result->errCode);
+    result->errorMsg = opensslErrMsg;
+    if (result->errorMsg == NULL) {
+        result->errorMsg = "Certificate verification failed, unknown error code.";
+    }
+    AppendCertSubjectToErrorMsg(currentCert, result);
+    CfResult ret = ConvertOpensslErrorMsgEx(result->errCode);
+
+    if (result->lastCert != NULL) {
+        X509_free(result->lastCert);
+        result->lastCert = NULL;
+    }
+    if (currentCert != NULL) {
+        if (X509_up_ref(currentCert) != 1) {
+            /* Keep lastCert NULL on X509_up_ref failure so the intermediate CA
+               download is skipped. */
+            LOGE("Failed to up ref current cert");
+            CfPrintOpensslError();
+        } else {
+            result->lastCert = currentCert;
+        }
+    }
+    RETURN_VERIFY_ERROR(ret, result->errorMsg, result);
+}
+
 static CfResult ExecuteSingleVerification(HcfX509CertValidatorOpenSSLParams *opensslParams,
     const HcfX509CertValidatorParams *params, CertVerifyResultInner *result)
 {
@@ -966,17 +1000,9 @@ static CfResult ExecuteSingleVerification(HcfX509CertValidatorOpenSSLParams *ope
         return CF_SUCCESS;
     }
 
-    result->errCode = X509_STORE_CTX_get_error(verifyCtx);
-    result->lastCert = X509_STORE_CTX_get_current_cert(verifyCtx);
-    const char *opensslErrMsg = X509_verify_cert_error_string(result->errCode);
-    result->errorMsg = opensslErrMsg;
-    if (result->errorMsg == NULL) {
-        result->errorMsg = "Certificate verification failed, unknown error code.";
-    }
-    AppendCertSubjectToErrorMsg(result->lastCert, result);
+    ret = HandleCertChainVerifyFailure(verifyCtx, result);
     X509_STORE_CTX_free(verifyCtx);
-    ret = ConvertOpensslErrorMsgEx(result->errCode);
-    RETURN_VERIFY_ERROR(ret, result->errorMsg, result);
+    return ret;
 }
 
 static CfResult AdjustCertChain(HcfX509CertValidatorOpenSSLParams *opensslParams,
@@ -1214,6 +1240,10 @@ static CfResult ProcessIgnoreError(X509 *cert, HcfX509CertValidatorOpenSSLParams
     if (opensslParams->ignoreOcspRespNotFound && res == CF_ERR_OCSP_RESPONSE_NOT_FOUND) {
         LOGW("Ignore OCSP response not found error when check cert revocation, cert: %{public}s",
             subjectName);
+        return CF_SUCCESS;
+    }
+    if (opensslParams->ignoreCrlNotFound && res == CF_ERR_CRL_NOT_FOUND) {
+        LOGW("Ignore Crl not found error when check cert revocation, cert: %{public}s", subjectName);
         return CF_SUCCESS;
     }
     return res;
@@ -2216,6 +2246,9 @@ static CfResult ValidateX509Cert(HcfCertChainValidatorSpi *self, HcfX509Certific
 
     if (resultInner.certChain != NULL) {
         sk_X509_pop_free(resultInner.certChain, X509_free);
+    }
+    if (resultInner.lastCert != NULL) {
+        X509_free(resultInner.lastCert);
     }
     return res;
 }
