@@ -126,7 +126,7 @@ static CfResult GetCertIssuer(HcfX509CrlEntry *self, CfBlob *encodedOut)
     }
     CfBlob *certIssuer = ((HcfX509CRLEntryOpensslImpl *)self)->certIssuer;
     if (!CfIsBlobValid(certIssuer)) {
-        LOGE("Get certIssuer fail! No certIssuer in CRL entry.");
+        LOGE("Get certIssuer fail! Failed to obtain the issuer name when creating a CRL object previously!");
         return CF_NOT_SUPPORT;
     }
     uint32_t length = certIssuer->size;
@@ -157,7 +157,8 @@ static CfResult GetCertIssuerEx(HcfX509CrlEntry *self, CfEncodingType encodingTy
     }
     CfBlob *certIssuer = ((HcfX509CRLEntryOpensslImpl *)self)->certIssuerUtf8;
     if (!CfIsBlobValid(certIssuer)) {
-        LOGE("Get certIssuer fail! No certIssuer in CRL entry.");
+        LOGE("Get certIssuer fail! Failed to obtain the UTF-8 encoded issuer name when creating a CRL object "
+            "previously!");
         return CF_NOT_SUPPORT;
     }
     uint32_t length = certIssuer->size;
@@ -183,6 +184,10 @@ static CfResult GetCertIssuerDer(HcfX509CrlEntry *self, CfBlob *encodedOut)
         return CF_ERR_INTERNAL;
     }
     X509_CRL *crl = ((HcfX509CRLEntryOpensslImpl *)self)->crl;
+    if (crl == NULL) {
+        LOGE("Crl is null!");
+        return CF_ERR_INTERNAL;
+    }
     X509_NAME *x509Name = X509_CRL_get_issuer(crl);
     if (x509Name == NULL) {
         LOGE("Failed to get issuer name!");
@@ -442,30 +447,16 @@ static void Destroy(CfObjectBase *self)
         CfFree(realCrlEntry->certIssuerUtf8);
         realCrlEntry->certIssuerUtf8 = NULL;
     }
+    if (realCrlEntry->crl != NULL) {
+        X509_CRL_free(realCrlEntry->crl);
+        realCrlEntry->crl = NULL;
+    }
     CfFree(realCrlEntry);
 }
 
-CfResult HcfCX509CRLEntryCreate(X509_REVOKED *rev, HcfX509CrlEntry **crlEntryOut, CfBlob *certIssuer,
-    CfBlob *certIssuerUtf8, X509_CRL *crl)
+static void InitX509CrlEntryInstance(HcfX509CRLEntryOpensslImpl *returnCRLEntry, X509_REVOKED *tmp,
+    CfBlob *certIssuer, CfBlob *certIssuerUtf8, X509_CRL *crl)
 {
-    if ((rev == NULL) || (crlEntryOut == NULL) || certIssuer == NULL) {
-        LOGE("Invalid params!");
-        return CF_INVALID_PARAMS;
-    }
-    HcfX509CRLEntryOpensslImpl *returnCRLEntry = (HcfX509CRLEntryOpensslImpl *)CfMalloc(
-        sizeof(HcfX509CRLEntryOpensslImpl), 0);
-    if (returnCRLEntry == NULL) {
-        LOGE("Failed to malloc for x509 entry instance!");
-        return CF_ERR_MALLOC;
-    }
-
-    X509_REVOKED *tmp = X509_REVOKED_dup(rev);
-    if (tmp == NULL) {
-        CfFree(returnCRLEntry);
-        returnCRLEntry = NULL;
-        LOGE("Failed to dup x509 revoked");
-        return CF_ERR_MALLOC;
-    }
     returnCRLEntry->rev = tmp;
     returnCRLEntry->certIssuer = NULL;
     returnCRLEntry->certIssuerUtf8 = NULL;
@@ -489,6 +480,39 @@ CfResult HcfCX509CRLEntryCreate(X509_REVOKED *rev, HcfX509CrlEntry **crlEntryOut
     if (DeepCopyCertIssuerUtf8(returnCRLEntry, certIssuerUtf8) != CF_SUCCESS) {
         LOGI("No cert utf8 issuer find or deep copy cert utf8 issuer fail!");
     }
+}
+
+CfResult HcfCX509CRLEntryCreate(X509_REVOKED *rev, HcfX509CrlEntry **crlEntryOut, CfBlob *certIssuer,
+    CfBlob *certIssuerUtf8, X509_CRL *crl)
+{
+    if ((rev == NULL) || (crlEntryOut == NULL) || certIssuer == NULL) {
+        LOGE("Invalid params!");
+        return CF_INVALID_PARAMS;
+    }
+    HcfX509CRLEntryOpensslImpl *returnCRLEntry = (HcfX509CRLEntryOpensslImpl *)CfMalloc(
+        sizeof(HcfX509CRLEntryOpensslImpl), 0);
+    if (returnCRLEntry == NULL) {
+        LOGE("Failed to malloc for x509 entry instance!");
+        return CF_ERR_MALLOC;
+    }
+
+    X509_REVOKED *tmp = X509_REVOKED_dup(rev);
+    if (tmp == NULL) {
+        CfFree(returnCRLEntry);
+        returnCRLEntry = NULL;
+        LOGE("Failed to dup x509 revoked");
+        return CF_ERR_MALLOC;
+    }
+    if (crl != NULL) {
+        if (X509_CRL_up_ref(crl) != 1) {
+            LOGE("Failed to up ref x509 crl");
+            CfPrintOpensslError();
+            X509_REVOKED_free(tmp);
+            CfFree(returnCRLEntry);
+            return CF_ERR_CRYPTO_OPERATION;
+        }
+    }
+    InitX509CrlEntryInstance(returnCRLEntry, tmp, certIssuer, certIssuerUtf8, crl);
     *crlEntryOut = (HcfX509CrlEntry *)returnCRLEntry;
     return CF_SUCCESS;
 }

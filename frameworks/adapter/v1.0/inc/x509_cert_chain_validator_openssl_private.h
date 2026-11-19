@@ -97,6 +97,7 @@ typedef struct HcfX509CertValidatorOpenSSLParams {
     time_t date;
     int ignoreErrs[MAX_IGNORE_ERR_COUNT + 1];
     bool ignoreOcspRespNotFound;
+    bool ignoreCrlNotFound;
     bool ignoreNetworkTimeout;
     bool crlCheck;
     bool ocspCheck;

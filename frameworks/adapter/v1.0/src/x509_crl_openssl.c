@@ -1351,10 +1351,10 @@ CfResult HcfCX509CrlSpiCreate(const CfEncodingBlob *inStream, HcfX509CrlSpi **sp
     returnCRL->base.engineHashCode = HashCode;
     returnCRL->base.engineGetExtensionsObject = GetExtensionsObject;
     if (SetCertIssuer((HcfX509CrlSpi *)returnCRL) != CF_SUCCESS) {
-        LOGI("No cert issuer find or set cert issuer fail!");
+        LOGW("Failed to obtain the CRL issuer name, does not affect the main process!");
     }
     if (SetCertIssuerUtf8((HcfX509CrlSpi *)returnCRL) != CF_SUCCESS) {
-        LOGI("No utf8 cert issuer find or set utf8 cert issuer fail!");
+        LOGW("Failed to obtain the CRL issuer name in UTF-8 encoding, does not affect the main process!");
     }
     *spi = (HcfX509CrlSpi *)returnCRL;
     return CF_SUCCESS;

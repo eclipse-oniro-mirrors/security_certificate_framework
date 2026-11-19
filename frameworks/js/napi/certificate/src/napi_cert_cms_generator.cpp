@@ -187,8 +187,7 @@ static void FreeCmsParserCtx(napi_env env, CmsParserCtx *ctx)
         ctx->certParamsRef = nullptr;
     }
     if (ctx->rawData != nullptr) {
-        CfBlobDataClearAndFree(ctx->rawData);
-        ctx->rawData = nullptr;
+        CfBlobClearAndFree(&ctx->rawData);
     }
     if (ctx->options != nullptr) {
         FreeCmsParserSignedDataOptions(ctx->options);
@@ -1538,11 +1537,17 @@ napi_value NapiCertCmsParser::SetRawData(napi_env env, napi_callback_info info)
     int32_t format = 0;
     if (!CertGetInt32FromJSParams(env, argv[PARAM1], format)) {
         NAPI_LOG_THROW(env, CF_ERR_PARAMETER_CHECK, "get cmsFormat failed");
-        CfBlobClearAndFree(&ctx->rawData);
         FreeCmsParserCtx(env, ctx);
         return nullptr;
     }
     ctx->cmsFormat = static_cast<HcfCmsFormat>(format);
+
+    if (napi_create_reference(env, thisVar, 1, &ctx->parserRef) != napi_ok) {
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "create reference failed!");
+        FreeCmsParserCtx(env, ctx);
+        return nullptr;
+    }
+
     napi_create_promise(env, &ctx->deferred, &ctx->promise);
 
     return NewCmsSetRawDataAsyncWork(env, ctx);
@@ -1675,6 +1680,12 @@ napi_value NapiCertCmsParser::GetContentData(napi_env env, napi_callback_info in
     }
     ctx->cmsParser = cmsParser;
 
+    if (napi_create_reference(env, thisVar, 1, &ctx->parserRef) != napi_ok) {
+        CfFree(ctx);
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "create reference failed!");
+        return nullptr;
+    }
+
     napi_create_promise(env, &ctx->deferred, &ctx->promise);
 
     return NewCmsGetContentDataAsyncWork(env, ctx);
@@ -1715,6 +1726,13 @@ napi_value NapiCertCmsParser::GetCerts(napi_env env, napi_callback_info info)
     }
     ctx->cmsParser = cmsParser;
     ctx->cmsCertType = static_cast<HcfCmsCertType>(format);
+
+    if (napi_create_reference(env, thisVar, 1, &ctx->parserRef) != napi_ok) {
+        CfFree(ctx);
+        NAPI_LOG_THROW(env, CF_ERR_NAPI, "create reference failed!");
+        return nullptr;
+    }
+
     napi_create_promise(env, &ctx->deferred, &ctx->promise);
     return NewCmsGetCertsAsyncWork(env, ctx);
 }

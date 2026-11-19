@@ -526,6 +526,12 @@ static CfResult CreateAndWriteBio(const CfBlob *content, BIO **bio)
 
 static CfResult SetupEncryptedContentBio(HcfCmsGeneratorOpensslImpl *impl, BIO **encryptedContentBio)
 {
+    STACK_OF(CMS_RecipientInfo) *recipients = CMS_get0_RecipientInfos(impl->cms);
+    int numRecipients = (recipients == NULL) ? 0 : sk_CMS_RecipientInfo_num(recipients);
+    if (numRecipients == 0) {
+        LOGW("No CMS recipient added. The generated encrypted content will be orphaned ciphertext "
+            "that cannot be decrypted.");
+    }
     *encryptedContentBio = BIO_new(BIO_s_mem());
     if (*encryptedContentBio == NULL) {
         LOGE("Failed to create encrypted content BIO.");
