@@ -84,6 +84,8 @@
     HcfAttestSetVerifyParamRootCa;
     HcfAttestSetVerifyParamSnInfos;
     HcfAttestSetVerifyParamTrustCaFile;
+    HcfCertRevocationCheck;
+    HcfCertRevocationClearCache;
   local:
     *;
 };

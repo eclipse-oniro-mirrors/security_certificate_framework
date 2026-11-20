@@ -14,6 +14,7 @@
  */
 
 #include "x509_cert_chain_validator_openssl_private.h"
+#include "revocation_check.h"
 
 static CfResult ConvertOpensslErrorMsg(int32_t errCode)
 {
@@ -219,6 +220,45 @@ static CfResult ValidateCertChain(CertsInfo *certs, uint32_t certNum, enum CfEnc
     return ValidateCertChainInner(certs, certNum);
 }
 
+/* Expose parsed certs from CertsInfo[] to the generic revocation view. */
+static X509 *CertsInfoCertGetter(const void *ctx, uint32_t index)
+{
+    return ((const CertsInfo *)ctx)[index].x509;
+}
+
+/* Run the force revocation policy check on already-parsed certs (X509 view).
+ * Fail-closed: returns error on check failure. */
+static CfResult CheckForceRevocationOnCertsInfo(const CertsInfo *certs, uint32_t count)
+{
+    CfResult revokeRes = RevocationCheckX509View(certs, count, CertsInfoCertGetter, NULL);
+    if (revokeRes == CF_ERR_CERT_REVOKED) {
+        LOGE("Certificate is force revoked by policy.");
+    } else if (revokeRes != CF_SUCCESS) {
+        LOGE("Force revocation check failed, res = %{public}d.", revokeRes);
+    }
+    return revokeRes;
+}
+
+/* Run the force revocation policy check on an X509 stack and map the outcome into
+ * the inner verify result. Fail-closed: returns error on check failure. */
+static CfResult ApplyForceRevocation(STACK_OF(X509) *chain, CertVerifyResultInner *result)
+{
+    int32_t blockedIndex = -1;
+    CfResult revokeRes = RevocationCheckX509Stack(chain, &blockedIndex);
+    if (revokeRes == CF_ERR_CERT_REVOKED) {
+        if (blockedIndex >= 0) {
+            LOGE("Certificate[%d] is force revoked by policy.", blockedIndex);
+        } else {
+            LOGE("Certificate is force revoked by policy.");
+        }
+        result->errorMsg = "Certificate is force revoked by policy.";
+    } else if (revokeRes != CF_SUCCESS) {
+        LOGE("Force revocation check failed, res = %{public}d.", revokeRes);
+        result->errorMsg = "Force revocation check failed.";
+    }
+    return revokeRes;
+}
+
 static CfResult Validate(HcfCertChainValidatorSpi *self, const CfArray *certsList)
 {
     if ((self == NULL) || (certsList == NULL) || (certsList->count <= 1)) {
@@ -236,7 +276,11 @@ static CfResult Validate(HcfCertChainValidatorSpi *self, const CfArray *certsLis
         return res;
     }
     res = ValidateCertChain(certs, certsList->count, certsList->format);
-    if (res != CF_SUCCESS) {
+    if (res == CF_SUCCESS) {
+        /* Force revocation check after chain validation passes.
+         * The view-based entry point reuses the parsed certs (no temp array). */
+        res = CheckForceRevocationOnCertsInfo(certs, certsList->count);
+    } else {
         LOGE("Failed to validate cert chain, res = %{public}d.", res);
     }
     FreeX509Certs(&certs, certsList->count);
@@ -2193,6 +2237,24 @@ static CfResult ValidateX509CertParams(HcfCertChainValidatorSpi *self,
     return CF_SUCCESS;
 }
 
+static CfResult FinishValidateX509Cert(CertVerifyResultInner *resultInner, HcfCertVerifyResult *result,
+    CfResult res, HcfX509CertValidatorOpenSSLParams *opensslParams)
+{
+    FreeOpenSSLParams(opensslParams);
+    if (res == CF_SUCCESS) {
+        res = FillVerifyCertResult(resultInner->certChain, result);
+    } else {
+        CopyVerifyErrorMsg(resultInner, result);
+    }
+    if (resultInner->certChain != NULL) {
+        sk_X509_pop_free(resultInner->certChain, X509_free);
+    }
+    if (resultInner->lastCert != NULL) {
+        X509_free(resultInner->lastCert);
+    }
+    return res;
+}
+
 static CfResult ValidateX509Cert(HcfCertChainValidatorSpi *self, HcfX509Certificate *x509Cert,
     const HcfX509CertValidatorParams *params, HcfCertVerifyResult *result)
 {
@@ -2237,20 +2299,12 @@ static CfResult ValidateX509Cert(HcfCertChainValidatorSpi *self, HcfX509Certific
         res = PerformRevocationCheck(&resultInner, params, &opensslParams);
     }
 
-    FreeOpenSSLParams(&opensslParams);
     if (res == CF_SUCCESS) {
-        res = FillVerifyCertResult(resultInner.certChain, result);
-    } else {
-        CopyVerifyErrorMsg(&resultInner, result);
+        /* Force revocation check after CRL/OCSP passes. Reuses the parsed chain. */
+        res = ApplyForceRevocation(resultInner.certChain, &resultInner);
     }
 
-    if (resultInner.certChain != NULL) {
-        sk_X509_pop_free(resultInner.certChain, X509_free);
-    }
-    if (resultInner.lastCert != NULL) {
-        X509_free(resultInner.lastCert);
-    }
-    return res;
+    return FinishValidateX509Cert(&resultInner, result, res, &opensslParams);
 }
 
 CfResult HcfCertChainValidatorSpiCreate(HcfCertChainValidatorSpi **spi)

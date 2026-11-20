@@ -13,6 +13,11 @@
  * limitations under the License.
  */
 
+#include <sys/stat.h>
+
+#include <cerrno>
+#include <cstdio>
+#include <cstring>
 #include <gtest/gtest.h>
 #include "securec.h"
 #include "string"
@@ -20,6 +25,7 @@
 #include "cert_cms_generator.h"
 #include "cf_blob.h"
 #include "cf_mock.h"
+#include "hm_cert_revocation.h"
 #include "memory_mock.h"
 #include "cf_object_base.h"
 #include "cf_result.h"
@@ -38,6 +44,26 @@ public:
     void SetUp();
     void TearDown();
 };
+
+/* CMS revocation test constants */
+#define CMS_REVOC_HASH_LEN 32
+#define CMS_REVOC_HASH_HEX_LEN 65
+#define CMS_REVOC_CFG_LINE_LEN 80
+#define CMS_REVOC_CFG_PATH REVOCATION_TEST_CFG_DIR "/certRevocationPolicy_cloud.cfg"
+#define CMS_REVOC_USER_CFG_PATH REVOCATION_TEST_CFG_DIR "/certRevocationPolicy_user.cfg"
+#define CMS_REVOC_HEX_HIGH_BITS 4
+#define CMS_REVOC_HEX_LOW_MASK 0xF
+#define CMS_REVOC_HEX_CHARS_PER_BYTE 2
+#define CMS_REVOC_DIR_MODE 0755  /* rwxr-xr-x */
+#define CMS_REVOC_PARENT_DIR "/data/test"  /* mkdir only creates one level */
+
+/* Clean up revocation policy files and cache so CMS tests are not affected by revocation tests */
+static void CleanRevocationState()
+{
+    (void)remove(CMS_REVOC_CFG_PATH);
+    (void)remove(CMS_REVOC_USER_CFG_PATH);
+    HcfCertRevocationClearCache();
+}
 
 static char g_testRsaKeyPasswordPem[] =
 "-----BEGIN RSA PRIVATE KEY-----\r\n"
@@ -739,10 +765,12 @@ void CryptoX509CertCmsGeneratorTest::TearDownTestCase()
 
 void CryptoX509CertCmsGeneratorTest::SetUp()
 {
+    CleanRevocationState();
 }
 
 void CryptoX509CertCmsGeneratorTest::TearDown()
 {
+    CleanRevocationState();
 }
 
 HWTEST_F(CryptoX509CertCmsGeneratorTest, CreateCmsGenerator001, TestSize.Level0)
@@ -2079,5 +2107,163 @@ HWTEST_F(CryptoX509CertCmsGeneratorTest, VerifyErr001, TestSize.Level0)
 {
     CfResult ret = HcfCmsParserSpiCreate(nullptr);
     EXPECT_EQ(ret, CF_ERR_PARAMETER_CHECK);
+}
+
+/* CMS verifySignedData with force revocation check */
+
+static bool WriteRevocCfgFile(const char *cfgLine)
+{
+    /* mkdir only creates one level; ensure the parent directory exists first */
+    if (mkdir(CMS_REVOC_PARENT_DIR, CMS_REVOC_DIR_MODE) != 0 && errno != EEXIST) {
+        return false;
+    }
+    if (mkdir(REVOCATION_TEST_CFG_DIR, CMS_REVOC_DIR_MODE) != 0 && errno != EEXIST) {
+        return false;
+    }
+    FILE *fp = fopen(CMS_REVOC_CFG_PATH, "w");
+    if (fp == nullptr) {
+        return false;
+    }
+    if (fputs(cfgLine, fp) == EOF) {
+        (void)fclose(fp);
+        return false;
+    }
+    if (fclose(fp) != 0) {
+        return false;
+    }
+    HcfCertRevocationClearCache();
+    return true;
+}
+
+static void SpkiDigestToHex(const uint8_t *digest, char *hex)
+{
+    static const char hexChars[] = "0123456789abcdef";
+    for (int i = 0; i < CMS_REVOC_HASH_LEN; i++) {
+        hex[i * CMS_REVOC_HEX_CHARS_PER_BYTE] = hexChars[(digest[i] >> CMS_REVOC_HEX_HIGH_BITS) &
+            CMS_REVOC_HEX_LOW_MASK];
+        hex[i * CMS_REVOC_HEX_CHARS_PER_BYTE + 1] = hexChars[digest[i] & CMS_REVOC_HEX_LOW_MASK];
+    }
+    hex[CMS_REVOC_HASH_LEN * CMS_REVOC_HEX_CHARS_PER_BYTE] = '\0';
+}
+
+static bool WriteCmsRevocCfg(const char *certPem)
+{
+    HcfX509Certificate *cert = nullptr;
+    CfEncodingBlob certBlob = { 0 };
+    certBlob.data = reinterpret_cast<uint8_t *>(const_cast<char *>(certPem));
+    certBlob.encodingFormat = CF_FORMAT_PEM;
+    certBlob.len = strlen(certPem) + 1;
+    if (HcfX509CertificateCreate(&certBlob, &cert) != CF_SUCCESS || cert == nullptr) {
+        return false;
+    }
+    CfEncodingBlob encoded = { 0 };
+    if (cert->base.getEncoded((HcfCertificate *)cert, &encoded) != CF_SUCCESS) {
+        CfObjDestroy(cert);
+        return false;
+    }
+    const uint8_t *p = encoded.data;
+    X509 *x509 = d2i_X509(nullptr, &p, static_cast<long>(encoded.len));
+    CfFree(encoded.data);
+    if (x509 == nullptr) {
+        CfObjDestroy(cert);
+        return false;
+    }
+    EVP_PKEY *pkey = X509_get_pubkey(x509);
+    X509_free(x509);
+    CfObjDestroy(cert);
+    if (pkey == nullptr) {
+        return false;
+    }
+    unsigned char *spkiDer = nullptr;
+    int spkiLen = i2d_PUBKEY(pkey, &spkiDer);
+    EVP_PKEY_free(pkey);
+    if (spkiLen <= 0) {
+        OPENSSL_free(spkiDer);
+        return false;
+    }
+    uint8_t digest[CMS_REVOC_HASH_LEN];
+    if (SHA256(spkiDer, static_cast<size_t>(spkiLen), digest) == nullptr) {
+        OPENSSL_free(spkiDer);
+        return false;
+    }
+    OPENSSL_free(spkiDer);
+    char hex[CMS_REVOC_HASH_HEX_LEN];
+    SpkiDigestToHex(digest, hex);
+    char cfgLine[CMS_REVOC_CFG_LINE_LEN];
+    if (snprintf_s(cfgLine, sizeof(cfgLine), sizeof(cfgLine) - 1, "1,%s\n", hex) < 0) {
+        return false;
+    }
+    return WriteRevocCfgFile(cfgLine);
+}
+
+HWTEST_F(CryptoX509CertCmsGeneratorTest, VerifyRevocation001, TestSize.Level0)
+{
+    CleanRevocationState();
+    HcfCmsParser *cmsParser = nullptr;
+    CfBlob cmsData;
+    cmsData.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_signedCmsPem));
+    cmsData.size = strlen(g_signedCmsPem) + 1;
+    CfResult res = HcfCreateCmsParser(&cmsParser);
+    ASSERT_EQ(res, CF_SUCCESS);
+    ASSERT_NE(cmsParser, nullptr);
+    HcfCmsParserSignedDataOptions *cmsOptions = nullptr;
+    res = BuildCmsData(&cmsOptions);
+    ASSERT_EQ(res, CF_SUCCESS);
+    ASSERT_NE(cmsOptions, nullptr);
+    res = cmsParser->setRawData(cmsParser, &cmsData, CMS_PEM);
+    ASSERT_EQ(res, CF_SUCCESS);
+    res = cmsParser->verifySignedData(cmsParser, cmsOptions);
+    EXPECT_EQ(res, CF_SUCCESS);
+    CfObjDestroy(cmsParser);
+    FreeCmsOptions(cmsOptions);
+    CleanRevocationState();
+}
+
+HWTEST_F(CryptoX509CertCmsGeneratorTest, VerifyRevocation002, TestSize.Level0)
+{
+    CleanRevocationState();
+    ASSERT_TRUE(WriteCmsRevocCfg(g_testleftPem));
+    HcfCmsParser *cmsParser = nullptr;
+    CfBlob cmsData;
+    cmsData.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_signedCmsPem));
+    cmsData.size = strlen(g_signedCmsPem) + 1;
+    CfResult res = HcfCreateCmsParser(&cmsParser);
+    ASSERT_EQ(res, CF_SUCCESS);
+    ASSERT_NE(cmsParser, nullptr);
+    HcfCmsParserSignedDataOptions *cmsOptions = nullptr;
+    res = BuildCmsData(&cmsOptions);
+    ASSERT_EQ(res, CF_SUCCESS);
+    ASSERT_NE(cmsOptions, nullptr);
+    res = cmsParser->setRawData(cmsParser, &cmsData, CMS_PEM);
+    ASSERT_EQ(res, CF_SUCCESS);
+    res = cmsParser->verifySignedData(cmsParser, cmsOptions);
+    EXPECT_EQ(res, CF_ERR_CERT_REVOKED);
+    CfObjDestroy(cmsParser);
+    FreeCmsOptions(cmsOptions);
+    CleanRevocationState();
+}
+
+HWTEST_F(CryptoX509CertCmsGeneratorTest, VerifyRevocation003, TestSize.Level0)
+{
+    CleanRevocationState();
+    ASSERT_TRUE(WriteCmsRevocCfg(g_interPem));
+    HcfCmsParser *cmsParser = nullptr;
+    CfBlob cmsData;
+    cmsData.data = reinterpret_cast<uint8_t *>(const_cast<char *>(g_signedCmsPem));
+    cmsData.size = strlen(g_signedCmsPem) + 1;
+    CfResult res = HcfCreateCmsParser(&cmsParser);
+    ASSERT_EQ(res, CF_SUCCESS);
+    ASSERT_NE(cmsParser, nullptr);
+    HcfCmsParserSignedDataOptions *cmsOptions = nullptr;
+    res = BuildCmsData(&cmsOptions);
+    ASSERT_EQ(res, CF_SUCCESS);
+    ASSERT_NE(cmsOptions, nullptr);
+    res = cmsParser->setRawData(cmsParser, &cmsData, CMS_PEM);
+    ASSERT_EQ(res, CF_SUCCESS);
+    res = cmsParser->verifySignedData(cmsParser, cmsOptions);
+    EXPECT_EQ(res, CF_ERR_CERT_REVOKED);
+    CfObjDestroy(cmsParser);
+    FreeCmsOptions(cmsOptions);
+    CleanRevocationState();
 }
 }

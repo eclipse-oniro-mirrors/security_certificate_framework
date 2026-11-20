@@ -33,6 +33,7 @@
 #include <openssl/pem.h>
 #include <openssl/cms.h>
 #include "securec.h"
+#include "revocation_check.h"
 #include "x509_cert_chain_openssl_ex.h"
 
 #define MAX_SIGNER_NUM 20
@@ -1161,6 +1162,133 @@ static CfResult CmsContentTypeCheck(HcfCmsParserSpi *self, HcfCmsContentType con
     return CF_SUCCESS;
 }
 
+/* Count total certs: options signerCerts + trustCerts + CMS embedded certs. */
+static uint32_t CountCmsCerts(const HcfCmsParserSignedDataOptions *options,
+    STACK_OF(X509) *cmsEmbeddedCerts, int32_t *embeddedCountOut)
+{
+    uint32_t totalCertCount = 0;
+    if (options->signerCerts != NULL && options->signerCerts->data != NULL) {
+        totalCertCount += options->signerCerts->count;
+    }
+    if (options->trustCerts != NULL && options->trustCerts->data != NULL) {
+        totalCertCount += options->trustCerts->count;
+    }
+    int32_t embeddedCount = (cmsEmbeddedCerts != NULL) ? sk_X509_num(cmsEmbeddedCerts) : 0;
+    if (embeddedCount > 0) {
+        totalCertCount += (uint32_t)embeddedCount;
+    }
+    *embeddedCountOut = embeddedCount;
+    return totalCertCount;
+}
+
+/* Fill merged array: borrowed certs from options, then converted embedded certs.
+ * Returns fill position. Converted certs start at position *borrowedCountOut. */
+static uint32_t FillCmsCertArray(HcfX509CertificateArray *hcfCerts,
+    const HcfCmsParserSignedDataOptions *options, STACK_OF(X509) *cmsEmbeddedCerts,
+    int32_t embeddedCount, uint32_t *borrowedCountOut)
+{
+    uint32_t idx = 0;
+    if (options->signerCerts != NULL && options->signerCerts->data != NULL) {
+        for (uint32_t i = 0; i < options->signerCerts->count; i++) {
+            if (options->signerCerts->data[i] != NULL) {
+                hcfCerts->data[idx++] = options->signerCerts->data[i];
+            }
+        }
+    }
+    if (options->trustCerts != NULL && options->trustCerts->data != NULL) {
+        for (uint32_t i = 0; i < options->trustCerts->count; i++) {
+            if (options->trustCerts->data[i] != NULL) {
+                hcfCerts->data[idx++] = options->trustCerts->data[i];
+            }
+        }
+    }
+    *borrowedCountOut = idx;
+    for (int32_t i = 0; i < embeddedCount; i++) {
+        X509 *x509 = sk_X509_value(cmsEmbeddedCerts, i);
+        if (x509 == NULL) {
+            continue;
+        }
+        HcfX509Certificate *cert = NULL;
+        if (X509ToHcfX509Certificate(x509, &cert) != CF_SUCCESS || cert == NULL) {
+            LOGW("CMS revocation: failed to convert embedded cert %d.", i);
+            continue;
+        }
+        hcfCerts->data[idx++] = cert;
+    }
+    return idx;
+}
+
+/* Destroy only converted embedded certs (positions >= borrowedCount); rest are borrowed. */
+static void DestroyConvertedCerts(HcfX509CertificateArray *hcfCerts, uint32_t borrowedCount)
+{
+    for (uint32_t i = borrowedCount; i < hcfCerts->count; i++) {
+        if (hcfCerts->data[i] != NULL) {
+            CfObjDestroy(hcfCerts->data[i]);
+        }
+    }
+}
+
+/* Build merged cert array from signerCerts + trustCerts + CMS-embedded certs and run force
+ * revocation check. Does NOT take ownership of the borrowed HcfX509Certificate objects.
+ * cmsEmbeddedCerts is a borrowed STACK_OF(X509) freed by the caller. */
+static CfResult DoCmsForceRevocationCheck(const HcfCmsParserSignedDataOptions *options,
+    STACK_OF(X509) *cmsEmbeddedCerts)
+{
+    int32_t embeddedCount = 0;
+    uint32_t totalCertCount = CountCmsCerts(options, cmsEmbeddedCerts, &embeddedCount);
+    if (totalCertCount == 0) {
+        return CF_SUCCESS;
+    }
+    if (totalCertCount > (uint32_t)(MAX_MEMORY_SIZE / sizeof(HcfX509Certificate *))) {
+        LOGE("CMS revocation: cert count %u exceeds limit.", totalCertCount);
+        return CF_ERR_MALLOC;
+    }
+    HcfX509CertificateArray hcfCerts = { 0 };
+    hcfCerts.data = (HcfX509Certificate **)CfMalloc(
+        totalCertCount * sizeof(HcfX509Certificate *), 0);
+    if (hcfCerts.data == NULL) {
+        LOGE("CMS revocation: malloc cert array failed.");
+        return CF_ERR_MALLOC;
+    }
+    uint32_t borrowedCount = 0;
+    uint32_t idx = FillCmsCertArray(&hcfCerts, options, cmsEmbeddedCerts,
+        embeddedCount, &borrowedCount);
+    hcfCerts.count = idx;
+    if (idx == 0) {
+        CF_FREE_PTR(hcfCerts.data);
+        return CF_SUCCESS;
+    }
+
+    int32_t blockedIndex = -1;
+    CfResult revocRes = RevocationCheck(&hcfCerts, &blockedIndex);
+    if (revocRes == CF_ERR_CERT_REVOKED) {
+        LOGE("CMS certificate[%d] is force revoked by policy.", blockedIndex);
+    } else if (revocRes != CF_SUCCESS) {
+        LOGE("CMS force revocation check failed, res = %{public}d.", revocRes);
+    }
+    DestroyConvertedCerts(&hcfCerts, borrowedCount);
+    CF_FREE_PTR(hcfCerts.data);
+    return revocRes;
+}
+
+static void FreeCmsVerifyParams(STACK_OF(X509) *signerCerts, X509_STORE *caStore, BIO *contentBio)
+{
+    BIO_free(contentBio);
+    sk_X509_free(signerCerts);
+    X509_STORE_free(caStore);
+}
+
+/* Collect the CMS-embedded certs and run the force revocation policy check. */
+static CfResult CheckCmsRevocation(HcfCmsParserOpensslImpl *impl, const HcfCmsParserSignedDataOptions *options)
+{
+    STACK_OF(X509) *cmsEmbedded = CMS_get1_certs(impl->cms);
+    CfResult revocRes = DoCmsForceRevocationCheck(options, cmsEmbedded);
+    if (cmsEmbedded != NULL) {
+        sk_X509_pop_free(cmsEmbedded, X509_free);
+    }
+    return revocRes;
+}
+
 CfResult VerifySignedDataOpenssl(HcfCmsParserSpi *self, const HcfCmsParserSignedDataOptions *options)
 {
     if (self == NULL || options == NULL) {
@@ -1189,9 +1317,7 @@ CfResult VerifySignedDataOpenssl(HcfCmsParserSpi *self, const HcfCmsParserSigned
 
     res = BuildVerifyParams(impl->cms, options, &signerCerts, &caStore, &contentBio);
     if (res != CF_SUCCESS) {
-        sk_X509_free(signerCerts);
-        X509_STORE_free(caStore);
-        BIO_free(contentBio);
+        FreeCmsVerifyParams(signerCerts, caStore, contentBio);
         LOGE("Failed to build verify params");
         return res;
     }
@@ -1200,15 +1326,16 @@ CfResult VerifySignedDataOpenssl(HcfCmsParserSpi *self, const HcfCmsParserSigned
         LOGE("Failed to verify CMS");
         CfResult certResult = CF_ERR_CRYPTO_OPERATION;
         ERR_print_errors_cb(CmsCertErrorCb, &certResult);
-        sk_X509_free(signerCerts);
-        X509_STORE_free(caStore);
-        BIO_free(contentBio);
+        FreeCmsVerifyParams(signerCerts, caStore, contentBio);
         CfPrintOpensslError();
         return certResult;
     }
-    BIO_free(contentBio);
-    sk_X509_free(signerCerts);
-    X509_STORE_free(caStore);
+
+    CfResult revocRes = CheckCmsRevocation(impl, options);
+    FreeCmsVerifyParams(signerCerts, caStore, contentBio);
+    if (revocRes != CF_SUCCESS) {
+        return revocRes;
+    }
     LOGD("verify signed data success");
     return CF_SUCCESS;
 }

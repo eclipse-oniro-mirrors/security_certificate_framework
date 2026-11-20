@@ -21,9 +21,11 @@
       "ram": "5120KB",
       "deps": {
         "components": [
+          "ability_base",
           "c_utils",
           "bounds_checking_function",
           "certificate_manager",
+          "common_event_service",
           "crypto_framework",
           "hilog",
           "napi",
@@ -60,6 +62,7 @@
                 "certificate/x509_crl_entry.h",
                 "certificate/x509_crl.h",
                 "certificate/cert_crl_common.h",
+                "revocation/hm_cert_revocation.h",
                 "common/cf_blob.h",
                 "common/cf_object_base.h",
                 "common/cf_result.h",

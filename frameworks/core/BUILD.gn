@@ -19,6 +19,7 @@ config("cert_framework_config") {
     "../../interfaces/inner_api/common",
     "../../interfaces/inner_api/include",
     "../../interfaces/inner_api/attestation",
+    "../../interfaces/inner_api/revocation",
   ]
 }
 
@@ -47,7 +48,8 @@ ohos_shared_library("certificate_framework_core") {
     "cert:libcertificate_framework_cert_object",
     "extension:libcertificate_framework_extension_object",
     "v1.0:libcertificate_framework_vesion1",
-    "attestation:libcertificate_attestation"
+    "attestation:libcertificate_attestation",
+    "revocation:libcertificate_revocation"
   ]
 
   external_deps = [
