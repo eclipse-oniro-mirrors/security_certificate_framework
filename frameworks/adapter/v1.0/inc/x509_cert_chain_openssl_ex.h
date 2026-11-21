@@ -71,6 +71,9 @@ CfResult ValidateDownLoadMissCertEx(int32_t maxlength, STACK_OF(X509) *x509CertC
     const HcfX509CertChainValidateParams *params, HcfX509TrustAnchor *trustAnchorResult, STACK_OF(X509) *allCerts);
 CfResult ValidateTrustCert(X509 *caCert, STACK_OF(X509) *x509CertChain,
     const HcfX509CertChainValidateParams *params, HcfX509TrustAnchor *trustAnchorResult);
+CfResult ValidateCrlLocal(const HcfX509CertChainValidateParams *params, STACK_OF(X509) *x509CertChain);
+CfResult ValidateRevocation(
+    STACK_OF(X509) *x509CertChain, HcfX509TrustAnchor *trustAnchor, const HcfX509CertChainValidateParams *params);
 void ResetCertChainOut(STACK_OF(X509) *out);
 void FreeTrustAnchorData(HcfX509TrustAnchor *trustAnchor);
 X509_CRL *GetX509CrlFromHcfX509Crl(const HcfX509Crl *crl);

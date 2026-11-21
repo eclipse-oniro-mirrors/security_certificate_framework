@@ -102,6 +102,7 @@ ohos_unittest("cf_version1_test") {
     "../../../frameworks/adapter/v1.0/src/certificate_openssl_common.c",
     "../../../frameworks/adapter/v1.0/src/x509_cert_chain_openssl.c",
     "../../../frameworks/adapter/v1.0/src/x509_cert_chain_openssl_ex.c",
+    "../../../frameworks/adapter/v1.0/src/x509_cert_chain_revocation_openssl.c",
     "../../../frameworks/adapter/v1.0/src/x509_cert_chain_validator_openssl.c",
     "../../../frameworks/adapter/v1.0/src/x509_cert_chain_validator_openssl_private.c",
     "../../../frameworks/adapter/v1.0/src/x509_cert_cms_generator_openssl.c",
