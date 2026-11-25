@@ -31,7 +31,6 @@
 #include "cf_log.h"
 #include "cf_memory.h"
 #include "cf_result.h"
-#include "revocation_check.h"
 #include "utils.h"
 
 typedef struct {

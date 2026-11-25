@@ -39,7 +39,9 @@
 #include "cf_result.h"
 #include "config.h"
 #include "fwk_class.h"
+#ifndef ARKUI_X_TARGET
 #include "revocation_check.h"
+#endif
 #include "utils.h"
 #include "x509_cert_chain_spi.h"
 
@@ -736,6 +738,7 @@ static CfResult ValidateOther(const HcfX509CertChainValidateParams *params, STAC
         FreeTrustAnchorResult(anchorResult);
         return res;
     }
+#ifndef ARKUI_X_TARGET
     res = RevocationCheckX509Stack(x509CertChain, NULL);
     if (res != CF_SUCCESS) {
         if (res == CF_ERR_CERT_REVOKED) {
@@ -746,6 +749,7 @@ static CfResult ValidateOther(const HcfX509CertChainValidateParams *params, STAC
         FreeTrustAnchorResult(anchorResult);
         return res;
     }
+#endif
     *trustAnchorResult = anchorResult;
     return res;
 }
