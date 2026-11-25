@@ -14,7 +14,9 @@
  */
 
 #include "x509_cert_chain_validator_openssl_private.h"
+#ifndef ARKUI_X_TARGET
 #include "revocation_check.h"
+#endif
 
 static CfResult ConvertOpensslErrorMsg(int32_t errCode)
 {
@@ -220,6 +222,7 @@ static CfResult ValidateCertChain(CertsInfo *certs, uint32_t certNum, enum CfEnc
     return ValidateCertChainInner(certs, certNum);
 }
 
+#ifndef ARKUI_X_TARGET
 /* Expose parsed certs from CertsInfo[] to the generic revocation view. */
 static X509 *CertsInfoCertGetter(const void *ctx, uint32_t index)
 {
@@ -258,6 +261,7 @@ static CfResult ApplyForceRevocation(STACK_OF(X509) *chain, CertVerifyResultInne
     }
     return revokeRes;
 }
+#endif
 
 static CfResult Validate(HcfCertChainValidatorSpi *self, const CfArray *certsList)
 {
@@ -277,9 +281,11 @@ static CfResult Validate(HcfCertChainValidatorSpi *self, const CfArray *certsLis
     }
     res = ValidateCertChain(certs, certsList->count, certsList->format);
     if (res == CF_SUCCESS) {
+#ifndef ARKUI_X_TARGET
         /* Force revocation check after chain validation passes.
          * The view-based entry point reuses the parsed certs (no temp array). */
         res = CheckForceRevocationOnCertsInfo(certs, certsList->count);
+#endif
     } else {
         LOGE("Failed to validate cert chain, res = %{public}d.", res);
     }
@@ -2299,10 +2305,12 @@ static CfResult ValidateX509Cert(HcfCertChainValidatorSpi *self, HcfX509Certific
         res = PerformRevocationCheck(&resultInner, params, &opensslParams);
     }
 
+#ifndef ARKUI_X_TARGET
     if (res == CF_SUCCESS) {
         /* Force revocation check after CRL/OCSP passes. Reuses the parsed chain. */
         res = ApplyForceRevocation(resultInner.certChain, &resultInner);
     }
+#endif
 
     return FinishValidateX509Cert(&resultInner, result, res, &opensslParams);
 }

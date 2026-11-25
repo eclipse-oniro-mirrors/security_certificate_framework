@@ -33,7 +33,9 @@
 #include <openssl/pem.h>
 #include <openssl/cms.h>
 #include "securec.h"
+#ifndef ARKUI_X_TARGET
 #include "revocation_check.h"
+#endif
 #include "x509_cert_chain_openssl_ex.h"
 
 #define MAX_SIGNER_NUM 20
@@ -1162,6 +1164,7 @@ static CfResult CmsContentTypeCheck(HcfCmsParserSpi *self, HcfCmsContentType con
     return CF_SUCCESS;
 }
 
+#ifndef ARKUI_X_TARGET
 /* Count total certs: options signerCerts + trustCerts + CMS embedded certs. */
 static uint32_t CountCmsCerts(const HcfCmsParserSignedDataOptions *options,
     STACK_OF(X509) *cmsEmbeddedCerts, int32_t *embeddedCountOut)
@@ -1271,13 +1274,6 @@ static CfResult DoCmsForceRevocationCheck(const HcfCmsParserSignedDataOptions *o
     return revocRes;
 }
 
-static void FreeCmsVerifyParams(STACK_OF(X509) *signerCerts, X509_STORE *caStore, BIO *contentBio)
-{
-    BIO_free(contentBio);
-    sk_X509_free(signerCerts);
-    X509_STORE_free(caStore);
-}
-
 /* Collect the CMS-embedded certs and run the force revocation policy check. */
 static CfResult CheckCmsRevocation(HcfCmsParserOpensslImpl *impl, const HcfCmsParserSignedDataOptions *options)
 {
@@ -1287,6 +1283,14 @@ static CfResult CheckCmsRevocation(HcfCmsParserOpensslImpl *impl, const HcfCmsPa
         sk_X509_pop_free(cmsEmbedded, X509_free);
     }
     return revocRes;
+}
+#endif
+
+static void FreeCmsVerifyParams(STACK_OF(X509) *signerCerts, X509_STORE *caStore, BIO *contentBio)
+{
+    BIO_free(contentBio);
+    sk_X509_free(signerCerts);
+    X509_STORE_free(caStore);
 }
 
 CfResult VerifySignedDataOpenssl(HcfCmsParserSpi *self, const HcfCmsParserSignedDataOptions *options)
@@ -1330,12 +1334,14 @@ CfResult VerifySignedDataOpenssl(HcfCmsParserSpi *self, const HcfCmsParserSigned
         CfPrintOpensslError();
         return certResult;
     }
-
+#ifndef ARKUI_X_TARGET
     CfResult revocRes = CheckCmsRevocation(impl, options);
-    FreeCmsVerifyParams(signerCerts, caStore, contentBio);
     if (revocRes != CF_SUCCESS) {
+        FreeCmsVerifyParams(signerCerts, caStore, contentBio);
         return revocRes;
     }
+#endif
+    FreeCmsVerifyParams(signerCerts, caStore, contentBio);
     LOGD("verify signed data success");
     return CF_SUCCESS;
 }
