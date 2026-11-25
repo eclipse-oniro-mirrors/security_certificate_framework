@@ -686,19 +686,6 @@ static CfResult ValidateAnchorChain(const HcfX509CertChainValidateParams *params
     return res;
 }
 
-static CfResult ValidateDownloadIntermediateCa(const HcfX509CertChainValidateParams *params,
-    STACK_OF(X509) *x509CertChain, HcfX509TrustAnchor *anchorResult)
-{
-    STACK_OF(X509) *x509CertChainCopy = sk_X509_dup(x509CertChain);
-    if (x509CertChainCopy == NULL) {
-        LOGE("Failed to duplicate cert chain.");
-        return CF_ERR_CRYPTO_OPERATION;
-    }
-    CfResult res = ValidateDownLoadMissCert(x509CertChainCopy, params, anchorResult);
-    sk_X509_free(x509CertChainCopy);
-    return res;
-}
-
 static void FreeTrustAnchorResult(HcfX509TrustAnchor *anchorResult)
 {
     FreeTrustAnchorData(anchorResult);
@@ -726,7 +713,9 @@ static CfResult ValidateOther(const HcfX509CertChainValidateParams *params, STAC
 
     CfResult res = ValidateAnchorChain(params, rootCert, x509CertChain, anchorResult);
     if ((res != CF_SUCCESS) && (params->allowDownloadIntermediateCa)) {
-        res = ValidateDownloadIntermediateCa(params, x509CertChain, anchorResult);
+        STACK_OF(X509) *x509CertChainCopy = sk_X509_dup(x509CertChain);
+        res = ValidateDownLoadMissCert(x509CertChainCopy, params, anchorResult);
+        sk_X509_free(x509CertChainCopy);
     }
     if (res != CF_SUCCESS) {
         LOGE("ValidateTrust failed!");

@@ -28,9 +28,15 @@
 namespace OHOS {
 namespace EventFwk {
 
-/* Action published by cert manager when CA cert is enabled/disabled */
+/* Action published by cert manager when CA cert is enabled/disabled or the
+ * revocation force-check policy is updated */
 static constexpr const char *CM_EVENT_ACTION_CA_STATUS =
     "certmanager.event.CA_CERT_STATUS_CHANGED";
+/* Parameters/values carried by the event; "type" selects which revocation
+ * policy cache the update applies to. Mirrors cm_cert_status_event.h. */
+static constexpr const char *CM_EVENT_PARAM_TYPE = "type";
+static constexpr const char *CM_EVENT_TYPE_SYSTEM_CA = "SYSTEM_CA";
+static constexpr const char *CM_EVENT_TYPE_REVOCATION_FORCE_CHECK = "REVOCATION_FORCE_CHECK";
 
 class RevocationEventSubscriber : public CommonEventSubscriber {
 public:
@@ -44,8 +50,16 @@ public:
         if (action != CM_EVENT_ACTION_CA_STATUS) {
             return;
         }
-        LOGI("revocation: received CA cert status change event, clearing user cache");
-        RevocationNotifyUserCfgUpdate();
+        std::string type = want.GetStringParam(CM_EVENT_PARAM_TYPE);
+        if (type == CM_EVENT_TYPE_SYSTEM_CA) {
+            LOGI("revocation: SYSTEM_CA status changed, clearing user cache");
+            RevocationNotifyUserCfgUpdate();
+        } else if (type == CM_EVENT_TYPE_REVOCATION_FORCE_CHECK) {
+            LOGI("revocation: force-check policy updated, clearing cloud cache");
+            RevocationNotifyCloudCfgUpdate();
+        } else {
+            LOGW("revocation: unknown CA status event type [%s], ignore", type.c_str());
+        }
     }
 };
 

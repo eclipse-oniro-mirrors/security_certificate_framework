@@ -773,31 +773,29 @@ void RevocationCacheRefreshIfNeeded(RevocationSource src)
     pthread_rwlock_unlock(&ctx->lock);
 }
 
-void RevocationCacheClearAll(void)
+static void ClearCacheCtx(CacheCtx *ctx)
 {
-    CacheCtx *cloudCtx = &g_cloudCache;
-    pthread_rwlock_wrlock(&cloudCtx->lock);
-    RevocationCache *oldCloud = cloudCtx->cachePtr;
-    cloudCtx->cachePtr = NULL;
-    pthread_rwlock_unlock(&cloudCtx->lock);
-    FreeRevocationCache(oldCloud);
-
-    CacheCtx *userCtx = &g_userCache;
-    pthread_rwlock_wrlock(&userCtx->lock);
-    RevocationCache *oldUser = userCtx->cachePtr;
-    userCtx->cachePtr = NULL;
-    pthread_rwlock_unlock(&userCtx->lock);
-    FreeRevocationCache(oldUser);
-}
-
-void RevocationCacheClearUser(void)
-{
-    CacheCtx *ctx = &g_userCache;
     pthread_rwlock_wrlock(&ctx->lock);
     RevocationCache *old = ctx->cachePtr;
     ctx->cachePtr = NULL;
     pthread_rwlock_unlock(&ctx->lock);
     FreeRevocationCache(old);
+}
+
+void RevocationCacheClearAll(void)
+{
+    ClearCacheCtx(&g_cloudCache);
+    ClearCacheCtx(&g_userCache);
+}
+
+void RevocationCacheClearUser(void)
+{
+    ClearCacheCtx(&g_userCache);
+}
+
+void RevocationCacheClearCloud(void)
+{
+    ClearCacheCtx(&g_cloudCache);
 }
 
 bool RevocationCacheMatchSpki(const RevocationCache *cache, const uint8_t *sha256)
