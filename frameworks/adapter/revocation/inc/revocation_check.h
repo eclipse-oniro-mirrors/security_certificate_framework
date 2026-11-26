@@ -73,8 +73,14 @@ void RevocationClearCache(void);
 
 /* Called when user.cfg is externally updated to clear the user cache.
  * Invoked by the CA cert status change event subscriber
- * (revocation_event_subscriber.cpp) on cert manager notifications. */
+ * (revocation_event_subscriber.cpp) on cert manager SYSTEM_CA notifications. */
 void RevocationNotifyUserCfgUpdate(void);
+
+/* Called when cloud.cfg is externally updated to clear the cloud cache.
+ * Invoked by the CA cert status change event subscriber
+ * (revocation_event_subscriber.cpp) on cert manager REVOCATION_FORCE_CHECK
+ * notifications. */
+void RevocationNotifyCloudCfgUpdate(void);
 
 #ifdef __cplusplus
 }

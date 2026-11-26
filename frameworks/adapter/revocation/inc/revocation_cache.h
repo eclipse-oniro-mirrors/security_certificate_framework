@@ -149,6 +149,9 @@ void RevocationCacheClearAll(void);
 /* Clear only the user cache; the cloud cache is untouched. */
 void RevocationCacheClearUser(void);
 
+/* Clear only the cloud cache; the user cache is untouched. */
+void RevocationCacheClearCloud(void);
+
 /* Binary-search the SPKI SHA256 in the cache snapshot.
  * Returns false when cache is NULL or empty (fail-open: treated as not revoked). */
 bool RevocationCacheMatchSpki(const RevocationCache *cache, const uint8_t *sha256);

@@ -475,3 +475,8 @@ void RevocationNotifyUserCfgUpdate(void)
 {
     RevocationCacheClearUser();
 }
+
+void RevocationNotifyCloudCfgUpdate(void)
+{
+    RevocationCacheClearCloud();
+}
