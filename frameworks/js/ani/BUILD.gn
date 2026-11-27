@@ -27,6 +27,7 @@ copy_taihe_idl("copy_taihe") {
 }
 
 ohos_taihe("run_taihe") {
+  use_ats = true
   taihe_generated_file_path = "$taihe_generated_file_path"
   deps = [ ":copy_taihe" ]
   external_deps = [ "crypto_framework:copy_taihe" ]
@@ -101,7 +102,7 @@ taihe_shared_library("cert_framework_ani") {
 
 generate_static_abc("cert_framework_ets") {
   base_url = "$taihe_generated_file_path"
-  files = [ "$taihe_generated_file_path/@ohos.security.cert.ets" ]
+  files = [ "$taihe_generated_file_path/@ohos.security.cert.ats" ]
   is_boot_abc = "True"
   device_dst_file = "/system/framework/cert_framework_ets.abc"
   dependencies = [ ":run_taihe" ]
